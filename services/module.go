@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/valentindeaconu/terralist/database"
-	"github.com/valentindeaconu/terralist/model/module"
+	"github.com/valentindeaconu/terralist/models/module"
 )
 
 func ModuleFind(namespace string, name string, provider string) (module.Module, error) {

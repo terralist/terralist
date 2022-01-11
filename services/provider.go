@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/valentindeaconu/terralist/database"
-	"github.com/valentindeaconu/terralist/model/provider"
+	"github.com/valentindeaconu/terralist/models/provider"
 )
 
 func ProviderFind(namespace string, name string) (provider.Provider, error) {

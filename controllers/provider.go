@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/model/provider"
+	"github.com/valentindeaconu/terralist/models/provider"
 	"github.com/valentindeaconu/terralist/services"
 	"github.com/valentindeaconu/terralist/settings"
 )

@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/valentindeaconu/terralist/model/module"
-	"github.com/valentindeaconu/terralist/model/provider"
+	"github.com/valentindeaconu/terralist/models/module"
+	"github.com/valentindeaconu/terralist/models/provider"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
