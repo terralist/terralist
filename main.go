@@ -10,7 +10,9 @@ import (
 )
 
 func main() {
-	if err := database.Init(); err != nil {
+	log.SetLevel(log.DebugLevel)
+
+	if err := database.Open(); err != nil {
 		log.Fatal(err.Error())
 	}
 

@@ -7,7 +7,6 @@ import (
 
 // ORM
 type Module struct {
-	model.Table
 	model.Base
 	Namespace string
 	Name      string
@@ -20,7 +19,6 @@ func (Module) TableName() string {
 }
 
 type Version struct {
-	model.Table
 	model.Base
 	ModuleID     uuid.UUID
 	Version      string
@@ -35,7 +33,6 @@ func (Version) TableName() string {
 }
 
 type Submodule struct {
-	model.Table
 	model.Base
 	VersionID    uuid.UUID
 	Path         string
@@ -48,7 +45,6 @@ func (Submodule) TableName() string {
 }
 
 type Provider struct {
-	model.Table
 	model.Base
 	ParentID  uuid.UUID
 	Name      string
@@ -62,7 +58,6 @@ func (Provider) TableName() string {
 }
 
 type Dependency struct {
-	model.Table
 	model.Base
 	ParentID uuid.UUID
 }

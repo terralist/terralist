@@ -12,7 +12,7 @@ type ProviderService struct {
 
 func (m *ProviderService) Find(namespace string, name string) (provider.Provider, error) {
 
-	s, i := database.Run(func(db *database.DB) (bool, interface{}) {
+	s, i := database.Run(func(db database.DB) (bool, interface{}) {
 		p := provider.Provider{}
 
 		h := db.Where(provider.Provider{

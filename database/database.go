@@ -4,36 +4,31 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-
 	"github.com/valentindeaconu/terralist/model/module"
 	"github.com/valentindeaconu/terralist/model/provider"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type DB struct {
-	gorm.DB
-}
+type DB = *gorm.DB
 
-type contextFunc func(*DB) (bool, interface{})
+type contextFunc func(DB) (bool, interface{})
 
 var lock = &sync.Mutex{}
 
 var (
-	db *DB
+	db DB
 )
 
 func EnsureConnection() {
 	if db == nil {
-		_, e := Open()
-
-		if e == nil {
+		if e := Open(); e == nil {
 			log.Fatal(e.Error())
 		}
 	}
 }
 
-func Open() (*DB, error) {
+func Open() error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -42,16 +37,7 @@ func Open() (*DB, error) {
 		&gorm.Config{},
 	)
 
-	db.DB = *d
-
-	return db, err
-}
-
-func Init() error {
-	EnsureConnection()
-
-	lock.Lock()
-	defer lock.Unlock()
+	db = d
 
 	if err := db.AutoMigrate(
 		&module.Dependency{},
@@ -63,7 +49,7 @@ func Init() error {
 		return err
 	}
 
-	err := db.AutoMigrate(
+	err = db.AutoMigrate(
 		&provider.GpgPublicKey{},
 		&provider.Platform{},
 		&provider.Version{},

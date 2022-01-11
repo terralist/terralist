@@ -11,7 +11,7 @@ type ModuleService struct {
 }
 
 func (m *ModuleService) Find(namespace string, name string, provider string) (module.Module, error) {
-	s, i := database.Run(func(db *database.DB) (bool, interface{}) {
+	s, i := database.Run(func(db database.DB) (bool, interface{}) {
 		p := module.Module{}
 
 		h := db.Where(module.Module{
