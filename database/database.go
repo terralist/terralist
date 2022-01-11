@@ -12,8 +12,6 @@ import (
 
 type DB = *gorm.DB
 
-type contextFunc func(DB) (bool, interface{})
-
 var lock = &sync.Mutex{}
 
 var (
@@ -22,13 +20,13 @@ var (
 
 func EnsureConnection() {
 	if db == nil {
-		if e := Open(); e == nil {
+		if e := Connect(); e == nil {
 			log.Fatal(e.Error())
 		}
 	}
 }
 
-func Open() error {
+func Connect() error {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -36,6 +34,10 @@ func Open() error {
 		sqlite.Open("registry.db"),
 		&gorm.Config{},
 	)
+
+	if err != nil {
+		return err
+	}
 
 	db = d
 
@@ -59,38 +61,8 @@ func Open() error {
 	return err
 }
 
-func Create(value interface{}) error {
-	lock.Lock()
-	defer lock.Unlock()
+func Handler() DB {
+	EnsureConnection()
 
-	result := db.Create(value)
-
-	return result.Error
-}
-
-func Save(value interface{}) error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	result := db.Save(value)
-
-	return result.Error
-}
-
-func Delete(value interface{}) error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	result := db.Delete(value)
-
-	return result.Error
-}
-
-func Run(fn contextFunc) (bool, interface{}) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	success, result := fn(db)
-
-	return success, result
+	return db
 }

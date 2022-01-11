@@ -31,7 +31,7 @@ func main() {
 		log.SetLevel(logrus.ErrorLevel)
 	}
 
-	if err := database.Open(); err != nil {
+	if err := database.Connect(); err != nil {
 		log.Fatal(err.Error())
 	}
 

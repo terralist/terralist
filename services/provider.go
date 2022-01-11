@@ -8,28 +8,19 @@ import (
 )
 
 func ProviderFind(namespace string, name string) (provider.Provider, error) {
-	s, i := database.Run(func(db database.DB) (bool, interface{}) {
-		p := provider.Provider{}
+	p := provider.Provider{}
 
-		h := db.Where(provider.Provider{
-			Name:      name,
-			Namespace: namespace,
-		}).
-			Preload("Versions.Platforms.SigningKeys").
-			Find(&p)
+	h := database.Handler().Where(provider.Provider{
+		Name:      name,
+		Namespace: namespace,
+	}).
+		Preload("Versions.Platforms.SigningKeys").
+		Find(&p)
 
-		if h.RowsAffected > 0 {
-			return true, p
-		}
-
-		return false, nil
-	})
-
-	var err error = nil
-	if !s {
-		err = fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
+	if h.Error != nil {
+		return p, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
 	}
-	return i.(provider.Provider), err
+	return p, nil
 }
 
 func ProviderFindVersion(namespace string, name string, version string) (provider.Version, error) {
@@ -62,13 +53,13 @@ func ProviderUpsert(new provider.Provider) (provider.Provider, error) {
 
 		existing.Versions = append(existing.Versions, new.Versions[0])
 
-		if err := database.Save(&existing); err != nil {
+		if result := database.Handler().Save(&existing); result.Error != nil {
 			return provider.Provider{}, err
 		} else {
 			return existing, nil
 		}
 	} else {
-		if err := database.Create(&new); err != nil {
+		if result := database.Handler().Create(&new); result.Error != nil {
 			return provider.Provider{}, err
 		} else {
 			return new, nil
