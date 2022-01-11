@@ -2,12 +2,12 @@ package module
 
 import (
 	"github.com/google/uuid"
-	"github.com/valentindeaconu/terralist/model"
+	"github.com/valentindeaconu/terralist/models"
 )
 
 // ORM
 type Module struct {
-	model.Base
+	models.Base
 	Namespace string
 	Name      string
 	Provider  string
@@ -19,7 +19,7 @@ func (Module) TableName() string {
 }
 
 type Version struct {
-	model.Base
+	models.Base
 	ModuleID     uuid.UUID
 	Version      string
 	Location     string
@@ -33,7 +33,7 @@ func (Version) TableName() string {
 }
 
 type Submodule struct {
-	model.Base
+	models.Base
 	VersionID    uuid.UUID
 	Path         string
 	Providers    []Provider   `gorm:"foreignKey:ParentID;references:ID"`
@@ -45,7 +45,7 @@ func (Submodule) TableName() string {
 }
 
 type Provider struct {
-	model.Base
+	models.Base
 	ParentID  uuid.UUID
 	Name      string
 	Namespace string
@@ -58,7 +58,7 @@ func (Provider) TableName() string {
 }
 
 type Dependency struct {
-	model.Base
+	models.Base
 	ParentID uuid.UUID
 }
 

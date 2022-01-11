@@ -3,12 +3,12 @@ package provider
 import (
 	"github.com/google/uuid"
 	"github.com/lib/pq"
-	"github.com/valentindeaconu/terralist/model"
+	"github.com/valentindeaconu/terralist/models"
 )
 
 // ORM
 type Provider struct {
-	model.Base
+	models.Base
 	Name      string
 	Namespace string
 	Versions  []Version
@@ -19,7 +19,7 @@ func (Provider) TableName() string {
 }
 
 type Version struct {
-	model.Base
+	models.Base
 	ProviderID uuid.UUID
 	Version    string
 	Protocols  pq.StringArray `gorm:"type:text[]"`
@@ -31,7 +31,7 @@ func (Version) TableName() string {
 }
 
 type Platform struct {
-	model.Base
+	models.Base
 	VersionID           uuid.UUID
 	System              string
 	Architecture        string
@@ -48,7 +48,7 @@ func (Platform) TableName() string {
 }
 
 type GpgPublicKey struct {
-	model.Base
+	models.Base
 	PlatformID     uuid.UUID
 	KeyId          string
 	AsciiArmor     string

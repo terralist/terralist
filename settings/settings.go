@@ -1,10 +1,9 @@
 package settings
 
-import "github.com/valentindeaconu/terralist/model"
+import "github.com/valentindeaconu/terralist/models"
 
-var ServiceDiscovery model.ServiceDiscovery = model.ServiceDiscovery{
+var ServiceDiscovery models.ServiceDiscovery = models.ServiceDiscovery{
 	LoginEndpoint:    "/v1/login",
 	ModuleEndpoint:   "/v1/modules",
 	ProviderEndpoint: "/v1/providers",
 }
- 

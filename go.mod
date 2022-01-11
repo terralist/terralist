@@ -33,4 +33,5 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/mattn/go-sqlite3 v1.14.9 // indirect
 	github.com/sirupsen/logrus v1.8.1
+	github.com/toorop/gin-logrus v0.0.0-20210225092905-2c785434f26f
 )

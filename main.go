@@ -1,28 +1,49 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	log "github.com/sirupsen/logrus"
+	"fmt"
+	"os"
 
-	"github.com/valentindeaconu/terralist/api"
+	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
+	ginlogrus "github.com/toorop/gin-logrus"
 	"github.com/valentindeaconu/terralist/database"
-	"github.com/valentindeaconu/terralist/service"
+	"github.com/valentindeaconu/terralist/routes"
 )
 
 func main() {
-	log.SetLevel(log.DebugLevel)
+	var isDebugMode bool
+	if level, isSet := os.LookupEnv("TERRALIST_LEVEL"); !isSet {
+		isDebugMode = true
+	} else {
+		if level == "debug" {
+			isDebugMode = true
+		} else {
+			isDebugMode = false
+		}
+	}
+
+	log := logrus.New()
+
+	if isDebugMode {
+		log.SetLevel(logrus.DebugLevel)
+	} else {
+		log.SetLevel(logrus.ErrorLevel)
+	}
 
 	if err := database.Open(); err != nil {
 		log.Fatal(err.Error())
 	}
 
-	// gin.SetMode(gin.ReleaseMode)
+	if !isDebugMode {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-	router := gin.Default()
+	r := gin.New()
+	r.Use(ginlogrus.Logger(log), gin.Recovery())
 
 	// Entry
-	router.GET("/health", api.Health)
-	router.GET("/.well-known/terraform.json", api.ServiceDiscovery)
+	routes.InitEntryRoutes(r)
 
 	// Login
 	// https://www.terraform.io/docs/internals/login-protocol.html
@@ -30,13 +51,16 @@ func main() {
 
 	// Modules
 	// https://www.terraform.io/docs/internals/module-registry-protocol.html
-	moduleController := api.CreateModuleController(router, &service.ModuleService{})
-	moduleController.PrepareRoutes()
+	routes.InitModuleRoutes(r)
 
 	// Providers
 	// https://www.terraform.io/docs/internals/provider-registry-protocol.html
-	providerController := api.CreateProviderController(router, &service.ProviderService{})
-	providerController.PrepareRoutes()
+	routes.InitProviderRoutes(r)
 
-	router.Run(":8080")
+	port, isSet := os.LookupEnv("TERRALIST_PORT")
+	if !isSet {
+		port = "8080"
+	}
+
+	r.Run(fmt.Sprintf(":%s", port))
 }

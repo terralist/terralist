@@ -1,4 +1,4 @@
-package api
+package controllers
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/valentindeaconu/terralist/settings"
 )
 
-func Health(c *gin.Context) {
+func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, "OK")
 }
 

@@ -1,4 +1,4 @@
-package model
+package models
 
 type ServiceDiscovery struct {
 	LoginEndpoint    string

@@ -1,4 +1,4 @@
-package model
+package models
 
 import (
 	"time"
@@ -20,6 +20,6 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 	return err
 }
 
-type Table interface {
+type Model interface {
 	TableName() string
 }

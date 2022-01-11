@@ -1,4 +1,4 @@
-package service
+package services
 
 import (
 	"fmt"
@@ -7,10 +7,7 @@ import (
 	"github.com/valentindeaconu/terralist/model/module"
 )
 
-type ModuleService struct {
-}
-
-func (m *ModuleService) Find(namespace string, name string, provider string) (module.Module, error) {
+func ModuleFind(namespace string, name string, provider string) (module.Module, error) {
 	s, i := database.Run(func(db database.DB) (bool, interface{}) {
 		p := module.Module{}
 
@@ -41,8 +38,8 @@ func (m *ModuleService) Find(namespace string, name string, provider string) (mo
 	return i.(module.Module), err
 }
 
-func (m *ModuleService) FindVersion(namespace string, name string, provider string, version string) (module.Version, error) {
-	p, err := m.Find(namespace, name, provider)
+func ModuleFindVersion(namespace string, name string, provider string, version string) (module.Version, error) {
+	p, err := ModuleFind(namespace, name, provider)
 
 	if err != nil {
 		return module.Version{}, err
@@ -57,8 +54,8 @@ func (m *ModuleService) FindVersion(namespace string, name string, provider stri
 	return module.Version{}, fmt.Errorf("no version found")
 }
 
-func (m *ModuleService) Upsert(new module.Module) (module.Module, error) {
-	existing, err := m.Find(new.Namespace, new.Name, new.Provider)
+func ModuleUpsert(new module.Module) (module.Module, error) {
+	existing, err := ModuleFind(new.Namespace, new.Name, new.Provider)
 
 	if err == nil {
 		newVersion := new.Versions[0].Version
