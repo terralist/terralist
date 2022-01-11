@@ -47,9 +47,9 @@ func (m *ModuleController) PrepareRoutes() {
 						err.Error(),
 					},
 				})
-			} else {
-				c.JSON(http.StatusOK, p.ToVersionListResponse())
+				return
 			}
+			c.JSON(http.StatusOK, p.ToVersionListResponse())
 		},
 	)
 
@@ -71,12 +71,12 @@ func (m *ModuleController) PrepareRoutes() {
 				c.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{"Requested module was not found"},
 				})
-			} else {
-				c.Header("X-Terraform-Get", v.Location)
-				c.JSON(http.StatusOK, gin.H{
-					"errors": []string{},
-				})
+				return
 			}
+			c.Header("X-Terraform-Get", v.Location)
+			c.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
+			})
 		},
 	)
 
@@ -110,19 +110,19 @@ func (m *ModuleController) PrepareRoutes() {
 				c.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"download_uri": fmt.Sprintf(
-						"%s/%s/%s/%s/%s/download",
-						settings.ServiceDiscovery.ModuleEndpoint,
-						namespace,
-						name,
-						provider,
-						version,
-					),
-					"errors": []string{},
-				})
+				return
 			}
+			c.JSON(http.StatusOK, gin.H{
+				"download_uri": fmt.Sprintf(
+					"%s/%s/%s/%s/%s/download",
+					settings.ServiceDiscovery.ModuleEndpoint,
+					namespace,
+					name,
+					provider,
+					version,
+				),
+				"errors": []string{},
+			})
 		},
 	)
 }

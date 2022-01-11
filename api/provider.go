@@ -47,9 +47,9 @@ func (m *ProviderController) PrepareRoutes() {
 						err.Error(),
 					},
 				})
-			} else {
-				c.JSON(http.StatusOK, p.ToVersionListProvider())
+				return
 			}
+			c.JSON(http.StatusOK, p.ToVersionListProvider())
 		},
 	)
 
@@ -72,16 +72,17 @@ func (m *ProviderController) PrepareRoutes() {
 				c.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{"Requested provider was not found"},
 				})
-			} else {
-				response, err := v.ToDownloadProvider(system, arch)
+				return
+			}
 
-				if err != nil {
-					c.JSON(http.StatusNotFound, gin.H{
-						"errors": []string{err.Error()},
-					})
-				} else {
-					c.JSON(http.StatusOK, response)
-				}
+			response, err := v.ToDownloadProvider(system, arch)
+
+			if err != nil {
+				c.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+			} else {
+				c.JSON(http.StatusOK, response)
 			}
 		},
 	)
@@ -98,10 +99,12 @@ func (m *ProviderController) PrepareRoutes() {
 			version := c.Param("version")
 
 			var providerVersion provider.CreateProviderDTO
+
 			if err := c.BindJSON(&providerVersion); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
 				})
+				return
 			}
 
 			providerVersion.Namespace = namespace
@@ -114,18 +117,18 @@ func (m *ProviderController) PrepareRoutes() {
 				c.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})
-			} else {
-				c.JSON(http.StatusOK, gin.H{
-					"download_uri": fmt.Sprintf(
-						"%s/%s/%s/%s/download/:system/:arch",
-						settings.ServiceDiscovery.ProviderEndpoint,
-						namespace,
-						name,
-						version,
-					),
-					"errors": []string{},
-				})
+				return
 			}
+			c.JSON(http.StatusOK, gin.H{
+				"download_uri": fmt.Sprintf(
+					"%s/%s/%s/%s/download/:system/:arch",
+					settings.ServiceDiscovery.ProviderEndpoint,
+					namespace,
+					name,
+					version,
+				),
+				"errors": []string{},
+			})
 		},
 	)
 }

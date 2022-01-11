@@ -2,14 +2,16 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/valentindeaconu/terralist/api"
 	"github.com/valentindeaconu/terralist/database"
 	"github.com/valentindeaconu/terralist/service"
 )
 
 func main() {
-	if err := database.AppDatabase.Init(); err != nil {
-		panic(err.Error())
+	if err := database.Init(); err != nil {
+		log.Fatal(err.Error())
 	}
 
 	// gin.SetMode(gin.ReleaseMode)

@@ -1,51 +1,110 @@
 package database
 
 import (
+	"sync"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/valentindeaconu/terralist/model/module"
 	"github.com/valentindeaconu/terralist/model/provider"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type Database struct {
-	Handler *gorm.DB
+type DB struct {
+	gorm.DB
 }
 
-var AppDatabase Database = Database{
-	Handler: nil,
+type contextFunc func(*DB) (bool, interface{})
+
+var lock = &sync.Mutex{}
+
+var (
+	db *DB
+)
+
+func EnsureConnection() {
+	if db == nil {
+		_, e := Open()
+
+		if e == nil {
+			log.Fatal(e.Error())
+		}
+	}
 }
 
-func (m *Database) Open() error {
-	db, err := gorm.Open(
+func Open() (*DB, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	d, err := gorm.Open(
 		sqlite.Open("registry.db"),
 		&gorm.Config{},
 	)
 
-	m.Handler = db
+	db.DB = *d
 
-	return err
+	return db, err
 }
 
-func (m *Database) Init() error {
-	if m.Handler == nil {
-		if err := m.Open(); err != nil {
-			return err
-		}
-	}
+func Init() error {
+	EnsureConnection()
 
-	m.Handler.AutoMigrate(
+	lock.Lock()
+	defer lock.Unlock()
+
+	if err := db.AutoMigrate(
 		&module.Dependency{},
 		&module.Provider{},
 		&module.Submodule{},
 		&module.Version{},
 		&module.Module{},
-	)
-	m.Handler.AutoMigrate(
+	); err != nil {
+		return err
+	}
+
+	err := db.AutoMigrate(
 		&provider.GpgPublicKey{},
 		&provider.Platform{},
 		&provider.Version{},
 		&provider.Provider{},
 	)
 
-	return nil
+	return err
+}
+
+func Create(value interface{}) error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	result := db.Create(value)
+
+	return result.Error
+}
+
+func Save(value interface{}) error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	result := db.Save(value)
+
+	return result.Error
+}
+
+func Delete(value interface{}) error {
+	lock.Lock()
+	defer lock.Unlock()
+
+	result := db.Delete(value)
+
+	return result.Error
+}
+
+func Run(fn contextFunc) (bool, interface{}) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	success, result := fn(db)
+
+	return success, result
 }

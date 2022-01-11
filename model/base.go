@@ -19,3 +19,7 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 	base.ID, err = uuid.NewRandom()
 	return err
 }
+
+type Table interface {
+	TableName() string
+}
