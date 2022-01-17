@@ -2,8 +2,6 @@ package services
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"github.com/valentindeaconu/terralist/database"
 	"github.com/valentindeaconu/terralist/models/module"
@@ -47,71 +45,30 @@ func ModuleFindVersion(namespace string, name string, provider string, version s
 	return module.Version{}, fmt.Errorf("no version found")
 }
 
-// Create a new module
-func ModuleCreate(new module.Module) (module.Module, error) {
-	_, err := ModuleFind(new.Namespace, new.Name, new.Provider)
+func ModuleUpsert(new module.Module) (module.Module, error) {
+	existing, err := ModuleFind(new.Namespace, new.Name, new.Provider)
 
 	if err == nil {
-		return module.Module{}, fmt.Errorf("module %s/%s/%s already exists", new.Namespace, new.Name, new.Provider)
-	}
+		newVersion := new.Versions[0].Version
 
-	if result := database.Handler().Create(&new); result.Error != nil {
-		return module.Module{}, result.Error
-	}
-
-	return new, nil
-}
-
-// Add a version to an existing module
-func ModuleAddVersion(namespace string, name string, provider string, version module.Version) (module.Module, error) {
-	m, err := ModuleFind(namespace, name, provider)
-
-	if err != nil {
-		return module.Module{}, err
-	}
-
-	m.Versions = append(m.Versions, version)
-
-	sort.SliceStable(m.Versions, func(i, j int) bool {
-		return strings.Compare(m.Versions[i].Version, m.Versions[j].Version) >= 0
-	})
-
-	if result := database.Handler().Save(&m); result.Error != nil {
-		return module.Module{}, result.Error
-	}
-
-	return m, nil
-}
-
-// Delete a module
-func ModuleDelete(namespace string, name string, provider string) error {
-	module, err := ModuleFind(namespace, name, provider)
-
-	if err == nil {
-		database.Handler().Delete(&module)
-	}
-
-	return err
-}
-
-// Delete a version from an existing module
-func ModuleDeleteVersion(namespace string, name string, provider string, version string) error {
-	module, err := ModuleFind(namespace, name, provider)
-
-	q := false
-	if err == nil {
-		for idx, ver := range module.Versions {
-			if ver.Version == version {
-				q = true
-				module.Versions = append(module.Versions[:idx], module.Versions[:idx+1]...)
-				database.Handler().Save(&module)
+		for _, version := range existing.Versions {
+			if version.Version == newVersion {
+				return module.Module{}, fmt.Errorf("version %s already exists", newVersion)
 			}
 		}
 
-		if !q {
-			return fmt.Errorf("no version %s was found for module %s/%s/%s", version, namespace, name, provider)
+		existing.Versions = append(existing.Versions, new.Versions[0])
+
+		if result := database.Handler().Save(&existing); result.Error != nil {
+			return module.Module{}, result.Error
+		} else {
+			return existing, nil
+		}
+	} else {
+		if result := database.Handler().Create(&new); result.Error != nil {
+			return module.Module{}, result.Error
+		} else {
+			return new, nil
 		}
 	}
-
-	return err
 }

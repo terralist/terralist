@@ -18,22 +18,22 @@ func (m *Module) ToVersionListResponse() ListResponseDTO {
 	return out
 }
 
-func (m *ModuleCreateDTO) ToModule() Module {
+func FromCreateDTO(dto ModuleCreateDTO) Module {
 	out := Module{
-		Namespace: m.Namespace,
-		Name:      m.Name,
-		Provider:  m.Provider,
+		Namespace: dto.Namespace,
+		Name:      dto.Name,
+		Provider:  dto.Provider,
 		Versions: []Version{
 			{
-				Version:      m.Version,
-				Location:     m.DownloadUrl,
-				Providers:    FromProviderDTOs(m.Root.Providers),
-				Dependencies: FromDependencyDTOs(m.Root.Dependencies),
+				Version:      dto.Version,
+				Location:     dto.DownloadUrl,
+				Providers:    FromProviderDTOs(dto.Root.Providers),
+				Dependencies: FromDependencyDTOs(dto.Root.Dependencies),
 			},
 		},
 	}
 
-	for _, submodule := range m.Submodules {
+	for _, submodule := range dto.Submodules {
 		s := Submodule{
 			Path:         submodule.Path,
 			Providers:    FromProviderDTOs(submodule.Providers),
@@ -44,15 +44,6 @@ func (m *ModuleCreateDTO) ToModule() Module {
 	}
 
 	return out
-}
-
-func (m *VersionDTO) ToVersion() Version {
-	return Version{
-		Version:      m.Version,
-		Location:     m.DownloadUrl,
-		Providers:    FromProviderDTOs(m.Root.Providers),
-		Dependencies: FromDependencyDTOs(m.Root.Dependencies),
-	}
 }
 
 // Helpers
