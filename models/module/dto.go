@@ -13,17 +13,17 @@ type VersionListDTO struct {
 }
 
 type VersionDTO struct {
-	Version    string         `json:"version"`
-	Root       RootDTO        `json:"root"`
-	Submodules []SubmoduleDTO `json:"submodules"`
+	Version     string         `json:"version"`
+	DownloadUrl string         `json:"download_url"`
+	Root        RootDTO        `json:"root"`
+	Submodules  []SubmoduleDTO `json:"submodules"`
 }
 
 type ModuleCreateDTO struct {
 	VersionDTO
-	Namespace   string `json:"namespace"`
-	Name        string `json:"name"`
-	Provider    string `json:"provider"`
-	DownloadUrl string `json:"download_url"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	Provider  string `json:"provider"`
 }
 
 type SubmoduleDTO struct {
