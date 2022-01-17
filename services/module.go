@@ -61,14 +61,52 @@ func ModuleUpsert(new module.Module) (module.Module, error) {
 
 		if result := database.Handler().Save(&existing); result.Error != nil {
 			return module.Module{}, result.Error
-		} else {
-			return existing, nil
 		}
-	} else {
-		if result := database.Handler().Create(&new); result.Error != nil {
-			return module.Module{}, result.Error
-		} else {
-			return new, nil
+
+		return existing, nil
+	}
+
+	if result := database.Handler().Create(&new); result.Error != nil {
+		return module.Module{}, result.Error
+	}
+
+	return new, nil
+}
+
+func ModuleDelete(namespace string, name string, provider string) error {
+	m, err := ModuleFind(namespace, name, provider)
+
+	if err == nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+	}
+
+	if result := database.Handler().Delete(&m); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func ModuleVersionDelete(namespace string, name string, provider string, version string) error {
+	m, err := ModuleFind(namespace, name, provider)
+
+	if err == nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+	}
+
+	q := false
+	for idx, ver := range m.Versions {
+		if ver.Version == version {
+			m.Versions = append(m.Versions[:idx], m.Versions[idx+1:]...)
+			q = true
 		}
 	}
+
+	if q {
+		if result := database.Handler().Save(&m); result.Error != nil {
+			return result.Error
+		}
+	}
+
+	return fmt.Errorf("no version found")
 }

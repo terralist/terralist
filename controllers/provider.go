@@ -1,13 +1,11 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/valentindeaconu/terralist/models/provider"
 	"github.com/valentindeaconu/terralist/services"
-	"github.com/valentindeaconu/terralist/settings"
 )
 
 func ProviderGet(c *gin.Context) {
@@ -55,7 +53,7 @@ func ProviderGetVersion(c *gin.Context) {
 	}
 }
 
-func ProviderCreate(c *gin.Context) {
+func ProviderUpload(c *gin.Context) {
 	namespace := c.Param("namespace")
 	name := c.Param("name")
 	version := c.Param("version")
@@ -82,13 +80,37 @@ func ProviderCreate(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"download_uri": fmt.Sprintf(
-			"%s/%s/%s/%s/download/:system/:arch",
-			settings.ServiceDiscovery.ProviderEndpoint,
-			namespace,
-			name,
-			version,
-		),
+		"errors": []string{},
+	})
+}
+
+func ProviderDelete(c *gin.Context) {
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	if err := services.ProviderDelete(namespace, name); err != nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"errors": []string{err.Error()},
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"errors": []string{},
+	})
+}
+
+func ProviderVersionDelete(c *gin.Context) {
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+	version := c.Param("version")
+
+	if err := services.ProviderVersionDelete(namespace, name, version); err != nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"errors": []string{err.Error()},
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
 		"errors": []string{},
 	})
 }

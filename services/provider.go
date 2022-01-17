@@ -20,6 +20,7 @@ func ProviderFind(namespace string, name string) (provider.Provider, error) {
 	if h.Error != nil {
 		return p, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
 	}
+
 	return p, nil
 }
 
@@ -55,14 +56,53 @@ func ProviderUpsert(new provider.Provider) (provider.Provider, error) {
 
 		if result := database.Handler().Save(&existing); result.Error != nil {
 			return provider.Provider{}, err
-		} else {
-			return existing, nil
 		}
-	} else {
-		if result := database.Handler().Create(&new); result.Error != nil {
-			return provider.Provider{}, err
-		} else {
-			return new, nil
+
+		return existing, nil
+
+	}
+
+	if result := database.Handler().Create(&new); result.Error != nil {
+		return provider.Provider{}, err
+	}
+
+	return new, nil
+}
+
+func ProviderDelete(namespace string, name string) error {
+	p, err := ProviderFind(namespace, name)
+
+	if err == nil {
+		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
+	}
+
+	if result := database.Handler().Delete(&p); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func ProviderVersionDelete(namespace string, name string, version string) error {
+	p, err := ProviderFind(namespace, name)
+
+	if err == nil {
+		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
+	}
+
+	q := false
+	for idx, ver := range p.Versions {
+		if ver.Version == version {
+			p.Versions = append(p.Versions[:idx], p.Versions[idx+1:]...)
+			q = true
 		}
 	}
+
+	if q {
+		if result := database.Handler().Save(&p); result.Error != nil {
+			return result.Error
+		}
+	}
+
+	return fmt.Errorf("no version found")
 }

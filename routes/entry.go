@@ -8,6 +8,7 @@ import (
 func InitEntryRoutes(r *gin.Engine) {
 	// Health Check API
 	r.GET("/health", controllers.HealthCheck)
-	r.GET("/.well-known/terraform.json", controllers.ServiceDiscovery)
 
+	// Terraform Service Discovery API
+	r.GET("/.well-known/terraform.json", controllers.ServiceDiscovery)
 }

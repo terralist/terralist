@@ -27,12 +27,30 @@ func InitProviderRoutes(r *gin.Engine) {
 		controllers.ProviderGetVersion,
 	)
 
-	// Upload a new provider
+	// Upload a new provider version
 	r.POST(
 		fmt.Sprintf(
 			"%s/:namespace/:name/:version/upload",
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
-		controllers.ProviderCreate,
+		controllers.ProviderUpload,
+	)
+
+	// Delete a provider
+	r.DELETE(
+		fmt.Sprintf(
+			"%s/:namespace/:name/remove",
+			settings.ServiceDiscovery.ProviderEndpoint,
+		),
+		controllers.ProviderDelete,
+	)
+
+	// Delete a provider version
+	r.DELETE(
+		fmt.Sprintf(
+			"%s/:namespace/:name/:version/remove",
+			settings.ServiceDiscovery.ProviderEndpoint,
+		),
+		controllers.ProviderVersionDelete,
 	)
 }

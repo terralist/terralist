@@ -27,12 +27,30 @@ func InitModuleRoutes(r *gin.Engine) {
 		controllers.ModuleGetVersion,
 	)
 
-	// Upload a new module
+	// Upload a new module version
 	r.POST(
 		fmt.Sprintf(
 			"%s/:namespace/:name/:provider/:version/upload",
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
-		controllers.ModuleCreate,
+		controllers.ModuleUpload,
+	)
+
+	// Delete a module
+	r.DELETE(
+		fmt.Sprintf(
+			"%s/:namespace/:name/:provider/remove",
+			settings.ServiceDiscovery.ModuleEndpoint,
+		),
+		controllers.ModuleDelete,
+	)
+
+	// Delete a module version
+	r.DELETE(
+		fmt.Sprintf(
+			"%s/:namespace/:name/:provider/:version/remove",
+			settings.ServiceDiscovery.ModuleEndpoint,
+		),
+		controllers.ModuleVersionDelete,
 	)
 }
