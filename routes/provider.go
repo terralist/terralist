@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/valentindeaconu/terralist/controllers"
+	"github.com/valentindeaconu/terralist/middlewares"
 	"github.com/valentindeaconu/terralist/settings"
 )
 
@@ -15,6 +16,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/versions",
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ProviderGet,
 	)
 
@@ -24,6 +26,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:version/download/:os/:arch",
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ProviderGetVersion,
 	)
 
@@ -33,6 +36,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:version/upload",
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ProviderUpload,
 	)
 
@@ -42,6 +46,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/remove",
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ProviderDelete,
 	)
 
@@ -51,6 +56,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:version/remove",
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ProviderVersionDelete,
 	)
 }

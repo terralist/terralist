@@ -47,7 +47,7 @@ func main() {
 
 	// Login
 	// https://www.terraform.io/docs/internals/login-protocol.html
-	// TODO
+	routes.InitLoginRoutes(r)
 
 	// Modules
 	// https://www.terraform.io/docs/internals/module-registry-protocol.html

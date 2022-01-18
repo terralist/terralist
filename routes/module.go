@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/valentindeaconu/terralist/controllers"
+	"github.com/valentindeaconu/terralist/middlewares"
 	"github.com/valentindeaconu/terralist/settings"
 )
 
@@ -15,6 +16,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:provider/versions",
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ModuleGet,
 	)
 
@@ -24,6 +26,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:provider/:version/download",
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ModuleGetVersion,
 	)
 
@@ -33,6 +36,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:provider/:version/upload",
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ModuleUpload,
 	)
 
@@ -42,6 +46,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:provider/remove",
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ModuleDelete,
 	)
 
@@ -51,6 +56,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			"%s/:namespace/:name/:provider/:version/remove",
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
+		middlewares.Authorize(),
 		controllers.ModuleVersionDelete,
 	)
 }
