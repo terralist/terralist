@@ -30,6 +30,7 @@ require (
 )
 
 require (
+	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/lib/pq v1.10.4
 	github.com/mattn/go-sqlite3 v1.14.9 // indirect
 	github.com/sirupsen/logrus v1.8.1

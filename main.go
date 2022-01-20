@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	ginlogrus "github.com/toorop/gin-logrus"
 	"github.com/valentindeaconu/terralist/database"
+	"github.com/valentindeaconu/terralist/oauth/provider"
 	"github.com/valentindeaconu/terralist/routes"
 )
 
@@ -32,6 +33,10 @@ func main() {
 	}
 
 	if err := database.Connect(); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	if err := provider.InitProvider("github"); err != nil {
 		log.Fatal(err.Error())
 	}
 

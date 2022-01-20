@@ -17,6 +17,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ProviderGet,
 	)
 
@@ -27,6 +28,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ProviderGetVersion,
 	)
 
@@ -37,6 +39,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ProviderUpload,
 	)
 
@@ -47,6 +50,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ProviderDelete,
 	)
 
@@ -57,6 +61,7 @@ func InitProviderRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ProviderEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ProviderVersionDelete,
 	)
 }

@@ -17,6 +17,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ModuleGet,
 	)
 
@@ -27,6 +28,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ModuleGetVersion,
 	)
 
@@ -37,6 +39,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ModuleUpload,
 	)
 
@@ -47,6 +50,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ModuleDelete,
 	)
 
@@ -57,6 +61,7 @@ func InitModuleRoutes(r *gin.Engine) {
 			settings.ServiceDiscovery.ModuleEndpoint,
 		),
 		middlewares.Authorize(),
+		middlewares.AuditLogging(),
 		controllers.ModuleVersionDelete,
 	)
 }

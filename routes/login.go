@@ -8,5 +8,7 @@ import (
 
 func InitLoginRoutes(r *gin.Engine) {
 	r.GET(settings.ServiceDiscovery.Login.AuthorizationEndpoint, controllers.Authorize)
-	r.GET(settings.ServiceDiscovery.Login.TokenEndpoint, controllers.TokenValidate)
+	r.POST(settings.ServiceDiscovery.Login.TokenEndpoint, controllers.TokenValidate)
+
+	r.GET("/oauth/redirect", controllers.Callback)
 }

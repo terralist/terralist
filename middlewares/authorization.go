@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/utils"
+	"github.com/valentindeaconu/terralist/oauth/token"
 )
 
 func Authorize() gin.HandlerFunc {
@@ -18,17 +18,20 @@ func Authorize() gin.HandlerFunc {
 			return
 		}
 
-		var token string
-		_, err := fmt.Sscanf(header, "Bearer %s", &token)
+		var t string
+		_, err := fmt.Sscanf(header, "Bearer %s", &t)
 
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
-		err = utils.Validate(token)
+		userDetails, err := token.Validate(t)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
+
+		c.Set("userName", userDetails.Name)
+		c.Set("userEmail", userDetails.Email)
 
 		c.Next()
 	}
