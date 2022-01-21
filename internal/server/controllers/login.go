@@ -7,14 +7,17 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/valentindeaconu/terralist/internal/server/mappers"
 	models "github.com/valentindeaconu/terralist/internal/server/models/oauth"
 	"github.com/valentindeaconu/terralist/internal/server/oauth"
-	"github.com/valentindeaconu/terralist/internal/server/oauth/token"
-	"github.com/valentindeaconu/terralist/settings"
+	"github.com/valentindeaconu/terralist/internal/server/utils"
 )
 
 type LoginController struct {
-	Provider oauth.Engine
+	Provider    oauth.Engine
+	OAuthMapper *mappers.OAuthMapper
+	Keychain    *utils.Keychain
+	JWT         *utils.JWT
 }
 
 func (l *LoginController) Authorize() func(c *gin.Context) {
@@ -28,7 +31,7 @@ func (l *LoginController) Authorize() func(c *gin.Context) {
 			State:               c.Query("state"),
 		}
 
-		state, err := request.ToPayload()
+		state, err := l.OAuthMapper.AuthorizationRequestToPayload(request)
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -51,7 +54,7 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 		code := c.Query("code")
 		state := c.Query("state")
 
-		request, err := models.AuthorizationRequestFromPayload(state)
+		request, err := l.OAuthMapper.PayloadToAuthorizationRequest(state)
 
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -68,14 +71,14 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 		}
 
 		codeComponents := models.AuthorizationCodeComponents{
-			Key:                 settings.CodeExchangeKey,
+			Key:                 l.Keychain.CodeExchangeKey,
 			CodeChallenge:       request.CodeChallenge,
 			CodeChallengeMethod: request.CodeChallengeMethod,
 			UserName:            userDetails.Name,
 			UserEmail:           userDetails.Email,
 		}
 
-		payload, err := codeComponents.ToPayload()
+		payload, err := l.OAuthMapper.AuthorizationCodeComponentsToPayload(codeComponents)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"errors": []string{err.Error()},
@@ -103,7 +106,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 			})
 		}
 
-		codeComponents, err := models.AuthorizationCodeFromPayload(request.Code)
+		codeComponents, err := l.OAuthMapper.PayloadToAuthorizationCodeComponents(request.Code)
 
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -129,7 +132,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 			return
 		}
 
-		t, err := token.Generate(models.UserDetails{
+		t, err := l.JWT.Generate(models.UserDetails{
 			Name:  codeComponents.UserName,
 			Email: codeComponents.UserEmail,
 		})

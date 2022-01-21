@@ -11,8 +11,10 @@ import (
 	"github.com/valentindeaconu/terralist/internal/server/controllers"
 	"github.com/valentindeaconu/terralist/internal/server/database"
 	"github.com/valentindeaconu/terralist/internal/server/handlers"
+	"github.com/valentindeaconu/terralist/internal/server/mappers"
 	"github.com/valentindeaconu/terralist/internal/server/oauth"
 	"github.com/valentindeaconu/terralist/internal/server/services"
+	"github.com/valentindeaconu/terralist/internal/server/utils"
 )
 
 const (
@@ -39,6 +41,8 @@ type Server struct {
 	LoginController    *controllers.LoginController
 	ModuleController   *controllers.ModuleController
 	ProviderController *controllers.ProviderController
+	JWT                *utils.JWT
+	Keychain           *utils.Keychain
 }
 
 // Config holds the server configuration that isn't configurable by the user
@@ -72,22 +76,43 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		TerraformPorts:        TerraformPorts,
 	}
 
+	keychain := utils.NewKeychain()
+
+	jwt := &utils.JWT{
+		Keychain: keychain,
+	}
+
+	oauthMapper := &mappers.OAuthMapper{
+		Keychain: keychain,
+	}
+
 	loginController := &controllers.LoginController{
-		Provider: provider,
+		Provider:    provider,
+		OAuthMapper: oauthMapper,
+		Keychain:    keychain,
+		JWT:         jwt,
 	}
 
 	moduleService := &services.ModuleService{
 		Database: db,
 	}
+
+	moduleMapper := &mappers.ModuleMapper{}
+
 	moduleController := &controllers.ModuleController{
 		ModuleService: moduleService,
+		ModuleMapper:  moduleMapper,
 	}
 
 	providerService := &services.ProviderService{
 		Database: db,
 	}
+
+	providerMapper := &mappers.ProviderMapper{}
+
 	providerController := &controllers.ProviderController{
 		ProviderService: providerService,
+		ProviderMapper:  providerMapper,
 	}
 
 	return &Server{
@@ -101,6 +126,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		LoginController:    loginController,
 		ModuleController:   moduleController,
 		ProviderController: providerController,
+		Keychain:           keychain,
+		JWT:                jwt,
 	}, nil
 }
 
@@ -123,7 +150,7 @@ func (s *Server) Start() error {
 	// https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	s.Router.GET(
 		ModuleEndpoint+"/:namespace/:name/:provider/versions",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ModuleController.Get(),
 	)
@@ -131,7 +158,7 @@ func (s *Server) Start() error {
 	// https://www.terraform.io/docs/internals/module-registry-protocol.html#download-source-code-for-a-specific-module-version
 	s.Router.GET(
 		ModuleEndpoint+"/:namespace/:name/:provider/:version/download",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ModuleController.GetVersion(),
 	)
@@ -139,7 +166,7 @@ func (s *Server) Start() error {
 	// Upload a new module version
 	s.Router.POST(
 		ModuleEndpoint+"/:namespace/:name/:provider/:version/upload",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ModuleController.Upload(),
 	)
@@ -147,7 +174,7 @@ func (s *Server) Start() error {
 	// Delete a module
 	s.Router.DELETE(
 		ModuleEndpoint+"/:namespace/:name/:provider/remove",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ModuleController.Delete(),
 	)
@@ -155,7 +182,7 @@ func (s *Server) Start() error {
 	// Delete a module version
 	s.Router.DELETE(
 		ModuleEndpoint+"/:namespace/:name/:provider/:version/remove",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ModuleController.DeleteVersion(),
 	)
@@ -164,7 +191,7 @@ func (s *Server) Start() error {
 	// https://www.terraform.io/docs/internals/provider-registry-protocol.html#list-available-versions
 	s.Router.GET(
 		ProviderEndpoint+"/:namespace/:name/versions",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ProviderController.Get(),
 	)
@@ -172,7 +199,7 @@ func (s *Server) Start() error {
 	// https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
 	s.Router.GET(
 		ProviderEndpoint+"/:namespace/:name/:version/download/:os/:arch",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ProviderController.GetVersion(),
 	)
@@ -180,7 +207,7 @@ func (s *Server) Start() error {
 	// Upload a new provider version
 	s.Router.POST(
 		ProviderEndpoint+"/:namespace/:name/:version/upload",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ProviderController.Upload(),
 	)
@@ -188,7 +215,7 @@ func (s *Server) Start() error {
 	// Delete a provider
 	s.Router.DELETE(
 		ProviderEndpoint+"/:namespace/:name/remove",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ProviderController.Delete(),
 	)
@@ -196,7 +223,7 @@ func (s *Server) Start() error {
 	// Delete a provider version
 	s.Router.DELETE(
 		ProviderEndpoint+"/:namespace/:name/:version/remove",
-		handlers.Authorize(),
+		handlers.Authorize(s.JWT),
 		handlers.AuditLogging(s.Logger),
 		s.ProviderController.DeleteVersion(),
 	)

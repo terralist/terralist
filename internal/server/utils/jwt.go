@@ -1,29 +1,32 @@
-package token
+package utils
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	_jwt "github.com/golang-jwt/jwt"
 	models "github.com/valentindeaconu/terralist/internal/server/models/oauth"
-	"github.com/valentindeaconu/terralist/settings"
 )
 
-var (
+type JWT struct {
+	Keychain *Keychain
+}
+
+const (
 	oneDay = 24 * time.Hour
 )
 
-func Generate(userDetails models.UserDetails) (string, error) {
+func (th *JWT) Generate(userDetails models.UserDetails) (string, error) {
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	token := _jwt.NewWithClaims(_jwt.SigningMethodHS256, _jwt.MapClaims{
 		"name":  userDetails.Name,
 		"email": userDetails.Email,
 		"exp":   time.Now().Add(oneDay).Unix(),
 	})
 
 	// Sign and get the complete encoded token as a string using the secret
-	tokenString, err := token.SignedString(settings.TokenSigningSecret)
+	tokenString, err := token.SignedString(th.Keychain.TokenSigningSecret)
 	if err != nil {
 		return "", fmt.Errorf("unable to generate token: %w", err)
 	}
@@ -31,25 +34,25 @@ func Generate(userDetails models.UserDetails) (string, error) {
 	return tokenString, nil
 }
 
-func Validate(t string) (models.UserDetails, error) {
+func (th *JWT) Validate(t string) (models.UserDetails, error) {
 	// Parse takes the token string and a function for looking up the key. The latter is especially
 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
 	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
 	// to the callback, providing flexibility.
-	token, err := jwt.Parse(t, func(token *jwt.Token) (interface{}, error) {
+	token, err := _jwt.Parse(t, func(token *_jwt.Token) (interface{}, error) {
 		// Don't forget to validate the alg is what you expect:
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if _, ok := token.Method.(*_jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
-		return settings.TokenSigningSecret, nil
+		return th.Keychain.TokenSigningSecret, nil
 	})
 
 	if err != nil {
 		return models.UserDetails{}, fmt.Errorf("unable to parse token: %w", err)
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
+	claims, ok := token.Claims.(_jwt.MapClaims)
 	if !ok {
 		return models.UserDetails{}, fmt.Errorf("unable to get claims from token")
 	}

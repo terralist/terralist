@@ -4,12 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/valentindeaconu/terralist/internal/server/mappers"
 	"github.com/valentindeaconu/terralist/internal/server/models/provider"
 	"github.com/valentindeaconu/terralist/internal/server/services"
 )
 
 type ProviderController struct {
 	ProviderService *services.ProviderService
+	ProviderMapper  *mappers.ProviderMapper
 }
 
 func (p *ProviderController) Get() func(c *gin.Context) {
@@ -28,7 +30,7 @@ func (p *ProviderController) Get() func(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusOK, provider.ToVersionListProvider())
+		c.JSON(http.StatusOK, p.ProviderMapper.ProviderToVersionListProviderDTO(provider))
 	}
 }
 
@@ -49,7 +51,7 @@ func (p *ProviderController) GetVersion() func(c *gin.Context) {
 			return
 		}
 
-		response, err := v.ToDownloadProvider(system, arch)
+		response, err := p.ProviderMapper.VersionToDownloadProviderDTO(v, system, arch)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -67,20 +69,20 @@ func (p *ProviderController) Upload() func(c *gin.Context) {
 		name := c.Param("name")
 		version := c.Param("version")
 
-		var providerVersion provider.CreateProviderDTO
+		var provider provider.CreateProviderDTO
 
-		if err := c.BindJSON(&providerVersion); err != nil {
+		if err := c.BindJSON(&provider); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"errors": []string{err.Error()},
 			})
 			return
 		}
 
-		providerVersion.Namespace = namespace
-		providerVersion.Name = name
-		providerVersion.Version = version
+		provider.Namespace = namespace
+		provider.Name = name
+		provider.Version = version
 
-		request := provider.FromCreateDTO(providerVersion)
+		request := p.ProviderMapper.CreateProviderDTOToProvider(provider)
 
 		if _, err := p.ProviderService.Upsert(request); err != nil {
 			c.JSON(http.StatusConflict, gin.H{

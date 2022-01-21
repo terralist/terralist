@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/internal/server/oauth/token"
+	"github.com/valentindeaconu/terralist/internal/server/utils"
 )
 
-func Authorize() gin.HandlerFunc {
+func Authorize(jwt *utils.JWT) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 
@@ -25,7 +25,7 @@ func Authorize() gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
-		userDetails, err := token.Validate(t)
+		userDetails, err := jwt.Validate(t)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
