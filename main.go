@@ -1,18 +1,35 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	ginlogrus "github.com/toorop/gin-logrus"
-	"github.com/valentindeaconu/terralist/database"
-	"github.com/valentindeaconu/terralist/oauth/provider"
-	"github.com/valentindeaconu/terralist/routes"
+	"github.com/spf13/viper"
+	"github.com/valentindeaconu/terralist/internal/cmd"
 )
 
+const terralistVersion = "0.1.0"
+
 func main() {
+	v := viper.New()
+
+	logger := logrus.New()
+
+	server := &cmd.ServerCmd{
+		ServerCreator: &cmd.DefaultServerCreator{},
+		Viper:         v,
+		Version:       terralistVersion,
+		Logger:        logger,
+	}
+
+	version := &cmd.VersionCmd{
+		Version: terralistVersion,
+	}
+
+	cmd.RootCmd.AddCommand(server.Init())
+	cmd.RootCmd.AddCommand(version.Init())
+	cmd.Execute()
+}
+
+/* func main() {
 	var isDebugMode bool
 	if level, isSet := os.LookupEnv("TERRALIST_LEVEL"); !isSet {
 		isDebugMode = true
@@ -68,4 +85,4 @@ func main() {
 	}
 
 	r.Run(fmt.Sprintf(":%s", port))
-}
+} */
