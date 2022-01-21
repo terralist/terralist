@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/valentindeaconu/terralist/oauth"
+	models "github.com/valentindeaconu/terralist/internal/server/models/oauth"
 	"github.com/valentindeaconu/terralist/settings"
 )
 
@@ -13,7 +13,7 @@ var (
 	oneDay = 24 * time.Hour
 )
 
-func Generate(userDetails oauth.UserDetails) (string, error) {
+func Generate(userDetails models.UserDetails) (string, error) {
 	// Create a new token object, specifying signing method and the claims
 	// you would like it to contain.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -31,7 +31,7 @@ func Generate(userDetails oauth.UserDetails) (string, error) {
 	return tokenString, nil
 }
 
-func Validate(t string) (oauth.UserDetails, error) {
+func Validate(t string) (models.UserDetails, error) {
 	// Parse takes the token string and a function for looking up the key. The latter is especially
 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
 	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
@@ -46,23 +46,23 @@ func Validate(t string) (oauth.UserDetails, error) {
 	})
 
 	if err != nil {
-		return oauth.UserDetails{}, fmt.Errorf("unable to parse token: %w", err)
+		return models.UserDetails{}, fmt.Errorf("unable to parse token: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return oauth.UserDetails{}, fmt.Errorf("unable to get claims from token")
+		return models.UserDetails{}, fmt.Errorf("unable to get claims from token")
 	}
 
 	if !token.Valid {
-		return oauth.UserDetails{}, fmt.Errorf("invalid token")
+		return models.UserDetails{}, fmt.Errorf("invalid token")
 	}
 
 	if time.Now().Unix() > int64(claims["exp"].(float64)) {
-		return oauth.UserDetails{}, fmt.Errorf("token expired")
+		return models.UserDetails{}, fmt.Errorf("token expired")
 	}
 
-	userDetails := oauth.UserDetails{
+	userDetails := models.UserDetails{
 		Name:  claims["name"].(string),
 		Email: claims["email"].(string),
 	}

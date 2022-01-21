@@ -1,4 +1,4 @@
-package providers
+package github
 
 import (
 	"encoding/json"
@@ -7,16 +7,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/valentindeaconu/terralist/oauth"
+	"github.com/valentindeaconu/terralist/internal/server/models/oauth"
 )
 
-var (
-	oauthEndpoint = "https://github.com/login/oauth"
-	apiEndpoint   = "https://api.github.com"
-	httpClient    = &http.Client{}
-)
-
-type GitHubOAuthProvider struct {
+// GithubProvider is the concrete implementation of oauth.Engine
+type GithubProvider struct {
 	ClientID     string
 	ClientSecret string
 	Organization string
@@ -26,15 +21,21 @@ type GitHubOAuthTokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func NewGitHubOAuthProvider(clientID string, clientSecret string, organization string) *GitHubOAuthProvider {
-	return &GitHubOAuthProvider{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		Organization: organization,
-	}
+var (
+	oauthEndpoint = "https://github.com/login/oauth"
+	apiEndpoint   = "https://api.github.com"
+	httpClient    = &http.Client{}
+)
+
+func NewProvider() (*GithubProvider, error) {
+	return &GithubProvider{
+		ClientID:     "",
+		ClientSecret: "",
+		Organization: "",
+	}, nil
 }
 
-func (m *GitHubOAuthProvider) GetAuthorizeUrl(state string) string {
+func (m *GithubProvider) GetAuthorizeUrl(state string) string {
 	scopes := []string{"read:user", "user:email"}
 
 	if m.Organization != "" {
@@ -52,7 +53,7 @@ func (m *GitHubOAuthProvider) GetAuthorizeUrl(state string) string {
 	)
 }
 
-func (m *GitHubOAuthProvider) GetUserDetails(code string, user *oauth.UserDetails) error {
+func (m *GithubProvider) GetUserDetails(code string, user *oauth.UserDetails) error {
 	var t GitHubOAuthTokenResponse
 	if err := m.PerformAccessTokenRequest(code, &t); err != nil {
 		return err
@@ -74,7 +75,7 @@ func (m *GitHubOAuthProvider) GetUserDetails(code string, user *oauth.UserDetail
 	return nil
 }
 
-func (m GitHubOAuthProvider) PerformAccessTokenRequest(code string, t *GitHubOAuthTokenResponse) error {
+func (m *GithubProvider) PerformAccessTokenRequest(code string, t *GitHubOAuthTokenResponse) error {
 	accessTokenUrl := fmt.Sprintf(
 		"%s/access_token?client_id=%s&client_secret=%s&code=%s",
 		oauthEndpoint,
@@ -103,7 +104,7 @@ func (m GitHubOAuthProvider) PerformAccessTokenRequest(code string, t *GitHubOAu
 	return nil
 }
 
-func (m GitHubOAuthProvider) PerformUserNameRequest(t GitHubOAuthTokenResponse) (string, error) {
+func (m *GithubProvider) PerformUserNameRequest(t GitHubOAuthTokenResponse) (string, error) {
 	userEndpoint := fmt.Sprintf("%s/user", apiEndpoint)
 
 	req, err := http.NewRequest(http.MethodGet, userEndpoint, nil)
@@ -132,7 +133,7 @@ func (m GitHubOAuthProvider) PerformUserNameRequest(t GitHubOAuthTokenResponse) 
 	return data["name"].(string), nil
 }
 
-func (m GitHubOAuthProvider) PerformUserEmailRequest(t GitHubOAuthTokenResponse) (string, error) {
+func (m *GithubProvider) PerformUserEmailRequest(t GitHubOAuthTokenResponse) (string, error) {
 	emailsEndpoint := fmt.Sprintf("%s/user/emails", apiEndpoint)
 
 	req, err := http.NewRequest(http.MethodGet, emailsEndpoint, nil)

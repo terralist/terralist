@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/oauth/token"
+	"github.com/valentindeaconu/terralist/internal/server/oauth/token"
 )
 
 func Authorize() gin.HandlerFunc {

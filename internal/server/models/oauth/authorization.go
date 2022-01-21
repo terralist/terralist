@@ -1,4 +1,4 @@
-package authorization
+package oauth
 
 import (
 	"encoding/base64"

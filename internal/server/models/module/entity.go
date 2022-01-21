@@ -2,7 +2,7 @@ package module
 
 import (
 	"github.com/google/uuid"
-	"github.com/valentindeaconu/terralist/models"
+	"github.com/valentindeaconu/terralist/internal/server/models"
 )
 
 // ORM
