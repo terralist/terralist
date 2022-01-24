@@ -54,17 +54,19 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	logger := logrus.New()
 
 	databaseCreator := database.DefaultDatabaseCreator{}
-	db, err := databaseCreator.NewDatabase(database.Sqlite)
+	db, err := databaseCreator.NewDatabase(userConfig.DatabaseBackend, userConfig.ToDatabaseConfig())
 	if err != nil {
 		return nil, err
 	}
 
 	providerCreator := oauth.DefaultProviderCreator{}
-	provider, err := providerCreator.NewProvider()
+
+	provider, err := providerCreator.NewProvider(userConfig.OAuthProvider, userConfig.ToOAuthProviderConfig())
 	if err != nil {
 		return nil, err
 	}
 
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(ginlogrus.Logger(logger), gin.Recovery())
 
@@ -76,7 +78,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		TerraformPorts:        TerraformPorts,
 	}
 
-	keychain := utils.NewKeychain()
+	keychain := utils.NewKeychain(userConfig.TokenSigningSecret)
 
 	jwt := &utils.JWT{
 		Keychain: keychain,

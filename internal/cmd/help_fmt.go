@@ -78,7 +78,7 @@ func usageTmpl(stringFlags map[string]stringFlag, intFlags map[string]intFlag, b
 
 			if len(f.choices) > 0 {
 				options := strings.Join(f.choices, ", ")
-				descripWithDefault += fmt.Sprintf(" Options: %s", options)
+				descripWithDefault += fmt.Sprintf(" Options: [%s]", options)
 			}
 
 			if f.defaultValue != "" {

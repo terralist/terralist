@@ -7,7 +7,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/valentindeaconu/terralist/internal/server/models/oauth"
+	models "github.com/valentindeaconu/terralist/internal/server/models/oauth"
+	"github.com/valentindeaconu/terralist/internal/server/oauth/config"
 )
 
 // GithubProvider is the concrete implementation of oauth.Engine
@@ -27,11 +28,11 @@ var (
 	httpClient    = &http.Client{}
 )
 
-func NewProvider() (*GithubProvider, error) {
+func NewProvider(config config.OAuthConfig) (*GithubProvider, error) {
 	return &GithubProvider{
-		ClientID:     "",
-		ClientSecret: "",
-		Organization: "",
+		ClientID:     config["GitHubClientID"].(string),
+		ClientSecret: config["GitHubClientSecret"].(string),
+		Organization: config["GitHubOrganization"].(string),
 	}, nil
 }
 
@@ -53,7 +54,7 @@ func (m *GithubProvider) GetAuthorizeUrl(state string) string {
 	)
 }
 
-func (m *GithubProvider) GetUserDetails(code string, user *oauth.UserDetails) error {
+func (m *GithubProvider) GetUserDetails(code string, user *models.UserDetails) error {
 	var t GitHubOAuthTokenResponse
 	if err := m.PerformAccessTokenRequest(code, &t); err != nil {
 		return err

@@ -3,6 +3,7 @@ package sqlite
 import (
 	"sync"
 
+	"github.com/valentindeaconu/terralist/internal/server/database/config"
 	"github.com/valentindeaconu/terralist/internal/server/models/module"
 	"github.com/valentindeaconu/terralist/internal/server/models/provider"
 	"gorm.io/driver/sqlite"
@@ -22,7 +23,7 @@ var (
 	lock = &sync.Mutex{}
 )
 
-func NewDatabase() (*SqliteDatabase, error) {
+func NewDatabase(config config.DatabaseConfig) (*SqliteDatabase, error) {
 	lock.Lock()
 	defer lock.Unlock()
 

@@ -16,15 +16,21 @@ type Keychain struct {
 }
 
 // NewKeychain creates and initializez a Keychain instance
-func NewKeychain() *Keychain {
+func NewKeychain(tokenSigningSecret string) *Keychain {
 	encryptSalt := generateRandomString()
 	codeExchangeKey := generateRandomString()
-	tokenSigningSecret := generateRandomString()
+
+	var tokenSigningSecretByteArray []byte
+	if tokenSigningSecret == "" {
+		tokenSigningSecretByteArray = generateRandomString()
+	} else {
+		tokenSigningSecretByteArray = []byte(tokenSigningSecret)
+	}
 
 	return &Keychain{
 		EncryptSalt:        string(encryptSalt),
 		CodeExchangeKey:    string(codeExchangeKey),
-		TokenSigningSecret: tokenSigningSecret,
+		TokenSigningSecret: tokenSigningSecretByteArray,
 	}
 }
 

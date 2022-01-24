@@ -13,25 +13,33 @@ import (
 )
 
 const (
-	ConfigFlag = "config"
+	ConfigFlag          = "config"
+	DatabaseBackendFlag = "database-backend"
 
 	// GitHub OAuth Flags
 	GitHubClientIDFlag     = "gh-client-id"
 	GitHubClientSecretFlag = "gh-client-secret"
 	GitHubOrganizationFlag = "gh-organization"
 
-	LogLevelFlag      = "log-level"
-	OAuthProviderFlag = "oauth-provider"
-	PortFlag          = "port"
+	LogLevelFlag           = "log-level"
+	OAuthProviderFlag      = "oauth-provider"
+	PortFlag               = "port"
+	TokenSigningSecretFlag = "token-signing-secret"
 
 	// Defaults
-	DefaultPort     = 5758
-	DefaultLogLevel = "info"
+	DefaultDatabaseBackend = "sqlite"
+	DefaultLogLevel        = "info"
+	DefaultPort            = 5758
 )
 
 var stringFlags = map[string]stringFlag{
 	ConfigFlag: {
 		description: "Path to YAML config file where flag values are set.",
+	},
+	DatabaseBackendFlag: {
+		description:  "The database backend.",
+		choices:      []string{"sqlite"},
+		defaultValue: DefaultDatabaseBackend,
 	},
 	GitHubClientIDFlag: {
 		description:  "The GitHub OAuth Application client ID.",
@@ -53,6 +61,10 @@ var stringFlags = map[string]stringFlag{
 	OAuthProviderFlag: {
 		description:  "The OAuth 2.0 provider.",
 		choices:      []string{"github"},
+		defaultValue: "",
+	},
+	TokenSigningSecretFlag: {
+		description:  "The secret to use when signing authorization tokens.",
 		defaultValue: "",
 	},
 }
@@ -147,7 +159,7 @@ func (s *ServerCmd) Init() *cobra.Command {
 
 		if len(f.choices) > 0 {
 			validOptions := strings.Join(f.choices, ", ")
-			usage = fmt.Sprintf("%s Options: %s.", usage, validOptions)
+			usage = fmt.Sprintf("%s Options: [%s].", usage, validOptions)
 		}
 
 		if f.defaultValue != "" {
@@ -245,6 +257,10 @@ func (s *ServerCmd) setDefaults(c *server.UserConfig) {
 	if c.LogLevel == "" {
 		c.LogLevel = DefaultLogLevel
 	}
+
+	if c.DatabaseBackend == "" {
+		c.DatabaseBackend = DefaultDatabaseBackend
+	}
 }
 
 func (s *ServerCmd) validate(userConfig server.UserConfig) error {
@@ -270,7 +286,11 @@ func (s *ServerCmd) securityWarnings(userConfig *server.UserConfig) {
 	}
 
 	if userConfig.OAuthProvider == "github" && userConfig.GitHubOrganization == "" {
-		s.Logger.Warn("no github organization is set, so every request from a github authenticated user will pass")
+		s.Logger.Warn("no github organization is set. Every request from a github authenticated user will pass")
+	}
+
+	if userConfig.TokenSigningSecret == "" {
+		s.Logger.Warn("no token signing secret was provided. Tokens will be signed with an randomly generated secret which will be lost when the process exits.")
 	}
 }
 
