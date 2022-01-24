@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/valentindeaconu/terralist/internal/server/mappers"
@@ -34,9 +35,15 @@ func (l *LoginController) Authorize() func(c *gin.Context) {
 		state, err := l.OAuthMapper.AuthorizationRequestToPayload(request)
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": []string{err.Error()},
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					request.State,
+					models.ServerError,
+					err.Error(),
+				),
+			)
 			return
 		}
 
@@ -57,17 +64,30 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 		request, err := l.OAuthMapper.PayloadToAuthorizationRequest(state)
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					request.State,
+					models.InvalidRequest,
+					err.Error(),
+				),
+			)
 			return
 		}
 
 		var userDetails models.UserDetails
 		if err := l.Provider.GetUserDetails(code, &userDetails); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					request.State,
+					models.AccessDenied,
+					err.Error(),
+				),
+			)
+			return
 		}
 
 		codeComponents := models.AuthorizationCodeComponents{
@@ -80,9 +100,15 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 
 		payload, err := l.OAuthMapper.AuthorizationCodeComponentsToPayload(codeComponents)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					request.State,
+					models.InvalidRequest,
+					err.Error(),
+				),
+			)
 			return
 		}
 
@@ -102,31 +128,55 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var request models.OAuthTokenValidationRequest
 		if err := c.Bind(&request); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					"",
+					models.InvalidRequest,
+					err.Error(),
+				),
+			)
 			return
 		}
 
 		if request.GrantType != "authorization_code" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"errors": "requested grant type is not supported",
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					"",
+					models.AccessDenied,
+					"requested grant type is not supported",
+				),
+			)
 		}
 
 		codeComponents, err := l.OAuthMapper.PayloadToAuthorizationCodeComponents(request.Code)
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					"",
+					models.InvalidRequest,
+					err.Error(),
+				),
+			)
 			return
 		}
 
 		if codeComponents.CodeChallengeMethod != "S256" {
-			c.JSON(http.StatusUnprocessableEntity, gin.H{
-				"errors": "code challenge method unsupported",
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					"",
+					models.UnsupportedResponseType,
+					"code challenge method unsupported",
+				),
+			)
 			return
 		}
 
@@ -134,9 +184,15 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 		codeVerifierDecoded := base64.RawURLEncoding.EncodeToString(codeVerifierHash[:])
 
 		if string(codeVerifierDecoded) != codeComponents.CodeChallenge {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": "code verification failed",
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					"",
+					models.InvalidRequest,
+					"code verification failed",
+				),
+			)
 			return
 		}
 
@@ -146,9 +202,15 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 		})
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"errors": err.Error(),
-			})
+			c.Redirect(
+				http.StatusFound,
+				l.getUrlForRedirectWithError(
+					request.RedirectUri,
+					"",
+					models.InvalidRequest,
+					err.Error(),
+				),
+			)
 
 			return
 		}
@@ -160,4 +222,19 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 			"expires_in":    0,
 		})
 	}
+}
+
+func (l *LoginController) getUrlForRedirectWithError(redirectUri string, state string, oauthError models.OAuthError, description string) string {
+	stateQuery := ""
+	if state != "" {
+		stateQuery = fmt.Sprintf("&state=%s", state)
+	}
+
+	return fmt.Sprintf(
+		"%s?error=%s&error_description=%s%s",
+		redirectUri,
+		oauthError,
+		url.QueryEscape(description),
+		stateQuery,
+	)
 }
