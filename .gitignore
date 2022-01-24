@@ -26,4 +26,4 @@ tests/
 tests/**
 
 # Config files
-/*.yaml
+config.yaml
