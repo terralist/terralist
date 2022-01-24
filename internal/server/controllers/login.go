@@ -86,7 +86,15 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 			return
 		}
 
-		c.Redirect(http.StatusFound, fmt.Sprintf("%s?state=%s&code=%s", request.RedirectUri, request.State, payload))
+		c.Redirect(
+			http.StatusFound,
+			fmt.Sprintf(
+				"%s?state=%s&code=%s",
+				request.RedirectUri,
+				request.State,
+				payload,
+			),
+		)
 	}
 }
 

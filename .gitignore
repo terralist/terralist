@@ -24,3 +24,6 @@
 # Development tests
 tests/
 tests/**
+
+# Config files
+/*.yaml

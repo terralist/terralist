@@ -70,6 +70,12 @@ func (m *GithubProvider) GetUserDetails(code string, user *models.UserDetails) e
 		return err
 	}
 
+	if m.Organization != "" {
+		if err := m.PerformCheckUserMemberInOrganization(t); err != nil {
+			return err
+		}
+	}
+
 	user.Name = name
 	user.Email = email
 
@@ -172,4 +178,28 @@ func (m *GithubProvider) PerformUserEmailRequest(t GitHubOAuthTokenResponse) (st
 	}
 
 	return verifiedEmail, nil
+}
+
+func (m *GithubProvider) PerformCheckUserMemberInOrganization(t GitHubOAuthTokenResponse) error {
+	orgEndpoint := fmt.Sprintf("%s/user/memberships/orgs/%s", apiEndpoint, m.Organization)
+
+	req, err := http.NewRequest(http.MethodGet, orgEndpoint, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", t.AccessToken))
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("user is not a member in %s organization", m.Organization)
+	}
+
+	return nil
 }
