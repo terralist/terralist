@@ -27,7 +27,10 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 
 	dsn := cfg.DSN()
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{})
 
 	if err != nil {
 		return nil, err

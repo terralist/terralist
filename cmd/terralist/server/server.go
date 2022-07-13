@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"strings"
-	"terralist/pkg/database/mysql"
 	"terralist/pkg/database/postgresql"
 
 	"terralist/internal/server"
@@ -173,15 +172,6 @@ func (s *Command) run() error {
 	case "sqlite":
 		db, err = dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{
 			Path: flags[SQLitePathFlag].(*cli.StringFlag).Value,
-		})
-	case "mysql":
-		db, err = dbFactory.NewDatabase(database.MYSQL, &mysql.Config{
-			URL:      flags[MySQLURLFlag].(*cli.StringFlag).Value,
-			Username: flags[MySQLUsernameFlag].(*cli.StringFlag).Value,
-			Password: flags[MySQLPasswordFlag].(*cli.StringFlag).Value,
-			Hostname: flags[MySQLHostFlag].(*cli.StringFlag).Value,
-			Port:     flags[MySQLPortFlag].(*cli.IntFlag).Value,
-			Name:     flags[MySQLDatabaseFlag].(*cli.StringFlag).Value,
 		})
 	case "postgresql":
 		db, err = dbFactory.NewDatabase(database.POSTGRESQL, &postgresql.Config{

@@ -3,7 +3,6 @@ package factory
 import (
 	"fmt"
 	"terralist/pkg/database"
-	"terralist/pkg/database/mysql"
 	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
 )
@@ -21,8 +20,6 @@ func NewDatabase(backend database.Backend, config database.Configurator) (databa
 	switch backend {
 	case database.SQLITE:
 		creator = &sqlite.Creator{}
-	case database.MYSQL:
-		creator = &mysql.Creator{}
 	case database.POSTGRESQL:
 		creator = &postgresql.Creator{}
 	default:
