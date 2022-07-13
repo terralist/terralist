@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/internal/server/utils"
 )
 
-func Authorize(jwt *utils.JWT) gin.HandlerFunc {
+func Authorize(jwt jwt.JWT) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 
@@ -25,7 +25,7 @@ func Authorize(jwt *utils.JWT) gin.HandlerFunc {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
 
-		userDetails, err := jwt.Validate(t)
+		userDetails, err := jwt.Extract(t)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
 		}
