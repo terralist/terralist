@@ -2,17 +2,18 @@ package provider
 
 import (
 	"fmt"
+	"strings"
 
 	"terralist/pkg/database/entity"
-	"terralist/pkg/database/types/array"
-	"terralist/pkg/database/types/uuid"
+
+	"github.com/google/uuid"
 )
 
 type Version struct {
 	entity.Entity
-	ProviderID uuid.ID           `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Version    string            `gorm:"not null"`
-	Protocols  array.StringArray `gorm:"not null"`
+	ProviderID uuid.UUID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Version    string    `gorm:"not null"`
+	Protocols  string    `gorm:"not null"`
 	Platforms  []Platform
 }
 
@@ -28,7 +29,7 @@ func (v Version) ToVersionListVersionDTO() VersionListVersionDTO {
 
 	return VersionListVersionDTO{
 		Version:   v.Version,
-		Protocols: v.Protocols,
+		Protocols: strings.Split(v.Protocols, ","),
 		Platforms: platforms,
 	}
 }
@@ -52,7 +53,7 @@ func (v Version) ToDownloadProviderDTO(system string, architecture string) (Down
 			out.ShaSumsUrl = platform.ShaSumsUrl
 			out.ShaSumsSignatureUrl = platform.ShaSumsSignatureUrl
 			out.ShaSum = platform.ShaSum
-			out.Protocols = v.Protocols
+			out.Protocols = strings.Split(v.Protocols, ",")
 
 			var signingKeys []GpgPublicKeyDTO
 			for _, signingKey := range platform.SigningKeys {

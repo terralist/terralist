@@ -2,16 +2,17 @@ package module
 
 import (
 	"terralist/pkg/database/entity"
-	"terralist/pkg/database/types/uuid"
+
+	"github.com/google/uuid"
 )
 
 type Provider struct {
 	entity.Entity
-	ParentID  uuid.ID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Name      string  `gorm:"not null"`
-	Namespace string  `gorm:"not null"`
-	Source    string  `gorm:"not null"`
-	Version   string  `gorm:"not null"`
+	ParentID  uuid.UUID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Name      string    `gorm:"not null"`
+	Namespace string    `gorm:"not null"`
+	Source    string    `gorm:"not null"`
+	Version   string    `gorm:"not null"`
 }
 
 func (Provider) TableName() string {

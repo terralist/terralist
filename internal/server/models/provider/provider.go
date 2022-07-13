@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"strings"
 	"terralist/pkg/database/entity"
 )
 
@@ -46,7 +47,7 @@ func (d CreateProviderDTO) ToProvider() Provider {
 		Versions: []Version{
 			{
 				Version:   d.Version,
-				Protocols: d.Protocols,
+				Protocols: strings.Join(d.Protocols, ","),
 				Platforms: platforms,
 			},
 		},

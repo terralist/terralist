@@ -2,12 +2,13 @@ package module
 
 import (
 	"terralist/pkg/database/entity"
-	"terralist/pkg/database/types/uuid"
+
+	"github.com/google/uuid"
 )
 
 type Version struct {
 	entity.Entity
-	ModuleID     uuid.ID      `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ModuleID     uuid.UUID    `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Version      string       `gorm:"not null"`
 	Location     string       `gorm:"not null"`
 	Providers    []Provider   `gorm:"foreignKey:ParentID;references:ID"`

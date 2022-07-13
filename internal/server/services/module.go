@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
 )

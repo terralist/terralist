@@ -2,17 +2,18 @@ package provider
 
 import (
 	"terralist/pkg/database/entity"
-	"terralist/pkg/database/types/uuid"
+
+	"github.com/google/uuid"
 )
 
 type GpgPublicKey struct {
 	entity.Entity
-	PlatformID     uuid.ID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	KeyId          string  `gorm:"not null"`
-	AsciiArmor     string  `gorm:"not null"`
-	TrustSignature string  `gorm:"not null"`
-	Source         string  `gorm:"not null"`
-	SourceUrl      string  `gorm:"not null"`
+	PlatformID     uuid.UUID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	KeyId          string    `gorm:"not null"`
+	AsciiArmor     string    `gorm:"not null"`
+	TrustSignature string    `gorm:"not null"`
+	Source         string    `gorm:"not null"`
+	SourceUrl      string    `gorm:"not null"`
 }
 
 func (GpgPublicKey) TableName() string {
