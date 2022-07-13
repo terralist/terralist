@@ -1,0 +1,1 @@
+web: bin/terralist server --config config.yaml
