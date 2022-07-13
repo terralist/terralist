@@ -64,8 +64,8 @@ func (s *ModuleService) Upsert(new module.Module) (module.Module, error) {
 
 		existing.Versions = append(existing.Versions, new.Versions[0])
 
-		if result := s.Database.Handler().Save(&existing); result.Error != nil {
-			return module.Module{}, result.Error
+		if err := s.Database.Handler().Save(&existing).Error; err != nil {
+			return module.Module{}, err
 		}
 
 		return existing, nil

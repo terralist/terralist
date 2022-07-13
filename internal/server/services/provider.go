@@ -18,6 +18,8 @@ func (s *ProviderService) Find(namespace string, name string) (provider.Provider
 		Name:      name,
 		Namespace: namespace,
 	}).
+		Preload("Versions").
+		Preload("Versions.Platforms").
 		Preload("Versions.Platforms.SigningKeys").
 		Find(&p).
 		Error; err != nil {
@@ -57,7 +59,7 @@ func (s *ProviderService) Upsert(new provider.Provider) (provider.Provider, erro
 
 		existing.Versions = append(existing.Versions, new.Versions[0])
 
-		if result := s.Database.Handler().Save(&existing); result.Error != nil {
+		if err := s.Database.Handler().Save(&existing).Error; err != nil {
 			return provider.Provider{}, err
 		}
 
@@ -78,8 +80,8 @@ func (s *ProviderService) Delete(namespace string, name string) error {
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
 	}
 
-	if result := s.Database.Handler().Delete(&p); result.Error != nil {
-		return result.Error
+	if err := s.Database.Handler().Delete(&p).Error; err != nil {
+		return err
 	}
 
 	return nil
@@ -92,17 +94,18 @@ func (s *ProviderService) DeleteVersion(namespace string, name string, version s
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
 	}
 
-	q := false
+	f := false
 	for idx, ver := range p.Versions {
 		if ver.Version == version {
 			p.Versions = append(p.Versions[:idx], p.Versions[idx+1:]...)
-			q = true
+			f = true
+			break
 		}
 	}
 
-	if q {
-		if result := s.Database.Handler().Delete(&p); result.Error != nil {
-			return result.Error
+	if f {
+		if err := s.Database.Handler().Delete(&p).Error; err != nil {
+			return err
 		}
 	}
 
