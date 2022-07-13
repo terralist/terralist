@@ -6,8 +6,10 @@ import (
 
 	"terralist/pkg/database"
 
+	gormzerolog "github.com/mpalmer/gorm-zerolog"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Creator struct{}
@@ -28,9 +30,10 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	dsn := cfg.DSN()
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true,
-	}), &gorm.Config{})
+		DSN: dsn,
+	}), &gorm.Config{
+		Logger: (gormzerolog.Logger{}).LogMode(logger.Info),
+	})
 
 	if err != nil {
 		return nil, err
