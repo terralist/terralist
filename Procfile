@@ -1,1 +1,1 @@
-web: bin/terralist server --config config.yaml
+web: bin/terralist server
