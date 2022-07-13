@@ -8,6 +8,9 @@ from subprocess import check_output, run
 from datetime import datetime
 import os
 
+SCRIPT_HOME = os.path.dirname(os.path.realpath(__file__))
+PROJECT_HOME = os.path.abspath(os.path.join(SCRIPT_HOME, ".."))
+
 BANNER="""
   _____                   _ _     _     ____        _ _     _           
  |_   _|__ _ __ _ __ __ _| (_)___| |_  | __ ) _   _(_) | __| | ___ _ __ 
@@ -25,11 +28,10 @@ if __name__ == "__main__":
 
   mode = sys.argv[1]
 
-  if mode == "release":
-    tag = check_output(["git", "describe", "--tags", "--always", "--abbrev=0", "--match='v[0-9]*.[0-9]*.[0-9]*'"]).decode('utf-8').strip()
-    version = f"{tag}-dev"
-  elif mode == "debug":
-    version = "dev-debug"
+  branch = check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).decode('utf-8').strip()
+  version = f"{branch}-dev"
+  if mode == "debug":
+    version = f"{version}-debug"
   
   print (f"Version: {version}")
 
@@ -53,14 +55,16 @@ if __name__ == "__main__":
   print ("Strating the build process...")
   print ("")
 
+  binary_file_name = f"terralist{'.exe' if os.name == 'nt' else ''}"
+
   run(
     [
       "go", 
       "build", 
-      f'-o=terralist{".exe" if os.name == "nt" else ""}', 
+      f'-o={os.path.join(PROJECT_HOME, binary_file_name)}', 
       "-v", 
       f'-ldflags={flags}', 
-      "cmd/terralist/main.go"
+      os.path.join(PROJECT_HOME, "cmd", "terralist", "main.go")
     ],
     stdin=sys.stdin,
     stdout=sys.stdout,
