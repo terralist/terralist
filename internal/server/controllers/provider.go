@@ -3,15 +3,14 @@ package controllers
 import (
 	"net/http"
 
+	"terralist/internal/server/models/provider"
+	"terralist/internal/server/services"
+
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/internal/server/mappers"
-	"github.com/valentindeaconu/terralist/internal/server/models/provider"
-	"github.com/valentindeaconu/terralist/internal/server/services"
 )
 
 type ProviderController struct {
 	ProviderService *services.ProviderService
-	ProviderMapper  *mappers.ProviderMapper
 }
 
 func (p *ProviderController) Get() func(c *gin.Context) {
@@ -19,7 +18,7 @@ func (p *ProviderController) Get() func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		name := c.Param("name")
 
-		provider, err := p.ProviderService.Find(namespace, name)
+		prov, err := p.ProviderService.Find(namespace, name)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -30,7 +29,7 @@ func (p *ProviderController) Get() func(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusOK, p.ProviderMapper.ProviderToVersionListProviderDTO(provider))
+		c.JSON(http.StatusOK, prov.ToVersionListProviderDTO())
 	}
 }
 
@@ -51,7 +50,7 @@ func (p *ProviderController) GetVersion() func(c *gin.Context) {
 			return
 		}
 
-		response, err := p.ProviderMapper.VersionToDownloadProviderDTO(v, system, arch)
+		response, err := v.ToDownloadProviderDTO(system, arch)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -69,22 +68,22 @@ func (p *ProviderController) Upload() func(c *gin.Context) {
 		name := c.Param("name")
 		version := c.Param("version")
 
-		var provider provider.CreateProviderDTO
+		var body provider.CreateProviderDTO
 
-		if err := c.BindJSON(&provider); err != nil {
+		if err := c.BindJSON(&body); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"errors": []string{err.Error()},
 			})
 			return
 		}
 
-		provider.Namespace = namespace
-		provider.Name = name
-		provider.Version = version
+		body.Namespace = namespace
+		body.Name = name
+		body.Version = version
 
-		request := p.ProviderMapper.CreateProviderDTOToProvider(provider)
+		prov := body.ToProvider()
 
-		if _, err := p.ProviderService.Upsert(request); err != nil {
+		if _, err := p.ProviderService.Upsert(prov); err != nil {
 			c.JSON(http.StatusConflict, gin.H{
 				"errors": []string{err.Error()},
 			})

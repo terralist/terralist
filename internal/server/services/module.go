@@ -2,19 +2,18 @@ package services
 
 import (
 	"fmt"
-
-	"github.com/valentindeaconu/terralist/internal/server/database"
-	models "github.com/valentindeaconu/terralist/internal/server/models/module"
+	"terralist/internal/server/models/module"
+	"terralist/pkg/database"
 )
 
 type ModuleService struct {
 	Database database.Engine
 }
 
-func (m *ModuleService) Find(namespace string, name string, provider string) (models.Module, error) {
-	module := models.Module{}
+func (s *ModuleService) Find(namespace string, name string, provider string) (module.Module, error) {
+	m := module.Module{}
 
-	h := m.Database.Handler().Where(models.Module{
+	err := s.Database.Handler().Where(module.Module{
 		Namespace: namespace,
 		Name:      name,
 		Provider:  provider,
@@ -24,91 +23,92 @@ func (m *ModuleService) Find(namespace string, name string, provider string) (mo
 		Preload("Versions.Submodules").
 		Preload("Versions.Submodules.Providers").
 		Preload("Versions.Submodules.Dependencies").
-		Find(&module)
-
-	if h.Error != nil {
-		return module, fmt.Errorf("no module found with given arguments (source %s/%s/%s)", namespace, name, provider)
-	}
-
-	return module, nil
-}
-
-func (m *ModuleService) FindVersion(namespace string, name string, provider string, version string) (models.Version, error) {
-	module, err := m.Find(namespace, name, provider)
+		Find(&m).
+		Error
 
 	if err != nil {
-		return models.Version{}, err
+		return m, fmt.Errorf("no module found with given arguments (source %s/%s/%s)", namespace, name, provider)
 	}
 
-	for _, v := range module.Versions {
+	return m, nil
+}
+
+func (s *ModuleService) FindVersion(namespace string, name string, provider string, version string) (module.Version, error) {
+	m, err := s.Find(namespace, name, provider)
+
+	if err != nil {
+		return module.Version{}, err
+	}
+
+	for _, v := range m.Versions {
 		if v.Version == version {
 			return v, nil
 		}
 	}
 
-	return models.Version{}, fmt.Errorf("no version found")
+	return module.Version{}, fmt.Errorf("no version found")
 }
 
-func (m *ModuleService) Upsert(new models.Module) (models.Module, error) {
-	existing, err := m.Find(new.Namespace, new.Name, new.Provider)
+func (s *ModuleService) Upsert(new module.Module) (module.Module, error) {
+	existing, err := s.Find(new.Namespace, new.Name, new.Provider)
 
 	if err == nil {
 		newVersion := new.Versions[0].Version
 
 		for _, version := range existing.Versions {
 			if version.Version == newVersion {
-				return models.Module{}, fmt.Errorf("version %s already exists", newVersion)
+				return module.Module{}, fmt.Errorf("version %s already exists", newVersion)
 			}
 		}
 
 		existing.Versions = append(existing.Versions, new.Versions[0])
 
-		if result := m.Database.Handler().Save(&existing); result.Error != nil {
-			return models.Module{}, result.Error
+		if result := s.Database.Handler().Save(&existing); result.Error != nil {
+			return module.Module{}, result.Error
 		}
 
 		return existing, nil
 	}
 
-	if result := m.Database.Handler().Create(&new); result.Error != nil {
-		return models.Module{}, result.Error
+	if result := s.Database.Handler().Create(&new); result.Error != nil {
+		return module.Module{}, result.Error
 	}
 
 	return new, nil
 }
 
-func (m *ModuleService) Delete(namespace string, name string, provider string) error {
-	module, err := m.Find(namespace, name, provider)
+func (s *ModuleService) Delete(namespace string, name string, provider string) error {
+	m, err := s.Find(namespace, name, provider)
 
 	if err == nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
 	}
 
-	if result := m.Database.Handler().Delete(&module); result.Error != nil {
-		return result.Error
+	if err := s.Database.Handler().Delete(&m).Error; err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (m *ModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
-	module, err := m.Find(namespace, name, provider)
+func (s *ModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
+	m, err := s.Find(namespace, name, provider)
 
 	if err == nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
 	}
 
 	q := false
-	for idx, ver := range module.Versions {
+	for idx, ver := range m.Versions {
 		if ver.Version == version {
-			module.Versions = append(module.Versions[:idx], module.Versions[idx+1:]...)
+			m.Versions = append(m.Versions[:idx], m.Versions[idx+1:]...)
 			q = true
 		}
 	}
 
 	if q {
-		if result := m.Database.Handler().Save(&m); result.Error != nil {
-			return result.Error
+		if err := s.Database.Handler().Save(&s).Error; err != nil {
+			return err
 		}
 	}
 

@@ -1,0 +1,7 @@
+# Example configuration YAML file
+
+log-level: "debug"
+oauth-provider: "github" 
+gh-client-id: "<<YOUR_CLIENT_ID>>" 
+gh-client-secret: "<<YOUR_CLIENT_SECRET>>"
+token-signing-secret: "<<ANY_RANDOM_STRING_SECRET>>"

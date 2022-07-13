@@ -7,23 +7,24 @@ import (
 	"net/http"
 	"net/url"
 
+	"terralist/internal/server/models/oauth"
+	"terralist/pkg/auth"
+	"terralist/pkg/auth/jwt"
+
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/internal/server/mappers"
-	models "github.com/valentindeaconu/terralist/internal/server/models/oauth"
-	"github.com/valentindeaconu/terralist/internal/server/oauth"
-	"github.com/valentindeaconu/terralist/internal/server/utils"
 )
 
 type LoginController struct {
-	Provider    oauth.Engine
-	OAuthMapper *mappers.OAuthMapper
-	Keychain    *utils.Keychain
-	JWT         *utils.JWT
+	Provider auth.Provider
+	JWT      jwt.JWT
+
+	EncryptSalt     string
+	CodeExchangeKey string
 }
 
 func (l *LoginController) Authorize() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		request := models.AuthorizationRequest{
+		request := oauth.Request{
 			ClientID:            c.Query("client_id"),
 			CodeChallenge:       c.Query("code_challenge"),
 			CodeChallengeMethod: c.Query("code_challenge_method"),
@@ -32,7 +33,7 @@ func (l *LoginController) Authorize() func(c *gin.Context) {
 			State:               c.Query("state"),
 		}
 
-		state, err := l.OAuthMapper.AuthorizationRequestToPayload(request)
+		state, err := request.ToPayload(l.EncryptSalt)
 
 		if err != nil {
 			c.Redirect(
@@ -40,18 +41,18 @@ func (l *LoginController) Authorize() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					request.State,
-					models.ServerError,
+					oauth.ServerError,
 					err.Error(),
 				),
 			)
 			return
 		}
 
-		url := l.Provider.GetAuthorizeUrl(state)
+		authorizeURL := l.Provider.GetAuthorizeUrl(state.String())
 
 		c.Redirect(
 			http.StatusFound,
-			url,
+			authorizeURL,
 		)
 	}
 }
@@ -61,7 +62,7 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 		code := c.Query("code")
 		state := c.Query("state")
 
-		request, err := l.OAuthMapper.PayloadToAuthorizationRequest(state)
+		request, err := oauth.Payload(state).ToRequest(l.EncryptSalt)
 
 		if err != nil {
 			c.Redirect(
@@ -69,43 +70,43 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					request.State,
-					models.InvalidRequest,
+					oauth.InvalidRequest,
 					err.Error(),
 				),
 			)
 			return
 		}
 
-		var userDetails models.UserDetails
+		var userDetails auth.User
 		if err := l.Provider.GetUserDetails(code, &userDetails); err != nil {
 			c.Redirect(
 				http.StatusFound,
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					request.State,
-					models.AccessDenied,
+					oauth.AccessDenied,
 					err.Error(),
 				),
 			)
 			return
 		}
 
-		codeComponents := models.AuthorizationCodeComponents{
-			Key:                 l.Keychain.CodeExchangeKey,
+		codeComponents := oauth.CodeComponents{
+			Key:                 l.CodeExchangeKey,
 			CodeChallenge:       request.CodeChallenge,
 			CodeChallengeMethod: request.CodeChallengeMethod,
 			UserName:            userDetails.Name,
 			UserEmail:           userDetails.Email,
 		}
 
-		payload, err := l.OAuthMapper.AuthorizationCodeComponentsToPayload(codeComponents)
+		payload, err := codeComponents.ToPayload(l.EncryptSalt)
 		if err != nil {
 			c.Redirect(
 				http.StatusFound,
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					request.State,
-					models.InvalidRequest,
+					oauth.InvalidRequest,
 					err.Error(),
 				),
 			)
@@ -126,14 +127,14 @@ func (l *LoginController) Redirect() func(c *gin.Context) {
 
 func (l *LoginController) TokenValidate() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		var request models.OAuthTokenValidationRequest
+		var request oauth.TokenValidationRequest
 		if err := c.Bind(&request); err != nil {
 			c.Redirect(
 				http.StatusFound,
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					"",
-					models.InvalidRequest,
+					oauth.InvalidRequest,
 					err.Error(),
 				),
 			)
@@ -146,13 +147,13 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					"",
-					models.AccessDenied,
+					oauth.AccessDenied,
 					"requested grant type is not supported",
 				),
 			)
 		}
 
-		codeComponents, err := l.OAuthMapper.PayloadToAuthorizationCodeComponents(request.Code)
+		codeComponents, err := oauth.Payload(request.Code).ToCodeComponents(l.EncryptSalt)
 
 		if err != nil {
 			c.Redirect(
@@ -160,7 +161,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					"",
-					models.InvalidRequest,
+					oauth.InvalidRequest,
 					err.Error(),
 				),
 			)
@@ -173,7 +174,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					"",
-					models.UnsupportedResponseType,
+					oauth.UnsupportedResponseType,
 					"code challenge method unsupported",
 				),
 			)
@@ -189,14 +190,14 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					"",
-					models.InvalidRequest,
+					oauth.InvalidRequest,
 					"code verification failed",
 				),
 			)
 			return
 		}
 
-		t, err := l.JWT.Generate(models.UserDetails{
+		t, err := l.JWT.Build(auth.User{
 			Name:  codeComponents.UserName,
 			Email: codeComponents.UserEmail,
 		})
@@ -207,7 +208,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 				l.getUrlForRedirectWithError(
 					request.RedirectUri,
 					"",
-					models.InvalidRequest,
+					oauth.InvalidRequest,
 					err.Error(),
 				),
 			)
@@ -224,7 +225,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 	}
 }
 
-func (l *LoginController) getUrlForRedirectWithError(redirectUri string, state string, oauthError models.OAuthError, description string) string {
+func (l *LoginController) getUrlForRedirectWithError(redirectUri string, state string, oauthError oauth.Error, description string) string {
 	stateQuery := ""
 	if state != "" {
 		stateQuery = fmt.Sprintf("&state=%s", state)

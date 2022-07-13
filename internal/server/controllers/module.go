@@ -3,15 +3,14 @@ package controllers
 import (
 	"net/http"
 
+	"terralist/internal/server/models/module"
+	"terralist/internal/server/services"
+
 	"github.com/gin-gonic/gin"
-	"github.com/valentindeaconu/terralist/internal/server/mappers"
-	"github.com/valentindeaconu/terralist/internal/server/models/module"
-	"github.com/valentindeaconu/terralist/internal/server/services"
 )
 
 type ModuleController struct {
 	ModuleService *services.ModuleService
-	ModuleMapper  *mappers.ModuleMapper
 }
 
 func (m *ModuleController) Get() func(c *gin.Context) {
@@ -20,7 +19,7 @@ func (m *ModuleController) Get() func(c *gin.Context) {
 		name := c.Param("name")
 		provider := c.Param("provider")
 
-		module, err := m.ModuleService.Find(namespace, name, provider)
+		mod, err := m.ModuleService.Find(namespace, name, provider)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -31,7 +30,7 @@ func (m *ModuleController) Get() func(c *gin.Context) {
 			})
 			return
 		}
-		c.JSON(http.StatusOK, m.ModuleMapper.ModuleToListResponseDTO(module))
+		c.JSON(http.StatusOK, mod.ToListResponseDTO())
 	}
 }
 
@@ -64,7 +63,7 @@ func (m *ModuleController) Upload() func(c *gin.Context) {
 		provider := c.Param("provider")
 		version := c.Param("version")
 
-		var body module.ModuleCreateDTO
+		var body module.CreateDTO
 		if err := c.BindJSON(&body); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"errors": []string{err.Error()},
@@ -76,7 +75,7 @@ func (m *ModuleController) Upload() func(c *gin.Context) {
 		body.Provider = provider
 		body.Version = version
 
-		request := m.ModuleMapper.ModuleCreateDTOToModule(body)
+		request := body.ToModule()
 
 		if _, err := m.ModuleService.Upsert(request); err != nil {
 			c.JSON(http.StatusConflict, gin.H{
