@@ -160,13 +160,13 @@ func (s *Server) Start() error {
 	providerRouter.GET("/:namespace/:name/:version/download/:os/:arch", s.ProviderController.GetVersion())
 
 	// Upload a new provider version
-	s.Router.POST("/:namespace/:name/:version/upload", s.ProviderController.Upload())
+	providerRouter.POST("/:namespace/:name/:version/upload", s.ProviderController.Upload())
 
 	// Delete a provider
-	s.Router.DELETE("/:namespace/:name/remove", s.ProviderController.Delete())
+	providerRouter.DELETE("/:namespace/:name/remove", s.ProviderController.Delete())
 
 	// Delete a provider version
-	s.Router.DELETE("/:namespace/:name/:version/remove", s.ProviderController.DeleteVersion())
+	providerRouter.DELETE("/:namespace/:name/:version/remove", s.ProviderController.DeleteVersion())
 
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)

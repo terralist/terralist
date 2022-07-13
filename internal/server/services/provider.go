@@ -62,10 +62,9 @@ func (s *ProviderService) Upsert(new provider.Provider) (provider.Provider, erro
 		}
 
 		return existing, nil
-
 	}
 
-	if result := s.Database.Handler().Create(&new); result.Error != nil {
+	if err := s.Database.Handler().Create(&new).Error; err != nil {
 		return provider.Provider{}, err
 	}
 
