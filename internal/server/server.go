@@ -63,6 +63,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	router.Use(handlers.Logger())
 	router.Use(gin.Recovery())
 
+	// Apply initial migration
+	config.Database.WithMigration(&InitialMigration{})
+
 	entryController := &controllers.EntryController{
 		AuthorizationEndpoint: OAuthAuthorizationEndpoint,
 		TokenEndpoint:         OAuthTokenEndpoint,
