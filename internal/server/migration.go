@@ -19,7 +19,7 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		return err
 	}
 
-	err := db.Debug().AutoMigrate(
+	err := db.AutoMigrate(
 		&provider.Provider{},
 		&provider.Version{},
 		&provider.Platform{},
