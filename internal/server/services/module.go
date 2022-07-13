@@ -1,7 +1,10 @@
 package services
 
 import (
+	"errors"
 	"fmt"
+
+	"gorm.io/gorm"
 
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
@@ -11,7 +14,7 @@ type ModuleService struct {
 	Database database.Engine
 }
 
-func (s *ModuleService) Find(namespace string, name string, provider string) (module.Module, error) {
+func (s *ModuleService) Find(namespace string, name string, provider string) (*module.Module, error) {
 	m := module.Module{}
 
 	err := s.Database.Handler().Where(module.Module{
@@ -24,58 +27,62 @@ func (s *ModuleService) Find(namespace string, name string, provider string) (mo
 		Preload("Versions.Submodules").
 		Preload("Versions.Submodules.Providers").
 		Preload("Versions.Submodules.Dependencies").
-		Find(&m).
+		First(&m).
 		Error
 
 	if err != nil {
-		return m, fmt.Errorf("no module found with given arguments (source %s/%s/%s)", namespace, name, provider)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no module found with given arguments (source %s/%s/%s)", namespace, name, provider)
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
 	}
 
-	return m, nil
+	return &m, nil
 }
 
-func (s *ModuleService) FindVersion(namespace string, name string, provider string, version string) (module.Version, error) {
+func (s *ModuleService) FindVersion(namespace string, name string, provider string, version string) (*module.Version, error) {
 	m, err := s.Find(namespace, name, provider)
 
 	if err != nil {
-		return module.Version{}, err
+		return nil, err
 	}
 
 	for _, v := range m.Versions {
 		if v.Version == version {
-			return v, nil
+			return &v, nil
 		}
 	}
 
-	return module.Version{}, fmt.Errorf("no version found")
+	return nil, fmt.Errorf("no version found")
 }
 
-func (s *ModuleService) Upsert(new module.Module) (module.Module, error) {
-	existing, err := s.Find(new.Namespace, new.Name, new.Provider)
+func (s *ModuleService) Upsert(n module.Module) (*module.Module, error) {
+	m, err := s.Find(n.Namespace, n.Name, n.Provider)
 
 	if err == nil {
-		newVersion := new.Versions[0].Version
+		newVersion := n.Versions[0].Version
 
-		for _, version := range existing.Versions {
+		for _, version := range n.Versions {
 			if version.Version == newVersion {
-				return module.Module{}, fmt.Errorf("version %s already exists", newVersion)
+				return nil, fmt.Errorf("version %s already exists", newVersion)
 			}
 		}
 
-		existing.Versions = append(existing.Versions, new.Versions[0])
+		m.Versions = append(m.Versions, n.Versions[0])
 
-		if err := s.Database.Handler().Save(&existing).Error; err != nil {
-			return module.Module{}, err
+		if err := s.Database.Handler().Save(m).Error; err != nil {
+			return nil, err
 		}
 
-		return existing, nil
+		return m, nil
 	}
 
-	if result := s.Database.Handler().Create(&new); result.Error != nil {
-		return module.Module{}, result.Error
+	if result := s.Database.Handler().Create(&n); result.Error != nil {
+		return nil, result.Error
 	}
 
-	return new, nil
+	return &n, nil
 }
 
 func (s *ModuleService) Delete(namespace string, name string, provider string) error {
@@ -97,18 +104,26 @@ func (s *ModuleService) DeleteVersion(namespace string, name string, provider st
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
 	}
 
-	q := false
-	for idx, ver := range m.Versions {
-		if ver.Version == version {
-			m.Versions = append(m.Versions[:idx], m.Versions[idx+1:]...)
-			q = true
+	var toDelete *module.Version = nil
+	for _, v := range m.Versions {
+		if v.Version == version {
+			toDelete = &v
+			break
 		}
 	}
 
-	if q {
-		if err := s.Database.Handler().Save(&s).Error; err != nil {
-			return err
+	if toDelete != nil {
+		if len(m.Versions) == 1 {
+			if err := s.Database.Handler().Delete(m).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := s.Database.Handler().Delete(toDelete).Error; err != nil {
+				return err
+			}
 		}
+
+		return nil
 	}
 
 	return fmt.Errorf("no version found")
