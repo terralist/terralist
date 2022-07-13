@@ -1,76 +1,83 @@
 package services
 
 import (
+	"errors"
 	"fmt"
-
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database"
+
+	"gorm.io/gorm"
 )
 
 type ProviderService struct {
 	Database database.Engine
 }
 
-func (s *ProviderService) Find(namespace string, name string) (provider.Provider, error) {
+func (s *ProviderService) Find(namespace string, name string) (*provider.Provider, error) {
 	p := provider.Provider{}
 
-	if err := s.Database.Handler().Where(provider.Provider{
+	err := s.Database.Handler().Where(provider.Provider{
 		Name:      name,
 		Namespace: namespace,
-	}).
-		Preload("Versions").
+	}).Preload("Versions").
 		Preload("Versions.Platforms").
 		Preload("Versions.Platforms.SigningKeys").
-		Find(&p).
-		Error; err != nil {
-		return provider.Provider{}, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
+		First(&p).
+		Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
 	}
 
-	return p, nil
+	return &p, nil
 }
 
-func (s *ProviderService) FindVersion(namespace string, name string, version string) (provider.Version, error) {
+func (s *ProviderService) FindVersion(namespace string, name string, version string) (*provider.Version, error) {
 	p, err := s.Find(namespace, name)
 
 	if err != nil {
-		return provider.Version{}, err
+		return nil, err
 	}
 
 	for _, v := range p.Versions {
 		if v.Version == version {
-			return v, nil
+			return &v, nil
 		}
 	}
 
-	return provider.Version{}, fmt.Errorf("no version found")
+	return nil, fmt.Errorf("no version found")
 }
 
-func (s *ProviderService) Upsert(new provider.Provider) (provider.Provider, error) {
-	existing, err := s.Find(new.Namespace, new.Name)
+func (s *ProviderService) Upsert(n provider.Provider) (*provider.Provider, error) {
+	p, err := s.Find(n.Namespace, n.Name)
 
 	if err == nil {
-		newVersion := new.Versions[0].Version
+		newVersion := n.Versions[0].Version
 
-		for _, version := range existing.Versions {
-			if version.Version == newVersion {
-				return provider.Provider{}, fmt.Errorf("version %s already exists", newVersion)
+		for _, v := range p.Versions {
+			if v.Version == newVersion {
+				return nil, fmt.Errorf("version %s already exists", newVersion)
 			}
 		}
 
-		existing.Versions = append(existing.Versions, new.Versions[0])
+		p.Versions = append(p.Versions, n.Versions[0])
 
-		if err := s.Database.Handler().Save(&existing).Error; err != nil {
-			return provider.Provider{}, err
+		if err := s.Database.Handler().Save(p).Error; err != nil {
+			return nil, err
 		}
 
-		return existing, nil
+		return p, nil
 	}
 
-	if err := s.Database.Handler().Create(&new).Error; err != nil {
-		return provider.Provider{}, err
+	if err := s.Database.Handler().Create(&n).Error; err != nil {
+		return nil, err
 	}
 
-	return new, nil
+	return &n, nil
 }
 
 func (s *ProviderService) Delete(namespace string, name string) error {
@@ -79,7 +86,7 @@ func (s *ProviderService) Delete(namespace string, name string) error {
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
 	}
 
-	if err := s.Database.Handler().Delete(&p).Error; err != nil {
+	if err := s.Database.Handler().Delete(p).Error; err != nil {
 		return err
 	}
 
@@ -92,19 +99,26 @@ func (s *ProviderService) DeleteVersion(namespace string, name string, version s
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
 	}
 
-	f := false
-	for idx, ver := range p.Versions {
-		if ver.Version == version {
-			p.Versions = append(p.Versions[:idx], p.Versions[idx+1:]...)
-			f = true
+	var toDelete *provider.Version = nil
+	for _, v := range p.Versions {
+		if v.Version == version {
+			toDelete = &v
 			break
 		}
 	}
 
-	if f {
-		if err := s.Database.Handler().Delete(&p).Error; err != nil {
-			return err
+	if toDelete != nil {
+		if len(p.Versions) == 1 {
+			if err := s.Database.Handler().Delete(p).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := s.Database.Handler().Delete(toDelete).Error; err != nil {
+				return err
+			}
 		}
+
+		return nil
 	}
 
 	return fmt.Errorf("no version found")
