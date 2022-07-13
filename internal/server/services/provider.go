@@ -75,8 +75,7 @@ func (s *ProviderService) Upsert(new provider.Provider) (provider.Provider, erro
 
 func (s *ProviderService) Delete(namespace string, name string) error {
 	p, err := s.Find(namespace, name)
-
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
 	}
 
@@ -89,8 +88,7 @@ func (s *ProviderService) Delete(namespace string, name string) error {
 
 func (s *ProviderService) DeleteVersion(namespace string, name string, version string) error {
 	p, err := s.Find(namespace, name)
-
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
 	}
 
