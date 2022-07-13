@@ -190,4 +190,7 @@ tests/**
 **/*.yaml
 !example.yaml
 
+# Heroku Procfile
+Procfile
+
 # End of Terralist Development files
