@@ -1,11 +1,12 @@
-package sqlite
+package postgresql
 
 import (
+	"fmt"
 	"sync"
 
 	"terralist/pkg/database"
 
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -19,9 +20,14 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	cfg := config.(*Config)
+	cfg, ok := config.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("wrong database configuration")
+	}
 
-	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{})
+	dsn := cfg.DSN()
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		return nil, err

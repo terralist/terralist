@@ -37,6 +37,10 @@ func (t *IntFlag) Set(value any) error {
 				return fmt.Errorf("unsupported type %T for integer flag", value)
 			}
 
+			if env, ok := environmentLookup(s); ok {
+				s = env
+			}
+
 			i, err := strconv.Atoi(s)
 			if err != nil {
 				return fmt.Errorf("could not convert string %v into integer: %v", s, err)

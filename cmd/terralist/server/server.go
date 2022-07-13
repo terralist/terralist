@@ -3,82 +3,24 @@ package server
 import (
 	"fmt"
 	"strings"
+	"terralist/pkg/database/mysql"
+	"terralist/pkg/database/postgresql"
 
 	"terralist/internal/server"
+	"terralist/pkg/auth"
+	authFactory "terralist/pkg/auth/factory"
+	"terralist/pkg/auth/github"
 	"terralist/pkg/cli"
+	"terralist/pkg/database"
+	dbFactory "terralist/pkg/database/factory"
+	"terralist/pkg/database/sqlite"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-const (
-	ConfigFlag = "config"
-
-	PortFlag    = "port"
-	DefaultPort = 5758
-
-	LogLevelFlag    = "log-level"
-	DefaultLogLevel = "info"
-
-	DatabaseBackendFlag    = "database-backend"
-	DefaultDatabaseBackend = "sqlite"
-
-	OAuthProviderFlag = "oauth-provider"
-
-	// GitHub OAuth Flags
-	GitHubClientIDFlag     = "gh-client-id"
-	GitHubClientSecretFlag = "gh-client-secret"
-	GitHubOrganizationFlag = "gh-organization"
-
-	TokenSigningSecretFlag = "token-signing-secret"
-)
-
-var flags = map[string]cli.Flag{
-	ConfigFlag: &cli.StringFlag{
-		Description: "Path to YAML config file where flag values are set.",
-	},
-
-	PortFlag: &cli.IntFlag{
-		Description:  "The port to bind to.",
-		DefaultValue: DefaultPort,
-	},
-
-	LogLevelFlag: &cli.StringFlag{
-		Description:  "The log level.",
-		Choices:      []string{"trace", "debug", "info", "warn", "error"},
-		DefaultValue: DefaultLogLevel,
-	},
-
-	DatabaseBackendFlag: &cli.StringFlag{
-		Description:  "The database backend.",
-		Choices:      []string{"sqlite"},
-		DefaultValue: DefaultDatabaseBackend,
-	},
-
-	OAuthProviderFlag: &cli.StringFlag{
-		Description: "The OAuth 2.0 provider.",
-		Choices:     []string{"github"},
-		Required:    true,
-	},
-	GitHubClientIDFlag: &cli.StringFlag{
-		Description: "The GitHub OAuth Application client ID.",
-	},
-	GitHubClientSecretFlag: &cli.StringFlag{
-		Description: "The GitHub OAuth Application client secret.",
-	},
-	GitHubOrganizationFlag: &cli.StringFlag{
-		Description: "The GitHub organization to use for user validation.",
-	},
-
-	TokenSigningSecretFlag: &cli.StringFlag{
-		Description: "The secret to use when signing authorization tokens.",
-		Required:    true,
-	},
-}
 
 // Command is an abstraction for the server command
 type Command struct {
@@ -194,9 +136,17 @@ func (s *Command) run() error {
 		}
 	}
 
-	var userConfig server.UserConfig
-	if err := mapstructure.Decode(raw, &userConfig); err != nil {
-		return fmt.Errorf("could not unpack to user configuration: %v", err)
+	// Validate flag values
+	for k, v := range flags {
+		if err := v.Validate(); err != nil {
+			return fmt.Errorf("could not validate %v: %v", k, err)
+		}
+	}
+
+	userConfig := server.UserConfig{
+		LogLevel:           flags[LogLevelFlag].(*cli.StringFlag).Value,
+		Port:               flags[PortFlag].(*cli.IntFlag).Value,
+		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {
@@ -216,13 +166,54 @@ func (s *Command) run() error {
 		}
 	}
 
-	if err := s.validate(userConfig); err != nil {
+	// Initialize database
+	var db database.Engine
+	var err error
+	switch flags[DatabaseBackendFlag].(*cli.StringFlag).Value {
+	case "sqlite":
+		db, err = dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{
+			Path: flags[SQLitePathFlag].(*cli.StringFlag).Value,
+		})
+	case "mysql":
+		db, err = dbFactory.NewDatabase(database.MYSQL, &mysql.Config{
+			URL:      flags[MySQLURLFlag].(*cli.StringFlag).Value,
+			Username: flags[MySQLUsernameFlag].(*cli.StringFlag).Value,
+			Password: flags[MySQLPasswordFlag].(*cli.StringFlag).Value,
+			Hostname: flags[MySQLHostFlag].(*cli.StringFlag).Value,
+			Port:     flags[MySQLPortFlag].(*cli.IntFlag).Value,
+			Name:     flags[MySQLDatabaseFlag].(*cli.StringFlag).Value,
+		})
+	case "postgresql":
+		db, err = dbFactory.NewDatabase(database.POSTGRESQL, &postgresql.Config{
+			URL:      flags[PostgreSQLURLFlag].(*cli.StringFlag).Value,
+			Username: flags[PostgreSQLUsernameFlag].(*cli.StringFlag).Value,
+			Password: flags[PostgreSQLPasswordFlag].(*cli.StringFlag).Value,
+			Hostname: flags[PostgreSQLHostFlag].(*cli.StringFlag).Value,
+			Port:     flags[PostgreSQLPortFlag].(*cli.IntFlag).Value,
+			Name:     flags[PostgreSQLDatabaseFlag].(*cli.StringFlag).Value,
+		})
+	}
+	if err != nil {
 		return err
 	}
 
-	s.securityWarnings(&userConfig)
+	// Initialize Auth provider
+	var provider auth.Provider
+	switch flags[OAuthProviderFlag].(*cli.StringFlag).Value {
+	case "github":
+		provider, err = authFactory.NewProvider(auth.GITHUB, &github.Config{
+			ClientID:     flags[GitHubClientIDFlag].(*cli.StringFlag).Value,
+			ClientSecret: flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
+			Organization: flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
+		})
+	}
+	if err != nil {
+		return err
+	}
 
 	srv, err := s.ServerCreator.NewServer(userConfig, server.Config{
+		Database:    db,
+		Provider:    provider,
 		RunningMode: s.RunningMode,
 	})
 
@@ -231,43 +222,6 @@ func (s *Command) run() error {
 	}
 
 	return srv.Start()
-}
-
-func (s *Command) validate(userConfig server.UserConfig) error {
-	for k, v := range flags {
-		if err := v.Validate(); err != nil {
-			return fmt.Errorf("could not validate %v: %v", k, err)
-		}
-	}
-
-	// If the GitHub provider is given, assure that its parameters are also given
-	if userConfig.OAuthProvider == "github" && (userConfig.GitHubClientID == "" || userConfig.GitHubClientSecret == "") {
-		return fmt.Errorf("github oauth provider requires a client id and a client secret")
-	}
-
-	return nil
-}
-
-func (s *Command) securityWarnings(userConfig *server.UserConfig) {
-	if s.SilenceOutput {
-		return
-	}
-
-	if userConfig.OAuthProvider == "github" && userConfig.GitHubOrganization == "" {
-		log.Warn().
-			Msg(
-				"No github organization is set. " +
-					"Every request from a github authenticated user will pass.",
-			)
-	}
-
-	if userConfig.TokenSigningSecret == "" {
-		log.Warn().
-			Msg(
-				"No token signing secret was provided. " +
-					"Tokens will be signed with an randomly generated secret which will be lost when the process exits.",
-			)
-	}
 }
 
 // withErrPrint prints out any cmd errors to stderr

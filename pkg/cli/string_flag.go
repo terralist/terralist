@@ -38,6 +38,10 @@ func (t *StringFlag) Set(value any) error {
 			return fmt.Errorf("type %T is not string", value)
 		}
 
+		if env, ok := environmentLookup(v); ok {
+			v = env
+		}
+
 		if v == "" {
 			if v != t.DefaultValue {
 				t.Value = v

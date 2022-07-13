@@ -15,7 +15,7 @@ var (
 	lock = &sync.Mutex{}
 )
 
-func (t *Creator) New(config database.Configurator, migrator database.Migrator) (database.Engine, error) {
+func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -40,7 +40,6 @@ func (t *Creator) New(config database.Configurator, migrator database.Migrator) 
 	}
 
 	return &database.DefaultEngine{
-		Handle:   db,
-		Migrator: migrator,
+		Handle: db,
 	}, nil
 }

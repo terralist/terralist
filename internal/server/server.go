@@ -4,11 +4,7 @@ import (
 	"fmt"
 	"os"
 	"terralist/pkg/auth"
-	authFactory "terralist/pkg/auth/factory"
-	"terralist/pkg/auth/github"
 	"terralist/pkg/database"
-	dbFactory "terralist/pkg/database/factory"
-	"terralist/pkg/database/sqlite"
 	"time"
 
 	"terralist/internal/server/controllers"
@@ -51,23 +47,12 @@ type Server struct {
 // Config holds the server configuration that isn't configurable by the user
 type Config struct {
 	RunningMode string
+
+	Database database.Engine
+	Provider auth.Provider
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
-	db, err := dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{}, &InitialMigration{})
-	if err != nil {
-		return nil, err
-	}
-
-	provider, err := authFactory.NewProvider(auth.GITHUB, &github.Config{
-		ClientID:     userConfig.GitHubClientID,
-		ClientSecret: userConfig.GitHubClientSecret,
-		Organization: userConfig.GitHubOrganization,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	if config.RunningMode == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	} else if config.RunningMode == "debug" {
@@ -92,7 +77,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	exchangeKey, _ := random.String(32)
 
 	loginController := &controllers.LoginController{
-		Provider: provider,
+		Provider: config.Provider,
 		JWT:      jwtManager,
 
 		EncryptSalt:     salt,
@@ -100,7 +85,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	moduleService := &services.ModuleService{
-		Database: db,
+		Database: config.Database,
 	}
 
 	moduleController := &controllers.ModuleController{
@@ -108,7 +93,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	providerService := &services.ProviderService{
-		Database: db,
+		Database: config.Database,
 	}
 
 	providerController := &controllers.ProviderController{
@@ -119,8 +104,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Port: userConfig.Port,
 
 		Router:   router,
-		Provider: provider,
-		Database: db,
+		Provider: config.Provider,
+		Database: config.Database,
 		JWT:      jwtManager,
 
 		EntryController:    entryController,

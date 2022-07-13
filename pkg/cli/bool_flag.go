@@ -37,6 +37,10 @@ func (t *BoolFlag) Set(value any) error {
 				return fmt.Errorf("unsupported type %T for boolean flag", value)
 			}
 
+			if env, ok := environmentLookup(s); ok {
+				s = env
+			}
+
 			b, err := strconv.ParseBool(s)
 			if err != nil {
 				return fmt.Errorf("could not convert string %v into boolean: %v", s, err)

@@ -13,11 +13,14 @@ func NewProvider(backend auth.Backend, config auth.Configurator) (auth.Provider,
 
 	config.SetDefaults()
 
+	var creator auth.Creator
+
 	switch backend {
 	case auth.GITHUB:
-		creator := github.Creator{}
-		return creator.New(config)
+		creator = &github.Creator{}
 	default:
 		return nil, fmt.Errorf("unrecognized backend type")
 	}
+
+	return creator.New(config)
 }

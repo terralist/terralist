@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -8,22 +9,21 @@ type DB = gorm.DB
 
 // Engine handles the database connection and operations
 type Engine interface {
-	Connect() error
+	WithMigration(Migrator) error
 	Handler() *DB
 }
 
 // DefaultEngine is the default concrete implementation of database.Engine
 type DefaultEngine struct {
-	Handle   *gorm.DB
-	Migrator Migrator
+	Handle *gorm.DB
 }
 
-func (d *DefaultEngine) Connect() error {
-	if d.Migrator != nil {
-		return d.Migrator.Migrate(d.Handle)
+func (d *DefaultEngine) WithMigration(m Migrator) error {
+	if m == nil {
+		return fmt.Errorf("cannot migrate a nil migrator")
 	}
 
-	return nil
+	return m.Migrate(d.Handle)
 }
 
 func (d *DefaultEngine) Handler() *gorm.DB {
