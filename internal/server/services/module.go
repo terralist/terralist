@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
 )
@@ -63,8 +64,8 @@ func (s *ModuleService) Upsert(new module.Module) (module.Module, error) {
 
 		existing.Versions = append(existing.Versions, new.Versions[0])
 
-		if result := s.Database.Handler().Save(&existing); result.Error != nil {
-			return module.Module{}, result.Error
+		if err := s.Database.Handler().Save(&existing).Error; err != nil {
+			return module.Module{}, err
 		}
 
 		return existing, nil
@@ -79,8 +80,7 @@ func (s *ModuleService) Upsert(new module.Module) (module.Module, error) {
 
 func (s *ModuleService) Delete(namespace string, name string, provider string) error {
 	m, err := s.Find(namespace, name, provider)
-
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
 	}
 
@@ -93,8 +93,7 @@ func (s *ModuleService) Delete(namespace string, name string, provider string) e
 
 func (s *ModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
 	m, err := s.Find(namespace, name, provider)
-
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
 	}
 

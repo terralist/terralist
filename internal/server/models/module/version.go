@@ -2,17 +2,18 @@ package module
 
 import (
 	"terralist/pkg/database/entity"
-	"terralist/pkg/database/types/uuid"
+
+	"github.com/google/uuid"
 )
 
 type Version struct {
 	entity.Entity
-	ModuleID     uuid.ID      `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ModuleID     uuid.UUID
 	Version      string       `gorm:"not null"`
 	Location     string       `gorm:"not null"`
-	Providers    []Provider   `gorm:"foreignKey:ParentID;references:ID"`
-	Dependencies []Dependency `gorm:"foreignKey:ParentID;references:ID"`
-	Submodules   []Submodule
+	Providers    []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Dependencies []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Submodules   []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Version) TableName() string {

@@ -1,14 +1,15 @@
 package provider
 
 import (
+	"strings"
 	"terralist/pkg/database/entity"
 )
 
 type Provider struct {
 	entity.Entity
-	Name      string `gorm:"not null"`
-	Namespace string `gorm:"not null"`
-	Versions  []Version
+	Name      string    `gorm:"not null"`
+	Namespace string    `gorm:"not null"`
+	Versions  []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Provider) TableName() string {
@@ -46,7 +47,7 @@ func (d CreateProviderDTO) ToProvider() Provider {
 		Versions: []Version{
 			{
 				Version:   d.Version,
-				Protocols: d.Protocols,
+				Protocols: strings.Join(d.Protocols, ","),
 				Platforms: platforms,
 			},
 		},

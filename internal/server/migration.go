@@ -10,20 +10,20 @@ type InitialMigration struct{}
 
 func (*InitialMigration) Migrate(db *database.DB) error {
 	if err := db.AutoMigrate(
-		&module.Dependency{},
-		&module.Provider{},
-		&module.Submodule{},
-		&module.Version{},
 		&module.Module{},
+		&module.Version{},
+		&module.Submodule{},
+		&module.Provider{},
+		&module.Dependency{},
 	); err != nil {
 		return err
 	}
 
 	err := db.AutoMigrate(
-		&provider.GpgPublicKey{},
-		&provider.Platform{},
-		&provider.Version{},
 		&provider.Provider{},
+		&provider.Version{},
+		&provider.Platform{},
+		&provider.GpgPublicKey{},
 	)
 
 	return err

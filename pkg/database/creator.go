@@ -2,7 +2,6 @@ package database
 
 const (
 	SQLITE = iota
-	MYSQL
 	POSTGRESQL
 )
 

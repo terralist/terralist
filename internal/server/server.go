@@ -64,7 +64,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	router.Use(gin.Recovery())
 
 	// Apply initial migration
-	config.Database.WithMigration(&InitialMigration{})
+	if err := config.Database.WithMigration(&InitialMigration{}); err != nil {
+		return nil, fmt.Errorf("could not apply initial migration: %v", err)
+	}
 
 	entryController := &controllers.EntryController{
 		AuthorizationEndpoint: OAuthAuthorizationEndpoint,

@@ -2,12 +2,13 @@ package module
 
 import (
 	"terralist/pkg/database/entity"
-	"terralist/pkg/database/types/uuid"
+
+	"github.com/google/uuid"
 )
 
 type Dependency struct {
 	entity.Entity
-	ParentID uuid.ID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ParentID uuid.UUID
 }
 
 func (Dependency) TableName() string {
