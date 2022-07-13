@@ -8,7 +8,7 @@ import (
 
 type Dependency struct {
 	entity.Entity
-	ParentID uuid.UUID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	ParentID uuid.UUID
 }
 
 func (Dependency) TableName() string {

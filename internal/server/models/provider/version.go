@@ -11,10 +11,10 @@ import (
 
 type Version struct {
 	entity.Entity
-	ProviderID uuid.UUID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Version    string    `gorm:"not null"`
-	Protocols  string    `gorm:"not null"`
-	Platforms  []Platform
+	ProviderID uuid.UUID
+	Version    string     `gorm:"not null"`
+	Protocols  string     `gorm:"not null"`
+	Platforms  []Platform `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Version) TableName() string {

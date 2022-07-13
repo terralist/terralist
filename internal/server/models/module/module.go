@@ -6,10 +6,10 @@ import (
 
 type Module struct {
 	entity.Entity
-	Namespace string `gorm:"not null"`
-	Name      string `gorm:"not null"`
-	Provider  string `gorm:"not null"`
-	Versions  []Version
+	Namespace string    `gorm:"not null"`
+	Name      string    `gorm:"not null"`
+	Provider  string    `gorm:"not null"`
+	Versions  []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Module) TableName() string {

@@ -8,15 +8,15 @@ import (
 
 type Platform struct {
 	entity.Entity
-	VersionID           uuid.UUID `gorm:"not null;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	System              string    `gorm:"not null"`
-	Architecture        string    `gorm:"not null"`
-	FileName            string    `gorm:"not null"`
-	DownloadUrl         string    `gorm:"not null"`
-	ShaSumsUrl          string    `gorm:"not null"`
-	ShaSumsSignatureUrl string    `gorm:"not null"`
-	ShaSum              string    `gorm:"not null"`
-	SigningKeys         []GpgPublicKey
+	VersionID           uuid.UUID
+	System              string         `gorm:"not null"`
+	Architecture        string         `gorm:"not null"`
+	FileName            string         `gorm:"not null"`
+	DownloadUrl         string         `gorm:"not null"`
+	ShaSumsUrl          string         `gorm:"not null"`
+	ShaSumsSignatureUrl string         `gorm:"not null"`
+	ShaSum              string         `gorm:"not null"`
+	SigningKeys         []GpgPublicKey `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Platform) TableName() string {
