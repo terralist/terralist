@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"terralist/pkg/version"
 
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
@@ -37,11 +38,11 @@ func (p *ProviderController) GetVersion() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		name := c.Param("name")
-		version := c.Param("version")
+		ver := c.Param("version")
 		system := c.Param("os")
 		arch := c.Param("arch")
 
-		v, err := p.ProviderService.FindVersion(namespace, name, version)
+		v, err := p.ProviderService.FindVersion(namespace, name, ver)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -64,9 +65,15 @@ func (p *ProviderController) GetVersion() func(c *gin.Context) {
 
 func (p *ProviderController) Upload() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		ver := c.Param("version")
+		if semVer := version.Version(ver); !semVer.Valid() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"errors": []string{"version should respect the semantic versioning standard (semver.org)"},
+			})
+		}
+
 		namespace := c.Param("namespace")
 		name := c.Param("name")
-		version := c.Param("version")
 
 		var body provider.CreateProviderDTO
 
@@ -79,7 +86,7 @@ func (p *ProviderController) Upload() func(c *gin.Context) {
 
 		body.Namespace = namespace
 		body.Name = name
-		body.Version = version
+		body.Version = ver
 
 		prov := body.ToProvider()
 
@@ -116,9 +123,9 @@ func (p *ProviderController) DeleteVersion() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		name := c.Param("name")
-		version := c.Param("version")
+		ver := c.Param("version")
 
-		if err := p.ProviderService.DeleteVersion(namespace, name, version); err != nil {
+		if err := p.ProviderService.DeleteVersion(namespace, name, ver); err != nil {
 			c.JSON(http.StatusConflict, gin.H{
 				"errors": []string{err.Error()},
 			})
