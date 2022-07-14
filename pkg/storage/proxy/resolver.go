@@ -8,3 +8,7 @@ type Resolver struct{}
 func (r *Resolver) Store(url string) (string, error) {
 	return url, nil
 }
+
+func (r *Resolver) Purge(_ string) error {
+	return nil
+}

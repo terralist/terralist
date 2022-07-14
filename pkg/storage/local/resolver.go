@@ -10,6 +10,10 @@ type Resolver struct {
 	DataStorePath string
 }
 
-func (r *Resolver) Store(url string) (string, error) {
+func (r *Resolver) Store(_ string) (string, error) {
 	return "", fmt.Errorf("not yet implemented")
+}
+
+func (r *Resolver) Purge(_ string) error {
+	return nil
 }

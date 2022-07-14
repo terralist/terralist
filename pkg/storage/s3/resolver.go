@@ -11,3 +11,7 @@ type Resolver struct{}
 func (r *Resolver) Store(url string) (string, error) {
 	return "", fmt.Errorf("not yet implemented")
 }
+
+func (r *Resolver) Purge(_ string) error {
+	return nil
+}
