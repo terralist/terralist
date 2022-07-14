@@ -3,6 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"terralist/pkg/version"
 
 	"gorm.io/gorm"
 
@@ -38,6 +40,13 @@ func (s *ModuleService) Find(namespace string, name string, provider string) (*m
 		}
 	}
 
+	sort.Slice(m.Versions, func(i, j int) bool {
+		lhs := version.Version(m.Versions[i].Version)
+		rhs := version.Version(m.Versions[j].Version)
+
+		return version.Compare(lhs, rhs) <= 0
+	})
+
 	return &m, nil
 }
 
@@ -63,8 +72,8 @@ func (s *ModuleService) Upsert(n module.Module) (*module.Module, error) {
 	if err == nil {
 		newVersion := n.Versions[0].Version
 
-		for _, version := range n.Versions {
-			if version.Version == newVersion {
+		for _, ver := range n.Versions {
+			if ver.Version == newVersion {
 				return nil, fmt.Errorf("version %s already exists", newVersion)
 			}
 		}
