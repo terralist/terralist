@@ -28,11 +28,11 @@ func Authorize(jwt jwt.JWT) gin.HandlerFunc {
 		userDetails, err := jwt.Extract(t)
 		if err != nil {
 			c.AbortWithStatus(http.StatusUnauthorized)
+		} else {
+			c.Set("userName", userDetails.Name)
+			c.Set("userEmail", userDetails.Email)
 		}
-
-		c.Set("userName", userDetails.Name)
-		c.Set("userEmail", userDetails.Email)
-
+		
 		c.Next()
 	}
 }

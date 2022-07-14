@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"terralist/pkg/database/postgresql"
+	"terralist/pkg/storage"
+	"terralist/pkg/storage/proxy"
 
 	"terralist/internal/server"
 	"terralist/pkg/auth"
@@ -13,6 +15,7 @@ import (
 	"terralist/pkg/database"
 	dbFactory "terralist/pkg/database/factory"
 	"terralist/pkg/database/sqlite"
+	storageFactory "terralist/pkg/storage/factory"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -201,9 +204,24 @@ func (s *Command) run() error {
 		return err
 	}
 
+	// Initialize storage resolver
+	var resolver storage.Resolver
+	switch flags[StorageResolverFlag].(*cli.StringFlag).Value {
+	case "proxy":
+		resolver, err = storageFactory.NewResolver(storage.PROXY, &proxy.Config{})
+	case "local":
+		resolver, err = storageFactory.NewResolver(storage.LOCAL, &proxy.Config{})
+	case "s3":
+		resolver, err = storageFactory.NewResolver(storage.S3, &proxy.Config{})
+	}
+	if err != nil {
+		return err
+	}
+
 	srv, err := s.ServerCreator.NewServer(userConfig, server.Config{
 		Database:    db,
 		Provider:    provider,
+		Resolver:    resolver,
 		RunningMode: s.RunningMode,
 	})
 
