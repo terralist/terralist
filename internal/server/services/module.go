@@ -7,13 +7,14 @@ import (
 	"terralist/pkg/version"
 
 	"gorm.io/gorm"
-
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
+	"terralist/pkg/storage"
 )
 
 type ModuleService struct {
 	Database database.Engine
+	Resolver storage.Resolver
 }
 
 func (s *ModuleService) Find(namespace string, name string, provider string) (*module.Module, error) {
@@ -66,32 +67,45 @@ func (s *ModuleService) FindVersion(namespace string, name string, provider stri
 	return nil, fmt.Errorf("no version found")
 }
 
+// Upsert is designed to upload an entire module, but in reality,
+// it will only upload a single version
 func (s *ModuleService) Upsert(n module.Module) (*module.Module, error) {
-	m, err := s.Find(n.Namespace, n.Name, n.Provider)
+	var toUpsert *module.Module
 
+	m, err := s.Find(n.Namespace, n.Name, n.Provider)
 	if err == nil {
-		newVersion := n.Versions[0].Version
+		newVersion := version.Version(n.Versions[0].Version)
 
 		for _, ver := range n.Versions {
-			if ver.Version == newVersion {
+			if version.Compare(version.Version(ver.Version), newVersion) == 0 {
 				return nil, fmt.Errorf("version %s already exists", newVersion)
 			}
 		}
 
 		m.Versions = append(m.Versions, n.Versions[0])
 
-		if err := s.Database.Handler().Save(m).Error; err != nil {
+		toUpsert = m
+	} else {
+		toUpsert = &n
+	}
+
+	toUpload := &toUpsert.Versions[len(toUpsert.Versions)-1]
+	toUpload.Location, err = s.Resolver.Store(toUpload.Location)
+	if err != nil {
+		return nil, fmt.Errorf("could store the new version: %v", err)
+	}
+
+	if len(toUpsert.Versions) != 1 {
+		if err := s.Database.Handler().Save(toUpsert).Error; err != nil {
 			return nil, err
 		}
-
-		return m, nil
+	} else {
+		if err := s.Database.Handler().Create(toUpsert).Error; err != nil {
+			return nil, err
+		}
 	}
 
-	if result := s.Database.Handler().Create(&n); result.Error != nil {
-		return nil, result.Error
-	}
-
-	return &n, nil
+	return toUpsert, nil
 }
 
 func (s *ModuleService) Delete(namespace string, name string, provider string) error {

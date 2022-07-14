@@ -3,7 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"sort"
+	"terralist/pkg/storage"
 
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database"
@@ -14,6 +16,7 @@ import (
 
 type ProviderService struct {
 	Database database.Engine
+	Resolver storage.Resolver
 }
 
 func (s *ProviderService) Find(namespace string, name string) (*provider.Provider, error) {
@@ -62,19 +65,59 @@ func (s *ProviderService) FindVersion(namespace string, name string, version str
 	return nil, fmt.Errorf("no version found")
 }
 
+// Upsert is designed to upload an entire provider, but in reality,
+// it will only upload a single version at a time
 func (s *ProviderService) Upsert(n provider.Provider) (*provider.Provider, error) {
 	p, err := s.Find(n.Namespace, n.Name)
-
 	if err == nil {
-		newVersion := n.Versions[0].Version
+		// The provider already exists, check if for version conflicts
+		toUpsertVersion := &n.Versions[0]
 
 		for _, v := range p.Versions {
-			if v.Version == newVersion {
-				return nil, fmt.Errorf("version %s already exists", newVersion)
+			if version.Compare(version.Version(v.Version), version.Version(toUpsertVersion.Version)) == 0 {
+				return nil, fmt.Errorf("version %s already exists", v.Version)
 			}
 		}
 
-		p.Versions = append(p.Versions, n.Versions[0])
+		// At this point, all versions passes the check, we can start resolving
+		var stored []string
+		for i, plat := range toUpsertVersion.Platforms {
+			url, err := s.Resolver.Store(plat.DownloadUrl)
+			if err != nil {
+				log.Error().
+					Str("Provider", fmt.Sprintf("%s/%s", n.Namespace, n.Name)).
+					Str("Version", toUpsertVersion.Version).
+					Str("Platform", fmt.Sprintf("%s_%s", plat.System, plat.Architecture)).
+					AnErr("Error", err).
+					Msg("Error while uploading a new provider version platform.")
+
+				break
+			}
+
+			toUpsertVersion.Platforms[i].DownloadUrl = url
+			stored = append(stored, url)
+		}
+
+		if len(stored) != len(toUpsertVersion.Platforms) {
+			// Not all platforms where uploaded, rollback stored ones and return with
+			// error
+			for _, url := range stored {
+				err := s.Resolver.Purge(url)
+				if err != nil {
+					log.Error().
+						Str("Provider", fmt.Sprintf("%s/%s", n.Namespace, n.Name)).
+						Str("Version", toUpsertVersion.Version).
+						Str("Remote URL", url).
+						AnErr("Error", err).
+						Msg("Error while purging a a provider version platform.")
+				}
+			}
+
+			// All provider files where removed, return with error
+			return nil, fmt.Errorf("could not upload all provider platforms")
+		}
+
+		p.Versions = append(p.Versions, *toUpsertVersion)
 
 		if err := s.Database.Handler().Save(p).Error; err != nil {
 			return nil, err
