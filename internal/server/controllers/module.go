@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"terralist/pkg/version"
 
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
@@ -39,9 +40,9 @@ func (m *ModuleController) GetVersion() func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		name := c.Param("name")
 		provider := c.Param("provider")
-		version := c.Param("version")
+		ver := c.Param("version")
 
-		v, err := m.ModuleService.FindVersion(namespace, name, provider, version)
+		v, err := m.ModuleService.FindVersion(namespace, name, provider, ver)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -49,6 +50,7 @@ func (m *ModuleController) GetVersion() func(c *gin.Context) {
 			})
 			return
 		}
+
 		c.Header("X-Terraform-Get", v.Location)
 		c.JSON(http.StatusOK, gin.H{
 			"errors": []string{},
@@ -58,10 +60,16 @@ func (m *ModuleController) GetVersion() func(c *gin.Context) {
 
 func (m *ModuleController) Upload() func(c *gin.Context) {
 	return func(c *gin.Context) {
+		ver := c.Param("version")
+		if semVer := version.Version(ver); !semVer.Valid() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"errors": []string{"version should respect the semantic versioning standard (semver.org)"},
+			})
+		}
+
 		namespace := c.Param("namespace")
 		name := c.Param("name")
 		provider := c.Param("provider")
-		version := c.Param("version")
 
 		var body module.CreateDTO
 		if err := c.BindJSON(&body); err != nil {
@@ -73,7 +81,7 @@ func (m *ModuleController) Upload() func(c *gin.Context) {
 		body.Namespace = namespace
 		body.Name = name
 		body.Provider = provider
-		body.Version = version
+		body.Version = ver
 
 		request := body.ToModule()
 
@@ -112,9 +120,9 @@ func (m *ModuleController) DeleteVersion() func(c *gin.Context) {
 		namespace := c.Param("namespace")
 		name := c.Param("name")
 		provider := c.Param("provider")
-		version := c.Param("version")
+		ver := c.Param("version")
 
-		if err := m.ModuleService.DeleteVersion(namespace, name, provider, version); err != nil {
+		if err := m.ModuleService.DeleteVersion(namespace, name, provider, ver); err != nil {
 			c.JSON(http.StatusConflict, gin.H{
 				"errors": []string{err.Error()},
 			})

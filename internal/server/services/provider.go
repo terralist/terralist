@@ -3,8 +3,11 @@ package services
 import (
 	"errors"
 	"fmt"
+	"sort"
+
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database"
+	"terralist/pkg/version"
 
 	"gorm.io/gorm"
 )
@@ -32,6 +35,13 @@ func (s *ProviderService) Find(namespace string, name string) (*provider.Provide
 			return nil, fmt.Errorf("error while querying the database: %v", err)
 		}
 	}
+
+	sort.Slice(p.Versions, func(i, j int) bool {
+		lhs := version.Version(p.Versions[i].Version)
+		rhs := version.Version(p.Versions[j].Version)
+
+		return version.Compare(lhs, rhs) <= 0
+	})
 
 	return &p, nil
 }
