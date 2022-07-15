@@ -7,10 +7,14 @@ import "fmt"
 
 // Resolver is the concrete implementation of storage.Resolver
 type Resolver struct {
-	DataStorePath string
+	RegistryDir string
 }
 
-func (r *Resolver) Store(_ string) (string, error) {
+func (r *Resolver) Store(_ string, _ bool) (string, error) {
+	return "", fmt.Errorf("not yet implemented")
+}
+
+func (r *Resolver) Find(_ string) (string, error) {
 	return "", fmt.Errorf("not yet implemented")
 }
 

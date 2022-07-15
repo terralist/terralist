@@ -66,7 +66,7 @@ func (d CreateDTO) ToModule() Module {
 		Versions: []Version{
 			{
 				Version:      d.Version,
-				Location:     d.DownloadUrl,
+				FetchKey:     d.DownloadUrl,
 				Providers:    providers,
 				Dependencies: dependencies,
 			},

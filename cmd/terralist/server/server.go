@@ -2,10 +2,9 @@ package server
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
-	"terralist/pkg/database/postgresql"
-	"terralist/pkg/storage"
-	"terralist/pkg/storage/proxy"
 
 	"terralist/internal/server"
 	"terralist/pkg/auth"
@@ -14,8 +13,13 @@ import (
 	"terralist/pkg/cli"
 	"terralist/pkg/database"
 	dbFactory "terralist/pkg/database/factory"
+	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
-	storageFactory "terralist/pkg/storage/factory"
+	"terralist/pkg/storage/resolver"
+	storageFactory "terralist/pkg/storage/resolver/factory"
+	"terralist/pkg/storage/resolver/local"
+	"terralist/pkg/storage/resolver/proxy"
+	"terralist/pkg/storage/resolver/s3"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -204,15 +208,41 @@ func (s *Command) run() error {
 		return err
 	}
 
+	// Initialize home directory
+	homeDirClean := filepath.Clean(flags[HomeDirectoryFlag].(*cli.StringFlag).Value)
+	if strings.HasPrefix(homeDirClean, "~") {
+		userHomeDir, _ := os.UserHomeDir()
+		homeDirClean = fmt.Sprintf("%s%s", userHomeDir, homeDirClean[1:])
+	}
+
+	homeDir, err := filepath.Abs(homeDirClean)
+	if err != nil {
+		return fmt.Errorf("invalid value for home directory: %v", err)
+	}
+
+	// Make sure Home Directory exists
+	if err := os.MkdirAll(homeDir, os.ModePerm); err != nil {
+		return fmt.Errorf("could not create the home directory: %v", err)
+	}
+
 	// Initialize storage resolver
-	var resolver storage.Resolver
+	var res resolver.Resolver
 	switch flags[StorageResolverFlag].(*cli.StringFlag).Value {
 	case "proxy":
-		resolver, err = storageFactory.NewResolver(storage.PROXY, &proxy.Config{})
+		res, err = storageFactory.NewResolver(resolver.PROXY, &proxy.Config{})
 	case "local":
-		resolver, err = storageFactory.NewResolver(storage.LOCAL, &proxy.Config{})
+		res, err = storageFactory.NewResolver(resolver.LOCAL, &local.Config{
+			HomeDirectory: homeDir,
+		})
 	case "s3":
-		resolver, err = storageFactory.NewResolver(storage.S3, &proxy.Config{})
+		res, err = storageFactory.NewResolver(resolver.S3, &s3.Config{
+			HomeDirectory:   homeDir,
+			BucketName:      flags[S3BucketNameFlag].(*cli.StringFlag).Value,
+			BucketRegion:    flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
+			AccessKeyID:     flags[S3AccessKeyIDFlag].(*cli.StringFlag).Value,
+			SecretAccessKey: flags[S3SecretAccessKeyFlag].(*cli.StringFlag).Value,
+			LinkExpire:      flags[S3PresignExpireFlag].(*cli.IntFlag).Value,
+		})
 	}
 	if err != nil {
 		return err
@@ -221,7 +251,7 @@ func (s *Command) run() error {
 	srv, err := s.ServerCreator.NewServer(userConfig, server.Config{
 		Database:    db,
 		Provider:    provider,
-		Resolver:    resolver,
+		Resolver:    res,
 		RunningMode: s.RunningMode,
 	})
 

@@ -3,18 +3,19 @@ package services
 import (
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"sort"
+	"terralist/pkg/storage/resolver"
 	"terralist/pkg/version"
 
 	"gorm.io/gorm"
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
-	"terralist/pkg/storage"
 )
 
 type ModuleService struct {
 	Database database.Engine
-	Resolver storage.Resolver
+	Resolver resolver.Resolver
 }
 
 func (s *ModuleService) Find(namespace string, name string, provider string) (*module.Module, error) {
@@ -39,6 +40,15 @@ func (s *ModuleService) Find(namespace string, name string, provider string) (*m
 		} else {
 			return nil, fmt.Errorf("error while querying the database: %v", err)
 		}
+	}
+
+	for i, v := range m.Versions {
+		key, err := s.Resolver.Find(v.FetchKey)
+		if err != nil {
+			return nil, fmt.Errorf("could not find url for key %v: %v", v.FetchKey, err)
+		}
+
+		m.Versions[i].FetchKey = key
 	}
 
 	sort.Slice(m.Versions, func(i, j int) bool {
@@ -90,7 +100,7 @@ func (s *ModuleService) Upsert(n module.Module) (*module.Module, error) {
 	}
 
 	toUpload := &toUpsert.Versions[len(toUpsert.Versions)-1]
-	toUpload.Location, err = s.Resolver.Store(toUpload.Location)
+	toUpload.FetchKey, err = s.Resolver.Store(toUpload.FetchKey, true)
 	if err != nil {
 		return nil, fmt.Errorf("could store the new version: %v", err)
 	}
@@ -112,6 +122,17 @@ func (s *ModuleService) Delete(namespace string, name string, provider string) e
 	m, err := s.Find(namespace, name, provider)
 	if err != nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+	}
+
+	for _, ver := range m.Versions {
+		if err := s.Resolver.Purge(ver.FetchKey); err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
+				Str("Version", ver.Version).
+				Str("Key", ver.FetchKey).
+				Msg("Could not purge, require manual clean-up")
+		}
 	}
 
 	if err := s.Database.Handler().Delete(&m).Error; err != nil {
@@ -137,10 +158,30 @@ func (s *ModuleService) DeleteVersion(namespace string, name string, provider st
 
 	if toDelete != nil {
 		if len(m.Versions) == 1 {
+			for _, ver := range m.Versions {
+				if err := s.Resolver.Purge(ver.FetchKey); err != nil {
+					log.Warn().
+						AnErr("Error", err).
+						Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
+						Str("Version", ver.Version).
+						Str("Key", ver.FetchKey).
+						Msg("Could not purge, require manual clean-up")
+				}
+			}
+
 			if err := s.Database.Handler().Delete(m).Error; err != nil {
 				return err
 			}
 		} else {
+			if err := s.Resolver.Purge(toDelete.FetchKey); err != nil {
+				log.Warn().
+					AnErr("Error", err).
+					Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
+					Str("Version", toDelete.Version).
+					Str("Key", toDelete.FetchKey).
+					Msg("Could not purge, require manual clean-up")
+			}
+
 			if err := s.Database.Handler().Delete(toDelete).Error; err != nil {
 				return err
 			}

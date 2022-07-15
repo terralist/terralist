@@ -1,4 +1,4 @@
-package storage
+package resolver
 
 const (
 	PROXY = iota
@@ -8,7 +8,7 @@ const (
 
 type Backend = int
 
-// Creator creates the database
+// Creator creates the resolver
 type Creator interface {
 	New(config Configurator) (Resolver, error)
 }

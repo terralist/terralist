@@ -5,7 +5,7 @@ import (
 	"os"
 	"terralist/pkg/auth"
 	"terralist/pkg/database"
-	"terralist/pkg/storage"
+	"terralist/pkg/storage/resolver"
 	"time"
 
 	"terralist/internal/server/controllers"
@@ -38,7 +38,7 @@ type Server struct {
 	Router   *gin.Engine
 	Provider auth.Provider
 	Database database.Engine
-	Resolver storage.Resolver
+	Resolver resolver.Resolver
 
 	EntryController    *controllers.EntryController
 	LoginController    *controllers.LoginController
@@ -52,7 +52,7 @@ type Config struct {
 
 	Database database.Engine
 	Provider auth.Provider
-	Resolver storage.Resolver
+	Resolver resolver.Resolver
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {

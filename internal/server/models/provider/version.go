@@ -49,9 +49,9 @@ func (v Version) ToDownloadProviderDTO(system string, architecture string) (Down
 	for _, platform := range v.Platforms {
 		if platform.System == system && platform.Architecture == architecture {
 			out.FileName = platform.FileName
-			out.DownloadUrl = platform.DownloadUrl
-			out.ShaSumsUrl = platform.ShaSumsUrl
-			out.ShaSumsSignatureUrl = platform.ShaSumsSignatureUrl
+			out.DownloadUrl = platform.FetchKey
+			out.ShaSumsUrl = platform.ShaSumsFetchKey
+			out.ShaSumsSignatureUrl = platform.ShaSumsSignatureFetchKey
 			out.ShaSum = platform.ShaSum
 			out.Protocols = strings.Split(v.Protocols, ",")
 
