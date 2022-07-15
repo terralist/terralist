@@ -29,13 +29,15 @@ const (
 
 	TokenSigningSecretFlag = "token-signing-secret"
 
+	HomeDirectoryFlag = "home-dir"
+
 	StorageResolverFlag = "storage-resolver"
 
-	LocalDataStorePathFlag = "local-datastore-path"
-
 	S3BucketNameFlag      = "s3-bucket-name"
+	S3BucketRegionFlag    = "s3-bucket-region"
 	S3AccessKeyIDFlag     = "s3-access-key-id"
 	S3SecretAccessKeyFlag = "s3-secret-access-key"
+	S3PresignExpireFlag   = "s3-presign-expire"
 )
 
 var flags = map[string]cli.Flag{
@@ -103,24 +105,31 @@ var flags = map[string]cli.Flag{
 		Required:    true,
 	},
 
+	HomeDirectoryFlag: &cli.StringFlag{
+		Description:  "The path to a directory in which Terralist can store files.",
+		DefaultValue: "~/.terralist.d",
+	},
+
 	StorageResolverFlag: &cli.StringFlag{
 		Description:  "The storage resolver.",
 		Choices:      []string{"proxy", "local", "s3"},
 		DefaultValue: "proxy",
 	},
 
-	LocalDataStorePathFlag: &cli.StringFlag{
-		Description:  "The path to the local datastore.",
-		DefaultValue: "~/.terralist.d",
-	},
-
 	S3BucketNameFlag: &cli.StringFlag{
 		Description: "The S3 bucket name.",
+	},
+	S3BucketRegionFlag: &cli.StringFlag{
+		Description: "The S3 bucket region.",
 	},
 	S3AccessKeyIDFlag: &cli.StringFlag{
 		Description: "The AWS access key ID to access the S3 bucket.",
 	},
 	S3SecretAccessKeyFlag: &cli.StringFlag{
 		Description: "The AWS secret access key to access the S3 bucket.",
+	},
+	S3PresignExpireFlag: &cli.IntFlag{
+		Description:  "The number of minutes after which the presigned URLs should expire.",
+		DefaultValue: 15,
 	},
 }

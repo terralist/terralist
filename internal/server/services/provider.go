@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"github.com/rs/zerolog/log"
 	"sort"
-	"terralist/pkg/storage"
+	"terralist/pkg/storage/batch/find"
+	"terralist/pkg/storage/batch/purge"
+	"terralist/pkg/storage/batch/store"
 
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database"
+	"terralist/pkg/storage/batch"
+	batchFactory "terralist/pkg/storage/batch/factory"
+	"terralist/pkg/storage/resolver"
 	"terralist/pkg/version"
 
 	"gorm.io/gorm"
@@ -16,7 +21,7 @@ import (
 
 type ProviderService struct {
 	Database database.Engine
-	Resolver storage.Resolver
+	Resolver resolver.Resolver
 }
 
 func (s *ProviderService) Find(namespace string, name string) (*provider.Provider, error) {
@@ -36,6 +41,25 @@ func (s *ProviderService) Find(namespace string, name string) (*provider.Provide
 			return nil, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
 		} else {
 			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
+	}
+
+	for i, v := range p.Versions {
+		for j, plat := range v.Platforms {
+			result, err := batchFactory.NewBatch(batch.FIND, s.Resolver).
+				Add(&find.BatchInput{Key: plat.FetchKey}).
+				Add(&find.BatchInput{Key: plat.ShaSumsFetchKey}).
+				Add(&find.BatchInput{Key: plat.ShaSumsSignatureFetchKey}).
+				Commit()
+
+			if err != nil {
+				return nil, err
+			}
+			res := result.(*find.BatchOutput)
+
+			p.Versions[i].Platforms[j].FetchKey = res.URLs[0]
+			p.Versions[i].Platforms[j].ShaSumsFetchKey = res.URLs[1]
+			p.Versions[i].Platforms[j].ShaSumsSignatureFetchKey = res.URLs[2]
 		}
 	}
 
@@ -80,41 +104,21 @@ func (s *ProviderService) Upsert(n provider.Provider) (*provider.Provider, error
 		}
 
 		// At this point, all versions passes the check, we can start resolving
-		var stored []string
 		for i, plat := range toUpsertVersion.Platforms {
-			url, err := s.Resolver.Store(plat.DownloadUrl)
+			result, err := batchFactory.NewBatch(batch.STORE, s.Resolver).
+				Add(&store.BatchInput{URL: plat.FetchKey, Archive: true}).
+				Add(&store.BatchInput{URL: plat.ShaSumsFetchKey, Archive: false}).
+				Add(&store.BatchInput{URL: plat.ShaSumsSignatureFetchKey, Archive: false}).
+				Commit()
+
 			if err != nil {
-				log.Error().
-					Str("Provider", fmt.Sprintf("%s/%s", n.Namespace, n.Name)).
-					Str("Version", toUpsertVersion.Version).
-					Str("Platform", fmt.Sprintf("%s_%s", plat.System, plat.Architecture)).
-					AnErr("Error", err).
-					Msg("Error while uploading a new provider version platform.")
-
-				break
+				return nil, err
 			}
+			res := result.(*store.BatchOutput)
 
-			toUpsertVersion.Platforms[i].DownloadUrl = url
-			stored = append(stored, url)
-		}
-
-		if len(stored) != len(toUpsertVersion.Platforms) {
-			// Not all platforms where uploaded, rollback stored ones and return with
-			// error
-			for _, url := range stored {
-				err := s.Resolver.Purge(url)
-				if err != nil {
-					log.Error().
-						Str("Provider", fmt.Sprintf("%s/%s", n.Namespace, n.Name)).
-						Str("Version", toUpsertVersion.Version).
-						Str("Remote URL", url).
-						AnErr("Error", err).
-						Msg("Error while purging a a provider version platform.")
-				}
-			}
-
-			// All provider files where removed, return with error
-			return nil, fmt.Errorf("could not upload all provider platforms")
+			toUpsertVersion.Platforms[i].FetchKey = res.Keys[0]
+			toUpsertVersion.Platforms[i].ShaSumsFetchKey = res.Keys[1]
+			toUpsertVersion.Platforms[i].ShaSumsSignatureFetchKey = res.Keys[2]
 		}
 
 		p.Versions = append(p.Versions, *toUpsertVersion)
@@ -137,6 +141,24 @@ func (s *ProviderService) Delete(namespace string, name string) error {
 	p, err := s.Find(namespace, name)
 	if err != nil {
 		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
+	}
+
+	for _, ver := range p.Versions {
+		for _, plat := range ver.Platforms {
+			if _, err := batchFactory.NewBatch(batch.PURGE, s.Resolver).
+				Add(&purge.BatchInput{Key: plat.FetchKey}).
+				Add(&purge.BatchInput{Key: plat.ShaSumsFetchKey}).
+				Add(&purge.BatchInput{Key: plat.ShaSumsSignatureFetchKey}).
+				Commit(); err != nil {
+				log.Warn().
+					AnErr("Error", err).
+					Str("Provider", fmt.Sprintf("%s/%s", namespace, name)).
+					Str("Version", ver.Version).
+					Str("Platform", fmt.Sprintf("%s_%s", plat.System, plat.Architecture)).
+					Strs("Keys", []string{plat.FetchKey, plat.ShaSumsFetchKey, plat.ShaSumsSignatureFetchKey}).
+					Msg("Could not purge, require manual clean-up")
+			}
+		}
 	}
 
 	if err := s.Database.Handler().Delete(p).Error; err != nil {
@@ -162,10 +184,44 @@ func (s *ProviderService) DeleteVersion(namespace string, name string, version s
 
 	if toDelete != nil {
 		if len(p.Versions) == 1 {
+			for _, ver := range p.Versions {
+				for _, plat := range ver.Platforms {
+					if _, err := batchFactory.NewBatch(batch.PURGE, s.Resolver).
+						Add(&purge.BatchInput{Key: plat.FetchKey}).
+						Add(&purge.BatchInput{Key: plat.ShaSumsFetchKey}).
+						Add(&purge.BatchInput{Key: plat.ShaSumsSignatureFetchKey}).
+						Commit(); err != nil {
+						log.Error().
+							AnErr("Error", err).
+							Str("Provider", fmt.Sprintf("%s/%s", namespace, name)).
+							Str("Version", ver.Version).
+							Str("Platform", fmt.Sprintf("%s_%s", plat.System, plat.Architecture)).
+							Strs("Keys", []string{plat.FetchKey, plat.ShaSumsFetchKey, plat.ShaSumsSignatureFetchKey}).
+							Msg("Could not purge, require manual clean-up")
+					}
+				}
+			}
+
 			if err := s.Database.Handler().Delete(p).Error; err != nil {
 				return err
 			}
 		} else {
+			for _, plat := range toDelete.Platforms {
+				if _, err := batchFactory.NewBatch(batch.PURGE, s.Resolver).
+					Add(&purge.BatchInput{Key: plat.FetchKey}).
+					Add(&purge.BatchInput{Key: plat.ShaSumsFetchKey}).
+					Add(&purge.BatchInput{Key: plat.ShaSumsSignatureFetchKey}).
+					Commit(); err != nil {
+					log.Error().
+						AnErr("Error", err).
+						Str("Provider", fmt.Sprintf("%s/%s", namespace, name)).
+						Str("Version", toDelete.Version).
+						Str("Platform", fmt.Sprintf("%s_%s", plat.System, plat.Architecture)).
+						Strs("Keys", []string{plat.FetchKey, plat.ShaSumsFetchKey, plat.ShaSumsSignatureFetchKey}).
+						Msg("Could not purge, require manual clean-up")
+				}
+			}
+
 			if err := s.Database.Handler().Delete(toDelete).Error; err != nil {
 				return err
 			}
@@ -174,5 +230,5 @@ func (s *ProviderService) DeleteVersion(namespace string, name string, version s
 		return nil
 	}
 
-	return fmt.Errorf("no version found")
+	return nil
 }

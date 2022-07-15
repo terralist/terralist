@@ -51,7 +51,7 @@ func (m *ModuleController) GetVersion() func(c *gin.Context) {
 			return
 		}
 
-		c.Header("X-Terraform-Get", v.Location)
+		c.Header("X-Terraform-Get", v.FetchKey)
 		c.JSON(http.StatusOK, gin.H{
 			"errors": []string{},
 		})
