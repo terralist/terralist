@@ -3,31 +3,20 @@ package server
 import (
 	"fmt"
 	"os"
+	"terralist/internal/server/controllers"
+	"terralist/internal/server/repositories"
+	"terralist/internal/server/services"
 	"terralist/pkg/auth"
 	"terralist/pkg/database"
 	"terralist/pkg/storage/resolver"
 	"time"
 
-	"terralist/internal/server/controllers"
 	"terralist/internal/server/handlers"
-	"terralist/internal/server/services"
 	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mazen160/go-random"
 	"github.com/rs/zerolog/log"
-)
-
-const (
-	OAuthAuthorizationEndpoint = "/oauth/authorization"
-	OAuthTokenEndpoint         = "/oauth/token"
-	OAuthRedirectEndpoint      = "/oauth/redirect"
-	ModuleEndpoint             = "/v1/modules"
-	ProviderEndpoint           = "/v1/providers"
-)
-
-var (
-	TerraformPorts = []int{10000, 10010}
 )
 
 // Server represents the Terralist server
@@ -40,10 +29,10 @@ type Server struct {
 	Database database.Engine
 	Resolver resolver.Resolver
 
-	EntryController    *controllers.EntryController
-	LoginController    *controllers.LoginController
-	ModuleController   *controllers.ModuleController
-	ProviderController *controllers.ProviderController
+	ServiceDiscoveryController *controllers.ServiceDiscoveryController
+	LoginController            *controllers.LoginController
+	ModuleController           *controllers.ModuleController
+	ProviderController         *controllers.ProviderController
 }
 
 // Config holds the server configuration that isn't configurable by the user
@@ -71,20 +60,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("could not apply initial migration: %v", err)
 	}
 
-	entryController := &controllers.EntryController{
-		AuthorizationEndpoint: OAuthAuthorizationEndpoint,
-		TokenEndpoint:         OAuthTokenEndpoint,
-		ModuleEndpoint:        ModuleEndpoint + "/",
-		ProviderEndpoint:      ProviderEndpoint + "/",
-		TerraformPorts:        TerraformPorts,
-	}
-
 	jwtManager, _ := jwt.New(userConfig.TokenSigningSecret)
 
 	salt, _ := random.String(32)
 	exchangeKey, _ := random.String(32)
 
-	loginController := &controllers.LoginController{
+	loginService := &services.DefaultLoginService{
 		Provider: config.Provider,
 		JWT:      jwtManager,
 
@@ -92,22 +73,43 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		CodeExchangeKey: exchangeKey,
 	}
 
-	moduleService := &services.ModuleService{
+	loginController := &controllers.LoginController{
+		LoginService: loginService,
+		EncryptSalt:  salt,
+	}
+
+	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,
 		Resolver: config.Resolver,
+	}
+
+	moduleService := &services.DefaultModuleService{
+		ModuleRepository: moduleRepository,
 	}
 
 	moduleController := &controllers.ModuleController{
 		ModuleService: moduleService,
+		JWT:           jwtManager,
 	}
 
-	providerService := &services.ProviderService{
+	providerRepository := &repositories.DefaultProviderRepository{
 		Database: config.Database,
-		Resolver: config.Resolver,
+	}
+
+	providerService := &services.DefaultProviderService{
+		ProviderRepository: providerRepository,
 	}
 
 	providerController := &controllers.ProviderController{
 		ProviderService: providerService,
+		JWT:             jwtManager,
+	}
+
+	serviceDiscoveryController := &controllers.ServiceDiscoveryController{
+		AuthorizationEndpoint: loginController.AuthorizationRoute(),
+		TokenEndpoint:         loginController.TokenRoute(),
+		ModuleEndpoint:        moduleController.TerraformApiBase() + "/",
+		ProviderEndpoint:      providerController.TerraformApiBase() + "/",
 	}
 
 	return &Server{
@@ -118,65 +120,34 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Database: config.Database,
 		JWT:      jwtManager,
 
-		EntryController:    entryController,
-		LoginController:    loginController,
-		ModuleController:   moduleController,
-		ProviderController: providerController,
+		ServiceDiscoveryController: serviceDiscoveryController,
+		LoginController:            loginController,
+		ModuleController:           moduleController,
+		ProviderController:         providerController,
 	}, nil
 }
 
 // Start initializes the routes and starts serving
 func (s *Server) Start() error {
-	// Entry routes (no security checks)
 	// Health Check API
-	s.Router.GET("/health", s.EntryController.HealthCheck())
+	s.Router.GET("/health", handlers.Health())
 
-	// Terraform Service Discovery API
-	s.Router.GET("/.well-known/terraform.json", s.EntryController.ServiceDiscovery())
+	ctrs := []interface {
+		Subscribe(*gin.RouterGroup, *gin.RouterGroup)
+		TerraformApiBase() string
+		ApiBase() string
+	}{
+		s.ServiceDiscoveryController,
+		s.LoginController,
+		s.ModuleController,
+		s.ProviderController,
+	}
 
-	// Login routes (no security checks)
-	// https://www.terraform.io/docs/internals/login-protocol.html
-	s.Router.GET(OAuthAuthorizationEndpoint, s.LoginController.Authorize())
-	s.Router.GET(OAuthRedirectEndpoint, s.LoginController.Redirect())
-	s.Router.POST(OAuthTokenEndpoint, s.LoginController.TokenValidate())
-
-	// Module routes (with security checks)
-	// https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
-	moduleRouter := s.Router.Group(ModuleEndpoint)
-	moduleRouter.Use(handlers.Authorize(s.JWT))
-
-	moduleRouter.GET("/:namespace/:name/:provider/versions", s.ModuleController.Get())
-
-	// https://www.terraform.io/docs/internals/module-registry-protocol.html#download-source-code-for-a-specific-module-version
-	moduleRouter.GET("/:namespace/:name/:provider/:version/download", s.ModuleController.GetVersion())
-
-	// Upload a new module version
-	moduleRouter.POST("/:namespace/:name/:provider/:version/upload", s.ModuleController.Upload())
-
-	// Delete a module
-	moduleRouter.DELETE("/:namespace/:name/:provider/remove", s.ModuleController.Delete())
-
-	// Delete a module version
-	moduleRouter.DELETE("/:namespace/:name/:provider/:version/remove", s.ModuleController.DeleteVersion())
-
-	// Providers
-	// https://www.terraform.io/docs/internals/provider-registry-protocol.html#list-available-versions
-	providerRouter := s.Router.Group(ProviderEndpoint)
-	providerRouter.Use(handlers.Authorize(s.JWT))
-
-	providerRouter.GET("/:namespace/:name/versions", s.ProviderController.Get())
-
-	// https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
-	providerRouter.GET("/:namespace/:name/:version/download/:os/:arch", s.ProviderController.GetVersion())
-
-	// Upload a new provider version
-	providerRouter.POST("/:namespace/:name/:version/upload", s.ProviderController.Upload())
-
-	// Delete a provider
-	providerRouter.DELETE("/:namespace/:name/remove", s.ProviderController.Delete())
-
-	// Delete a provider version
-	providerRouter.DELETE("/:namespace/:name/:version/remove", s.ProviderController.DeleteVersion())
+	for _, c := range ctrs {
+		tfApi := s.Router.Group(c.TerraformApiBase())
+		api := s.Router.Group(c.ApiBase())
+		c.Subscribe(tfApi, api)
+	}
 
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)

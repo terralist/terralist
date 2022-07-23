@@ -1,235 +1,146 @@
 package controllers
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"terralist/internal/server/models/oauth"
-	"terralist/pkg/auth"
-	"terralist/pkg/auth/jwt"
+	"terralist/internal/server/services"
 
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	tokenExpirationInHours = 24
+	authorizeRoute = "/authorization"
+	tokenRoute     = "/token"
+	redirectRoute  = "/redirect"
 )
 
 type LoginController struct {
-	Provider auth.Provider
-	JWT      jwt.JWT
+	LoginService services.LoginService
 
-	EncryptSalt     string
-	CodeExchangeKey string
+	EncryptSalt string
 }
 
-func (l *LoginController) Authorize() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		request := oauth.Request{
-			ClientID:            c.Query("client_id"),
-			CodeChallenge:       c.Query("code_challenge"),
-			CodeChallengeMethod: c.Query("code_challenge_method"),
-			RedirectUri:         c.Query("redirect_uri"),
-			ResponseType:        c.Query("response_type"),
-			State:               c.Query("state"),
-		}
-
-		state, err := request.ToPayload(l.EncryptSalt)
-
-		if err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					request.State,
-					oauth.ServerError,
-					err.Error(),
-				),
-			)
-			return
-		}
-
-		authorizeURL := l.Provider.GetAuthorizeUrl(state.String())
-
-		c.Redirect(
-			http.StatusFound,
-			authorizeURL,
-		)
-	}
+func (c *LoginController) TerraformApiBase() string {
+	return "/v1/auth"
 }
 
-func (l *LoginController) Redirect() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		code := c.Query("code")
-		state := c.Query("state")
-
-		request, err := oauth.Payload(state).ToRequest(l.EncryptSalt)
-
-		if err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					request.State,
-					oauth.InvalidRequest,
-					err.Error(),
-				),
-			)
-			return
-		}
-
-		var userDetails auth.User
-		if err := l.Provider.GetUserDetails(code, &userDetails); err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					request.State,
-					oauth.AccessDenied,
-					err.Error(),
-				),
-			)
-			return
-		}
-
-		codeComponents := oauth.CodeComponents{
-			Key:                 l.CodeExchangeKey,
-			CodeChallenge:       request.CodeChallenge,
-			CodeChallengeMethod: request.CodeChallengeMethod,
-			UserName:            userDetails.Name,
-			UserEmail:           userDetails.Email,
-		}
-
-		payload, err := codeComponents.ToPayload(l.EncryptSalt)
-		if err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					request.State,
-					oauth.InvalidRequest,
-					err.Error(),
-				),
-			)
-			return
-		}
-
-		c.Redirect(
-			http.StatusFound,
-			fmt.Sprintf(
-				"%s?state=%s&code=%s",
-				request.RedirectUri,
-				request.State,
-				payload,
-			),
-		)
-	}
+func (c *LoginController) ApiBase() string {
+	return "/v1/api/auth"
 }
 
-func (l *LoginController) TokenValidate() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		var request oauth.TokenValidationRequest
-		if err := c.Bind(&request); err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					"",
-					oauth.InvalidRequest,
-					err.Error(),
-				),
-			)
-			return
-		}
-
-		if request.GrantType != "authorization_code" {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					"",
-					oauth.AccessDenied,
-					"requested grant type is not supported",
-				),
-			)
-		}
-
-		codeComponents, err := oauth.Payload(request.Code).ToCodeComponents(l.EncryptSalt)
-
-		if err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					"",
-					oauth.InvalidRequest,
-					err.Error(),
-				),
-			)
-			return
-		}
-
-		if codeComponents.CodeChallengeMethod != "S256" {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					"",
-					oauth.UnsupportedResponseType,
-					"code challenge method unsupported",
-				),
-			)
-			return
-		}
-
-		codeVerifierHash := sha256.Sum256([]byte(request.CodeVerifier))
-		codeVerifierDecoded := base64.RawURLEncoding.EncodeToString(codeVerifierHash[:])
-
-		if string(codeVerifierDecoded) != codeComponents.CodeChallenge {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					"",
-					oauth.InvalidRequest,
-					"code verification failed",
-				),
-			)
-			return
-		}
-
-		t, err := l.JWT.Build(auth.User{
-			Name:  codeComponents.UserName,
-			Email: codeComponents.UserEmail,
-		}, tokenExpirationInHours)
-
-		if err != nil {
-			c.Redirect(
-				http.StatusFound,
-				l.getUrlForRedirectWithError(
-					request.RedirectUri,
-					"",
-					oauth.InvalidRequest,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"access_token":  t,
-			"token_type":    "bearer",
-			"refresh_token": "",
-			"expires_in":    0,
-		})
-	}
+func (c *LoginController) AuthorizationRoute() string {
+	return fmt.Sprintf("%s%s", c.TerraformApiBase(), authorizeRoute)
 }
 
-func (l *LoginController) getUrlForRedirectWithError(redirectUri string, state string, oauthError oauth.Error, description string) string {
+func (c *LoginController) TokenRoute() string {
+	return fmt.Sprintf("%s%s", c.TerraformApiBase(), tokenRoute)
+}
+
+func (c *LoginController) RedirectRoute() string {
+	return fmt.Sprintf("%s%s", c.TerraformApiBase(), redirectRoute)
+}
+
+func (c *LoginController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup) {
+	// tfApi should be compliant with the Terraform Registry Protocol for
+	// authentication
+	// Docs: https://www.terraform.io/docs/internals/login-protocol.html
+
+	tfApi.GET(authorizeRoute, func(ctx *gin.Context) {
+		r := &oauth.Request{
+			ClientID:            ctx.Query("client_id"),
+			CodeChallenge:       ctx.Query("code_challenge"),
+			CodeChallengeMethod: ctx.Query("code_challenge_method"),
+			RedirectURI:         ctx.Query("redirect_uri"),
+			ResponseType:        ctx.Query("response_type"),
+			State:               ctx.Query("state"),
+		}
+
+		state, err := r.ToPayload(c.EncryptSalt)
+		if err != nil {
+			ctx.Redirect(
+				http.StatusFound,
+				c.redirectWithError(r.RedirectURI, r.State, oauth.WrapError(err, oauth.ServerError)),
+			)
+			return
+		}
+
+		authorizeURL, erro := c.LoginService.Authorize(state)
+		if erro != nil {
+			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
+			return
+		}
+
+		ctx.Redirect(http.StatusFound, authorizeURL)
+	})
+
+	tfApi.GET(redirectRoute, func(ctx *gin.Context) {
+		code := ctx.Query("code")
+		state := ctx.Query("state")
+
+		r, err := oauth.Payload(state).ToRequest(c.EncryptSalt)
+		if err != nil {
+			ctx.Redirect(
+				http.StatusFound,
+				c.redirectWithError(r.RedirectURI, r.State, oauth.WrapError(err, oauth.InvalidRequest)),
+			)
+			return
+		}
+
+		redirectURL, erro := c.LoginService.Redirect(code, &r)
+		if erro != nil {
+			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
+			return
+		}
+
+		ctx.Redirect(http.StatusFound, redirectURL)
+	})
+
+	tfApi.POST(tokenRoute, func(ctx *gin.Context) {
+		var r oauth.TokenValidationRequest
+		if err := ctx.Bind(&r); err != nil {
+			// if we catch an error, we don't know where to redirect, just exit the routine
+			return
+		}
+
+		if r.GrantType != "authorization_code" {
+			ctx.Redirect(
+				http.StatusFound,
+				c.redirectWithError(
+					r.RedirectURI,
+					"",
+					oauth.WrapError(fmt.Errorf("requested grant type is not supported"), oauth.AccessDenied),
+				),
+			)
+			return
+		}
+
+		codeComponents, err := oauth.Payload(r.Code).ToCodeComponents(c.EncryptSalt)
+		if err != nil {
+			ctx.Redirect(
+				http.StatusFound,
+				c.redirectWithError(r.RedirectURI, "", oauth.WrapError(err, oauth.InvalidRequest)),
+			)
+			return
+		}
+
+		resp, erro := c.LoginService.ValidateToken(&codeComponents, r.CodeVerifier)
+		if erro != nil {
+			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, "", erro))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, resp)
+	})
+}
+
+func (c *LoginController) redirectWithError(
+	uri string,
+	state string,
+	err oauth.Error,
+) string {
 	stateQuery := ""
 	if state != "" {
 		stateQuery = fmt.Sprintf("&state=%s", state)
@@ -237,9 +148,9 @@ func (l *LoginController) getUrlForRedirectWithError(redirectUri string, state s
 
 	return fmt.Sprintf(
 		"%s?error=%s&error_description=%s%s",
-		redirectUri,
-		oauthError,
-		url.QueryEscape(description),
+		uri,
+		err.Kind(),
+		url.QueryEscape(err.Error()),
 		stateQuery,
 	)
 }

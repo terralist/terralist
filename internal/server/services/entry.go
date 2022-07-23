@@ -1,4 +1,4 @@
-package controllers
+package services
 
 import (
 	"net/http"
@@ -12,12 +12,6 @@ type EntryController struct {
 	ModuleEndpoint        string
 	ProviderEndpoint      string
 	TerraformPorts        []int
-}
-
-func (e *EntryController) HealthCheck() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		c.JSON(http.StatusOK, "OK")
-	}
 }
 
 func (e *EntryController) ServiceDiscovery() func(c *gin.Context) {

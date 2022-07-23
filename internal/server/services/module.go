@@ -1,194 +1,215 @@
 package services
 
 import (
-	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"sort"
-	"terralist/pkg/storage/resolver"
-	"terralist/pkg/version"
-
-	"gorm.io/gorm"
+	
 	"terralist/internal/server/models/module"
-	"terralist/pkg/database"
+	"terralist/internal/server/repositories"
+	"terralist/pkg/version"
 )
 
-type ModuleService struct {
-	Database database.Engine
-	Resolver resolver.Resolver
+// ModuleService describes a service that holds the business logic for modules registry
+type ModuleService interface {
+	// Get returns a specific module
+	Get(namespace string, name string, provider string) (*module.ListResponseDTO, error)
+
+	// GetVersion returns a public URL from which a specific a module version can be
+	// downloaded
+	GetVersion(namespace string, name string, provider string, version string) (*string, error)
+
+	// Upload loads a new module version to the system
+	// If the module does not exist, it will be created
+	Upload(*module.CreateDTO) error
+
+	// Delete removes a module with all its data from the system
+	Delete(namespace string, name string, provider string) error
+
+	// DeleteVersion removes a module version from the system
+	// If the version removed is the only module version available, the entire
+	// module will be removed
+	DeleteVersion(namespace string, name string, provider string, version string) error
 }
 
-func (s *ModuleService) Find(namespace string, name string, provider string) (*module.Module, error) {
-	m := module.Module{}
-
-	err := s.Database.Handler().Where(module.Module{
-		Namespace: namespace,
-		Name:      name,
-		Provider:  provider,
-	}).
-		Preload("Versions.Providers").
-		Preload("Versions.Dependencies").
-		Preload("Versions.Submodules").
-		Preload("Versions.Submodules.Providers").
-		Preload("Versions.Submodules.Dependencies").
-		First(&m).
-		Error
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("no module found with given arguments (source %s/%s/%s)", namespace, name, provider)
-		} else {
-			return nil, fmt.Errorf("error while querying the database: %v", err)
-		}
-	}
-
-	for i, v := range m.Versions {
-		key, err := s.Resolver.Find(v.FetchKey)
-		if err != nil {
-			return nil, fmt.Errorf("could not find url for key %v: %v", v.FetchKey, err)
-		}
-
-		m.Versions[i].FetchKey = key
-	}
-
-	sort.Slice(m.Versions, func(i, j int) bool {
-		lhs := version.Version(m.Versions[i].Version)
-		rhs := version.Version(m.Versions[j].Version)
-
-		return version.Compare(lhs, rhs) <= 0
-	})
-
-	return &m, nil
+// DefaultModuleService is the concrete implementation of ModuleService
+type DefaultModuleService struct {
+	ModuleRepository *repositories.DefaultModuleRepository
 }
 
-func (s *ModuleService) FindVersion(namespace string, name string, provider string, version string) (*module.Version, error) {
-	m, err := s.Find(namespace, name, provider)
-
+func (s *DefaultModuleService) Get(namespace string, name string, provider string) (*module.ListResponseDTO, error) {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, v := range m.Versions {
-		if v.Version == version {
-			return &v, nil
-		}
-	}
-
-	return nil, fmt.Errorf("no version found")
+	dto := m.ToListResponseDTO()
+	return &dto, nil
 }
 
-// Upsert is designed to upload an entire module, but in reality,
-// it will only upload a single version
-func (s *ModuleService) Upsert(n module.Module) (*module.Module, error) {
-	var toUpsert *module.Module
+//
+//func (m *DefaultModuleService) Get() func(c *gin.Context) {
+//	return func(c *gin.Context) {
+//		namespace := c.Param("namespace")
+//		name := c.Param("name")
+//		provider := c.Param("provider")
+//
+//		mod, err := m.ModuleRepository.Find(namespace, name, provider)
+//
+//		if err != nil {
+//			c.JSON(http.StatusNotFound, gin.H{
+//				"errors": []string{
+//					"Requested module was not found",
+//					err.Error(),
+//				},
+//			})
+//			return
+//		}
+//		c.JSON(http.StatusOK, mod.ToListResponseDTO())
+//	}
+//}
 
-	m, err := s.Find(n.Namespace, n.Name, n.Provider)
-	if err == nil {
-		newVersion := version.Version(n.Versions[0].Version)
-
-		for _, ver := range n.Versions {
-			if version.Compare(version.Version(ver.Version), newVersion) == 0 {
-				return nil, fmt.Errorf("version %s already exists", newVersion)
-			}
-		}
-
-		m.Versions = append(m.Versions, n.Versions[0])
-
-		toUpsert = m
-	} else {
-		toUpsert = &n
-	}
-
-	toUpload := &toUpsert.Versions[len(toUpsert.Versions)-1]
-	toUpload.FetchKey, err = s.Resolver.Store(toUpload.FetchKey, true)
+func (s *DefaultModuleService) GetVersion(
+	namespace string,
+	name string,
+	provider string,
+	version string,
+) (*string, error) {
+	v, err := s.ModuleRepository.FindVersion(namespace, name, provider, version)
 	if err != nil {
-		return nil, fmt.Errorf("could store the new version: %v", err)
+		return nil, err
 	}
 
-	if len(toUpsert.Versions) != 1 {
-		if err := s.Database.Handler().Save(toUpsert).Error; err != nil {
-			return nil, err
-		}
-	} else {
-		if err := s.Database.Handler().Create(toUpsert).Error; err != nil {
-			return nil, err
-		}
-	}
-
-	return toUpsert, nil
+	return &v.FetchKey, nil
 }
 
-func (s *ModuleService) Delete(namespace string, name string, provider string) error {
-	m, err := s.Find(namespace, name, provider)
-	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+//
+//
+//func (m *DefaultModuleService) GetVersion() func(c *gin.Context) {
+//	return func(c *gin.Context) {
+//		namespace := c.Param("namespace")
+//		name := c.Param("name")
+//		provider := c.Param("provider")
+//		ver := c.Param("version")
+//
+//		v, err := m.ModuleRepository.FindVersion(namespace, name, provider, ver)
+//
+//		if err != nil {
+//			c.JSON(http.StatusNotFound, gin.H{
+//				"errors": []string{"Requested module was not found"},
+//			})
+//			return
+//		}
+//
+//		c.Header("X-Terraform-Get", v.FetchKey)
+//		c.JSON(http.StatusOK, gin.H{
+//			"errors": []string{},
+//		})
+//	}
+//}
+
+func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
+	if semVer := version.Version(d.Version); !semVer.Valid() {
+		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
 	}
 
-	for _, ver := range m.Versions {
-		if err := s.Resolver.Purge(ver.FetchKey); err != nil {
-			log.Warn().
-				AnErr("Error", err).
-				Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
-				Str("Version", ver.Version).
-				Str("Key", ver.FetchKey).
-				Msg("Could not purge, require manual clean-up")
-		}
-	}
-
-	if err := s.Database.Handler().Delete(&m).Error; err != nil {
+	m := d.ToModule()
+	if _, err := s.ModuleRepository.Upsert(m); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *ModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
-	m, err := s.Find(namespace, name, provider)
-	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+//func (m *DefaultModuleService) Upload() func(c *gin.Context) {
+//	return func(c *gin.Context) {
+//		ver := c.Param("version")
+//		if semVer := version.Version(ver); !semVer.Valid() {
+//			c.JSON(http.StatusBadRequest, gin.H{
+//				"errors": []string{"version should respect the semantic versioning standard (semver.org)"},
+//			})
+//		}
+//
+//		namespace := c.Param("namespace")
+//		name := c.Param("name")
+//		provider := c.Param("provider")
+//
+//		var body module.CreateDTO
+//		if err := c.BindJSON(&body); err != nil {
+//			c.JSON(http.StatusBadRequest, gin.H{
+//				"errors": []string{err.Error()},
+//			})
+//		}
+//
+//		body.Namespace = namespace
+//		body.Name = name
+//		body.Provider = provider
+//		body.Version = ver
+//
+//		request := body.ToModule()
+//
+//		if _, err := m.ModuleRepository.Upsert(request); err != nil {
+//			c.JSON(http.StatusConflict, gin.H{
+//				"errors": []string{err.Error()},
+//			})
+//			return
+//		}
+//		c.JSON(http.StatusOK, gin.H{
+//			"errors": []string{},
+//		})
+//	}
+//}
+
+func (s *DefaultModuleService) Delete(namespace string, name string, provider string) error {
+	if err := s.ModuleRepository.Delete(namespace, name, provider); err != nil {
+		return err
 	}
 
-	var toDelete *module.Version = nil
-	for _, v := range m.Versions {
-		if v.Version == version {
-			toDelete = &v
-			break
-		}
-	}
-
-	if toDelete != nil {
-		if len(m.Versions) == 1 {
-			for _, ver := range m.Versions {
-				if err := s.Resolver.Purge(ver.FetchKey); err != nil {
-					log.Warn().
-						AnErr("Error", err).
-						Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
-						Str("Version", ver.Version).
-						Str("Key", ver.FetchKey).
-						Msg("Could not purge, require manual clean-up")
-				}
-			}
-
-			if err := s.Database.Handler().Delete(m).Error; err != nil {
-				return err
-			}
-		} else {
-			if err := s.Resolver.Purge(toDelete.FetchKey); err != nil {
-				log.Warn().
-					AnErr("Error", err).
-					Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
-					Str("Version", toDelete.Version).
-					Str("Key", toDelete.FetchKey).
-					Msg("Could not purge, require manual clean-up")
-			}
-
-			if err := s.Database.Handler().Delete(toDelete).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
-	return fmt.Errorf("no version found")
+	return nil
 }
+
+//
+//func (m *DefaultModuleService) Delete() func(c *gin.Context) {
+//	return func(c *gin.Context) {
+//		namespace := c.Param("namespace")
+//		name := c.Param("name")
+//		provider := c.Param("provider")
+//
+//		if err := m.ModuleRepository.Delete(namespace, name, provider); err != nil {
+//			c.JSON(http.StatusConflict, gin.H{
+//				"errors": []string{err.Error()},
+//			})
+//			return
+//		}
+//		c.JSON(http.StatusOK, gin.H{
+//			"errors": []string{},
+//		})
+//	}
+//}
+
+func (s *DefaultModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
+	if err := s.ModuleRepository.DeleteVersion(namespace, name, provider, version); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//
+//
+//func (m *DefaultModuleService) DeleteVersion() func(c *gin.Context) {
+//	return func(c *gin.Context) {
+//		namespace := c.Param("namespace")
+//		name := c.Param("name")
+//		provider := c.Param("provider")
+//		ver := c.Param("version")
+//
+//		if err := m.ModuleRepository.DeleteVersion(namespace, name, provider, ver); err != nil {
+//			c.JSON(http.StatusConflict, gin.H{
+//				"errors": []string{err.Error()},
+//			})
+//			return
+//		}
+//		c.JSON(http.StatusOK, gin.H{
+//			"errors": []string{},
+//		})
+//	}
+//}

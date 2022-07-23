@@ -1,139 +1,176 @@
 package controllers
 
 import (
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"net/http"
-	"terralist/pkg/version"
-
+	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
-
-	"github.com/gin-gonic/gin"
+	"terralist/pkg/auth/jwt"
 )
 
 type ProviderController struct {
-	ProviderService *services.ProviderService
+	ProviderService services.ProviderService
+	JWT             jwt.JWT
 }
 
-func (p *ProviderController) Get() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-
-		prov, err := p.ProviderService.Find(namespace, name)
-
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"errors": []string{
-					"Requested provider was not found",
-					err.Error(),
-				},
-			})
-			return
-		}
-		c.JSON(http.StatusOK, prov.ToVersionListProviderDTO())
-	}
+func (c *ProviderController) TerraformApiBase() string {
+	return "/v1/providers"
 }
 
-func (p *ProviderController) GetVersion() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		ver := c.Param("version")
-		system := c.Param("os")
-		arch := c.Param("arch")
-
-		v, err := p.ProviderService.FindVersion(namespace, name, ver)
-
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"errors": []string{"Requested provider was not found"},
-			})
-			return
-		}
-
-		response, err := v.ToDownloadVersionDTO(system, arch)
-
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"errors": []string{err.Error()},
-			})
-		} else {
-			c.JSON(http.StatusOK, response)
-		}
-	}
+func (c *ProviderController) ApiBase() string {
+	return "/v1/api/providers"
 }
 
-func (p *ProviderController) Upload() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		ver := c.Param("version")
-		if semVer := version.Version(ver); !semVer.Valid() {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{"version should respect the semantic versioning standard (semver.org)"},
+func (c *ProviderController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup) {
+	// tfApi should be compliant with the Terraform Registry Protocol for
+	// providers
+	// Docs: https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
+	tfApi.Use(handlers.Authorize(c.JWT))
+
+	tfApi.GET(
+		"/:namespace/:name/versions",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+
+			d, err := c.ProviderService.Get(namespace, name)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": err.Error(),
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, d)
+		},
+	)
+
+	// Docs: https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
+	tfApi.GET(
+		"/:namespace/:name/:version/download/:os/:arch",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			version := ctx.Param("version")
+			os := ctx.Param("os")
+			arch := ctx.Param("arch")
+
+			v, err := c.ProviderService.GetVersion(namespace, name, version, os, arch)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, v)
+		},
+	)
+
+	// api holds the routes that are not described by the Terraform protocol
+	api.Use(handlers.Authorize(c.JWT))
+
+	// Upload a new provider version
+	api.POST(
+		"/:namespace/:name/:version/upload",
+		handlers.RequireAuthority(),
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			version := ctx.Param("version")
+
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
+
+			var body provider.CreateProviderDTO
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			body.AuthorityID = authorityID
+			body.Namespace = namespace
+			body.Name = name
+			body.Version = version
+
+			if err := c.ProviderService.Upload(&body); err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-		}
+		},
+	)
 
-		namespace := c.Param("namespace")
-		name := c.Param("name")
+	// Delete a provider
+	api.DELETE(
+		"/:namespace/:name/remove",
+		handlers.RequireAuthority(),
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
 
-		var body provider.CreateProviderDTO
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
 
-		if err := c.BindJSON(&body); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
+			if err := c.ProviderService.Delete(authorityID, namespace, name); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-			return
-		}
+		},
+	)
 
-		body.AuthorityID = c.GetString("issuer")
-		body.Namespace = namespace
-		body.Name = name
-		body.Version = ver
+	// Delete a provider version
+	api.DELETE(
+		"/:namespace/:name/:version/remove",
+		handlers.RequireAuthority(),
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			version := ctx.Param("version")
 
-		prov := body.ToProvider()
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
 
-		if _, err := p.ProviderService.Upsert(prov); err != nil {
-			c.JSON(http.StatusConflict, gin.H{
-				"errors": []string{err.Error()},
+			if err := c.ProviderService.DeleteVersion(authorityID, namespace, name, version); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
-}
-
-func (p *ProviderController) Delete() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-
-		if err := p.ProviderService.Delete(namespace, name); err != nil {
-			c.JSON(http.StatusConflict, gin.H{
-				"errors": []string{err.Error()},
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
-}
-
-func (p *ProviderController) DeleteVersion() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		ver := c.Param("version")
-
-		if err := p.ProviderService.DeleteVersion(namespace, name, ver); err != nil {
-			c.JSON(http.StatusConflict, gin.H{
-				"errors": []string{err.Error()},
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
+		},
+	)
 }

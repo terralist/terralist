@@ -10,7 +10,6 @@ import (
 type ApiKey struct {
 	entity.Entity
 	AuthorityID uuid.UUID
-	ApiKey      string `gorm:"not null"`
 	Expiration  time.Time
 }
 
