@@ -76,28 +76,6 @@ func (c *LoginController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup
 		ctx.Redirect(http.StatusFound, authorizeURL)
 	})
 
-	tfApi.GET(redirectRoute, func(ctx *gin.Context) {
-		code := ctx.Query("code")
-		state := ctx.Query("state")
-
-		r, err := oauth.Payload(state).ToRequest(c.EncryptSalt)
-		if err != nil {
-			ctx.Redirect(
-				http.StatusFound,
-				c.redirectWithError(r.RedirectURI, r.State, oauth.WrapError(err, oauth.InvalidRequest)),
-			)
-			return
-		}
-
-		redirectURL, erro := c.LoginService.Redirect(code, &r)
-		if erro != nil {
-			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
-			return
-		}
-
-		ctx.Redirect(http.StatusFound, redirectURL)
-	})
-
 	tfApi.POST(tokenRoute, func(ctx *gin.Context) {
 		var r oauth.TokenValidationRequest
 		if err := ctx.Bind(&r); err != nil {
@@ -134,6 +112,30 @@ func (c *LoginController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup
 
 		ctx.JSON(http.StatusOK, resp)
 	})
+
+	// api holds the routes that are not described by the Terraform protocol
+	api.GET(redirectRoute, func(ctx *gin.Context) {
+		code := ctx.Query("code")
+		state := ctx.Query("state")
+
+		r, err := oauth.Payload(state).ToRequest(c.EncryptSalt)
+		if err != nil {
+			ctx.Redirect(
+				http.StatusFound,
+				c.redirectWithError(r.RedirectURI, r.State, oauth.WrapError(err, oauth.InvalidRequest)),
+			)
+			return
+		}
+
+		redirectURL, erro := c.LoginService.Redirect(code, &r)
+		if erro != nil {
+			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
+			return
+		}
+
+		ctx.Redirect(http.StatusFound, redirectURL)
+	})
+
 }
 
 func (c *LoginController) redirectWithError(
