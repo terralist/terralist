@@ -51,7 +51,7 @@ func (p *ProviderController) GetVersion() func(c *gin.Context) {
 			return
 		}
 
-		response, err := v.ToDownloadProviderDTO(system, arch)
+		response, err := v.ToDownloadVersionDTO(system, arch)
 
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -84,6 +84,7 @@ func (p *ProviderController) Upload() func(c *gin.Context) {
 			return
 		}
 
+		body.AuthorityID = c.GetString("issuer")
 		body.Namespace = namespace
 		body.Name = name
 		body.Version = ver
