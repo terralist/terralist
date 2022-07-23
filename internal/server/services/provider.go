@@ -1,153 +1,127 @@
 package services
 
 import (
-	"errors"
 	"fmt"
-	"sort"
-
 	"terralist/internal/server/models/provider"
-	"terralist/pkg/database"
-	"terralist/pkg/storage/resolver"
+	"terralist/internal/server/repositories"
 	"terralist/pkg/version"
 
-	"gorm.io/gorm"
+	"github.com/google/uuid"
 )
 
-type ProviderService struct {
-	Database database.Engine
-	Resolver resolver.Resolver
+// ProviderService describes a service that holds the business logic for providers registry
+type ProviderService interface {
+	// Get returns a specific provider
+	Get(namespace string, name string) (*provider.VersionListProviderDTO, error)
+
+	// GetVersion returns a specific installation for a provider
+	GetVersion(
+		namespace string,
+		name string,
+		version string,
+		system string,
+		architecture string,
+	) (*provider.DownloadVersionDTO, error)
+
+	// Upload loads a new provider version into the system
+	// If the provider does not already exist, it will create a new one
+	Upload(*provider.CreateProviderDTO) error
+
+	// Delete removes a provider from the system with all its data (versions)
+	Delete(authorityID uuid.UUID, namespace string, name string) error
+
+	// DeleteVersion removes a specific version from the system with all its data (installations)
+	// If the removed version is the only version available in the system, the entire
+	// provider will be removed
+	DeleteVersion(authorityID uuid.UUID, namespace string, name string, version string) error
 }
 
-func (s *ProviderService) Find(namespace string, name string) (*provider.Provider, error) {
-	p := provider.Provider{}
+// DefaultProviderService is the concrete implementation of ProviderService
+type DefaultProviderService struct {
+	ProviderRepository repositories.ProviderRepository
+}
 
-	err := s.Database.Handler().Where(provider.Provider{
-		Name:      name,
-		Namespace: namespace,
-	}).
-		Preload("Authority").
-		Preload("Authority.Keys").
-		Preload("Versions").
-		Preload("Versions.Platforms").
-		First(&p).
-		Error
+func (s *DefaultProviderService) Get(namespace string, name string) (*provider.VersionListProviderDTO, error) {
+	// Find the provider
+	p, err := s.ProviderRepository.Find(namespace, name)
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
-		} else {
-			return nil, fmt.Errorf("error while querying the database: %v", err)
-		}
+		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
 
-	sort.Slice(p.Versions, func(i, j int) bool {
-		lhs := version.Version(p.Versions[i].Version)
-		rhs := version.Version(p.Versions[j].Version)
+	// Map to response DTO
+	dto := p.ToVersionListProviderDTO()
 
-		return version.Compare(lhs, rhs) <= 0
-	})
-
-	return &p, nil
+	return &dto, nil
 }
 
-func (s *ProviderService) FindVersion(namespace string, name string, version string) (*provider.Version, error) {
-	v := provider.Version{}
-
-	err := s.Database.Handler().
-		Joins(
-			"Provider",
-			s.Database.Handler().Where(&provider.Provider{
-				Name:      name,
-				Namespace: namespace,
-			}),
-		).
-		Where(&provider.Version{
-			Version: version,
-		}).
-		Preload("Platforms").
-		Preload("Provider.Authority.Keys").
-		First(&v).
-		Error
-
+func (s *DefaultProviderService) GetVersion(
+	namespace string,
+	name string,
+	version string,
+	system string,
+	architecture string,
+) (*provider.DownloadVersionDTO, error) {
+	p, err := s.ProviderRepository.FindVersion(namespace, name, version)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("no version found with given arguments (provider %s/%s; version %s)", namespace, name, version)
-		} else {
-			return nil, fmt.Errorf("error while querying the database: %v", err)
-		}
-	}
-
-	return &v, nil
-}
-
-// Upsert is designed to upload an entire provider, but in reality,
-// it will only upload a single version at a time
-func (s *ProviderService) Upsert(n provider.Provider) (*provider.Provider, error) {
-	p, err := s.Find(n.Namespace, n.Name)
-	if err == nil {
-		// The provider already exists, check if for version conflicts
-		toUpsertVersion := &n.Versions[0]
-
-		for _, v := range p.Versions {
-			if version.Compare(version.Version(v.Version), version.Version(toUpsertVersion.Version)) == 0 {
-				return nil, fmt.Errorf("version %s already exists", v.Version)
-			}
-		}
-
-		p.Versions = append(p.Versions, *toUpsertVersion)
-
-		if err := s.Database.Handler().Save(p).Error; err != nil {
-			return nil, err
-		}
-
-		return p, nil
-	}
-
-	if err := s.Database.Handler().Create(&n).Error; err != nil {
 		return nil, err
 	}
 
-	return &n, nil
-}
-
-func (s *ProviderService) Delete(namespace string, name string) error {
-	p, err := s.Find(namespace, name)
+	dto, err := p.ToDownloadVersionDTO(system, architecture)
 	if err != nil {
-		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
+		return nil, err
 	}
 
-	if err := s.Database.Handler().Delete(p).Error; err != nil {
+	return &dto, nil
+}
+
+func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
+	if semVer := version.Version(d.Version); !semVer.Valid() {
+		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
+	}
+
+	p := d.ToProvider()
+	if _, err := s.ProviderRepository.Upsert(p); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *ProviderService) DeleteVersion(namespace string, name string, version string) error {
-	p, err := s.Find(namespace, name)
+func (s *DefaultProviderService) Delete(authorityID uuid.UUID, namespace string, name string) error {
+	p, err := s.ProviderRepository.Find(namespace, name)
 	if err != nil {
-		return fmt.Errorf("provider %s/%s is not uploaded to this registry", namespace, name)
+		return err
 	}
 
-	var toDeleteVersion *provider.Version = nil
-	for _, v := range p.Versions {
-		if v.Version == version {
-			toDeleteVersion = &v
-			break
-		}
+	if p.Authority.ID != authorityID {
+		return fmt.Errorf("authority does not match")
 	}
 
-	if toDeleteVersion != nil {
-		var toDelete any
-		if len(p.Versions) == 1 {
-			toDelete = &p
-		} else {
-			toDelete = toDeleteVersion
-		}
+	if err := s.ProviderRepository.Delete(p); err != nil {
+		return err
+	}
 
-		if err := s.Database.Handler().Delete(toDelete).Error; err != nil {
-			return err
-		}
+	return nil
+}
+
+func (s *DefaultProviderService) DeleteVersion(
+	authorityID uuid.UUID,
+	namespace string,
+	name string,
+	version string,
+) error {
+	p, err := s.ProviderRepository.Find(namespace, name)
+	if err != nil {
+		return err
+	}
+
+	if p.Authority.ID != authorityID {
+		return fmt.Errorf("authority does not match")
+	}
+
+	if err := s.ProviderRepository.DeleteVersion(p, version); err != nil {
+		return err
 	}
 
 	return nil

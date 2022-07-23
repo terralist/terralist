@@ -13,7 +13,7 @@ type JWT interface {
 	// Build generates and sign a token for a given user
 	// The first parameter represents the user for which a token
 	// should be granted
-	// The second parameter represents the number of hours after
+	// The second parameter represents the number of seconds after
 	// which the token should expire
 	Build(auth.User, int) (string, error)
 
@@ -40,7 +40,7 @@ func (th *defaultJWT) Build(user auth.User, expireIn int) (string, error) {
 	if expireIn == 0 {
 		exp = 0
 	} else {
-		exp = time.Now().Add(time.Duration(expireIn) * time.Hour).Unix()
+		exp = time.Now().Add(time.Duration(expireIn) * time.Second).Unix()
 	}
 
 	// Create a new token object, specifying signing method and the claims

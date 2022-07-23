@@ -33,7 +33,7 @@ func (p Provider) ToVersionListProviderDTO() VersionListProviderDTO {
 }
 
 type CreateProviderDTO struct {
-	AuthorityID string
+	AuthorityID uuid.UUID
 	Name        string
 	Namespace   string
 	Version     string
@@ -49,7 +49,7 @@ func (d CreateProviderDTO) ToProvider() Provider {
 	}
 
 	return Provider{
-		AuthorityID: uuid.MustParse(d.AuthorityID),
+		AuthorityID: d.AuthorityID,
 		Name:        d.Name,
 		Namespace:   d.Namespace,
 		Versions: []Version{
