@@ -86,7 +86,7 @@ func (th *defaultJWT) Extract(t string) (*auth.User, error) {
 		return nil, fmt.Errorf("invalid token")
 	}
 
-	exp := claims["exp"].(int64)
+	exp := int64(claims["exp"].(float64))
 	if exp != 0 && time.Now().Unix() > exp {
 		return nil, fmt.Errorf("token expired")
 	}
