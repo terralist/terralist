@@ -14,6 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	tokenExpirationInHours = 24
+)
+
 type LoginController struct {
 	Provider auth.Provider
 	JWT      jwt.JWT
@@ -200,7 +204,7 @@ func (l *LoginController) TokenValidate() func(c *gin.Context) {
 		t, err := l.JWT.Build(auth.User{
 			Name:  codeComponents.UserName,
 			Email: codeComponents.UserEmail,
-		})
+		}, tokenExpirationInHours)
 
 		if err != nil {
 			c.Redirect(
