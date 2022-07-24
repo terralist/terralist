@@ -2,10 +2,12 @@ package repositories
 
 import (
 	"fmt"
-	"github.com/google/uuid"
+	"time"
+
 	"terralist/internal/server/models/authority"
 	"terralist/pkg/database"
-	"time"
+
+	"github.com/google/uuid"
 )
 
 // ApiKeyRepository describes a service that can interact with the API keys database

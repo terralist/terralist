@@ -3,14 +3,15 @@ package repositories
 import (
 	"errors"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"sort"
+
+	"terralist/internal/server/models/module"
+	"terralist/pkg/database"
 	"terralist/pkg/storage/resolver"
 	"terralist/pkg/version"
 
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
-	"terralist/internal/server/models/module"
-	"terralist/pkg/database"
 )
 
 // ModuleRepository describes a service that can interact with the modules database

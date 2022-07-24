@@ -2,6 +2,7 @@ package github
 
 import (
 	"fmt"
+
 	"terralist/pkg/auth"
 )
 

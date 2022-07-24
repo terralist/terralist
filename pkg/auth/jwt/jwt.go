@@ -3,8 +3,9 @@ package jwt
 import (
 	"errors"
 	"fmt"
-	"terralist/pkg/auth"
 	"time"
+
+	"terralist/pkg/auth"
 
 	_jwt "github.com/golang-jwt/jwt"
 )

@@ -3,9 +3,10 @@ package jwt
 import (
 	"errors"
 	"fmt"
-	"terralist/pkg/auth"
 	"testing"
 	"time"
+
+	"terralist/pkg/auth"
 
 	"github.com/google/uuid"
 	"github.com/mazen160/go-random"

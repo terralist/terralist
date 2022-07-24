@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+
 	"terralist/pkg/storage/resolver"
 )
 

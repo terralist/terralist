@@ -4,13 +4,13 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"github.com/mazen160/go-random"
 	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"time"
 
+	"github.com/mazen160/go-random"
 	"github.com/rs/zerolog/log"
 )
 

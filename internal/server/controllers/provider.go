@@ -1,13 +1,15 @@
 package controllers
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
+
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/auth/jwt"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type ProviderController struct {
