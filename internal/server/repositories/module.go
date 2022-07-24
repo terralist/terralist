@@ -62,15 +62,6 @@ func (r *DefaultModuleRepository) Find(namespace string, name string, provider s
 		}
 	}
 
-	for i, v := range m.Versions {
-		key, err := r.Resolver.Find(v.Location)
-		if err != nil {
-			return nil, fmt.Errorf("could not find url for key %v: %v", v.Location, err)
-		}
-
-		m.Versions[i].Location = key
-	}
-
 	sort.Slice(m.Versions, func(i, j int) bool {
 		lhs := version.Version(m.Versions[i].Version)
 		rhs := version.Version(m.Versions[j].Version)
@@ -153,16 +144,20 @@ func (r *DefaultModuleRepository) Upsert(n module.Module) (*module.Module, error
 			URL:     toUpload.Location,
 			Archive: true,
 			KeyPrefix: fmt.Sprintf(
-				"modules/%s/%s/%s/%s",
+				"modules/%s/%s/%s",
 				toUpsert.Namespace,
 				toUpsert.Name,
 				toUpsert.Provider,
-				toUpload.Version,
 			),
-			FileName: fmt.Sprintf("v%s.zip", toUpload.Version),
+			FileName: fmt.Sprintf("%s.zip", toUpload.Version),
 		})
 		if err != nil {
 			return fmt.Errorf("could store the new version: %v", err)
+		}
+
+		// Save the resolved key
+		if err := tx.Save(toUpload).Error; err != nil {
+			return fmt.Errorf("could not update module key: %v", err)
 		}
 
 		return nil
