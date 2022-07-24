@@ -2,6 +2,7 @@ package factory
 
 import (
 	"fmt"
+
 	"terralist/pkg/storage/resolver"
 	"terralist/pkg/storage/resolver/local"
 	"terralist/pkg/storage/resolver/proxy"

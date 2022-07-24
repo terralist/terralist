@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
 	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"

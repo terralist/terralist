@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"fmt"
+
 	"terralist/pkg/storage/resolver"
 )
 

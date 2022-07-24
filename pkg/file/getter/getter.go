@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/hashicorp/go-getter"
-	"github.com/rs/zerolog/log"
 	"os"
 	"os/signal"
 	"sync"
+
+	"github.com/hashicorp/go-getter"
+	"github.com/rs/zerolog/log"
 )
 
 var (

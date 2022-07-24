@@ -50,7 +50,7 @@ func (r *DefaultProviderRepository) Find(namespace string, name string) (*provid
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("no provider found with given arguments (provider %r/%r)", namespace, name)
+			return nil, fmt.Errorf("no provider found with given arguments (provider %s/%s)", namespace, name)
 		} else {
 			return nil, fmt.Errorf("error while querying the database: %v", err)
 		}
@@ -87,7 +87,7 @@ func (r *DefaultProviderRepository) FindVersion(namespace string, name string, v
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("no version found with given arguments (provider %r/%r; version %r)", namespace, name, version)
+			return nil, fmt.Errorf("no version found with given arguments (provider %s/%s; version %s)", namespace, name, version)
 		} else {
 			return nil, fmt.Errorf("error while querying the database: %v", err)
 		}
@@ -106,7 +106,7 @@ func (r *DefaultProviderRepository) Upsert(n provider.Provider) (*provider.Provi
 
 		for _, v := range p.Versions {
 			if version.Compare(version.Version(v.Version), version.Version(toUpsertVersion.Version)) == 0 {
-				return nil, fmt.Errorf("version %r already exists", v.Version)
+				return nil, fmt.Errorf("version %s already exists", v.Version)
 			}
 		}
 

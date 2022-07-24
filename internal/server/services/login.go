@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+
 	"terralist/internal/server/models/oauth"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"

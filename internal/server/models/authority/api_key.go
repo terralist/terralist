@@ -1,8 +1,9 @@
 package authority
 
 import (
-	"terralist/pkg/database/entity"
 	"time"
+
+	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
 )

@@ -3,18 +3,19 @@ package s3
 import (
 	"bytes"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"terralist/pkg/file/getter"
-	"terralist/pkg/file/zipper"
 	"time"
 
+	"terralist/pkg/file/getter"
+	"terralist/pkg/file/zipper"
+
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/mazen160/go-random"
 )
 

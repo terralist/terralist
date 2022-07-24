@@ -3,9 +3,9 @@ package entity
 import (
 	"time"
 
-	"github.com/google/uuid"
-
 	"terralist/pkg/database"
+
+	"github.com/google/uuid"
 )
 
 type Entity struct {

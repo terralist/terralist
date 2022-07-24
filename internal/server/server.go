@@ -3,16 +3,16 @@ package server
 import (
 	"fmt"
 	"os"
+	"time"
+
 	"terralist/internal/server/controllers"
+	"terralist/internal/server/handlers"
 	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
 	"terralist/pkg/auth"
+	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
 	"terralist/pkg/storage/resolver"
-	"time"
-
-	"terralist/internal/server/handlers"
-	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mazen160/go-random"

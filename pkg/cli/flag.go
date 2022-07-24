@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/mitchellh/mapstructure"
 	"reflect"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type Flag interface {

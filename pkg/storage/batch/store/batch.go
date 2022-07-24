@@ -2,9 +2,11 @@ package store
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
+
 	"terralist/pkg/storage/batch"
 	"terralist/pkg/storage/resolver"
+
+	"github.com/rs/zerolog/log"
 )
 
 type BatchInput struct {
