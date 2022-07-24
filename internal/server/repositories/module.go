@@ -7,7 +7,7 @@ import (
 
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
-	"terralist/pkg/storage/resolver"
+	"terralist/pkg/storage"
 	"terralist/pkg/version"
 
 	"github.com/rs/zerolog/log"
@@ -26,16 +26,16 @@ type ModuleRepository interface {
 	Upsert(n module.Module) (*module.Module, error)
 
 	// Delete removes a module with all its data (versions)
-	Delete(namespace string, name string, provider string) error
+	Delete(*module.Module) error
 
 	// DeleteVersion removes a version from a module
-	DeleteVersion(namespace string, name string, provider string, version string) error
+	DeleteVersion(m *module.Module, version string) error
 }
 
 // DefaultModuleRepository is a concrete implementation of ModuleRepository
 type DefaultModuleRepository struct {
 	Database database.Engine
-	Resolver resolver.Resolver
+	Resolver storage.Resolver
 }
 
 func (r *DefaultModuleRepository) Find(namespace string, name string, provider string) (*module.Module, error) {
@@ -63,12 +63,12 @@ func (r *DefaultModuleRepository) Find(namespace string, name string, provider s
 	}
 
 	for i, v := range m.Versions {
-		key, err := r.Resolver.Find(v.FetchKey)
+		key, err := r.Resolver.Find(v.Location)
 		if err != nil {
-			return nil, fmt.Errorf("could not find url for key %v: %v", v.FetchKey, err)
+			return nil, fmt.Errorf("could not find url for key %v: %v", v.Location, err)
 		}
 
-		m.Versions[i].FetchKey = key
+		m.Versions[i].Location = key
 	}
 
 	sort.Slice(m.Versions, func(i, j int) bool {
@@ -81,24 +81,38 @@ func (r *DefaultModuleRepository) Find(namespace string, name string, provider s
 	return &m, nil
 }
 
-func (r *DefaultModuleRepository) FindVersion(namespace string, name string, provider string, version string) (*module.Version, error) {
+func (r *DefaultModuleRepository) FindVersion(
+	namespace string,
+	name string,
+	provider string,
+	version string,
+) (*module.Version, error) {
 	m, err := r.Find(namespace, name, provider)
 
 	if err != nil {
 		return nil, err
 	}
 
+	var ver *module.Version = nil
 	for _, v := range m.Versions {
 		if v.Version == version {
-			return &v, nil
+			ver = &v
+			break
 		}
 	}
 
-	return nil, fmt.Errorf("no version found")
+	if ver == nil {
+		return nil, fmt.Errorf("no version found")
+	}
+
+	ver.Location, err = r.Resolver.Find(ver.Location)
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve location: %v", err)
+	}
+
+	return ver, nil
 }
 
-// Upsert is designed to upload an entire module, but in reality,
-// it will only upload a single version
 func (r *DefaultModuleRepository) Upsert(n module.Module) (*module.Module, error) {
 	var toUpsert *module.Module
 
@@ -119,38 +133,54 @@ func (r *DefaultModuleRepository) Upsert(n module.Module) (*module.Module, error
 		toUpsert = &n
 	}
 
-	toUpload := &toUpsert.Versions[len(toUpsert.Versions)-1]
-	toUpload.FetchKey, err = r.Resolver.Store(toUpload.FetchKey, true)
-	if err != nil {
-		return nil, fmt.Errorf("could store the new version: %v", err)
-	}
+	// Create a transaction to revert db changes if the resolver fails
+	// to store the file
+	// If the database fails to create the object, the call to store
+	// the object will never be called
+	if err := r.Database.Handler().Transaction(func(tx *gorm.DB) error {
+		if len(toUpsert.Versions) != 1 {
+			if err := tx.Save(toUpsert).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := tx.Create(toUpsert).Error; err != nil {
+				return err
+			}
+		}
 
-	if len(toUpsert.Versions) != 1 {
-		if err := r.Database.Handler().Save(toUpsert).Error; err != nil {
-			return nil, err
+		toUpload := &toUpsert.Versions[len(toUpsert.Versions)-1]
+		toUpload.Location, err = r.Resolver.Store(&storage.StoreInput{
+			URL:     toUpload.Location,
+			Archive: true,
+			KeyPrefix: fmt.Sprintf(
+				"modules/%s/%s/%s/%s",
+				toUpsert.Namespace,
+				toUpsert.Name,
+				toUpsert.Provider,
+				toUpload.Version,
+			),
+			FileName: fmt.Sprintf("v%s.zip", toUpload.Version),
+		})
+		if err != nil {
+			return fmt.Errorf("could store the new version: %v", err)
 		}
-	} else {
-		if err := r.Database.Handler().Create(toUpsert).Error; err != nil {
-			return nil, err
-		}
+
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	return toUpsert, nil
 }
 
-func (r *DefaultModuleRepository) Delete(namespace string, name string, provider string) error {
-	m, err := r.Find(namespace, name, provider)
-	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
-	}
-
+func (r *DefaultModuleRepository) Delete(m *module.Module) error {
 	for _, ver := range m.Versions {
-		if err := r.Resolver.Purge(ver.FetchKey); err != nil {
+		if err := r.Resolver.Purge(ver.Location); err != nil {
 			log.Warn().
 				AnErr("Error", err).
-				Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
+				Str("Module", m.String()).
 				Str("Version", ver.Version).
-				Str("Key", ver.FetchKey).
+				Str("Key", ver.Location).
 				Msg("Could not purge, require manual clean-up")
 		}
 	}
@@ -162,12 +192,7 @@ func (r *DefaultModuleRepository) Delete(namespace string, name string, provider
 	return nil
 }
 
-func (r *DefaultModuleRepository) DeleteVersion(namespace string, name string, provider string, version string) error {
-	m, err := r.Find(namespace, name, provider)
-	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
-	}
-
+func (r *DefaultModuleRepository) DeleteVersion(m *module.Module, version string) error {
 	var toDelete *module.Version = nil
 	for _, v := range m.Versions {
 		if v.Version == version {
@@ -176,39 +201,22 @@ func (r *DefaultModuleRepository) DeleteVersion(namespace string, name string, p
 		}
 	}
 
-	if toDelete != nil {
-		if len(m.Versions) == 1 {
-			for _, ver := range m.Versions {
-				if err := r.Resolver.Purge(ver.FetchKey); err != nil {
-					log.Warn().
-						AnErr("Error", err).
-						Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
-						Str("Version", ver.Version).
-						Str("Key", ver.FetchKey).
-						Msg("Could not purge, require manual clean-up")
-				}
-			}
-
-			if err := r.Database.Handler().Delete(m).Error; err != nil {
-				return err
-			}
-		} else {
-			if err := r.Resolver.Purge(toDelete.FetchKey); err != nil {
-				log.Warn().
-					AnErr("Error", err).
-					Str("Module", fmt.Sprintf("%s/%s/%s", namespace, name, provider)).
-					Str("Version", toDelete.Version).
-					Str("Key", toDelete.FetchKey).
-					Msg("Could not purge, require manual clean-up")
-			}
-
-			if err := r.Database.Handler().Delete(toDelete).Error; err != nil {
-				return err
-			}
-		}
-
-		return nil
+	if toDelete == nil {
+		return fmt.Errorf("no version found")
 	}
 
-	return fmt.Errorf("no version found")
+	if len(m.Versions) == 1 {
+		return r.Delete(m)
+	}
+
+	if err := r.Resolver.Purge(toDelete.Location); err != nil {
+		log.Warn().
+			AnErr("Error", err).
+			Str("Module", m.String()).
+			Str("Version", toDelete.Version).
+			Str("Key", toDelete.Location).
+			Msg("Could not purge, require manual clean-up")
+	}
+
+	return r.Database.Handler().Delete(toDelete).Error
 }

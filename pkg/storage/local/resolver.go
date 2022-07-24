@@ -1,6 +1,10 @@
 package local
 
-import "fmt"
+import (
+	"fmt"
+
+	"terralist/pkg/storage"
+)
 
 // The local resolver will download files to a given path on the disk
 // and will generate a public URL from which they can be downloaded
@@ -10,7 +14,7 @@ type Resolver struct {
 	RegistryDir string
 }
 
-func (r *Resolver) Store(_ string, _ bool) (string, error) {
+func (r *Resolver) Store(_ *storage.StoreInput) (string, error) {
 	return "", fmt.Errorf("not yet implemented")
 }
 

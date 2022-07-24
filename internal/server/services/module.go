@@ -2,7 +2,7 @@ package services
 
 import (
 	"fmt"
-	
+
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/version"
@@ -45,28 +45,6 @@ func (s *DefaultModuleService) Get(namespace string, name string, provider strin
 	return &dto, nil
 }
 
-//
-//func (m *DefaultModuleService) Get() func(c *gin.Context) {
-//	return func(c *gin.Context) {
-//		namespace := c.Param("namespace")
-//		name := c.Param("name")
-//		provider := c.Param("provider")
-//
-//		mod, err := m.ModuleRepository.Find(namespace, name, provider)
-//
-//		if err != nil {
-//			c.JSON(http.StatusNotFound, gin.H{
-//				"errors": []string{
-//					"Requested module was not found",
-//					err.Error(),
-//				},
-//			})
-//			return
-//		}
-//		c.JSON(http.StatusOK, mod.ToListResponseDTO())
-//	}
-//}
-
 func (s *DefaultModuleService) GetVersion(
 	namespace string,
 	name string,
@@ -78,33 +56,8 @@ func (s *DefaultModuleService) GetVersion(
 		return nil, err
 	}
 
-	return &v.FetchKey, nil
+	return &v.Location, nil
 }
-
-//
-//
-//func (m *DefaultModuleService) GetVersion() func(c *gin.Context) {
-//	return func(c *gin.Context) {
-//		namespace := c.Param("namespace")
-//		name := c.Param("name")
-//		provider := c.Param("provider")
-//		ver := c.Param("version")
-//
-//		v, err := m.ModuleRepository.FindVersion(namespace, name, provider, ver)
-//
-//		if err != nil {
-//			c.JSON(http.StatusNotFound, gin.H{
-//				"errors": []string{"Requested module was not found"},
-//			})
-//			return
-//		}
-//
-//		c.Header("X-Terraform-Get", v.FetchKey)
-//		c.JSON(http.StatusOK, gin.H{
-//			"errors": []string{},
-//		})
-//	}
-//}
 
 func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
 	if semVer := version.Version(d.Version); !semVer.Valid() {
@@ -119,97 +72,28 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
 	return nil
 }
 
-//func (m *DefaultModuleService) Upload() func(c *gin.Context) {
-//	return func(c *gin.Context) {
-//		ver := c.Param("version")
-//		if semVer := version.Version(ver); !semVer.Valid() {
-//			c.JSON(http.StatusBadRequest, gin.H{
-//				"errors": []string{"version should respect the semantic versioning standard (semver.org)"},
-//			})
-//		}
-//
-//		namespace := c.Param("namespace")
-//		name := c.Param("name")
-//		provider := c.Param("provider")
-//
-//		var body module.CreateDTO
-//		if err := c.BindJSON(&body); err != nil {
-//			c.JSON(http.StatusBadRequest, gin.H{
-//				"errors": []string{err.Error()},
-//			})
-//		}
-//
-//		body.Namespace = namespace
-//		body.Name = name
-//		body.Provider = provider
-//		body.Version = ver
-//
-//		request := body.ToModule()
-//
-//		if _, err := m.ModuleRepository.Upsert(request); err != nil {
-//			c.JSON(http.StatusConflict, gin.H{
-//				"errors": []string{err.Error()},
-//			})
-//			return
-//		}
-//		c.JSON(http.StatusOK, gin.H{
-//			"errors": []string{},
-//		})
-//	}
-//}
-
 func (s *DefaultModuleService) Delete(namespace string, name string, provider string) error {
-	if err := s.ModuleRepository.Delete(namespace, name, provider); err != nil {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
+	if err != nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+	}
+
+	if err := s.ModuleRepository.Delete(m); err != nil {
 		return err
 	}
 
 	return nil
 }
-
-//
-//func (m *DefaultModuleService) Delete() func(c *gin.Context) {
-//	return func(c *gin.Context) {
-//		namespace := c.Param("namespace")
-//		name := c.Param("name")
-//		provider := c.Param("provider")
-//
-//		if err := m.ModuleRepository.Delete(namespace, name, provider); err != nil {
-//			c.JSON(http.StatusConflict, gin.H{
-//				"errors": []string{err.Error()},
-//			})
-//			return
-//		}
-//		c.JSON(http.StatusOK, gin.H{
-//			"errors": []string{},
-//		})
-//	}
-//}
 
 func (s *DefaultModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
-	if err := s.ModuleRepository.DeleteVersion(namespace, name, provider, version); err != nil {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
+	if err != nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+	}
+	
+	if err := s.ModuleRepository.DeleteVersion(m, version); err != nil {
 		return err
 	}
 
 	return nil
 }
-
-//
-//
-//func (m *DefaultModuleService) DeleteVersion() func(c *gin.Context) {
-//	return func(c *gin.Context) {
-//		namespace := c.Param("namespace")
-//		name := c.Param("name")
-//		provider := c.Param("provider")
-//		ver := c.Param("version")
-//
-//		if err := m.ModuleRepository.DeleteVersion(namespace, name, provider, ver); err != nil {
-//			c.JSON(http.StatusConflict, gin.H{
-//				"errors": []string{err.Error()},
-//			})
-//			return
-//		}
-//		c.JSON(http.StatusOK, gin.H{
-//			"errors": []string{},
-//		})
-//	}
-//}

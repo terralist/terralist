@@ -13,15 +13,9 @@ import (
 )
 
 var (
-	errorSystemFailure     = errors.New("system failure")
-	errorDownloadFailure   = errors.New("download failure")
-	errorDownloadInterrupt = errors.New("download interrupt")
-)
-
-var (
-	ErrSystemFailure     = func() error { return errorSystemFailure }()
-	ErrDownloadFailure   = func() error { return errorDownloadFailure }()
-	ErrDownloadInterrupt = func() error { return errorDownloadInterrupt }()
+	ErrSystemFailure     = errors.New("system failure")
+	ErrDownloadFailure   = errors.New("download failure")
+	ErrDownloadInterrupt = errors.New("download interrupt")
 )
 
 // Get downloads a file/directory from a given URL and stores it to a given destination

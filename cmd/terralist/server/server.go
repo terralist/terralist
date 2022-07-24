@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
 	"terralist/internal/server"
 	"terralist/pkg/auth"
 	authFactory "terralist/pkg/auth/factory"
@@ -15,11 +14,11 @@ import (
 	dbFactory "terralist/pkg/database/factory"
 	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
-	"terralist/pkg/storage/resolver"
-	storageFactory "terralist/pkg/storage/resolver/factory"
-	"terralist/pkg/storage/resolver/local"
-	"terralist/pkg/storage/resolver/proxy"
-	"terralist/pkg/storage/resolver/s3"
+	"terralist/pkg/storage"
+	storageFactory "terralist/pkg/storage/factory"
+	"terralist/pkg/storage/local"
+	"terralist/pkg/storage/proxy"
+	"terralist/pkg/storage/s3"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -226,16 +225,16 @@ func (s *Command) run() error {
 	}
 
 	// Initialize storage resolver
-	var res resolver.Resolver
+	var res storage.Resolver
 	switch flags[StorageResolverFlag].(*cli.StringFlag).Value {
 	case "proxy":
-		res, err = storageFactory.NewResolver(resolver.PROXY, &proxy.Config{})
+		res, err = storageFactory.NewResolver(storage.PROXY, &proxy.Config{})
 	case "local":
-		res, err = storageFactory.NewResolver(resolver.LOCAL, &local.Config{
+		res, err = storageFactory.NewResolver(storage.LOCAL, &local.Config{
 			HomeDirectory: homeDir,
 		})
 	case "s3":
-		res, err = storageFactory.NewResolver(resolver.S3, &s3.Config{
+		res, err = storageFactory.NewResolver(storage.S3, &s3.Config{
 			HomeDirectory:   homeDir,
 			BucketName:      flags[S3BucketNameFlag].(*cli.StringFlag).Value,
 			BucketRegion:    flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
