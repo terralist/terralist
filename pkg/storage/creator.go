@@ -1,4 +1,4 @@
-package resolver
+package storage
 
 const (
 	PROXY = iota

@@ -1,4 +1,4 @@
-package resolver
+package storage
 
 type Configurator interface {
 	SetDefaults()

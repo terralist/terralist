@@ -58,7 +58,7 @@ func (c *ModuleController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGrou
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			v, err := c.ModuleService.GetVersion(namespace, name, provider, version)
+			location, err := c.ModuleService.GetVersion(namespace, name, provider, version)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -66,7 +66,10 @@ func (c *ModuleController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGrou
 				return
 			}
 
-			ctx.JSON(http.StatusOK, v)
+			ctx.Header("X-Terraform-Get", *location)
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
+			})
 		},
 	)
 

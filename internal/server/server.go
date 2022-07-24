@@ -12,7 +12,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
-	"terralist/pkg/storage/resolver"
+	"terralist/pkg/storage"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mazen160/go-random"
@@ -27,7 +27,7 @@ type Server struct {
 	Router   *gin.Engine
 	Provider auth.Provider
 	Database database.Engine
-	Resolver resolver.Resolver
+	Resolver storage.Resolver
 
 	ServiceDiscoveryController *controllers.ServiceDiscoveryController
 	LoginController            *controllers.LoginController
@@ -41,7 +41,7 @@ type Config struct {
 
 	Database database.Engine
 	Provider auth.Provider
-	Resolver resolver.Resolver
+	Resolver storage.Resolver
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {

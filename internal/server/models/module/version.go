@@ -10,7 +10,7 @@ type Version struct {
 	entity.Entity
 	ModuleID     uuid.UUID
 	Version      string       `gorm:"not null"`
-	FetchKey     string       `gorm:"not null"`
+	Location     string       `gorm:"not null"`
 	Providers    []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Dependencies []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Submodules   []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
