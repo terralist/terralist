@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
+
 import sys
 
-if sys.version_info.major < 3 or sys.version_info.minor < 6:
+if sys.version_info.major < 3 or (sys.version_info.major == 3 and sys.version_info.minor < 6):
   print ("ERROR: This build script requires Python 3.6+.")
   sys.exit(1)
 

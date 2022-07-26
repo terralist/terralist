@@ -21,11 +21,6 @@ func Logger() gin.HandlerFunc {
 			path = path + "?" + raw
 		}
 
-		msg := c.Errors.String()
-		if msg == "" {
-			msg = "accepted request"
-		}
-
 		statusCode := c.Writer.Status()
 
 		var e *zerolog.Event
@@ -38,11 +33,17 @@ func Logger() gin.HandlerFunc {
 			e = log.Info()
 		}
 
-		e.Str("method", c.Request.Method).
+		e = e.Str("method", c.Request.Method).
 			Str("path", path).
 			Dur("resp_time", time.Since(t)).
 			Int("status", statusCode).
-			Str("client_ip", c.ClientIP()).
-			Msg(msg)
+			Str("client_ip", c.ClientIP())
+
+		msg := c.Errors.String()
+		if msg != "" {
+			e.Msg(msg)
+		} else {
+			e.Send()
+		}
 	}
 }

@@ -27,8 +27,8 @@ type RootDTO struct {
 
 type VersionDTO struct {
 	Version    string         `json:"version"`
-	Root       RootDTO        `json:"root"`
-	Submodules []SubmoduleDTO `json:"submodules"`
+	Root       RootDTO        `json:"root,omitempty"`
+	Submodules []SubmoduleDTO `json:"submodules,omitempty"`
 }
 
 type VersionListDTO struct {

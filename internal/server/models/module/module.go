@@ -1,6 +1,8 @@
 package module
 
 import (
+	"fmt"
+
 	"terralist/pkg/database/entity"
 )
 
@@ -14,6 +16,10 @@ type Module struct {
 
 func (Module) TableName() string {
 	return "modules"
+}
+
+func (m Module) String() string {
+	return fmt.Sprintf("%s/%s/%s", m.Namespace, m.Name, m.Provider)
 }
 
 func (m Module) ToListResponseDTO() ListResponseDTO {

@@ -4,112 +4,96 @@ import (
 	"fmt"
 
 	"terralist/internal/server/models/module"
-	"terralist/pkg/database"
+	"terralist/internal/server/repositories"
+	"terralist/pkg/version"
 )
 
-type ModuleService struct {
-	Database database.Engine
+// ModuleService describes a service that holds the business logic for modules registry
+type ModuleService interface {
+	// Get returns a specific module
+	Get(namespace string, name string, provider string) (*module.ListResponseDTO, error)
+
+	// GetVersion returns a public URL from which a specific a module version can be
+	// downloaded
+	GetVersion(namespace string, name string, provider string, version string) (*string, error)
+
+	// Upload loads a new module version to the system
+	// If the module does not exist, it will be created
+	Upload(*module.CreateDTO) error
+
+	// Delete removes a module with all its data from the system
+	Delete(namespace string, name string, provider string) error
+
+	// DeleteVersion removes a module version from the system
+	// If the version removed is the only module version available, the entire
+	// module will be removed
+	DeleteVersion(namespace string, name string, provider string, version string) error
 }
 
-func (s *ModuleService) Find(namespace string, name string, provider string) (module.Module, error) {
-	m := module.Module{}
+// DefaultModuleService is the concrete implementation of ModuleService
+type DefaultModuleService struct {
+	ModuleRepository *repositories.DefaultModuleRepository
+}
 
-	err := s.Database.Handler().Where(module.Module{
-		Namespace: namespace,
-		Name:      name,
-		Provider:  provider,
-	}).
-		Preload("Versions.Providers").
-		Preload("Versions.Dependencies").
-		Preload("Versions.Submodules").
-		Preload("Versions.Submodules.Providers").
-		Preload("Versions.Submodules.Dependencies").
-		Find(&m).
-		Error
-
+func (s *DefaultModuleService) Get(namespace string, name string, provider string) (*module.ListResponseDTO, error) {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
 	if err != nil {
-		return m, fmt.Errorf("no module found with given arguments (source %s/%s/%s)", namespace, name, provider)
+		return nil, err
 	}
 
-	return m, nil
+	dto := m.ToListResponseDTO()
+	return &dto, nil
 }
 
-func (s *ModuleService) FindVersion(namespace string, name string, provider string, version string) (module.Version, error) {
-	m, err := s.Find(namespace, name, provider)
-
+func (s *DefaultModuleService) GetVersion(
+	namespace string,
+	name string,
+	provider string,
+	version string,
+) (*string, error) {
+	v, err := s.ModuleRepository.FindVersion(namespace, name, provider, version)
 	if err != nil {
-		return module.Version{}, err
+		return nil, err
 	}
 
-	for _, v := range m.Versions {
-		if v.Version == version {
-			return v, nil
-		}
-	}
-
-	return module.Version{}, fmt.Errorf("no version found")
+	return &v.Location, nil
 }
 
-func (s *ModuleService) Upsert(new module.Module) (module.Module, error) {
-	existing, err := s.Find(new.Namespace, new.Name, new.Provider)
-
-	if err == nil {
-		newVersion := new.Versions[0].Version
-
-		for _, version := range existing.Versions {
-			if version.Version == newVersion {
-				return module.Module{}, fmt.Errorf("version %s already exists", newVersion)
-			}
-		}
-
-		existing.Versions = append(existing.Versions, new.Versions[0])
-
-		if err := s.Database.Handler().Save(&existing).Error; err != nil {
-			return module.Module{}, err
-		}
-
-		return existing, nil
+func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
+	if semVer := version.Version(d.Version); !semVer.Valid() {
+		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
 	}
 
-	if result := s.Database.Handler().Create(&new); result.Error != nil {
-		return module.Module{}, result.Error
-	}
-
-	return new, nil
-}
-
-func (s *ModuleService) Delete(namespace string, name string, provider string) error {
-	m, err := s.Find(namespace, name, provider)
-	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
-	}
-
-	if err := s.Database.Handler().Delete(&m).Error; err != nil {
+	m := d.ToModule()
+	if _, err := s.ModuleRepository.Upsert(m); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *ModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
-	m, err := s.Find(namespace, name, provider)
+func (s *DefaultModuleService) Delete(namespace string, name string, provider string) error {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
 	if err != nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
 	}
 
-	q := false
-	for idx, ver := range m.Versions {
-		if ver.Version == version {
-			m.Versions = append(m.Versions[:idx], m.Versions[idx+1:]...)
-			q = true
-		}
+	if err := s.ModuleRepository.Delete(m); err != nil {
+		return err
 	}
 
-	if q {
-		if err := s.Database.Handler().Save(&s).Error; err != nil {
-			return err
-		}
+	return nil
+}
+
+func (s *DefaultModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
+	if err != nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+	}
+	
+	if err := s.ModuleRepository.DeleteVersion(m, version); err != nil {
+		return err
 	}
 
-	return fmt.Errorf("no version found")
+	return nil
 }

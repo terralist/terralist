@@ -3,125 +3,176 @@ package controllers
 import (
 	"net/http"
 
+	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
+	"terralist/pkg/api"
+	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 )
 
-type ModuleController struct {
-	ModuleService *services.ModuleService
+const (
+	modulesTerraformApiBase = "/v1/modules"
+	modulesDefaultApiBase   = "/v1/api/modules"
+)
+
+// ModuleController registers the routes that handles the modules
+type ModuleController interface {
+	api.RestController
+
+	// TerraformApi returns the endpoint where Terraform can query
+	// modules
+	TerraformApi() string
 }
 
-func (m *ModuleController) Get() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		provider := c.Param("provider")
+// DefaultModuleController is a concrete implementation of ModuleController
+type DefaultModuleController struct {
+	ModuleService services.ModuleService
+	ApiKeyService services.ApiKeyService
+	JWT           jwt.JWT
+}
 
-		mod, err := m.ModuleService.Find(namespace, name, provider)
+func (c *DefaultModuleController) TerraformApi() string {
+	return modulesTerraformApiBase + "/"
+}
 
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"errors": []string{
-					"Requested module was not found",
-					err.Error(),
-				},
-			})
-			return
-		}
-		c.JSON(http.StatusOK, mod.ToListResponseDTO())
+func (c *DefaultModuleController) Paths() []string {
+	return []string{
+		modulesTerraformApiBase,
+		modulesDefaultApiBase,
 	}
 }
 
-func (m *ModuleController) GetVersion() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		provider := c.Param("provider")
-		version := c.Param("version")
+func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
+	// tfApi should be compliant with the Terraform Registry Protocol for
+	// modules
+	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
+	tfApi := apis[0]
+	tfApi.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
-		v, err := m.ModuleService.FindVersion(namespace, name, provider, version)
+	tfApi.GET(
+		"/:namespace/:name/:provider/versions",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
 
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{
-				"errors": []string{"Requested module was not found"},
+			d, err := c.ModuleService.Get(namespace, name, provider)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": err.Error(),
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, d)
+		},
+	)
+
+	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#download-source-code-for-a-specific-module-version
+	tfApi.GET(
+		"/:namespace/:name/:provider/:version/download",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			location, err := c.ModuleService.GetVersion(namespace, name, provider, version)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.Header("X-Terraform-Get", *location)
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-			return
-		}
-		c.Header("X-Terraform-Get", v.Location)
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
-}
+		},
+	)
 
-func (m *ModuleController) Upload() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		provider := c.Param("provider")
-		version := c.Param("version")
+	// api holds the routes that are not described by the Terraform protocol
+	api := apis[1]
+	api.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
-		var body module.CreateDTO
-		if err := c.BindJSON(&body); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"errors": []string{err.Error()},
+	// Upload a new provider version
+	api.POST(
+		"/:namespace/:name/:provider/:version/upload",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			var body module.CreateDTO
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			body.Namespace = namespace
+			body.Name = name
+			body.Provider = provider
+			body.Version = version
+
+			if err := c.ModuleService.Upload(&body); err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-		}
+		},
+	)
 
-		body.Namespace = namespace
-		body.Name = name
-		body.Provider = provider
-		body.Version = version
+	// Delete a provider
+	api.DELETE(
+		"/:namespace/:name/:provider/remove",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
 
-		request := body.ToModule()
+			if err := c.ModuleService.Delete(namespace, name, provider); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
 
-		if _, err := m.ModuleService.Upsert(request); err != nil {
-			c.JSON(http.StatusConflict, gin.H{
-				"errors": []string{err.Error()},
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
-}
+		},
+	)
 
-func (m *ModuleController) Delete() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		provider := c.Param("provider")
+	// Delete a provider version
+	api.DELETE(
+		"/:namespace/:name/:provider/:version/remove",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
 
-		if err := m.ModuleService.Delete(namespace, name, provider); err != nil {
-			c.JSON(http.StatusConflict, gin.H{
-				"errors": []string{err.Error()},
+			if err := c.ModuleService.DeleteVersion(namespace, name, provider, version); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
 			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
-}
-
-func (m *ModuleController) DeleteVersion() func(c *gin.Context) {
-	return func(c *gin.Context) {
-		namespace := c.Param("namespace")
-		name := c.Param("name")
-		provider := c.Param("provider")
-		version := c.Param("version")
-
-		if err := m.ModuleService.DeleteVersion(namespace, name, provider, version); err != nil {
-			c.JSON(http.StatusConflict, gin.H{
-				"errors": []string{err.Error()},
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"errors": []string{},
-		})
-	}
+		},
+	)
 }

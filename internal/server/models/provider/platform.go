@@ -8,15 +8,11 @@ import (
 
 type Platform struct {
 	entity.Entity
-	VersionID           uuid.UUID
-	System              string         `gorm:"not null"`
-	Architecture        string         `gorm:"not null"`
-	FileName            string         `gorm:"not null"`
-	DownloadUrl         string         `gorm:"not null"`
-	ShaSumsUrl          string         `gorm:"not null"`
-	ShaSumsSignatureUrl string         `gorm:"not null"`
-	ShaSum              string         `gorm:"not null"`
-	SigningKeys         []GpgPublicKey `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	VersionID    uuid.UUID
+	System       string `gorm:"not null"`
+	Architecture string `gorm:"not null"`
+	Location     string `gorm:"not null"`
+	ShaSum       string `gorm:"not null"`
 }
 
 func (Platform) TableName() string {
@@ -31,32 +27,18 @@ func (p Platform) ToVersionListPlatformDTO() VersionListPlatformDTO {
 }
 
 type CreatePlatformDTO struct {
-	System              string         `json:"os"`
-	Architecture        string         `json:"arch"`
-	FileName            string         `json:"filename"`
-	DownloadUrl         string         `json:"download_url"`
-	ShaSumsUrl          string         `json:"shasums_url"`
-	ShaSumsSignatureUrl string         `json:"shasums_signature_url"`
-	ShaSum              string         `json:"shasum"`
-	SigningKeys         SigningKeysDTO `json:"signing_keys"`
+	System       string `json:"os"`
+	Architecture string `json:"arch"`
+	Location     string `json:"download_url"`
+	ShaSum       string `json:"shasum"`
 }
 
 func (d CreatePlatformDTO) ToPlatform() Platform {
-	var signingKeys []GpgPublicKey
-
-	for _, signingKey := range d.SigningKeys.GpgPublicKeys {
-		signingKeys = append(signingKeys, signingKey.ToGpgPublicKey())
-	}
-
 	return Platform{
-		System:              d.System,
-		Architecture:        d.Architecture,
-		FileName:            d.FileName,
-		DownloadUrl:         d.DownloadUrl,
-		ShaSumsUrl:          d.ShaSumsUrl,
-		ShaSumsSignatureUrl: d.ShaSumsSignatureUrl,
-		ShaSum:              d.ShaSum,
-		SigningKeys:         signingKeys,
+		System:       d.System,
+		Architecture: d.Architecture,
+		Location:     d.Location,
+		ShaSum:       d.ShaSum,
 	}
 }
 

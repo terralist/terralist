@@ -54,7 +54,7 @@ type Request struct {
 	ClientID            string `json:"client_id"`
 	CodeChallenge       string `json:"code_challenge"`
 	CodeChallengeMethod string `json:"code_challenge_method"`
-	RedirectUri         string `json:"redirect_uri"`
+	RedirectURI         string `json:"redirect_uri"`
 	ResponseType        string `json:"response_type"`
 	State               string `json:"state"`
 }
