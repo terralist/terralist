@@ -89,7 +89,7 @@ func (th *defaultJWT) Extract(t string) (*auth.User, error) {
 		return th.tokenSigningSecret, nil
 	})
 
-	if !token.Valid {
+	if token == nil || !token.Valid {
 		ve, ok := err.(*_jwt.ValidationError)
 
 		if ok {
