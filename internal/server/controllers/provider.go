@@ -30,8 +30,8 @@ type ProviderController interface {
 // DefaultProviderController is a concrete implementation of ProviderController
 type DefaultProviderController struct {
 	ProviderService services.ProviderService
-
-	JWT jwt.JWT
+	ApiKeyService   services.ApiKeyService
+	JWT             jwt.JWT
 }
 
 func (c *DefaultProviderController) Paths() []string {
@@ -50,7 +50,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 	// providers
 	// Docs: https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
 	tfApi := apis[0]
-	tfApi.Use(handlers.Authorize(c.JWT))
+	tfApi.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
 	tfApi.GET(
 		"/:namespace/:name/versions",
@@ -94,7 +94,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
-	api.Use(handlers.Authorize(c.JWT))
+	api.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
 	// Upload a new provider version
 	api.POST(

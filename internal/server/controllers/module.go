@@ -29,8 +29,8 @@ type ModuleController interface {
 // DefaultModuleController is a concrete implementation of ModuleController
 type DefaultModuleController struct {
 	ModuleService services.ModuleService
-
-	JWT jwt.JWT
+	ApiKeyService services.ApiKeyService
+	JWT           jwt.JWT
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -49,7 +49,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// modules
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
-	tfApi.Use(handlers.Authorize(c.JWT))
+	tfApi.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
 	tfApi.GET(
 		"/:namespace/:name/:provider/versions",
@@ -96,7 +96,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
-	api.Use(handlers.Authorize(c.JWT))
+	api.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
 	// Upload a new provider version
 	api.POST(
