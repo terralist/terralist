@@ -76,6 +76,14 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		EncryptSalt:  salt,
 	}
 
+	apiKeyRepository := &repositories.DefaultApiKeyRepository{
+		Database: config.Database,
+	}
+
+	apiKeyService := &services.DefaultApiKeyService{
+		ApiKeyRepository: apiKeyRepository,
+	}
+
 	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,
 		Resolver: config.Resolver,
@@ -87,6 +95,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	moduleController := &controllers.DefaultModuleController{
 		ModuleService: moduleService,
+		ApiKeyService: apiKeyService,
 		JWT:           jwtManager,
 	}
 
@@ -100,6 +109,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	providerController := &controllers.DefaultProviderController{
 		ProviderService: providerService,
+		ApiKeyService:   apiKeyService,
 		JWT:             jwtManager,
 	}
 

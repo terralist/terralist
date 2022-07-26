@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"strings"
 
+	"terralist/internal/server/services"
 	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Authorize(jwt jwt.JWT) gin.HandlerFunc {
+func Authorize(jwt jwt.JWT, apiKeyService services.ApiKeyService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
@@ -38,12 +39,18 @@ func Authorize(jwt jwt.JWT) gin.HandlerFunc {
 			_, err := fmt.Sscanf(bearerToken, "x-api-key:%s", &apiKey)
 			if err != nil {
 				c.AbortWithStatus(http.StatusUnauthorized)
+				return
 			}
 
-			// TODO: Set context from apiKey details
-			c.Set("userName", "TODO")
-			c.Set("userEmail", "TODO")
-			c.Set("authority", "")
+			user, err := apiKeyService.GetUserDetails(apiKey)
+			if err != nil {
+				c.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
+
+			c.Set("userName", user.Name)
+			c.Set("userEmail", user.Email)
+			c.Set("authority", user.AuthorityID)
 		}
 
 		c.Next()
