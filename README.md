@@ -45,6 +45,18 @@ _Note_: For _Proxy_ storage mode, the URL management is up to you. If, for examp
 
 This project is not meant to replace the public Terraform Registry. Its purpose is to mimic the public registry in a private environment.
 
+## Build
+
+Under the directory `scripts/`, there is a Python build script that will handle the build time variables. The script can be used to build the binary in both `debug` and `release` mode.
+
+```
+python ./scripts/build.py release
+```
+
+A `terralist[.exe]` file should be generated in the repository root directory.
+
+If you cannot use the build script, you can either run the `go build` command manually. Build-time variables are, for now, optionals; they provide a default value.
+
 ## Examples
 
 ### Authenticate
@@ -143,6 +155,7 @@ This project is still work-in-progress and I am planning to release it soon.
 
 ## Planned Features
 * Ability to create an API key to use instead of a Bearer Token;
+* A containerized version;
 * Web interface to manage the resources;
 * Web interface to visualize modules and providers documentation;
 * Replace PostgreSQL with a lighter database;
