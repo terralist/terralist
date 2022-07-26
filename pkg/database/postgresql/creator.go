@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"terralist/pkg/database"
+	"terralist/pkg/database/logger"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -28,15 +29,16 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	dsn := cfg.DSN()
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true,
-	}), &gorm.Config{})
+		DSN: dsn,
+	}), &gorm.Config{
+		Logger: &logger.Logger{},
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &database.DefaultEngine{
-		Handle: db,
+		Handle: db.Debug(),
 	}, nil
 }

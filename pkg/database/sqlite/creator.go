@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"terralist/pkg/database"
+	"terralist/pkg/database/logger"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -21,7 +22,9 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 
 	cfg := config.(*Config)
 
-	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{
+		Logger: &logger.Logger{},
+	})
 
 	if err != nil {
 		return nil, err
