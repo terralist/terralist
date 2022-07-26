@@ -7,46 +7,61 @@ import (
 
 	"terralist/internal/server/models/oauth"
 	"terralist/internal/server/services"
+	"terralist/pkg/api"
 
 	"github.com/gin-gonic/gin"
 )
 
 const (
+	authTerraformApiBase = "/v1/auth"
+	authDefaultApiBase   = "/v1/api/auth"
+
 	authorizeRoute = "/authorization"
 	tokenRoute     = "/token"
 	redirectRoute  = "/redirect"
 )
 
-type LoginController struct {
+// LoginController registers the endpoints required to handle the OAUTH 2.0
+// authentication
+type LoginController interface {
+	api.RestController
+
+	// AuthorizationRoute returns the endpoint where Terraform can call for
+	// initiating the authorization process
+	AuthorizationRoute() string
+
+	// TokenRoute returns the endpoint where Terraform can call to validate
+	// the code components and obtain the authorization token
+	TokenRoute() string
+}
+
+// DefaultLoginController is a concrete implementation of LoginController
+type DefaultLoginController struct {
 	LoginService services.LoginService
 
 	EncryptSalt string
 }
 
-func (c *LoginController) TerraformApiBase() string {
-	return "/v1/auth"
+func (c *DefaultLoginController) Paths() []string {
+	return []string{
+		authTerraformApiBase,
+		authDefaultApiBase,
+	}
 }
 
-func (c *LoginController) ApiBase() string {
-	return "/v1/api/auth"
+func (c *DefaultLoginController) AuthorizationRoute() string {
+	return fmt.Sprintf("%s%s", authTerraformApiBase, authorizeRoute)
 }
 
-func (c *LoginController) AuthorizationRoute() string {
-	return fmt.Sprintf("%s%s", c.TerraformApiBase(), authorizeRoute)
+func (c *DefaultLoginController) TokenRoute() string {
+	return fmt.Sprintf("%s%s", authTerraformApiBase, tokenRoute)
 }
 
-func (c *LoginController) TokenRoute() string {
-	return fmt.Sprintf("%s%s", c.TerraformApiBase(), tokenRoute)
-}
-
-func (c *LoginController) RedirectRoute() string {
-	return fmt.Sprintf("%s%s", c.TerraformApiBase(), redirectRoute)
-}
-
-func (c *LoginController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup) {
+func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 	// tfApi should be compliant with the Terraform Registry Protocol for
 	// authentication
 	// Docs: https://www.terraform.io/docs/internals/login-protocol.html
+	tfApi := apis[0]
 
 	tfApi.GET(authorizeRoute, func(ctx *gin.Context) {
 		r := &oauth.Request{
@@ -114,6 +129,8 @@ func (c *LoginController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup
 	})
 
 	// api holds the routes that are not described by the Terraform protocol
+	api := apis[1]
+
 	api.GET(redirectRoute, func(ctx *gin.Context) {
 		code := ctx.Query("code")
 		state := ctx.Query("state")
@@ -138,7 +155,7 @@ func (c *LoginController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup
 
 }
 
-func (c *LoginController) redirectWithError(
+func (c *DefaultLoginController) redirectWithError(
 	uri string,
 	state string,
 	err oauth.Error,

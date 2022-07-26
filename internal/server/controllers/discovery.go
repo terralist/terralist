@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"terralist/pkg/api"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,25 +11,32 @@ var (
 	terraformPorts = []int{10000, 10010}
 )
 
-type ServiceDiscoveryController struct {
+// ServiceDiscoveryController registers the endpoints described by the
+// service discovery protocol
+type ServiceDiscoveryController interface {
+	api.RestController
+}
+
+// DefaultServiceDiscoveryController is a concrete implementation of
+// ServiceDiscoveryController
+type DefaultServiceDiscoveryController struct {
 	AuthorizationEndpoint string
 	TokenEndpoint         string
 	ModuleEndpoint        string
 	ProviderEndpoint      string
 }
 
-func (c *ServiceDiscoveryController) TerraformApiBase() string {
-	return "/.well-known"
+func (c *DefaultServiceDiscoveryController) Paths() []string {
+	return []string{
+		"/.well-known", // Terraform API route
+	}
 }
 
-func (c *ServiceDiscoveryController) ApiBase() string {
-	return "/.not-used"
-}
-
-func (c *ServiceDiscoveryController) Subscribe(tfApi *gin.RouterGroup, _ *gin.RouterGroup) {
+func (c *DefaultServiceDiscoveryController) Subscribe(apis ...*gin.RouterGroup) {
 	// tfApi should be compliant with the Terraform Registry Protocol for
 	// service discovery
 	// Docs: https://www.terraform.io/internals/remote-service-discovery
+	tfApi := apis[0]
 
 	// Terraform Service Discovery API
 	tfApi.GET(
