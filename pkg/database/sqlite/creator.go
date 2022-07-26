@@ -4,11 +4,10 @@ import (
 	"sync"
 
 	"terralist/pkg/database"
+	"terralist/pkg/database/logger"
 
-	gormzerolog "github.com/mpalmer/gorm-zerolog"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 type Creator struct{}
@@ -24,7 +23,7 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	cfg := config.(*Config)
 
 	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{
-		Logger: (gormzerolog.Logger{}).LogMode(logger.Info),
+		Logger: &logger.Logger{},
 	})
 
 	if err != nil {
