@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,18 +11,20 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	ErrApiKeyExpired = errors.New("api key expired")
+)
+
 // ApiKeyRepository describes a service that can interact with the API keys database
 type ApiKeyRepository interface {
-	// Exists checks if a given key is granted
-	Exists(key string) bool
+	// Find searches for a specific ApiKey
+	Find(id uuid.UUID) (*authority.ApiKey, error)
 
-	// Grant allocates a new key; It takes an input argument which can control the
-	// duration of the key. If you don't want your key to expire, set the argument
-	// to 0.
-	Grant(expireIn int) (string, error)
+	// Create creates a new ApiKey
+	Create(*authority.ApiKey) (*authority.ApiKey, error)
 
-	// Revoke removes a key from the database
-	Revoke(key string) error
+	// Delete removes an ApiKey from the database
+	Delete(id uuid.UUID) error
 }
 
 // DefaultApiKeyRepository is a concrete implementation of ApiKeyRepository
@@ -29,50 +32,38 @@ type DefaultApiKeyRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultApiKeyRepository) Exists(key string) bool {
-	id, _ := uuid.Parse(key)
-
+func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*authority.ApiKey, error) {
 	apiKey := &authority.ApiKey{}
 
 	if err := r.Database.Handler().
 		Where("id = ?", id).
 		First(apiKey).
 		Error; err != nil {
-		return false
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
 
-	if time.Now().Unix() > apiKey.Expiration.Unix() {
+	if apiKey.Expiration != nil && time.Now().Unix() > apiKey.Expiration.Unix() {
 		r.Database.Handler().Delete(apiKey)
-		return false
-	}
-
-	return true
-}
-
-func (r *DefaultApiKeyRepository) Grant(expireIn int) (*authority.ApiKey, error) {
-	apiKey := &authority.ApiKey{}
-
-	if expireIn != 0 {
-		apiKey.Expiration = time.Now().Add(time.Duration(expireIn) * time.Hour)
-	}
-
-	if err := r.Database.Handler().Create(apiKey).Error; err != nil {
-		return nil, fmt.Errorf("could not create api key: %v", err)
+		return nil, fmt.Errorf("%w", ErrApiKeyExpired)
 	}
 
 	return apiKey, nil
 }
 
-func (r *DefaultApiKeyRepository) Revoke(key string) error {
-	id, _ := uuid.Parse(key)
+func (r *DefaultApiKeyRepository) Create(apiKey *authority.ApiKey) (*authority.ApiKey, error) {
+	if err := r.Database.Handler().Create(apiKey).Error; err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
+	}
 
-	err := r.Database.Handler().
+	return apiKey, nil
+}
+
+func (r *DefaultApiKeyRepository) Delete(id uuid.UUID) error {
+	if err := r.Database.Handler().
 		Where("id = ?", id).
 		Delete(&authority.ApiKey{}).
-		Error
-
-	if err != nil {
-		return fmt.Errorf("could not revoke key: %v", err)
+		Error; err != nil {
+		return fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
 
 	return nil
