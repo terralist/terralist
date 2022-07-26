@@ -6,28 +6,49 @@ import (
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
+	"terralist/pkg/api"
 	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 )
 
-type ModuleController struct {
+const (
+	modulesTerraformApiBase = "/v1/modules"
+	modulesDefaultApiBase   = "/v1/api/modules"
+)
+
+// ModuleController registers the routes that handles the modules
+type ModuleController interface {
+	api.RestController
+
+	// TerraformApi returns the endpoint where Terraform can query
+	// modules
+	TerraformApi() string
+}
+
+// DefaultModuleController is a concrete implementation of ModuleController
+type DefaultModuleController struct {
 	ModuleService services.ModuleService
-	JWT           jwt.JWT
+
+	JWT jwt.JWT
 }
 
-func (c *ModuleController) TerraformApiBase() string {
-	return "/v1/modules"
+func (c *DefaultModuleController) TerraformApi() string {
+	return modulesTerraformApiBase + "/"
 }
 
-func (c *ModuleController) ApiBase() string {
-	return "/v1/api/modules"
+func (c *DefaultModuleController) Paths() []string {
+	return []string{
+		modulesTerraformApiBase,
+		modulesDefaultApiBase,
+	}
 }
 
-func (c *ModuleController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGroup) {
+func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// tfApi should be compliant with the Terraform Registry Protocol for
 	// modules
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
+	tfApi := apis[0]
 	tfApi.Use(handlers.Authorize(c.JWT))
 
 	tfApi.GET(
@@ -74,6 +95,7 @@ func (c *ModuleController) Subscribe(tfApi *gin.RouterGroup, api *gin.RouterGrou
 	)
 
 	// api holds the routes that are not described by the Terraform protocol
+	api := apis[1]
 	api.Use(handlers.Authorize(c.JWT))
 
 	// Upload a new provider version

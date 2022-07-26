@@ -14,9 +14,17 @@ var (
 	tokenExpirationInSeconds = 24 * 60 * 60
 )
 
+// LoginService describes a service that holds the business logic for authentication
 type LoginService interface {
+	// Authorize initiates the OAUTH 2.0 process, computing the provider authorize URL
 	Authorize(state oauth.Payload) (string, oauth.Error)
+
+	// Redirect is the method called when the OAUTH 2.0 provider redirects back the
+	// request; It will handle the code management
 	Redirect(code string, r *oauth.Request) (string, oauth.Error)
+
+	// ValidateToken is the method called on the third step from the OAUTH 2.0 protocol
+	// It verifies the code components and generates the authorization token
 	ValidateToken(components *oauth.CodeComponents, verifier string) (*oauth.TokenResponse, oauth.Error)
 }
 

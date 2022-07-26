@@ -9,6 +9,7 @@ import (
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
+	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
@@ -29,10 +30,7 @@ type Server struct {
 	Database database.Engine
 	Resolver storage.Resolver
 
-	ServiceDiscoveryController *controllers.ServiceDiscoveryController
-	LoginController            *controllers.LoginController
-	ModuleController           *controllers.ModuleController
-	ProviderController         *controllers.ProviderController
+	Controllers []api.RestController
 }
 
 // Config holds the server configuration that isn't configurable by the user
@@ -73,7 +71,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		CodeExchangeKey: exchangeKey,
 	}
 
-	loginController := &controllers.LoginController{
+	loginController := &controllers.DefaultLoginController{
 		LoginService: loginService,
 		EncryptSalt:  salt,
 	}
@@ -87,7 +85,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ModuleRepository: moduleRepository,
 	}
 
-	moduleController := &controllers.ModuleController{
+	moduleController := &controllers.DefaultModuleController{
 		ModuleService: moduleService,
 		JWT:           jwtManager,
 	}
@@ -100,16 +98,16 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ProviderRepository: providerRepository,
 	}
 
-	providerController := &controllers.ProviderController{
+	providerController := &controllers.DefaultProviderController{
 		ProviderService: providerService,
 		JWT:             jwtManager,
 	}
 
-	serviceDiscoveryController := &controllers.ServiceDiscoveryController{
+	serviceDiscoveryController := &controllers.DefaultServiceDiscoveryController{
 		AuthorizationEndpoint: loginController.AuthorizationRoute(),
 		TokenEndpoint:         loginController.TokenRoute(),
-		ModuleEndpoint:        moduleController.TerraformApiBase() + "/",
-		ProviderEndpoint:      providerController.TerraformApiBase() + "/",
+		ModuleEndpoint:        moduleController.TerraformApi(),
+		ProviderEndpoint:      providerController.TerraformApi(),
 	}
 
 	return &Server{
@@ -120,10 +118,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Database: config.Database,
 		JWT:      jwtManager,
 
-		ServiceDiscoveryController: serviceDiscoveryController,
-		LoginController:            loginController,
-		ModuleController:           moduleController,
-		ProviderController:         providerController,
+		Controllers: []api.RestController{
+			serviceDiscoveryController,
+			loginController,
+			moduleController,
+			providerController,
+		},
 	}, nil
 }
 
@@ -132,21 +132,15 @@ func (s *Server) Start() error {
 	// Health Check API
 	s.Router.GET("/health", handlers.Health())
 
-	ctrs := []interface {
-		Subscribe(*gin.RouterGroup, *gin.RouterGroup)
-		TerraformApiBase() string
-		ApiBase() string
-	}{
-		s.ServiceDiscoveryController,
-		s.LoginController,
-		s.ModuleController,
-		s.ProviderController,
-	}
+	for _, c := range s.Controllers {
+		var groups []*gin.RouterGroup
 
-	for _, c := range ctrs {
-		tfApi := s.Router.Group(c.TerraformApiBase())
-		api := s.Router.Group(c.ApiBase())
-		c.Subscribe(tfApi, api)
+		paths := c.Paths()
+		for _, p := range paths {
+			groups = append(groups, s.Router.Group(p))
+		}
+
+		c.Subscribe(groups...)
 	}
 
 	// Ensure server gracefully drains connections when stopped
