@@ -18,7 +18,11 @@ ARG COMMIT_HASH="n/a"
 ARG BUILD_TIMESTAMP="n/a"
 
 RUN go build -a -v -o terralist \
-    -ldflags="-X 'main.Version=${VERSION}' -X 'main.CommitHash=${COMMIT_HASH}' -X 'main.BuildTimestamp=${BUILD_TIMESTAMP}' -X 'main.Mode=release'" \
+    -ldflags="\
+      -X 'main.Version=${VERSION}' \
+      -X 'main.CommitHash=${COMMIT_HASH}' \
+      -X 'main.BuildTimestamp=${BUILD_TIMESTAMP}' \
+      -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
 FROM alpine:3.15
