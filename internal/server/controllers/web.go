@@ -91,6 +91,20 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
+	homeGroup.GET(
+		"/logout",
+		c.checkSession(true),
+		func(ctx *gin.Context) {
+			// Session must be valid, since the checkSession handler passed
+			sess, _ := c.Store.Get(ctx.Request)
+			sess.Set("user", nil)
+			c.Store.Save(ctx.Request, ctx.Writer, sess)
+
+			// Redirect to login page
+			ctx.Redirect(http.StatusFound, "/")
+		},
+	)
+
 	errorGroup := apis[1]
 
 	errorKey, _ := c.UIManager.Register(
@@ -120,7 +134,7 @@ func (c *DefaultWebController) checkSession(mustBe bool) gin.HandlerFunc {
 		sess, err := c.Store.Get(ctx.Request)
 		if err == nil {
 			user, ok := sess.Get("user")
-			if ok {
+			if ok && user != nil {
 				// Pass user details to request
 				ctx.Set("user", user)
 				sessionActive = true
@@ -140,7 +154,8 @@ func (c *DefaultWebController) checkSession(mustBe bool) gin.HandlerFunc {
 			ctx.Redirect(
 				http.StatusFound,
 				fmt.Sprintf(
-					"/?error_description=%s",
+					"/?error=%s&error_description=%s",
+					url.QueryEscape("access_denied"),
 					url.QueryEscape("you must be authenticated to access this resource"),
 				),
 			)
