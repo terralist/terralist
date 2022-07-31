@@ -19,3 +19,7 @@ func (s *Session) Get(key any) (any, bool) {
 func (s *Session) Set(key any, value any) {
 	s.session.Values[key] = value
 }
+
+func (s *Session) Unset(key any) {
+	delete(s.session.Values, key)
+}

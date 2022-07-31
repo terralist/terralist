@@ -9,4 +9,7 @@ type Session interface {
 
 	// Set sets a key's value to a given value
 	Set(key any, value any)
+
+	// Unset removes a key from the session
+	Unset(key any)
 }
