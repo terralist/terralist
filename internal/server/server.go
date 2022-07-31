@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -55,6 +56,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	router.Use(handlers.Logger())
 	router.Use(gin.Recovery())
 
+	// Parse host URL
+	hostURL, err := url.Parse(userConfig.URL)
+	if err != nil {
+		return nil, fmt.Errorf("host URL cannot be parsed")
+	}
+
 	// Apply initial migration
 	if err := config.Database.WithMigration(&InitialMigration{}); err != nil {
 		return nil, fmt.Errorf("could not apply initial migration: %v", err)
@@ -81,6 +88,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	loginController := &controllers.DefaultLoginController{
 		LoginService: loginService,
 		EncryptSalt:  salt,
+		HostURL:      hostURL,
 	}
 
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{

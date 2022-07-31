@@ -19,9 +19,12 @@ type LoginService interface {
 	// Authorize initiates the OAUTH 2.0 process, computing the provider authorize URL
 	Authorize(state oauth.Payload) (string, oauth.Error)
 
-	// Redirect is the method called when the OAUTH 2.0 provider redirects back the
-	// request; It will handle the code management
-	Redirect(code string, r *oauth.Request) (string, oauth.Error)
+	// UnpackCode uses the code received from the OAUTH 2.0 callback and generates
+	// the code components
+	UnpackCode(code string, r *oauth.Request) (*oauth.CodeComponents, oauth.Error)
+
+	// Redirect converts the code components into a redirect URL
+	Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error)
 
 	// ValidateToken is the method called on the third step from the OAUTH 2.0 protocol
 	// It verifies the code components and generates the authorization token
@@ -40,21 +43,23 @@ func (s *DefaultLoginService) Authorize(state oauth.Payload) (string, oauth.Erro
 	return s.Provider.GetAuthorizeUrl(string(state)), nil
 }
 
-func (s *DefaultLoginService) Redirect(code string, r *oauth.Request) (string, oauth.Error) {
+func (s *DefaultLoginService) UnpackCode(code string, r *oauth.Request) (*oauth.CodeComponents, oauth.Error) {
 	var userDetails auth.User
 	if err := s.Provider.GetUserDetails(code, &userDetails); err != nil {
-		return "", oauth.WrapError(err, oauth.AccessDenied)
+		return nil, oauth.WrapError(err, oauth.AccessDenied)
 	}
 
-	codeComponents := oauth.CodeComponents{
+	return &oauth.CodeComponents{
 		Key:                 s.CodeExchangeKey,
 		CodeChallenge:       r.CodeChallenge,
 		CodeChallengeMethod: r.CodeChallengeMethod,
 		UserName:            userDetails.Name,
 		UserEmail:           userDetails.Email,
-	}
+	}, nil
+}
 
-	payload, err := codeComponents.ToPayload(s.EncryptSalt)
+func (s *DefaultLoginService) Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error) {
+	payload, err := cc.ToPayload(s.EncryptSalt)
 	if err != nil {
 		return "", oauth.WrapError(err, oauth.InvalidRequest)
 	}

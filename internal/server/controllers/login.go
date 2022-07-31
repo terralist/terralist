@@ -10,6 +10,7 @@ import (
 	"terralist/pkg/api"
 
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -38,6 +39,8 @@ type LoginController interface {
 // DefaultLoginController is a concrete implementation of LoginController
 type DefaultLoginController struct {
 	LoginService services.LoginService
+
+	HostURL *url.URL
 
 	EncryptSalt string
 }
@@ -144,7 +147,34 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			return
 		}
 
-		redirectURL, erro := c.LoginService.Redirect(code, &r)
+		codeComponents, erro := c.LoginService.UnpackCode(code, &r)
+		if erro != nil {
+			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
+			return
+		}
+
+		uri, err := url.Parse(r.RedirectURI)
+		if err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("RedirectURI", r.RedirectURI).
+				Msg("An invalid redirect URI was detected during the OAUTH callback.")
+
+			ctx.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		// Check if the call was made from this origin
+		if uri.Host == c.HostURL.Host {
+			// There's no need in validating the request, if we made this call
+			// Save user session and redirect back
+
+			// Redirect back
+			ctx.Redirect(http.StatusFound, uri.String())
+			return
+		}
+
+		redirectURL, erro := c.LoginService.Redirect(codeComponents, &r)
 		if erro != nil {
 			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
 			return
