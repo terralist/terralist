@@ -8,6 +8,7 @@ import (
 	"io/fs"
 
 	"github.com/Masterminds/sprig"
+	"github.com/ssoroka/slice"
 )
 
 var (
@@ -20,11 +21,15 @@ var (
 
 // Manager is an interface that handles view templates
 type Manager interface {
+	// AddBase saves a file as a base file and will inject this
+	// file in each render call
+	AddBase(filePath string) error
+
 	// Register creates a new template from a list of filepaths
 	// The filepaths syntax depends on the manager implementation
 	// It returns a key to identify the view and an error in case
 	// it cannot build the template
-	Register(filePaths []string) (string, error)
+	Register(filePaths ...string) (string, error)
 
 	// Render writes a registered template using some values to a
 	// writer
@@ -38,6 +43,10 @@ type defaultManager struct {
 	// stored
 	fs fs.FS
 
+	// bases is the internal data store of the base
+	// files
+	bases []string
+
 	// views is the internal data store of the registered
 	// templates
 	views map[string]*template.Template
@@ -48,12 +57,23 @@ type defaultManager struct {
 func NewManager(fs fs.FS) (Manager, error) {
 	return &defaultManager{
 		fs:    fs,
+		bases: []string{},
 		views: map[string]*template.Template{},
 	}, nil
 }
 
+func (m *defaultManager) AddBase(filePath string) error {
+	if slice.Contains(m.bases, filePath) {
+		return ErrAlreadyRegistered
+	}
+
+	m.bases = append(m.bases, filePath)
+
+	return nil
+}
+
 // Register combines multiple paths from fs in a template
-func (m *defaultManager) Register(filePaths []string) (string, error) {
+func (m *defaultManager) Register(filePaths ...string) (string, error) {
 	if len(filePaths) == 0 {
 		return "", ErrNoTemplate
 	}
@@ -64,10 +84,15 @@ func (m *defaultManager) Register(filePaths []string) (string, error) {
 		return "", ErrAlreadyRegistered
 	}
 
+	name := key
+	if len(m.bases) >= 0 {
+		name = m.bases[0]
+	}
+
 	tpl, err := template.
-		New(filePaths[0]).
+		New(name).
 		Funcs(sprig.FuncMap()).
-		ParseFS(m.fs, filePaths...)
+		ParseFS(m.fs, append(m.bases, filePaths...)...)
 
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrInvalidTemplate, err)

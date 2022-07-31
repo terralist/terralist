@@ -6,7 +6,6 @@ import (
 	"net/url"
 
 	"terralist/pkg/api"
-	"terralist/pkg/builders"
 	"terralist/pkg/session"
 	"terralist/pkg/webui"
 
@@ -40,13 +39,9 @@ func (c *DefaultWebController) Paths() []string {
 func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	homeGroup := apis[0]
 
-	loginKey, _ := c.UIManager.Register(
-		builders.
-			NewSliceBuilder[string]().
-			Add("layout.html.tpl").
-			Add("login.html.tpl").
-			Build(),
-	)
+	_ = c.UIManager.AddBase("layout.html.tpl")
+
+	loginKey, _ := c.UIManager.Register("login.html.tpl")
 
 	homeGroup.GET("/",
 		c.checkSession(false),
@@ -69,13 +64,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	homeKey, _ := c.UIManager.Register(
-		builders.
-			NewSliceBuilder[string]().
-			Add("layout.html.tpl").
-			Add("home.html.tpl").
-			Build(),
-	)
+	homeKey, _ := c.UIManager.Register("home.html.tpl")
 
 	homeGroup.GET(
 		"/home",
@@ -107,13 +96,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 
 	errorGroup := apis[1]
 
-	errorKey, _ := c.UIManager.Register(
-		builders.
-			NewSliceBuilder[string]().
-			Add("layout.html.tpl").
-			Add("error.html.tpl").
-			Build(),
-	)
+	errorKey, _ := c.UIManager.Register("error.html.tpl")
 
 	errorGroup.GET("/error", func(ctx *gin.Context) {
 		if err := c.UIManager.Render(ctx.Writer, errorKey, &map[string]string{
