@@ -43,8 +43,8 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	loginKey, _ := c.UIManager.Register(
 		builders.
 			NewSliceBuilder[string]().
-			Add("layout.tpl").
-			Add("login.tpl").
+			Add("layout.html.tpl").
+			Add("login.html.tpl").
 			Build(),
 	)
 
@@ -72,8 +72,8 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	homeKey, _ := c.UIManager.Register(
 		builders.
 			NewSliceBuilder[string]().
-			Add("layout.tpl").
-			Add("home.tpl").
+			Add("layout.html.tpl").
+			Add("home.html.tpl").
 			Build(),
 	)
 
@@ -96,8 +96,8 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	errorKey, _ := c.UIManager.Register(
 		builders.
 			NewSliceBuilder[string]().
-			Add("layout.tpl").
-			Add("error.tpl").
+			Add("layout.html.tpl").
+			Add("error.html.tpl").
 			Build(),
 	)
 
