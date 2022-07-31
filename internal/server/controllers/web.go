@@ -117,8 +117,8 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 
 	errorGroup.GET("/error", func(ctx *gin.Context) {
 		if err := c.UIManager.Render(ctx.Writer, errorKey, &map[string]string{
-			"Status":      ctx.Query("s"),
-			"Description": ctx.Query("d"),
+			"Error":       ctx.Query("error"),
+			"Description": ctx.Query("error_description"),
 		}); err != nil {
 			ctx.AbortWithError(
 				http.StatusServiceUnavailable,
