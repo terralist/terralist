@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
 	"terralist/internal/server"
 	"terralist/pkg/auth"
 	authFactory "terralist/pkg/auth/factory"
@@ -14,6 +15,9 @@ import (
 	dbFactory "terralist/pkg/database/factory"
 	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
+	"terralist/pkg/session"
+	"terralist/pkg/session/cookie"
+	sessionFactory "terralist/pkg/session/factory"
 	"terralist/pkg/storage"
 	storageFactory "terralist/pkg/storage/factory"
 	"terralist/pkg/storage/local"
@@ -151,6 +155,7 @@ func (s *Command) run() error {
 	userConfig := server.UserConfig{
 		LogLevel:           flags[LogLevelFlag].(*cli.StringFlag).Value,
 		Port:               flags[PortFlag].(*cli.IntFlag).Value,
+		URL:                flags[URLFlag].(*cli.StringFlag).Value,
 		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
 	}
 
@@ -247,10 +252,23 @@ func (s *Command) run() error {
 		return err
 	}
 
+	// Initialize session store
+	var store session.Store
+	switch flags[SessionStoreFlag].(*cli.StringFlag).Value {
+	case "cookie":
+		store, err = sessionFactory.NewStore(session.COOKIE, &cookie.Config{
+			Secret: flags[CookieSecretFlag].(*cli.StringFlag).Value,
+		})
+	}
+	if err != nil {
+		return err
+	}
+
 	srv, err := s.ServerCreator.NewServer(userConfig, server.Config{
 		Database:    db,
 		Provider:    provider,
 		Resolver:    res,
+		Store:       store,
 		RunningMode: s.RunningMode,
 	})
 

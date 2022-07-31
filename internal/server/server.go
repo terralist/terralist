@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -9,11 +10,14 @@ import (
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
+	"terralist/internal/server/views"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
+	"terralist/pkg/session"
 	"terralist/pkg/storage"
+	"terralist/pkg/webui"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mazen160/go-random"
@@ -40,6 +44,7 @@ type Config struct {
 	Database database.Engine
 	Provider auth.Provider
 	Resolver storage.Resolver
+	Store    session.Store
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
@@ -53,9 +58,21 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	router.Use(handlers.Logger())
 	router.Use(gin.Recovery())
 
+	// Parse host URL
+	hostURL, err := url.Parse(userConfig.URL)
+	if err != nil {
+		return nil, fmt.Errorf("host URL cannot be parsed")
+	}
+
 	// Apply initial migration
 	if err := config.Database.WithMigration(&InitialMigration{}); err != nil {
 		return nil, fmt.Errorf("could not apply initial migration: %v", err)
+	}
+
+	// Initialize webUI manager
+	manager, err := webui.NewManager(views.FS)
+	if err != nil {
+		return nil, fmt.Errorf("could not create a new view manager: %v", err)
 	}
 
 	jwtManager, _ := jwt.New(userConfig.TokenSigningSecret)
@@ -72,8 +89,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	loginController := &controllers.DefaultLoginController{
+		Store:        config.Store,
 		LoginService: loginService,
-		EncryptSalt:  salt,
+
+		EncryptSalt: salt,
+		HostURL:     hostURL,
 	}
 
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{
@@ -120,6 +140,15 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ProviderEndpoint:      providerController.TerraformApi(),
 	}
 
+	webController := &controllers.DefaultWebController{
+		Store:     config.Store,
+		UIManager: manager,
+
+		ProviderName:          config.Provider.Name(),
+		HostURL:               hostURL,
+		AuthorizationEndpoint: loginController.AuthorizationRoute(),
+	}
+
 	return &Server{
 		Port: userConfig.Port,
 
@@ -133,6 +162,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			loginController,
 			moduleController,
 			providerController,
+			webController,
 		},
 	}, nil
 }
