@@ -25,8 +25,8 @@ type DefaultWebController struct {
 	Store     session.Store
 	UIManager webui.Manager
 
-	HostURL *url.URL
-
+	ProviderName          string
+	HostURL               *url.URL
 	AuthorizationEndpoint string
 }
 
@@ -55,7 +55,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 			authErrorDescription := ctx.Query("error_description")
 
 			if err := c.UIManager.Render(ctx.Writer, loginKey, &map[string]string{
-				"Provider":              "GitHub",
+				"Provider":              c.ProviderName,
 				"AuthorizationEndpoint": c.AuthorizationEndpoint,
 				"HostURL":               c.HostURL.String(),
 

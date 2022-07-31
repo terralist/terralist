@@ -144,6 +144,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Store:     config.Store,
 		UIManager: manager,
 
+		ProviderName:          config.Provider.Name(),
 		HostURL:               hostURL,
 		AuthorizationEndpoint: loginController.AuthorizationRoute(),
 	}
