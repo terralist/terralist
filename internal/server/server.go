@@ -135,8 +135,10 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ProviderEndpoint:      providerController.TerraformApi(),
 	}
 
-	homeController := &controllers.DefaultHomeController{
-		UIManager: manager,
+	webController := &controllers.DefaultWebController{
+		UIManager:             manager,
+		HostURL:               hostURL,
+		AuthorizationEndpoint: loginController.AuthorizationRoute(),
 	}
 
 	return &Server{
@@ -152,7 +154,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			loginController,
 			moduleController,
 			providerController,
-			homeController,
+			webController,
 		},
 	}, nil
 }
