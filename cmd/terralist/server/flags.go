@@ -9,6 +9,8 @@ const (
 
 	LogLevelFlag = "log-level"
 
+	URLFlag = "url"
+
 	DatabaseBackendFlag = "database-backend"
 
 	SQLitePathFlag = "sqlite-path"
@@ -54,6 +56,11 @@ var flags = map[string]cli.Flag{
 		Description:  "The log level.",
 		Choices:      []string{"trace", "debug", "info", "warn", "error"},
 		DefaultValue: "info",
+	},
+
+	URLFlag: &cli.StringFlag{
+		Description: "The URL that Terralist is accessible from.",
+		DefaultValue: "http://localhost:5758",
 	},
 
 	DatabaseBackendFlag: &cli.StringFlag{

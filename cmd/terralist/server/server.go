@@ -151,6 +151,7 @@ func (s *Command) run() error {
 	userConfig := server.UserConfig{
 		LogLevel:           flags[LogLevelFlag].(*cli.StringFlag).Value,
 		Port:               flags[PortFlag].(*cli.IntFlag).Value,
+		URL:                flags[URLFlag].(*cli.StringFlag).Value,
 		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
 	}
 
