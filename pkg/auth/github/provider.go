@@ -27,6 +27,10 @@ var (
 	httpClient    = &http.Client{}
 )
 
+func (p *Provider) Name() string {
+	return "GitHub"
+}
+
 func (p *Provider) GetAuthorizeUrl(state string) string {
 	scopes := []string{"read:user", "user:email"}
 
