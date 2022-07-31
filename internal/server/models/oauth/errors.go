@@ -23,7 +23,7 @@ type defaultError struct {
 }
 
 func (e *defaultError) Error() string {
-	return e.Error()
+	return e.err.Error()
 }
 
 func (e *defaultError) Kind() string {
