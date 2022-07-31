@@ -15,6 +15,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
+	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/pkg/webui"
 
@@ -43,6 +44,7 @@ type Config struct {
 	Database database.Engine
 	Provider auth.Provider
 	Resolver storage.Resolver
+	Store    session.Store
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
@@ -67,6 +69,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("could not apply initial migration: %v", err)
 	}
 
+	// Initialize webUI manager
 	manager, err := webui.NewManager(views.FS)
 	if err != nil {
 		return nil, fmt.Errorf("could not create a new view manager: %v", err)
@@ -86,9 +89,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	loginController := &controllers.DefaultLoginController{
+		Store:        config.Store,
 		LoginService: loginService,
-		EncryptSalt:  salt,
-		HostURL:      hostURL,
+
+		EncryptSalt: salt,
+		HostURL:     hostURL,
 	}
 
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{
@@ -136,7 +141,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	webController := &controllers.DefaultWebController{
-		UIManager:             manager,
+		Store:     config.Store,
+		UIManager: manager,
+
 		HostURL:               hostURL,
 		AuthorizationEndpoint: loginController.AuthorizationRoute(),
 	}

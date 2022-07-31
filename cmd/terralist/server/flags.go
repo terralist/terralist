@@ -40,6 +40,10 @@ const (
 	S3AccessKeyIDFlag     = "s3-access-key-id"
 	S3SecretAccessKeyFlag = "s3-secret-access-key"
 	S3PresignExpireFlag   = "s3-presign-expire"
+
+	SessionStoreFlag = "session-store"
+
+	CookieSecretFlag = "cookie-secret"
 )
 
 var flags = map[string]cli.Flag{
@@ -59,7 +63,7 @@ var flags = map[string]cli.Flag{
 	},
 
 	URLFlag: &cli.StringFlag{
-		Description: "The URL that Terralist is accessible from.",
+		Description:  "The URL that Terralist is accessible from.",
 		DefaultValue: "http://localhost:5758",
 	},
 
@@ -138,5 +142,15 @@ var flags = map[string]cli.Flag{
 	S3PresignExpireFlag: &cli.IntFlag{
 		Description:  "The number of minutes after which the presigned URLs should expire.",
 		DefaultValue: 15,
+	},
+
+	SessionStoreFlag: &cli.StringFlag{
+		Description:  "The session store backend.",
+		Choices:      []string{"cookie"},
+		DefaultValue: "cookie",
+	},
+
+	CookieSecretFlag: &cli.StringFlag{
+		Description: "The secret to use for cookie encryption.",
 	},
 }

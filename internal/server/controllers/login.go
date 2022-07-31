@@ -8,6 +8,8 @@ import (
 	"terralist/internal/server/models/oauth"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
+	"terralist/pkg/session"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -38,6 +40,7 @@ type LoginController interface {
 
 // DefaultLoginController is a concrete implementation of LoginController
 type DefaultLoginController struct {
+	Store        session.Store
 	LoginService services.LoginService
 
 	HostURL *url.URL
@@ -168,6 +171,39 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 		if uri.Host == c.HostURL.Host {
 			// There's no need in validating the request, if we made this call
 			// Save user session and redirect back
+			sess, err := c.Store.Get(ctx.Request)
+			if err != nil {
+				ctx.Redirect(
+					http.StatusFound,
+					c.redirectWithError(
+						uri.String(),
+						"",
+						oauth.WrapError(
+							fmt.Errorf("could not fetch the session"),
+							oauth.ServerError,
+						),
+					),
+				)
+			}
+
+			sess.Set("user", &auth.User{
+				Name:  codeComponents.UserName,
+				Email: codeComponents.UserEmail,
+			})
+
+			if err := c.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {
+				ctx.Redirect(
+					http.StatusFound,
+					c.redirectWithError(
+						uri.String(),
+						"",
+						oauth.WrapError(
+							fmt.Errorf("could not save session"),
+							oauth.ServerError,
+						),
+					),
+				)
+			}
 
 			// Redirect back
 			ctx.Redirect(http.StatusFound, uri.String())

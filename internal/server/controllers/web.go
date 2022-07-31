@@ -7,6 +7,7 @@ import (
 
 	"terralist/pkg/api"
 	"terralist/pkg/builders"
+	"terralist/pkg/session"
 	"terralist/pkg/webui"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,7 @@ type WebController interface {
 // DefaultWebController is a concrete implementation of
 // WebController
 type DefaultWebController struct {
+	Store     session.Store
 	UIManager webui.Manager
 
 	HostURL *url.URL
@@ -38,21 +40,21 @@ func (c *DefaultWebController) Paths() []string {
 func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	homeGroup := apis[0]
 
-	homeKey, _ := c.UIManager.Register(
+	loginKey, _ := c.UIManager.Register(
 		builders.
 			NewSliceBuilder[string]().
 			Add("layout.tpl").
-			Add("home.tpl").
+			Add("login.tpl").
 			Build(),
 	)
 
 	homeGroup.GET("/",
-		checkSession(false),
+		c.checkSession(false),
 		func(ctx *gin.Context) {
 			authError := ctx.Query("error")
 			authErrorDescription := ctx.Query("error_description")
 
-			if err := c.UIManager.Render(ctx.Writer, homeKey, &map[string]string{
+			if err := c.UIManager.Render(ctx.Writer, loginKey, &map[string]string{
 				"Provider":              "GitHub",
 				"AuthorizationEndpoint": c.AuthorizationEndpoint,
 				"HostURL":               c.HostURL.String(),
@@ -61,17 +63,31 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 				"Error":            authError,
 				"ErrorDescription": authErrorDescription,
 			}); err != nil {
-				log.Debug().AnErr("Error", err).Msg("Cannot render home view")
+				log.Debug().AnErr("Error", err).Msg("Cannot render login view")
 				ctx.AbortWithStatus(http.StatusInternalServerError)
 			}
 		},
 	)
 
+	homeKey, _ := c.UIManager.Register(
+		builders.
+			NewSliceBuilder[string]().
+			Add("layout.tpl").
+			Add("home.tpl").
+			Build(),
+	)
+
 	homeGroup.GET(
 		"/home",
-		checkSession(true),
+		c.checkSession(true),
 		func(ctx *gin.Context) {
-
+			user, _ := ctx.Get("user")
+			if err := c.UIManager.Render(ctx.Writer, homeKey, &map[string]any{
+				"User": user,
+			}); err != nil {
+				log.Debug().AnErr("Error", err).Msg("Cannot render home view")
+				ctx.AbortWithStatus(http.StatusInternalServerError)
+			}
 		},
 	)
 
@@ -98,9 +114,18 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	})
 }
 
-func checkSession(mustBe bool) gin.HandlerFunc {
+func (c *DefaultWebController) checkSession(mustBe bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		sessionActive := false
+		sess, err := c.Store.Get(ctx.Request)
+		if err == nil {
+			user, ok := sess.Get("user")
+			if ok {
+				// Pass user details to request
+				ctx.Set("user", user)
+				sessionActive = true
+			}
+		}
 
 		// If session is active and it should not be active
 		// redirect user to home page (authenticated)

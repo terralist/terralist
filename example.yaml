@@ -29,3 +29,7 @@ s3-bucket-name: "<< YOUR_S3_BUCKET_NAME >>"
 s3-bucket-region: "<< S3_BUCKET_REGION >>"
 s3-access-key-id: "<< YOUR_ACCESS_KEY_ID >>"
 s3-secret-access-key: "<< YOUR_SECRET_ACCESS_KEY >>"
+
+session-store: "cookie"
+
+cookie-secret: "<< ANY_RANDOM_STRING_SECRET>>"
