@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"terralist/internal/server/models/authority"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -38,7 +37,7 @@ func (v Version) ToVersionListVersionDTO() VersionListVersionDTO {
 	}
 }
 
-func (v Version) ToDownloadVersionDTO(os string, arch string) (DownloadVersionDTO, error) {
+func (v Version) ToDownloadVersionDTO(os string, arch string, keys SigningKeysDTO) (DownloadVersionDTO, error) {
 	filename := fmt.Sprintf(
 		"terraform-provider-%s_%s_%s_%s.zip",
 		v.Provider.Name,
@@ -58,7 +57,7 @@ func (v Version) ToDownloadVersionDTO(os string, arch string) (DownloadVersionDT
 			out.ShaSumsSignatureUrl = v.ShaSumsSignatureUrl
 			out.ShaSum = platform.ShaSum
 			out.Protocols = strings.Split(v.Protocols, ",")
-			out.SigningKeys = v.Provider.Authority.ToAuthorityKeysDTO()
+			out.SigningKeys = keys
 
 			return out, nil
 		}
@@ -74,13 +73,25 @@ type VersionListVersionDTO struct {
 }
 
 type DownloadVersionDTO struct {
-	Protocols           []string                   `json:"protocols"`
-	System              string                     `json:"os"`
-	Architecture        string                     `json:"arch"`
-	FileName            string                     `json:"filename"`
-	DownloadUrl         string                     `json:"download_url"`
-	ShaSumsUrl          string                     `json:"shasums_url"`
-	ShaSumsSignatureUrl string                     `json:"shasums_signature_url"`
-	ShaSum              string                     `json:"shasum"`
-	SigningKeys         authority.AuthorityKeysDTO `json:"signing_keys"`
+	Protocols           []string       `json:"protocols"`
+	System              string         `json:"os"`
+	Architecture        string         `json:"arch"`
+	FileName            string         `json:"filename"`
+	DownloadUrl         string         `json:"download_url"`
+	ShaSumsUrl          string         `json:"shasums_url"`
+	ShaSumsSignatureUrl string         `json:"shasums_signature_url"`
+	ShaSum              string         `json:"shasum"`
+	SigningKeys         SigningKeysDTO `json:"signing_keys"`
+}
+
+type SigningKeysDTO struct {
+	Keys []PublicKeyDTO `json:"gpg_public_keys"`
+}
+
+type PublicKeyDTO struct {
+	KeyId          string `json:"key_id"`
+	AsciiArmor     string `json:"ascii_armor"`
+	TrustSignature string `json:"trust_signature"`
+	Source         string `json:"string"`
+	SourceURL      string `json:"source_url"`
 }

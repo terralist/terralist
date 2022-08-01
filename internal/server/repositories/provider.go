@@ -81,7 +81,7 @@ func (r *DefaultProviderRepository) FindVersion(namespace string, name string, v
 			Version: version,
 		}).
 		Preload("Platforms").
-		Preload("Provider.Authority.Keys").
+		Preload("Provider").
 		First(&v).
 		Error
 

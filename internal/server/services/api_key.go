@@ -33,6 +33,7 @@ type ApiKeyService interface {
 
 // DefaultApiKeyService is a concrete implementation of ApiKeyService
 type DefaultApiKeyService struct {
+	AuthorityService AuthorityService
 	ApiKeyRepository repositories.ApiKeyRepository
 }
 
@@ -47,9 +48,13 @@ func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}
 
+	authority, err := s.AuthorityService.Get(apiKey.AuthorityID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
+	}
+
 	return &auth.User{
-		Name:        apiKey.OwnerName,
-		Email:       apiKey.OwnerEmail,
+		Email:       authority.Owner,
 		AuthorityID: apiKey.AuthorityID.String(),
 	}, nil
 }

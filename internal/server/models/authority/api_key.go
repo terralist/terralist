@@ -10,8 +10,6 @@ import (
 
 type ApiKey struct {
 	entity.Entity
-	OwnerName   string
-	OwnerEmail  string
 	AuthorityID uuid.UUID
 	Expiration  *time.Time
 }

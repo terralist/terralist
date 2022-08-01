@@ -3,7 +3,6 @@ package provider
 import (
 	"strings"
 
-	"terralist/internal/server/models/authority"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -12,7 +11,6 @@ import (
 type Provider struct {
 	entity.Entity
 	AuthorityID uuid.UUID
-	Authority   authority.Authority
 	Name        string    `gorm:"not null"`
 	Namespace   string    `gorm:"not null"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

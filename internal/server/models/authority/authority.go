@@ -1,40 +1,35 @@
 package authority
 
-import "terralist/pkg/database/entity"
+import (
+	"terralist/internal/server/models/module"
+	"terralist/internal/server/models/provider"
+	"terralist/pkg/database/entity"
+)
 
 type Authority struct {
 	entity.Entity
 
-	Name      string `gorm:"not null"`
-	PolicyURL string `gorm:"not null"`
-	Keys      []Key  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Name      string              `gorm:"not null"`
+	PolicyURL string              `gorm:"not null"`
+	Owner     string              `gorm:"not null;uniqueIndex"`
+	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	ApiKeys   []ApiKey            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Modules   []module.Module     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Providers []provider.Provider `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Authority) TableName() string {
 	return "authority"
 }
 
-func (a Authority) ToAuthorityKeysDTO() AuthorityKeysDTO {
-	var keys []AuthorityKeyDTO
-	for _, k := range a.Keys {
-		keys = append(keys, AuthorityKeyDTO{
-			KeyDTO:    k.ToKeyDTO(),
-			Source:    a.Name,
-			SourceURL: a.PolicyURL,
-		})
-	}
-
-	return AuthorityKeysDTO{
-		Keys: keys,
-	}
+type AuthorityCreateDTO struct {
+	Name      string `json:"name"`
+	PolicyURL string `json:"policy_url"`
 }
 
-type AuthorityKeysDTO struct {
-	Keys []AuthorityKeyDTO `json:"gpg_public_keys"`
-}
-
-type AuthorityKeyDTO struct {
-	KeyDTO
-	Source    string `json:"string"`
-	SourceURL string `json:"source_url"`
+func (d AuthorityCreateDTO) ToAuthority() Authority {
+	return Authority{
+		Name:      d.Name,
+		PolicyURL: d.PolicyURL,
+	}
 }

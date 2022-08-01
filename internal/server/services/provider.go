@@ -40,6 +40,7 @@ type ProviderService interface {
 // DefaultProviderService is the concrete implementation of ProviderService
 type DefaultProviderService struct {
 	ProviderRepository repositories.ProviderRepository
+	AuthorityService   AuthorityService
 }
 
 func (s *DefaultProviderService) Get(namespace string, name string) (*provider.VersionListProviderDTO, error) {
@@ -68,7 +69,24 @@ func (s *DefaultProviderService) GetVersion(
 		return nil, err
 	}
 
-	dto, err := p.ToDownloadVersionDTO(system, architecture)
+	a, err := s.AuthorityService.Get(p.Provider.AuthorityID)
+	if err != nil {
+		return nil, fmt.Errorf("could not find authority: %v", err)
+	}
+
+	keys := []provider.PublicKeyDTO{}
+
+	for _, k := range a.Keys {
+		keys = append(keys, provider.PublicKeyDTO{
+			KeyId:          k.KeyId,
+			AsciiArmor:     k.AsciiArmor,
+			TrustSignature: k.TrustSignature,
+			Source:         a.Name,
+			SourceURL:      a.PolicyURL,
+		})
+	}
+
+	dto, err := p.ToDownloadVersionDTO(system, architecture, provider.SigningKeysDTO{Keys: keys})
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +113,7 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, namespace string,
 		return err
 	}
 
-	if p.Authority.ID != authorityID {
+	if p.AuthorityID != authorityID {
 		return fmt.Errorf("authority does not match")
 	}
 
@@ -117,7 +135,7 @@ func (s *DefaultProviderService) DeleteVersion(
 		return err
 	}
 
-	if p.Authority.ID != authorityID {
+	if p.AuthorityID != authorityID {
 		return fmt.Errorf("authority does not match")
 	}
 

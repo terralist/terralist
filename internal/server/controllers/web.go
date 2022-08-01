@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/session"
 	"terralist/pkg/webui"
@@ -21,8 +22,10 @@ type WebController interface {
 // DefaultWebController is a concrete implementation of
 // WebController
 type DefaultWebController struct {
-	Store     session.Store
-	UIManager webui.Manager
+	Store            session.Store
+	UIManager        webui.Manager
+	AuthorityService services.AuthorityService
+	ApiKeyService    services.ApiKeyService
 
 	ProviderName          string
 	HostURL               *url.URL
