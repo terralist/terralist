@@ -7,6 +7,7 @@ import (
 
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
 	"terralist/pkg/session"
 	"terralist/pkg/webui"
 
@@ -73,11 +74,21 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 		"/home",
 		c.checkSession(true),
 		func(ctx *gin.Context) {
-			user, _ := ctx.Get("user")
+			u, _ := ctx.Get("user")
+			user := u.(*auth.User)
+
+			authorities, err := c.AuthorityService.GetAll(user.Email)
+			if err != nil {
+				log.Debug().
+					AnErr("Error", err).
+					Msg("Cannot fetch user authorities.")
+			}
+
 			if err := c.UIManager.Render(ctx.Writer, homeKey, &map[string]any{
-				"User": user,
+				"User":        user,
+				"Authorities": authorities,
 			}); err != nil {
-				log.Debug().AnErr("Error", err).Msg("Cannot render home view")
+				log.Debug().AnErr("Error", err).Msg("Cannot render home view.")
 				ctx.AbortWithStatus(http.StatusInternalServerError)
 			}
 		},

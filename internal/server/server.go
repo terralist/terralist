@@ -96,12 +96,21 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		HostURL:     hostURL,
 	}
 
+	authorityRepository := &repositories.DefaultAuthorityRepository{
+		Database: config.Database,
+	}
+
+	authorityService := &services.DefaultAuthorityService{
+		AuthorityRepository: authorityRepository,
+	}
+
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{
 		Database: config.Database,
 	}
 
 	apiKeyService := &services.DefaultApiKeyService{
 		ApiKeyRepository: apiKeyRepository,
+		AuthorityService: authorityService,
 	}
 
 	moduleRepository := &repositories.DefaultModuleRepository{
@@ -125,6 +134,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
+		AuthorityService:   authorityService,
 	}
 
 	providerController := &controllers.DefaultProviderController{
@@ -141,8 +151,10 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	webController := &controllers.DefaultWebController{
-		Store:     config.Store,
-		UIManager: manager,
+		Store:            config.Store,
+		UIManager:        manager,
+		AuthorityService: authorityService,
+		ApiKeyService:    apiKeyService,
 
 		ProviderName:          config.Provider.Name(),
 		HostURL:               hostURL,
