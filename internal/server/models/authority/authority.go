@@ -19,7 +19,7 @@ type Authority struct {
 }
 
 func (Authority) TableName() string {
-	return "authority"
+	return "authorities"
 }
 
 type AuthorityCreateDTO struct {
