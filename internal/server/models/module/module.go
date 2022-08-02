@@ -11,7 +11,6 @@ import (
 type Module struct {
 	entity.Entity
 	AuthorityID uuid.UUID
-	Namespace   string    `gorm:"not null"`
 	Name        string    `gorm:"not null"`
 	Provider    string    `gorm:"not null"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -22,7 +21,7 @@ func (Module) TableName() string {
 }
 
 func (m Module) String() string {
-	return fmt.Sprintf("%s/%s/%s", m.Namespace, m.Name, m.Provider)
+	return fmt.Sprintf("%s/%s", m.Name, m.Provider)
 }
 
 func (m Module) ToListResponseDTO() ListResponseDTO {
@@ -51,7 +50,7 @@ type ModuleDTO struct {
 
 type CreateDTO struct {
 	VersionDTO
-	Namespace   string `json:"namespace"`
+	AuthorityID uuid.UUID
 	Name        string `json:"name"`
 	Provider    string `json:"provider"`
 	DownloadUrl string `json:"download_url"`
@@ -69,9 +68,9 @@ func (d CreateDTO) ToModule() Module {
 	}
 
 	out := Module{
-		Namespace: d.Namespace,
-		Name:      d.Name,
-		Provider:  d.Provider,
+		AuthorityID: d.AuthorityID,
+		Name:        d.Name,
+		Provider:    d.Provider,
 		Versions: []Version{
 			{
 				Version:      d.Version,

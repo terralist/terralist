@@ -120,6 +120,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	moduleService := &services.DefaultModuleService{
 		ModuleRepository: moduleRepository,
+		AuthorityService: authorityService,
 	}
 
 	moduleController := &controllers.DefaultModuleController{

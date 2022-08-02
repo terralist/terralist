@@ -6,6 +6,8 @@ import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/version"
+
+	"github.com/google/uuid"
 )
 
 // ModuleService describes a service that holds the business logic for modules registry
@@ -22,17 +24,18 @@ type ModuleService interface {
 	Upload(*module.CreateDTO) error
 
 	// Delete removes a module with all its data from the system
-	Delete(namespace string, name string, provider string) error
+	Delete(authorityID uuid.UUID, name string, provider string) error
 
 	// DeleteVersion removes a module version from the system
 	// If the version removed is the only module version available, the entire
 	// module will be removed
-	DeleteVersion(namespace string, name string, provider string, version string) error
+	DeleteVersion(authorityID uuid.UUID, name string, provider string, version string) error
 }
 
 // DefaultModuleService is the concrete implementation of ModuleService
 type DefaultModuleService struct {
 	ModuleRepository *repositories.DefaultModuleRepository
+	AuthorityService AuthorityService
 }
 
 func (s *DefaultModuleService) Get(namespace string, name string, provider string) (*module.ListResponseDTO, error) {
@@ -51,12 +54,12 @@ func (s *DefaultModuleService) GetVersion(
 	provider string,
 	version string,
 ) (*string, error) {
-	v, err := s.ModuleRepository.FindVersion(namespace, name, provider, version)
+	url, err := s.ModuleRepository.FindVersionLocation(namespace, name, provider, version)
 	if err != nil {
 		return nil, err
 	}
 
-	return &v.Location, nil
+	return url, nil
 }
 
 func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
@@ -65,17 +68,28 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
 	}
 
 	m := d.ToModule()
-	if _, err := s.ModuleRepository.Upsert(m); err != nil {
+
+	a, err := s.AuthorityService.Get(m.AuthorityID)
+	if err != nil {
+		return err
+	}
+
+	if _, err := s.ModuleRepository.Upsert(a.Name, m); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *DefaultModuleService) Delete(namespace string, name string, provider string) error {
-	m, err := s.ModuleRepository.Find(namespace, name, provider)
+func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provider string) error {
+	a, err := s.AuthorityService.Get(authorityID)
 	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+		return err
+	}
+
+	m, err := s.ModuleRepository.Find(a.Name, name, provider)
+	if err != nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", a.Name, name, provider)
 	}
 
 	if err := s.ModuleRepository.Delete(m); err != nil {
@@ -85,12 +99,17 @@ func (s *DefaultModuleService) Delete(namespace string, name string, provider st
 	return nil
 }
 
-func (s *DefaultModuleService) DeleteVersion(namespace string, name string, provider string, version string) error {
-	m, err := s.ModuleRepository.Find(namespace, name, provider)
+func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string, provider string, version string) error {
+	a, err := s.AuthorityService.Get(authorityID)
 	if err != nil {
-		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", namespace, name, provider)
+		return err
 	}
-	
+
+	m, err := s.ModuleRepository.Find(a.Name, name, provider)
+	if err != nil {
+		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", a.Name, name, provider)
+	}
+
 	if err := s.ModuleRepository.DeleteVersion(m, version); err != nil {
 		return err
 	}
