@@ -11,7 +11,7 @@ type Authority struct {
 
 	Name      string              `gorm:"not null;uniqueIndex"`
 	PolicyURL string              `gorm:"not null"`
-	Owner     string              `gorm:"not null;uniqueIndex"`
+	Owner     string              `gorm:"not null;index"`
 	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	ApiKeys   []ApiKey            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Modules   []module.Module     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -25,11 +25,13 @@ func (Authority) TableName() string {
 type AuthorityCreateDTO struct {
 	Name      string `json:"name"`
 	PolicyURL string `json:"policy_url"`
+	Owner     string `json:"owner"`
 }
 
 func (d AuthorityCreateDTO) ToAuthority() Authority {
 	return Authority{
 		Name:      d.Name,
 		PolicyURL: d.PolicyURL,
+		Owner:     d.Owner,
 	}
 }

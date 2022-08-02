@@ -25,7 +25,7 @@ type ApiKeyService interface {
 	// Grant allocates a new key; It takes an input argument which can control the
 	// duration of the key. If you don't want your key to expire, set the argument
 	// to 0.
-	Grant(expireIn int) (string, error)
+	Grant(authorityID uuid.UUID, expireIn int) (string, error)
 
 	// Revoke removes a key from the database
 	Revoke(key string) error
@@ -59,8 +59,10 @@ func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
 	}, nil
 }
 
-func (s *DefaultApiKeyService) Grant(expireIn int) (string, error) {
-	apiKey := &authority.ApiKey{}
+func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, expireIn int) (string, error) {
+	apiKey := &authority.ApiKey{
+		AuthorityID: authorityID,
+	}
 
 	if expireIn != 0 {
 		exp := time.Now().Add(time.Duration(expireIn) * time.Hour)
