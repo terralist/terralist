@@ -29,12 +29,12 @@ type ProviderService interface {
 	Upload(*provider.CreateProviderDTO) error
 
 	// Delete removes a provider from the system with all its data (versions)
-	Delete(authorityID uuid.UUID, namespace string, name string) error
+	Delete(authorityID uuid.UUID, name string) error
 
 	// DeleteVersion removes a specific version from the system with all its data (installations)
 	// If the removed version is the only version available in the system, the entire
 	// provider will be removed
-	DeleteVersion(authorityID uuid.UUID, namespace string, name string, version string) error
+	DeleteVersion(authorityID uuid.UUID, name string, version string) error
 }
 
 // DefaultProviderService is the concrete implementation of ProviderService
@@ -100,15 +100,26 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 	}
 
 	p := d.ToProvider()
-	if _, err := s.ProviderRepository.Upsert(p); err != nil {
+
+	a, err := s.AuthorityService.Get(p.AuthorityID)
+	if err != nil {
+		return err
+	}
+
+	if _, err := s.ProviderRepository.Upsert(a.Name, p); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *DefaultProviderService) Delete(authorityID uuid.UUID, namespace string, name string) error {
-	p, err := s.ProviderRepository.Find(namespace, name)
+func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) error {
+	a, err := s.AuthorityService.Get(authorityID)
+	if err != nil {
+		return err
+	}
+
+	p, err := s.ProviderRepository.Find(a.Name, name)
 	if err != nil {
 		return err
 	}
@@ -124,13 +135,13 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, namespace string,
 	return nil
 }
 
-func (s *DefaultProviderService) DeleteVersion(
-	authorityID uuid.UUID,
-	namespace string,
-	name string,
-	version string,
-) error {
-	p, err := s.ProviderRepository.Find(namespace, name)
+func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name string, version string) error {
+	a, err := s.AuthorityService.Get(authorityID)
+	if err != nil {
+		return err
+	}
+
+	p, err := s.ProviderRepository.Find(a.Name, name)
 	if err != nil {
 		return err
 	}

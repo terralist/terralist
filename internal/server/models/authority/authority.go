@@ -9,7 +9,7 @@ import (
 type Authority struct {
 	entity.Entity
 
-	Name      string              `gorm:"not null"`
+	Name      string              `gorm:"not null;uniqueIndex"`
 	PolicyURL string              `gorm:"not null"`
 	Owner     string              `gorm:"not null;uniqueIndex"`
 	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

@@ -98,10 +98,9 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Upload a new provider version
 	api.POST(
-		"/:namespace/:name/:version/upload",
+		"/:name/:version/upload",
 		handlers.RequireAuthority(),
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 			version := ctx.Param("version")
 
@@ -122,7 +121,6 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			body.AuthorityID = authorityID
-			body.Namespace = namespace
 			body.Name = name
 			body.Version = version
 
@@ -141,10 +139,9 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Delete a provider
 	api.DELETE(
-		"/:namespace/:name/remove",
+		"/:name/remove",
 		handlers.RequireAuthority(),
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 
 			authorityID, err := uuid.Parse(ctx.GetString("authority"))
@@ -155,7 +152,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			if err := c.ProviderService.Delete(authorityID, namespace, name); err != nil {
+			if err := c.ProviderService.Delete(authorityID, name); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
 				})
@@ -170,10 +167,9 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Delete a provider version
 	api.DELETE(
-		"/:namespace/:name/:version/remove",
+		"/:name/:version/remove",
 		handlers.RequireAuthority(),
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 			version := ctx.Param("version")
 
@@ -185,7 +181,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			if err := c.ProviderService.DeleteVersion(authorityID, namespace, name, version); err != nil {
+			if err := c.ProviderService.DeleteVersion(authorityID, name, version); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
 				})
