@@ -4,14 +4,17 @@ import (
 	"fmt"
 
 	"terralist/pkg/database/entity"
+
+	"github.com/google/uuid"
 )
 
 type Module struct {
 	entity.Entity
-	Namespace string    `gorm:"not null"`
-	Name      string    `gorm:"not null"`
-	Provider  string    `gorm:"not null"`
-	Versions  []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	AuthorityID uuid.UUID
+	Namespace   string    `gorm:"not null"`
+	Name        string    `gorm:"not null"`
+	Provider    string    `gorm:"not null"`
+	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Module) TableName() string {
