@@ -111,7 +111,7 @@ func (r *DefaultModuleRepository) Upsert(n module.Module) (*module.Module, error
 	if err == nil {
 		newVersion := version.Version(n.Versions[0].Version)
 
-		for _, ver := range n.Versions {
+		for _, ver := range m.Versions {
 			if version.Compare(version.Version(ver.Version), newVersion) == 0 {
 				return nil, fmt.Errorf("version %s already exists", newVersion)
 			}
