@@ -6,10 +6,27 @@
     <style>
       {{ block "style" .}}
       {{ end }}
+
+      .error .headline {
+        color: red;
+      }
+      
+      .error .description {
+        color: lightcoral;
+      }
     </style>
   </head>
 
   <body>
+    {{ if not (empty .Values.Error) }}
+    <div class="error">
+      <p class="headline">{{ .Values.Error.Name | default "An unknown error occurred" }}</p>
+      {{ if (empty .Values.Error.Description | not) }}
+      <p class="description">{{ .Values.Error.Description }}</p>
+      {{ end }}
+    </div>
+    {{ end }}
+
     <div class="main">
       {{ block "content" . }}
         <!-- Fallback -->
