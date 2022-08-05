@@ -62,8 +62,11 @@ If you cannot use the build script, you can either run the `go build` command ma
 ### Authenticate
 ```
 $ terraform login registry.example.com
-$ export TERRALIST_TOKEN=$(cat ~/.terraform.d/credentials.tfrc.json | jq -r '.credentials["registry.example.com"].token')
 ```
+
+### Create an authority
+
+Use the application web interface to authenticate using your third-party OAUTH 2.0 provider, then create an authority and assign a GPG key to it.
 
 ### Upload a new module
 ```
