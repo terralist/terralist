@@ -87,6 +87,7 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 			}
 
 			a.Name = current.Name
+			a.Owner = current.Owner
 
 			for _, currentKey := range current.Keys {
 				shouldUpdate := false
