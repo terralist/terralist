@@ -68,6 +68,10 @@ $ terraform login registry.example.com
 
 Use the application web interface to authenticate using your third-party OAUTH 2.0 provider, then create an authority and assign a GPG key to it.
 
+### Generate an API Key
+
+Use the application web interface to generate an API key. You can allocate more than one API key for an authority and use them to upload modules and providers under that specific authority (namespace).
+
 ### Upload a new module
 ```
 $ curl -X POST registry.example.com/v1/api/modules/my-module/provider/1.0.0/upload \
