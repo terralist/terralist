@@ -67,7 +67,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	// Router group
 	r := apis[0]
 
-	loginKey, _ := c.UIManager.Register("login.html.tpl")
+	loginKey, _ := c.UIManager.Register("pages/login.html.tpl")
 	r.GET("/",
 		c.checkSession(false),
 		func(ctx *gin.Context) {
@@ -81,7 +81,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	homeKey, _ := c.UIManager.Register("home.html.tpl")
+	homeKey, _ := c.UIManager.Register("pages/home.html.tpl")
 	r.GET(
 		authenticatedEndpoint,
 		c.checkSession(true),
@@ -127,7 +127,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 
 	// Authority group
-	authorityCreateKey, _ := c.UIManager.Register("authority/create.html.tpl")
+	authorityCreateKey, _ := c.UIManager.Register("pages/authority/create.html.tpl")
 	r.GET(
 		authorityCreateEndpoint,
 		c.checkSession(true),
@@ -179,7 +179,7 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	authorityKeyAddKey, _ := c.UIManager.Register("authority/key/add.html.tpl")
+	authorityKeyAddKey, _ := c.UIManager.Register("pages/authority/key/add.html.tpl")
 	r.GET(
 		authorityKeyCreateEndpoint,
 		c.checkSession(true),
