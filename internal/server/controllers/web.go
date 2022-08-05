@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/services"
@@ -15,6 +16,24 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+)
+
+const (
+	guestEndpoint         = "/"
+	authenticatedEndpoint = "/home"
+	logoutEndpoint        = "/logout"
+
+	authorityEndpoint       = "/authority"
+	authorityCreateEndpoint = authorityEndpoint + "/create"
+	authorityRemoveEndpoint = authorityEndpoint + "/:id/remove"
+
+	authorityKeyBase           = authorityEndpoint + "/:id/keys"
+	authorityKeyCreateEndpoint = authorityKeyBase + "/add"
+	authorityKeyRemoveEndpoint = authorityKeyBase + "/:kid/remove"
+
+	authorityApiKeyBase           = authorityEndpoint + "/:id/apikeys"
+	authorityApiKeyCreateEndpoint = authorityApiKeyBase + "/add"
+	authorityApiKeyRemoveEndpoint = authorityApiKeyBase + "/:kid/remove"
 )
 
 // WebController registers the endpoints for web interface
@@ -37,42 +56,34 @@ type DefaultWebController struct {
 
 func (c *DefaultWebController) Paths() []string {
 	return []string{
-		"",           // home
-		"/error",     // errors
-		"/authority", // authority
+		"", // empty string so we can map on `/`
 	}
 }
 
 func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
-	homeGroup := apis[0]
-
+	// Set base templates
 	_ = c.UIManager.AddBase("layout.html.tpl")
 
+	// Router group
+	r := apis[0]
+
 	loginKey, _ := c.UIManager.Register("login.html.tpl")
-	homeGroup.GET("/",
+	r.GET("/",
 		c.checkSession(false),
 		func(ctx *gin.Context) {
-			authError := ctx.Query("error")
-			authErrorDescription := ctx.Query("error_description")
-
-			if err := c.UIManager.Render(ctx.Writer, loginKey, &map[string]string{
-				"Provider":              c.ProviderName,
-				"AuthorizationEndpoint": c.AuthorizationEndpoint,
-				"HostURL":               c.HostURL.String(),
-
-				// Handle oauth response errors
-				"Error":            authError,
-				"ErrorDescription": authErrorDescription,
-			}); err != nil {
-				log.Debug().AnErr("Error", err).Msg("Cannot render login view")
-				ctx.AbortWithStatus(http.StatusInternalServerError)
-			}
+			c.render(ctx, loginKey, map[string]any{
+				"Provider": c.ProviderName,
+				"HostURL":  c.HostURL.String(),
+				"Endpoints": &map[string]any{
+					"Authorization": c.AuthorizationEndpoint,
+				},
+			})
 		},
 	)
 
 	homeKey, _ := c.UIManager.Register("home.html.tpl")
-	homeGroup.GET(
-		"/home",
+	r.GET(
+		authenticatedEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			u, _ := ctx.Get("user")
@@ -80,23 +91,29 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 
 			authorities, err := c.AuthorityService.GetAll(user.Email)
 			if err != nil {
-				log.Debug().
+				log.Error().
 					AnErr("Error", err).
 					Msg("Cannot fetch user authorities.")
 			}
 
-			if err := c.UIManager.Render(ctx.Writer, homeKey, &map[string]any{
+			c.render(ctx, homeKey, map[string]any{
 				"User":        user,
 				"Authorities": authorities,
-			}); err != nil {
-				log.Debug().AnErr("Error", err).Msg("Cannot render home view.")
-				ctx.AbortWithStatus(http.StatusInternalServerError)
-			}
+				"Endpoints": &map[string]any{
+					"Logout":          logoutEndpoint,
+					"CreateAuthority": authorityCreateEndpoint,
+					"RemoveAuthority": authorityRemoveEndpoint,
+					"CreateKey":       authorityKeyCreateEndpoint,
+					"RemoveKey":       authorityKeyRemoveEndpoint,
+					"CreateApiKey":    authorityApiKeyCreateEndpoint,
+					"RemoveApiKey":    authorityApiKeyRemoveEndpoint,
+				},
+			})
 		},
 	)
 
-	homeGroup.GET(
-		"/logout",
+	r.GET(
+		logoutEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			// Session must be valid, since the checkSession handler passed
@@ -109,41 +126,20 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	// Error group
-	errorGroup := apis[1]
-
-	errorKey, _ := c.UIManager.Register("error.html.tpl")
-	errorGroup.GET("/", func(ctx *gin.Context) {
-		if err := c.UIManager.Render(ctx.Writer, errorKey, &map[string]string{
-			"Error":       ctx.Query("error"),
-			"Description": ctx.Query("error_description"),
-		}); err != nil {
-			ctx.AbortWithError(
-				http.StatusServiceUnavailable,
-				fmt.Errorf("service unavailable"),
-			)
-		}
-	})
-
 	// Authority group
-	authorityGroup := apis[2]
-
 	authorityCreateKey, _ := c.UIManager.Register("authority/create.html.tpl")
-	authorityGroup.GET(
-		"/create",
+	r.GET(
+		authorityCreateEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
-			if err := c.UIManager.Render(ctx.Writer, authorityCreateKey, &map[string]any{
+			c.render(ctx, authorityCreateKey, map[string]any{
 				"Title": "Create Authority",
-			}); err != nil {
-				log.Debug().AnErr("Error", err).Msg("Cannot render authority create view.")
-				ctx.AbortWithStatus(http.StatusInternalServerError)
-			}
+			})
 		},
 	)
 
-	authorityGroup.POST(
-		"/create",
+	r.POST(
+		authorityCreateEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			u, _ := ctx.Get("user")
@@ -157,91 +153,52 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 				PolicyURL: policyURL,
 				Owner:     user.Email,
 			}); err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/authority/create?error=%s&error_description=%s",
-						url.QueryEscape("something_went_wrong"),
-						url.QueryEscape(err.Error()),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authorityCreateEndpoint, err)
 			}
 
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 		},
 	)
 
-	authorityGroup.GET(
-		"/delete/:id",
+	r.GET(
+		authorityRemoveEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			id := ctx.Param("id")
 
 			authorityID, err := uuid.Parse(id)
 			if err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("bad_request"),
-						url.QueryEscape("invalid authority ID"),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, fmt.Errorf("invalid authority ID: %v", err))
 			}
 
 			if err := c.AuthorityService.Delete(authorityID); err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("internal_server_error"),
-						url.QueryEscape(err.Error()),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, err)
 			}
 
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 		},
 	)
 
 	authorityKeyAddKey, _ := c.UIManager.Register("authority/key/add.html.tpl")
-	authorityGroup.GET(
-		":id/keys/add",
+	r.GET(
+		authorityKeyCreateEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
-			if err := c.UIManager.Render(ctx.Writer, authorityKeyAddKey, &map[string]any{
+			c.render(ctx, authorityKeyAddKey, map[string]any{
 				"Title": "Add Authority Key",
-			}); err != nil {
-				log.Debug().AnErr("Error", err).Msg("Cannot render authority authority key add view.")
-				ctx.AbortWithStatus(http.StatusInternalServerError)
-			}
+			})
 		},
 	)
 
-	authorityGroup.POST(
-		":id/keys/add",
+	r.POST(
+		authorityKeyCreateEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			id := ctx.Param("id")
 
 			authorityID, err := uuid.Parse(id)
 			if err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("bad_request"),
-						url.QueryEscape("invalid authority ID"),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, fmt.Errorf("invalid authority ID: %v", err))
 			}
 
 			keyId := ctx.PostForm("key_id")
@@ -253,25 +210,15 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 				AsciiArmor:     asciiArmor,
 				TrustSignature: trustSignature,
 			}); err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/authority/%s/keys/add?error=%s&error_description=%s",
-						id,
-						url.QueryEscape("something_went_wrong"),
-						url.QueryEscape(err.Error()),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, strings.Replace(authorityKeyCreateEndpoint, ":id", id, 1), err)
 			}
 
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 		},
 	)
 
-	authorityGroup.GET(
-		":id/keys/:kid/remove",
+	r.GET(
+		authorityKeyRemoveEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			aID := ctx.Param("id")
@@ -280,93 +227,48 @@ func (c *DefaultWebController) Subscribe(apis ...*gin.RouterGroup) {
 			authorityID, err1 := uuid.Parse(aID)
 			keyID, err2 := uuid.Parse(kID)
 			if err1 != nil || err2 != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("bad_request"),
-						url.QueryEscape("invalid authority ID or key ID"),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, fmt.Errorf("invalid authority ID or key ID"))
 			}
 
 			if err := c.AuthorityService.RemoveKey(authorityID, keyID); err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("internal_server_error"),
-						url.QueryEscape(err.Error()),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, err)
 			}
 
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 		},
 	)
 
-	authorityGroup.GET(
-		":id/apikeys/add",
+	r.GET(
+		authorityApiKeyCreateEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
 			id := ctx.Param("id")
 
 			authorityID, err := uuid.Parse(id)
 			if err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("bad_request"),
-						url.QueryEscape("invalid authority ID"),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, fmt.Errorf("invalid authority ID"))
 			}
 
 			if _, err := c.ApiKeyService.Grant(authorityID, 0); err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("internal_server_error"),
-						url.QueryEscape(err.Error()),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, err)
 			}
 
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 		},
 	)
 
-	authorityGroup.GET(
-		"/apikeys/:id/remove",
+	r.GET(
+		authorityApiKeyRemoveEndpoint,
 		c.checkSession(true),
 		func(ctx *gin.Context) {
-			apiKey := ctx.Param("id")
+			apiKey := ctx.Param("kid")
 
 			err := c.ApiKeyService.Revoke(apiKey)
 			if err != nil {
-				ctx.Redirect(
-					http.StatusFound,
-					fmt.Sprintf(
-						"/home?error=%s&error_description=%s",
-						url.QueryEscape("internal_server_error"),
-						url.QueryEscape(err.Error()),
-					),
-				)
-
-				return
+				c.returnWithErr(ctx, authenticatedEndpoint, err)
 			}
 
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 		},
 	)
 }
@@ -387,7 +289,7 @@ func (c *DefaultWebController) checkSession(mustBe bool) gin.HandlerFunc {
 		// If session is active and it should not be active
 		// redirect user to home page (authenticated)
 		if sessionActive && !mustBe {
-			ctx.Redirect(http.StatusFound, "/home")
+			ctx.Redirect(http.StatusFound, authenticatedEndpoint)
 			return
 		}
 
@@ -407,4 +309,39 @@ func (c *DefaultWebController) checkSession(mustBe bool) gin.HandlerFunc {
 
 		ctx.Next()
 	}
+}
+
+func (c *DefaultWebController) render(ctx *gin.Context, key string, values map[string]any) {
+	qErr := ctx.Query("error")
+	qErrDesc := ctx.Query("error_description")
+
+	if qErr != "" || qErrDesc != "" {
+		values["Error"] = &map[string]string{
+			"Name":        ctx.Query("error"),
+			"Description": ctx.Query("error_description"),
+		}
+	}
+
+	if err := c.UIManager.Render(ctx.Writer, key, values); err != nil {
+		log.Error().
+			AnErr("Error", err).
+			Str("Template Key", key).
+			Msg("Cannot render view")
+
+		ctx.AbortWithStatus(http.StatusInternalServerError)
+	}
+}
+
+func (c *DefaultWebController) returnWithErr(ctx *gin.Context, endpoint string, err error) {
+	ctx.Redirect(
+		http.StatusFound,
+		fmt.Sprintf(
+			"%s?error=%s&error_description=%s",
+			endpoint,
+			url.QueryEscape("Something Went Wrong"),
+			url.QueryEscape(err.Error()),
+		),
+	)
+
+	ctx.Abort()
 }
