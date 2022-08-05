@@ -62,13 +62,20 @@ If you cannot use the build script, you can either run the `go build` command ma
 ### Authenticate
 ```
 $ terraform login registry.example.com
-$ export TERRALIST_TOKEN=$(cat ~/.terraform.d/credentials.tfrc.json | jq -r '.credentials["registry.example.com"].token')
 ```
+
+### Create an authority
+
+Use the application web interface to authenticate using your third-party OAUTH 2.0 provider, then create an authority and assign a GPG key to it.
+
+### Generate an API Key
+
+Use the application web interface to generate an API key. You can allocate more than one API key for an authority and use them to upload modules and providers under that specific authority (namespace).
 
 ### Upload a new module
 ```
-$ curl -X POST registry.example.com/v1/api/modules/example/my-module/provider/1.0.0/upload \
-       -H "Authorization: Bearer $TERRALIST_TOKEN" \
+$ curl -X POST registry.example.com/v1/api/modules/my-module/provider/1.0.0/upload \
+       -H "Authorization: Bearer $TERRALIST_API_KEY" \
        -d '{ "download_url": "/home/bob/terraform-modules/example-module" }'
 ```
 
@@ -114,8 +121,8 @@ module "example-module" {
 
 2. Upload the provider
 ```
-$ curl -X POST registry.example.com/v1/providers/hashicorp/random/2.0.0/upload \
-       -H "Authorization: Bearer $TERRALIST_TOKEN" \
+$ curl -X POST registry.example.com/v1/providers/random/2.0.0/upload \
+       -H "Authorization: Bearer $TERRALIST_API_KEY" \
        -d "$(cat ~/random-2.0.0.json)"
 ```
 
@@ -138,16 +145,16 @@ terraform {
 
 * `GET /v1/providers/:namespace/:name/versions`: List all versions for a provider
 * `GET /v1/providers/:namespace/:name/:version/download/:system/:arch`: Download a specific provider version
-* `POST /v1/api/providers/:namespace/:name/:version/upload`: Upload a new provider version
-* `DELETE /v1/api/providers/:namespace/:name/remove`: Remove a provider
-* `DELETE /v1/api/providers/:namespace/:name/:version/remove`: Remove a provider version
+* `POST /v1/api/providers/:name/:version/upload`: Upload a new provider version
+* `DELETE /v1/api/providers/:name/remove`: Remove a provider
+* `DELETE /v1/api/providers/:name/:version/remove`: Remove a provider version
 
 
 * `GET /v1/modules/:namespace/:name/:provider/versions`: List all versions for a module
 * `GET /v1/modules/:namespace/:name/:provider/:version/download`: Download a specific module version
-* `POST /v1/api/modules/:namespace/:name/:provider/:version/upload`: Upload a new modules version
-* `DELETE /v1/api/modules/:namespace/:name/:provider/remove`: Remove a modules
-* `DELETE /v1/api/modules/:namespace/:name/:provider/remove`: Remove a modules version
+* `POST /v1/api/modules/:name/:provider/:version/upload`: Upload a new modules version
+* `DELETE /v1/api/modules/:name/:provider/remove`: Remove a modules
+* `DELETE /v1/api/modules/:name/:provider/remove`: Remove a modules version
 
 ## Work In Progress
 
