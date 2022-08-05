@@ -25,7 +25,7 @@ type ApiKeyService interface {
 	// Grant allocates a new key; It takes an input argument which can control the
 	// duration of the key. If you don't want your key to expire, set the argument
 	// to 0.
-	Grant(expireIn int) (string, error)
+	Grant(authorityID uuid.UUID, expireIn int) (string, error)
 
 	// Revoke removes a key from the database
 	Revoke(key string) error
@@ -33,6 +33,7 @@ type ApiKeyService interface {
 
 // DefaultApiKeyService is a concrete implementation of ApiKeyService
 type DefaultApiKeyService struct {
+	AuthorityService AuthorityService
 	ApiKeyRepository repositories.ApiKeyRepository
 }
 
@@ -47,15 +48,21 @@ func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}
 
+	authority, err := s.AuthorityService.Get(apiKey.AuthorityID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
+	}
+
 	return &auth.User{
-		Name:        apiKey.OwnerName,
-		Email:       apiKey.OwnerEmail,
+		Email:       authority.Owner,
 		AuthorityID: apiKey.AuthorityID.String(),
 	}, nil
 }
 
-func (s *DefaultApiKeyService) Grant(expireIn int) (string, error) {
-	apiKey := &authority.ApiKey{}
+func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, expireIn int) (string, error) {
+	apiKey := &authority.ApiKey{
+		AuthorityID: authorityID,
+	}
 
 	if expireIn != 0 {
 		exp := time.Now().Add(time.Duration(expireIn) * time.Hour)

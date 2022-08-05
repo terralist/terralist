@@ -16,6 +16,9 @@ type AuthorityRepository interface {
 	// Find searches for a specific authority
 	Find(uuid.UUID) (*authority.Authority, error)
 
+	// FindAll searches for all authorities created by a specific owner
+	FindAll(owner string) ([]*authority.Authority, error)
+
 	// Upsert either updates or creates a new (if it does not already exist) authority
 	Upsert(authority.Authority) (*authority.Authority, error)
 
@@ -34,6 +37,7 @@ func (r *DefaultAuthorityRepository) Find(id uuid.UUID) (*authority.Authority, e
 	err := r.Database.Handler().
 		Where("id = ?", id).
 		Preload("Keys").
+		Preload("ApiKeys").
 		First(&a).
 		Error
 
@@ -48,6 +52,32 @@ func (r *DefaultAuthorityRepository) Find(id uuid.UUID) (*authority.Authority, e
 	return a, nil
 }
 
+func (r *DefaultAuthorityRepository) FindAll(owner string) ([]*authority.Authority, error) {
+	as := []authority.Authority{}
+
+	err := r.Database.Handler().
+		Where(&authority.Authority{Owner: owner}).
+		Preload("Keys").
+		Preload("ApiKeys").
+		Find(&as).
+		Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no authority found")
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
+	}
+
+	asp := []*authority.Authority{}
+	for _, a := range as {
+		asp = append(asp, &a)
+	}
+
+	return asp, nil
+}
+
 func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.Authority, error) {
 	if !a.Empty() {
 		current, err := r.Find(a.ID)
@@ -55,7 +85,9 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 			if a.PolicyURL == "" {
 				a.PolicyURL = current.PolicyURL
 			}
+
 			a.Name = current.Name
+			a.Owner = current.Owner
 
 			for _, currentKey := range current.Keys {
 				shouldUpdate := false

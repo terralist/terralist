@@ -10,6 +10,7 @@ import (
 	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (
@@ -100,12 +101,20 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Upload a new provider version
 	api.POST(
-		"/:namespace/:name/:provider/:version/upload",
+		"/:name/:provider/:version/upload",
+		handlers.RequireAuthority(),
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
+
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
 
 			var body module.CreateDTO
 			if err := ctx.BindJSON(&body); err != nil {
@@ -115,7 +124,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			body.Namespace = namespace
+			body.AuthorityID = authorityID
 			body.Name = name
 			body.Provider = provider
 			body.Version = version
@@ -135,13 +144,21 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Delete a provider
 	api.DELETE(
-		"/:namespace/:name/:provider/remove",
+		"/:name/:provider/remove",
+		handlers.RequireAuthority(),
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 
-			if err := c.ModuleService.Delete(namespace, name, provider); err != nil {
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
+
+			if err := c.ModuleService.Delete(authorityID, name, provider); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
 				})
@@ -156,14 +173,22 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Delete a provider version
 	api.DELETE(
-		"/:namespace/:name/:provider/:version/remove",
+		"/:name/:provider/:version/remove",
+		handlers.RequireAuthority(),
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			if err := c.ModuleService.DeleteVersion(namespace, name, provider, version); err != nil {
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
+
+			if err := c.ModuleService.DeleteVersion(authorityID, name, provider, version); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
 				})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database"
 	"terralist/pkg/version"
@@ -21,7 +22,7 @@ type ProviderRepository interface {
 	FindVersion(namespace string, name string, version string) (*provider.Version, error)
 
 	// Upsert either updates or creates a new (if it does not already exist) provider
-	Upsert(provider.Provider) (*provider.Provider, error)
+	Upsert(string, provider.Provider) (*provider.Provider, error)
 
 	// Delete removes a provider with all its data (versions)
 	Delete(*provider.Provider) error
@@ -38,11 +39,23 @@ type DefaultProviderRepository struct {
 func (r *DefaultProviderRepository) Find(namespace string, name string) (*provider.Provider, error) {
 	p := provider.Provider{}
 
-	err := r.Database.Handler().Where(provider.Provider{
-		Name:      name,
-		Namespace: namespace,
-	}).
-		Preload("Authority").
+	atn := (authority.Authority{}).TableName()
+	ptn := (provider.Provider{}).TableName()
+
+	err := r.Database.Handler().
+		Where(provider.Provider{
+			Name: name,
+		}).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.authority_id AND LOWER(%s.name) = LOWER(?)",
+				atn,
+				atn,
+				ptn,
+				atn,
+			),
+			namespace,
+		).
 		Preload("Versions").
 		Preload("Versions.Platforms").
 		First(&p).
@@ -69,19 +82,36 @@ func (r *DefaultProviderRepository) Find(namespace string, name string) (*provid
 func (r *DefaultProviderRepository) FindVersion(namespace string, name string, version string) (*provider.Version, error) {
 	v := provider.Version{}
 
+	atn := (authority.Authority{}).TableName()
+	ptn := (provider.Provider{}).TableName()
+	vtn := (provider.Version{}).TableName()
+
 	err := r.Database.Handler().
 		Joins(
-			"Provider",
-			r.Database.Handler().Where(&provider.Provider{
-				Name:      name,
-				Namespace: namespace,
-			}),
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.provider_id AND LOWER(%s.name) = LOWER(?)",
+				ptn,
+				ptn,
+				vtn,
+				ptn,
+			),
+			name,
+		).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.authority_id AND LOWER(%s.name) = LOWER(?)",
+				atn,
+				atn,
+				ptn,
+				atn,
+			),
+			namespace,
 		).
 		Where(&provider.Version{
 			Version: version,
 		}).
 		Preload("Platforms").
-		Preload("Provider.Authority.Keys").
+		Preload("Provider").
 		First(&v).
 		Error
 
@@ -98,8 +128,8 @@ func (r *DefaultProviderRepository) FindVersion(namespace string, name string, v
 
 // Upsert is designed to upload an entire provider, but in reality,
 // it will only upload a single version at a time
-func (r *DefaultProviderRepository) Upsert(n provider.Provider) (*provider.Provider, error) {
-	p, err := r.Find(n.Namespace, n.Name)
+func (r *DefaultProviderRepository) Upsert(namespace string, n provider.Provider) (*provider.Provider, error) {
+	p, err := r.Find(namespace, n.Name)
 	if err == nil {
 		// The provider already exists, check if for version conflicts
 		toUpsertVersion := &n.Versions[0]

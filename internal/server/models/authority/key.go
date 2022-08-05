@@ -31,3 +31,11 @@ type KeyDTO struct {
 	AsciiArmor     string `json:"ascii_armor"`
 	TrustSignature string `json:"trust_signature"`
 }
+
+func (d KeyDTO) ToKey() Key {
+	return Key{
+		KeyId:          d.KeyId,
+		AsciiArmor:     d.AsciiArmor,
+		TrustSignature: d.TrustSignature,
+	}
+}

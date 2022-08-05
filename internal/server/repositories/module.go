@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
 	"terralist/pkg/database"
 	"terralist/pkg/storage"
@@ -19,11 +20,11 @@ type ModuleRepository interface {
 	// Find searches for a specific module
 	Find(namespace string, name string, provider string) (*module.Module, error)
 
-	// FindVersion searches for a specific module version
-	FindVersion(namespace string, name string, provider string, version string) (*module.Version, error)
+	// FindVersionLocation searches for a specific module version location
+	FindVersionLocation(namespace string, name string, provider string, version string) (*string, error)
 
 	// Upsert either updates or creates a new (if it does not already exist) module
-	Upsert(n module.Module) (*module.Module, error)
+	Upsert(namespace string, n module.Module) (*module.Module, error)
 
 	// Delete removes a module with all its data (versions)
 	Delete(*module.Module) error
@@ -41,11 +42,24 @@ type DefaultModuleRepository struct {
 func (r *DefaultModuleRepository) Find(namespace string, name string, provider string) (*module.Module, error) {
 	m := module.Module{}
 
-	err := r.Database.Handler().Where(module.Module{
-		Namespace: namespace,
-		Name:      name,
-		Provider:  provider,
-	}).
+	atn := (authority.Authority{}).TableName()
+	mtn := (module.Module{}).TableName()
+
+	err := r.Database.Handler().
+		Where(module.Module{
+			Name:     name,
+			Provider: provider,
+		}).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.authority_id AND LOWER(%s.name) = LOWER(?)",
+				atn,
+				atn,
+				mtn,
+				atn,
+			),
+			namespace,
+		).
 		Preload("Versions.Providers").
 		Preload("Versions.Dependencies").
 		Preload("Versions.Submodules").
@@ -72,42 +86,63 @@ func (r *DefaultModuleRepository) Find(namespace string, name string, provider s
 	return &m, nil
 }
 
-func (r *DefaultModuleRepository) FindVersion(
+func (r *DefaultModuleRepository) FindVersionLocation(
 	namespace string,
 	name string,
 	provider string,
 	version string,
-) (*module.Version, error) {
-	m, err := r.Find(namespace, name, provider)
+) (*string, error) {
+	var location string
+
+	atn := (authority.Authority{}).TableName()
+	mtn := (module.Module{}).TableName()
+	vtn := (module.Version{}).TableName()
+
+	err := r.Database.Handler().
+		Table(vtn).
+		Select(fmt.Sprintf("%s.location", vtn)).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.module_id AND LOWER(%s.name) = LOWER(?) AND LOWER(%s.provider) = LOWER(?)",
+				mtn,
+				mtn,
+				vtn,
+				mtn,
+				mtn,
+			),
+			name,
+			provider,
+		).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.authority_id AND LOWER(%s.name) = LOWER(?)",
+				atn,
+				atn,
+				mtn,
+				atn,
+			),
+			namespace,
+		).
+		Where(fmt.Sprintf("%s.version = ?", vtn), version).
+		Scan(&location).
+		Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	var ver *module.Version = nil
-	for _, v := range m.Versions {
-		if v.Version == version {
-			ver = &v
-			break
-		}
-	}
-
-	if ver == nil {
-		return nil, fmt.Errorf("no version found")
-	}
-
-	ver.Location, err = r.Resolver.Find(ver.Location)
+	remoteLocation, err := r.Resolver.Find(location)
 	if err != nil {
 		return nil, fmt.Errorf("could not resolve location: %v", err)
 	}
 
-	return ver, nil
+	return &remoteLocation, nil
 }
 
-func (r *DefaultModuleRepository) Upsert(n module.Module) (*module.Module, error) {
+func (r *DefaultModuleRepository) Upsert(namespace string, n module.Module) (*module.Module, error) {
 	var toUpsert *module.Module
 
-	m, err := r.Find(n.Namespace, n.Name, n.Provider)
+	m, err := r.Find(namespace, n.Name, n.Provider)
 	if err == nil {
 		newVersion := version.Version(n.Versions[0].Version)
 
@@ -145,7 +180,7 @@ func (r *DefaultModuleRepository) Upsert(n module.Module) (*module.Module, error
 			Archive: true,
 			KeyPrefix: fmt.Sprintf(
 				"modules/%s/%s/%s",
-				toUpsert.Namespace,
+				namespace,
 				toUpsert.Name,
 				toUpsert.Provider,
 			),

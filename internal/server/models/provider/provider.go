@@ -3,7 +3,6 @@ package provider
 import (
 	"strings"
 
-	"terralist/internal/server/models/authority"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -12,9 +11,7 @@ import (
 type Provider struct {
 	entity.Entity
 	AuthorityID uuid.UUID
-	Authority   authority.Authority
-	Name        string    `gorm:"not null"`
-	Namespace   string    `gorm:"not null"`
+	Name        string    `gorm:"not null;index"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
@@ -36,7 +33,6 @@ func (p Provider) ToVersionListProviderDTO() VersionListProviderDTO {
 type CreateProviderDTO struct {
 	AuthorityID uuid.UUID
 	Name        string
-	Namespace   string
 	Version     string
 	ShaSums     CreateProviderShaSumsDTO `json:"shasums"`
 	Protocols   []string                 `json:"protocols"`
@@ -52,7 +48,6 @@ func (d CreateProviderDTO) ToProvider() Provider {
 	return Provider{
 		AuthorityID: d.AuthorityID,
 		Name:        d.Name,
-		Namespace:   d.Namespace,
 		Versions: []Version{
 			{
 				Version:             d.Version,
