@@ -23,7 +23,8 @@ sqlite-path: "terralist.db"
 
 home-dir: "~/.terralist.d"
 
-storage-resolver: "s3"
+modules-storage-resolver: "s3"
+providers-storage-resolver: "proxy"
 
 s3-bucket-name: "<< YOUR_S3_BUCKET_NAME >>"
 s3-bucket-region: "<< S3_BUCKET_REGION >>"
