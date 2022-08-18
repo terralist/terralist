@@ -41,10 +41,11 @@ type Server struct {
 type Config struct {
 	RunningMode string
 
-	Database database.Engine
-	Provider auth.Provider
-	Resolver storage.Resolver
-	Store    session.Store
+	Database          database.Engine
+	Provider          auth.Provider
+	ModulesResolver   storage.Resolver
+	ProvidersResolver storage.Resolver
+	Store             session.Store
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
@@ -115,7 +116,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,
-		Resolver: config.Resolver,
+		Resolver: config.ModulesResolver,
 	}
 
 	moduleService := &services.DefaultModuleService{
