@@ -1,8 +1,6 @@
 package proxy
 
 import (
-	"fmt"
-
 	"terralist/pkg/storage"
 )
 
@@ -12,11 +10,7 @@ import (
 type Resolver struct{}
 
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
-	if in.Content != nil {
-		return "", fmt.Errorf("proxy does not support storing content")
-	}
-
-	return in.URL, nil
+	return string(in.Content), nil
 }
 
 func (r *Resolver) Find(key string) (string, error) {

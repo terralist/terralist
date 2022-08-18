@@ -116,7 +116,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,
-		Resolver: config.ModulesResolver,
 	}
 
 	moduleService := &services.DefaultModuleService{
@@ -137,6 +136,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
+		Resolver:           config.ProvidersResolver,
 	}
 
 	providerController := &controllers.DefaultProviderController{
