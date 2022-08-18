@@ -230,26 +230,33 @@ func (s *Command) run() error {
 	}
 
 	// Initialize storage resolver
-	var res storage.Resolver
-	switch flags[StorageResolverFlag].(*cli.StringFlag).Value {
-	case "proxy":
-		res, err = storageFactory.NewResolver(storage.PROXY, &proxy.Config{})
-	case "local":
-		res, err = storageFactory.NewResolver(storage.LOCAL, &local.Config{
-			HomeDirectory: homeDir,
-		})
-	case "s3":
-		res, err = storageFactory.NewResolver(storage.S3, &s3.Config{
-			HomeDirectory:   homeDir,
-			BucketName:      flags[S3BucketNameFlag].(*cli.StringFlag).Value,
-			BucketRegion:    flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
-			AccessKeyID:     flags[S3AccessKeyIDFlag].(*cli.StringFlag).Value,
-			SecretAccessKey: flags[S3SecretAccessKeyFlag].(*cli.StringFlag).Value,
-			LinkExpire:      flags[S3PresignExpireFlag].(*cli.IntFlag).Value,
-		})
+	var resolvers map[string]storage.Resolver
+	resolversFlags := map[string]string{
+		"modules":   ModulesStorageResolverFlag,
+		"providers": ProvidersStorageResolverFlag,
 	}
-	if err != nil {
-		return err
+
+	for name, key := range resolversFlags {
+		switch flags[key].(*cli.StringFlag).Value {
+		case "proxy":
+			resolvers[name], err = storageFactory.NewResolver(storage.PROXY, &proxy.Config{})
+		case "local":
+			resolvers[name], err = storageFactory.NewResolver(storage.LOCAL, &local.Config{
+				HomeDirectory: homeDir,
+			})
+		case "s3":
+			resolvers[name], err = storageFactory.NewResolver(storage.S3, &s3.Config{
+				HomeDirectory:   homeDir,
+				BucketName:      flags[S3BucketNameFlag].(*cli.StringFlag).Value,
+				BucketRegion:    flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
+				AccessKeyID:     flags[S3AccessKeyIDFlag].(*cli.StringFlag).Value,
+				SecretAccessKey: flags[S3SecretAccessKeyFlag].(*cli.StringFlag).Value,
+				LinkExpire:      flags[S3PresignExpireFlag].(*cli.IntFlag).Value,
+			})
+		}
+		if err != nil {
+			return err
+		}
 	}
 
 	// Initialize session store
@@ -265,11 +272,12 @@ func (s *Command) run() error {
 	}
 
 	srv, err := s.ServerCreator.NewServer(userConfig, server.Config{
-		Database:    db,
-		Provider:    provider,
-		Resolver:    res,
-		Store:       store,
-		RunningMode: s.RunningMode,
+		Database:          db,
+		Provider:          provider,
+		ModulesResolver:   resolvers["modules"],
+		ProvidersResolver: resolvers["providers"],
+		Store:             store,
+		RunningMode:       s.RunningMode,
 	})
 
 	if err != nil {

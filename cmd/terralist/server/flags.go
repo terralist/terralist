@@ -33,7 +33,8 @@ const (
 
 	HomeDirectoryFlag = "home-dir"
 
-	StorageResolverFlag = "storage-resolver"
+	ModulesStorageResolverFlag   = "modules-storage-resolver"
+	ProvidersStorageResolverFlag = "providers-storage-resolver"
 
 	S3BucketNameFlag      = "s3-bucket-name"
 	S3BucketRegionFlag    = "s3-bucket-region"
@@ -121,8 +122,14 @@ var flags = map[string]cli.Flag{
 		DefaultValue: "~/.terralist.d",
 	},
 
-	StorageResolverFlag: &cli.StringFlag{
-		Description:  "The storage resolver.",
+	ModulesStorageResolverFlag: &cli.StringFlag{
+		Description:  "The modules storage resolver.",
+		Choices:      []string{"proxy", "local", "s3"},
+		DefaultValue: "proxy",
+	},
+
+	ProvidersStorageResolverFlag: &cli.StringFlag{
+		Description:  "The providers storage resolver.",
 		Choices:      []string{"proxy", "local", "s3"},
 		DefaultValue: "proxy",
 	},
