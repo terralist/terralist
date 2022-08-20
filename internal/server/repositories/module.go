@@ -95,7 +95,7 @@ func (r *DefaultModuleRepository) FindVersionLocation(
 	mtn := (module.Module{}).TableName()
 	vtn := (module.Version{}).TableName()
 
-	err := r.Database.Handler().
+	res := r.Database.Handler().
 		Table(vtn).
 		Select(fmt.Sprintf("%s.location", vtn)).
 		Joins(
@@ -121,11 +121,14 @@ func (r *DefaultModuleRepository) FindVersionLocation(
 			namespace,
 		).
 		Where(fmt.Sprintf("%s.version = ?", vtn), version).
-		Scan(&location).
-		Error
+		Scan(&location)
 
-	if err != nil {
-		return nil, err
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return nil, ErrNotFound
 	}
 
 	return &location, nil
