@@ -16,11 +16,11 @@ import (
 // ModuleService describes a service that holds the business logic for modules registry
 type ModuleService interface {
 	// Get returns a specific module
-	Get(namespace string, name string, provider string) (*module.ListResponseDTO, error)
+	Get(namespace, name, provider string) (*module.ListResponseDTO, error)
 
 	// GetVersion returns a public URL from which a specific a module version can be
 	// downloaded
-	GetVersion(namespace string, name string, provider string, version string) (*string, error)
+	GetVersion(namespace, name, provider, version string) (*string, error)
 
 	// Upload loads a new module version to the system
 	// If the module does not exist, it will be created
@@ -42,7 +42,7 @@ type DefaultModuleService struct {
 	Resolver         storage.Resolver
 }
 
-func (s *DefaultModuleService) Get(namespace string, name string, provider string) (*module.ListResponseDTO, error) {
+func (s *DefaultModuleService) Get(namespace, name, provider string) (*module.ListResponseDTO, error) {
 	m, err := s.ModuleRepository.Find(namespace, name, provider)
 	if err != nil {
 		return nil, err
@@ -52,12 +52,7 @@ func (s *DefaultModuleService) Get(namespace string, name string, provider strin
 	return &dto, nil
 }
 
-func (s *DefaultModuleService) GetVersion(
-	namespace string,
-	name string,
-	provider string,
-	version string,
-) (*string, error) {
+func (s *DefaultModuleService) GetVersion(namespace, name, provider, version string) (*string, error) {
 	location, err := s.ModuleRepository.FindVersionLocation(namespace, name, provider, version)
 	if err != nil {
 		return nil, err

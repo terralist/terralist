@@ -16,10 +16,10 @@ import (
 // ModuleRepository describes a service that can interact with the modules database
 type ModuleRepository interface {
 	// Find searches for a specific module
-	Find(namespace string, name string, provider string) (*module.Module, error)
+	Find(namespace, name, provider string) (*module.Module, error)
 
 	// FindVersionLocation searches for a specific module version location
-	FindVersionLocation(namespace string, name string, provider string, version string) (*string, error)
+	FindVersionLocation(namespace, name, provider, version string) (*string, error)
 
 	// Upsert either updates or creates a new (if it does not already exist) module
 	Upsert(n module.Module) (*module.Module, error)
@@ -36,7 +36,7 @@ type DefaultModuleRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultModuleRepository) Find(namespace string, name string, provider string) (*module.Module, error) {
+func (r *DefaultModuleRepository) Find(namespace, name, provider string) (*module.Module, error) {
 	m := module.Module{}
 
 	atn := (authority.Authority{}).TableName()
@@ -83,12 +83,7 @@ func (r *DefaultModuleRepository) Find(namespace string, name string, provider s
 	return &m, nil
 }
 
-func (r *DefaultModuleRepository) FindVersionLocation(
-	namespace string,
-	name string,
-	provider string,
-	version string,
-) (*string, error) {
+func (r *DefaultModuleRepository) FindVersionLocation(namespace, name, provider, version string) (*string, error) {
 	var location string
 
 	atn := (authority.Authority{}).TableName()
