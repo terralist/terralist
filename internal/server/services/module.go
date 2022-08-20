@@ -189,9 +189,9 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 			Msg("Could not purge, require manual clean-up")
 	}
 
-	if err := s.ModuleRepository.DeleteVersion(v); err != nil {
-		return err
+	if len(m.Versions) == 1 {
+		return s.ModuleRepository.Delete(m)
 	}
 
-	return nil
+	return s.ModuleRepository.DeleteVersion(v)
 }
