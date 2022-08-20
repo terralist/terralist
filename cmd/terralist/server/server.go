@@ -230,7 +230,10 @@ func (s *Command) run() error {
 	}
 
 	// Initialize storage resolver
-	var resolvers map[string]storage.Resolver
+	resolvers := map[string]storage.Resolver{
+		"modules":   nil,
+		"providers": nil,
+	}
 	resolversFlags := map[string]string{
 		"modules":   ModulesStorageResolverFlag,
 		"providers": ProvidersStorageResolverFlag,
