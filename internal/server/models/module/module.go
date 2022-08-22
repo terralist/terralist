@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"terralist/pkg/database/entity"
+	"terralist/pkg/version"
 
 	"github.com/google/uuid"
 )
@@ -40,6 +41,18 @@ func (m Module) ToListResponseDTO() ListResponseDTO {
 	}
 }
 
+func (m Module) GetVersion(v string) *Version {
+	vv := version.Version(v)
+
+	for _, ver := range m.Versions {
+		if version.Compare(version.Version(ver.Version), vv) == 0 {
+			return &ver
+		}
+	}
+
+	return nil
+}
+
 type ListResponseDTO struct {
 	Modules []ModuleDTO `json:"modules"`
 }
@@ -53,6 +66,9 @@ type CreateDTO struct {
 	AuthorityID uuid.UUID
 	Name        string `json:"name"`
 	Provider    string `json:"provider"`
+}
+
+type CreateFromURLDTO struct {
 	DownloadUrl string `json:"download_url"`
 }
 
@@ -74,7 +90,6 @@ func (d CreateDTO) ToModule() Module {
 		Versions: []Version{
 			{
 				Version:      d.Version,
-				Location:     d.DownloadUrl,
 				Providers:    providers,
 				Dependencies: dependencies,
 			},

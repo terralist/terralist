@@ -99,7 +99,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	api := apis[1]
 	api.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
 
-	// Upload a new provider version
+	// Upload a new module version
 	api.POST(
 		"/:name/:provider/:version/upload",
 		handlers.RequireAuthority(),
@@ -116,7 +116,16 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			var body module.CreateDTO
+			dto := module.CreateDTO{
+				AuthorityID: authorityID,
+				Name:        name,
+				Provider:    provider,
+				VersionDTO: module.VersionDTO{
+					Version: version,
+				},
+			}
+
+			var body module.CreateFromURLDTO
 			if err := ctx.BindJSON(&body); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
@@ -124,12 +133,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			body.AuthorityID = authorityID
-			body.Name = name
-			body.Provider = provider
-			body.Version = version
-
-			if err := c.ModuleService.Upload(&body); err != nil {
+			if err := c.ModuleService.Upload(&dto, body.DownloadUrl); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})

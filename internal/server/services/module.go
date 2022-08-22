@@ -5,23 +5,26 @@ import (
 
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/file"
+	"terralist/pkg/storage"
 	"terralist/pkg/version"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 // ModuleService describes a service that holds the business logic for modules registry
 type ModuleService interface {
 	// Get returns a specific module
-	Get(namespace string, name string, provider string) (*module.ListResponseDTO, error)
+	Get(namespace, name, provider string) (*module.ListResponseDTO, error)
 
 	// GetVersion returns a public URL from which a specific a module version can be
 	// downloaded
-	GetVersion(namespace string, name string, provider string, version string) (*string, error)
+	GetVersion(namespace, name, provider, version string) (*string, error)
 
 	// Upload loads a new module version to the system
 	// If the module does not exist, it will be created
-	Upload(*module.CreateDTO) error
+	Upload(dto *module.CreateDTO, url string) error
 
 	// Delete removes a module with all its data from the system
 	Delete(authorityID uuid.UUID, name string, provider string) error
@@ -36,9 +39,10 @@ type ModuleService interface {
 type DefaultModuleService struct {
 	ModuleRepository *repositories.DefaultModuleRepository
 	AuthorityService AuthorityService
+	Resolver         storage.Resolver
 }
 
-func (s *DefaultModuleService) Get(namespace string, name string, provider string) (*module.ListResponseDTO, error) {
+func (s *DefaultModuleService) Get(namespace, name, provider string) (*module.ListResponseDTO, error) {
 	m, err := s.ModuleRepository.Find(namespace, name, provider)
 	if err != nil {
 		return nil, err
@@ -48,33 +52,78 @@ func (s *DefaultModuleService) Get(namespace string, name string, provider strin
 	return &dto, nil
 }
 
-func (s *DefaultModuleService) GetVersion(
-	namespace string,
-	name string,
-	provider string,
-	version string,
-) (*string, error) {
-	url, err := s.ModuleRepository.FindVersionLocation(namespace, name, provider, version)
+func (s *DefaultModuleService) GetVersion(namespace, name, provider, version string) (*string, error) {
+	location, err := s.ModuleRepository.FindVersionLocation(namespace, name, provider, version)
 	if err != nil {
 		return nil, err
 	}
 
-	return url, nil
+	url, err := s.Resolver.Find(*location)
+	if err != nil {
+		return nil, fmt.Errorf("could not resolve location: %v", err)
+	}
+
+	return &url, nil
 }
 
-func (s *DefaultModuleService) Upload(d *module.CreateDTO) error {
+func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
+	// Validate version
 	if semVer := version.Version(d.Version); !semVer.Valid() {
 		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
 	}
 
+	// Map the DTO
 	m := d.ToModule()
 
+	// Find the authority
 	a, err := s.AuthorityService.Get(m.AuthorityID)
 	if err != nil {
 		return err
 	}
 
-	if _, err := s.ModuleRepository.Upsert(a.Name, m); err != nil {
+	// Check if the module already exists and has this version
+	current, err := s.ModuleRepository.Find(a.Name, m.Name, m.Provider)
+	if err == nil {
+		if current.GetVersion(d.Version) != nil {
+			return fmt.Errorf("version %s already exists", d.Version)
+		}
+	}
+
+	// Download module files
+	archive, err := file.FetchDir(d.Version, url)
+	if err != nil {
+		return err
+	}
+
+	// Upload the module archive to the resolver datastore
+	location, err := s.Resolver.Store(&storage.StoreInput{
+		Content: archive.Content,
+		KeyPrefix: fmt.Sprintf(
+			"modules/%s/%s/%s",
+			a.Name,
+			m.Name,
+			m.Provider,
+		),
+		FileName: archive.Name,
+	})
+	if err != nil {
+		return fmt.Errorf("could store the new version: %v", err)
+	}
+
+	// Update the module location
+	m.Versions[0].Location = location
+
+	// Only add the new version if the module already exists
+	var toUpload *module.Module
+	if current != nil {
+		current.Versions = append(current.Versions, m.Versions[0])
+
+		toUpload = current
+	} else {
+		toUpload = &m
+	}
+
+	if _, err := s.ModuleRepository.Upsert(*toUpload); err != nil {
 		return err
 	}
 
@@ -90,6 +139,17 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 	m, err := s.ModuleRepository.Find(a.Name, name, provider)
 	if err != nil {
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", a.Name, name, provider)
+	}
+
+	for _, ver := range m.Versions {
+		if err := s.Resolver.Purge(ver.Location); err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("Module", m.String()).
+				Str("Version", ver.Version).
+				Str("Key", ver.Location).
+				Msg("Could not purge, require manual clean-up")
+		}
 	}
 
 	if err := s.ModuleRepository.Delete(m); err != nil {
@@ -110,9 +170,23 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", a.Name, name, provider)
 	}
 
-	if err := s.ModuleRepository.DeleteVersion(m, version); err != nil {
-		return err
+	v := m.GetVersion(version)
+	if v == nil {
+		return fmt.Errorf("module %s/%s/%s does not contain version %s", a.Name, name, provider, version)
 	}
 
-	return nil
+	if err := s.Resolver.Purge(v.Location); err != nil {
+		log.Warn().
+			AnErr("Error", err).
+			Str("Module", m.String()).
+			Str("Version", v.Version).
+			Str("Key", v.Location).
+			Msg("Could not purge, require manual clean-up")
+	}
+
+	if len(m.Versions) == 1 {
+		return s.ModuleRepository.Delete(m)
+	}
+
+	return s.ModuleRepository.DeleteVersion(v)
 }
