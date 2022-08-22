@@ -21,7 +21,6 @@ import (
 	"terralist/pkg/storage"
 	storageFactory "terralist/pkg/storage/factory"
 	"terralist/pkg/storage/local"
-	"terralist/pkg/storage/proxy"
 	"terralist/pkg/storage/s3"
 
 	"github.com/pkg/errors"
@@ -242,7 +241,7 @@ func (s *Command) run() error {
 	for name, key := range resolversFlags {
 		switch flags[key].(*cli.StringFlag).Value {
 		case "proxy":
-			resolvers[name], err = storageFactory.NewResolver(storage.PROXY, &proxy.Config{})
+			resolvers[name], err = nil, nil
 		case "local":
 			resolvers[name], err = storageFactory.NewResolver(storage.LOCAL, &local.Config{
 				HomeDirectory: homeDir,

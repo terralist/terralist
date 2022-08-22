@@ -85,19 +85,8 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 
 	dto := p.ToDownloadPlatformDTO(provider.SigningKeysDTO{Keys: keys})
 
-	dto.ShaSumsUrl, err = s.Resolver.Find(dto.ShaSumsUrl)
-	if err != nil {
-		return nil, fmt.Errorf("could not resolve shasums location: %v", err)
-	}
-
-	dto.ShaSumsSignatureUrl, err = s.Resolver.Find(dto.ShaSumsSignatureUrl)
-	if err != nil {
-		return nil, fmt.Errorf("could not resolve shasums signature location: %v", err)
-	}
-
-	dto.DownloadUrl, err = s.Resolver.Find(dto.DownloadUrl)
-	if err != nil {
-		return nil, fmt.Errorf("could not resolve binary location: %v", err)
+	if s.Resolver != nil {
+		s.resolveLocations(&dto)
 	}
 
 	return &dto, nil
@@ -126,24 +115,26 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 		}
 	}
 
-	// Download provider files
-	files, err := s.downloadFiles(d)
-	if err != nil {
-		return err
-	}
+	if s.Resolver != nil {
+		// Download provider files
+		files, err := s.downloadFiles(d)
+		if err != nil {
+			return err
+		}
 
-	// Upload provider files
-	keys, err := s.uploadFiles(a.Name, p.Name, d.Version, files)
-	if err != nil {
-		return err
-	}
+		// Upload provider files
+		keys, err := s.uploadFiles(a.Name, p.Name, d.Version, files)
+		if err != nil {
+			return err
+		}
 
-	// Update provider locations
-	p.Versions[0].ShaSumsUrl = keys[shaSumsKey]
-	p.Versions[0].ShaSumsSignatureUrl = keys[shaSumsSigKey]
+		// Update provider locations
+		p.Versions[0].ShaSumsUrl = keys[shaSumsKey]
+		p.Versions[0].ShaSumsSignatureUrl = keys[shaSumsSigKey]
 
-	for _, platform := range p.Versions[0].Platforms {
-		platform.Location = keys[platform.String()]
+		for _, platform := range p.Versions[0].Platforms {
+			platform.Location = keys[platform.String()]
+		}
 	}
 
 	// Only add the new version if the provider already exists
@@ -178,8 +169,10 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) erro
 		return fmt.Errorf("authority does not match")
 	}
 
-	for _, ver := range p.Versions {
-		s.deleteVersion(&ver)
+	if s.Resolver != nil {
+		for _, ver := range p.Versions {
+			s.deleteVersion(&ver)
+		}
 	}
 
 	if err := s.ProviderRepository.Delete(p); err != nil {
@@ -204,8 +197,10 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 		return fmt.Errorf("authority does not match")
 	}
 
-	v := p.GetVersion(version)
-	s.deleteVersion(v)
+	if s.Resolver != nil {
+		v := p.GetVersion(version)
+		s.deleteVersion(v)
+	}
 
 	if err := s.ProviderRepository.DeleteVersion(p, version); err != nil {
 		return err
@@ -214,6 +209,29 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 	return nil
 }
 
+// resolveLocations resolves the keys for a provider platform
+func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDTO) error {
+	var err error
+
+	d.ShaSumsUrl, err = s.Resolver.Find(d.ShaSumsUrl)
+	if err != nil {
+		return fmt.Errorf("could not resolve shasums location: %v", err)
+	}
+
+	d.ShaSumsSignatureUrl, err = s.Resolver.Find(d.ShaSumsSignatureUrl)
+	if err != nil {
+		return fmt.Errorf("could not resolve shasums signature location: %v", err)
+	}
+
+	d.DownloadUrl, err = s.Resolver.Find(d.DownloadUrl)
+	if err != nil {
+		return fmt.Errorf("could not resolve binary location: %v", err)
+	}
+
+	return err
+}
+
+// downloadFiles fetches all provider files
 func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]*file.InMemoryFile, error) {
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
@@ -248,6 +266,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 	return files, nil
 }
 
+// uploadFiles uploads all stored provider files
 func (s *DefaultProviderService) uploadFiles(
 	namespace, name, version string,
 	files map[string]*file.InMemoryFile,
@@ -272,6 +291,7 @@ func (s *DefaultProviderService) uploadFiles(
 	return keys, nil
 }
 
+// deleteVersion removes all provider files for a specific version
 func (s *DefaultProviderService) deleteVersion(v *provider.Version) {
 	for _, plat := range v.Platforms {
 		if err := s.Resolver.Purge(plat.Location); err != nil {

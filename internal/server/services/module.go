@@ -58,12 +58,16 @@ func (s *DefaultModuleService) GetVersion(namespace, name, provider, version str
 		return nil, err
 	}
 
-	url, err := s.Resolver.Find(*location)
-	if err != nil {
-		return nil, fmt.Errorf("could not resolve location: %v", err)
+	if s.Resolver != nil {
+		url, err := s.Resolver.Find(*location)
+		if err != nil {
+			return nil, fmt.Errorf("could not resolve location: %v", err)
+		}
+
+		return &url, nil
 	}
 
-	return &url, nil
+	return location, nil
 }
 
 func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
@@ -89,29 +93,31 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 		}
 	}
 
-	// Download module files
-	archive, err := file.FetchDir(d.Version, url)
-	if err != nil {
-		return err
-	}
+	if s.Resolver != nil {
+		// Download module files
+		archive, err := file.FetchDir(d.Version, url)
+		if err != nil {
+			return err
+		}
 
-	// Upload the module archive to the resolver datastore
-	location, err := s.Resolver.Store(&storage.StoreInput{
-		Content: archive.Content,
-		KeyPrefix: fmt.Sprintf(
-			"modules/%s/%s/%s",
-			a.Name,
-			m.Name,
-			m.Provider,
-		),
-		FileName: archive.Name,
-	})
-	if err != nil {
-		return fmt.Errorf("could store the new version: %v", err)
-	}
+		// Upload the module archive to the resolver datastore
+		location, err := s.Resolver.Store(&storage.StoreInput{
+			Content: archive.Content,
+			KeyPrefix: fmt.Sprintf(
+				"modules/%s/%s/%s",
+				a.Name,
+				m.Name,
+				m.Provider,
+			),
+			FileName: archive.Name,
+		})
+		if err != nil {
+			return fmt.Errorf("could store the new version: %v", err)
+		}
 
-	// Update the module location
-	m.Versions[0].Location = location
+		// Update the module location
+		m.Versions[0].Location = location
+	}
 
 	// Only add the new version if the module already exists
 	var toUpload *module.Module
@@ -141,14 +147,9 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 		return fmt.Errorf("module %s/%s/%s is not uploaded to this registry", a.Name, name, provider)
 	}
 
-	for _, ver := range m.Versions {
-		if err := s.Resolver.Purge(ver.Location); err != nil {
-			log.Warn().
-				AnErr("Error", err).
-				Str("Module", m.String()).
-				Str("Version", ver.Version).
-				Str("Key", ver.Location).
-				Msg("Could not purge, require manual clean-up")
+	if s.Resolver != nil {
+		for _, ver := range m.Versions {
+			s.deleteVersion(&ver)
 		}
 	}
 
@@ -175,13 +176,8 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 		return fmt.Errorf("module %s/%s/%s does not contain version %s", a.Name, name, provider, version)
 	}
 
-	if err := s.Resolver.Purge(v.Location); err != nil {
-		log.Warn().
-			AnErr("Error", err).
-			Str("Module", m.String()).
-			Str("Version", v.Version).
-			Str("Key", v.Location).
-			Msg("Could not purge, require manual clean-up")
+	if s.Resolver != nil {
+		s.deleteVersion(v)
 	}
 
 	if len(m.Versions) == 1 {
@@ -189,4 +185,16 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 	}
 
 	return s.ModuleRepository.DeleteVersion(v)
+}
+
+// deleteVersion removes the files for a specific module version
+func (s *DefaultModuleService) deleteVersion(v *module.Version) {
+	if err := s.Resolver.Purge(v.Location); err != nil {
+		log.Warn().
+			AnErr("Error", err).
+			Str("Module", v.Module.String()).
+			Str("Version", v.Version).
+			Str("Key", v.Location).
+			Msg("Could not purge, require manual clean-up")
+	}
 }
