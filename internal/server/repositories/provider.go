@@ -16,13 +16,14 @@ import (
 // ProviderRepository describes a service that can interact with the providers database
 type ProviderRepository interface {
 	// Find searches for a specific provider
-	Find(namespace string, name string) (*provider.Provider, error)
+	Find(namespace, name string) (*provider.Provider, error)
 
-	// FindVersion searches for a specific version of a provider
-	FindVersion(namespace string, name string, version string) (*provider.Version, error)
+	// FindVersionPlatform searches for a specific platform binary metadata
+	// of a provider version
+	FindVersionPlatform(namespace, name, version, os, arch string) (*provider.Platform, error)
 
 	// Upsert either updates or creates a new (if it does not already exist) provider
-	Upsert(string, provider.Provider) (*provider.Provider, error)
+	Upsert(provider.Provider) (*provider.Provider, error)
 
 	// Delete removes a provider with all its data (versions)
 	Delete(*provider.Provider) error
@@ -36,7 +37,7 @@ type DefaultProviderRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultProviderRepository) Find(namespace string, name string) (*provider.Provider, error) {
+func (r *DefaultProviderRepository) Find(namespace, name string) (*provider.Provider, error) {
 	p := provider.Provider{}
 
 	atn := (authority.Authority{}).TableName()
@@ -79,14 +80,27 @@ func (r *DefaultProviderRepository) Find(namespace string, name string) (*provid
 	return &p, nil
 }
 
-func (r *DefaultProviderRepository) FindVersion(namespace string, name string, version string) (*provider.Version, error) {
-	v := provider.Version{}
+func (r *DefaultProviderRepository) FindVersionPlatform(
+	namespace, name, version, os, arch string,
+) (*provider.Platform, error) {
+	p := provider.Platform{}
 
 	atn := (authority.Authority{}).TableName()
 	ptn := (provider.Provider{}).TableName()
 	vtn := (provider.Version{}).TableName()
+	pltn := (provider.Platform{}).TableName()
 
 	err := r.Database.Handler().
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.version_id AND %s.version = ?",
+				vtn,
+				vtn,
+				pltn,
+				vtn,
+			),
+			version,
+		).
 		Joins(
 			fmt.Sprintf(
 				"JOIN %s ON %s.id = %s.provider_id AND LOWER(%s.name) = LOWER(?)",
@@ -107,53 +121,35 @@ func (r *DefaultProviderRepository) FindVersion(namespace string, name string, v
 			),
 			namespace,
 		).
-		Where(&provider.Version{
-			Version: version,
-		}).
-		Preload("Platforms").
+		Where(fmt.Sprintf("%s.system = ? AND %s.architecture", pltn, pltn), os, arch).
+		Preload("Version").
 		Preload("Provider").
-		First(&v).
+		First(&p).
 		Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("no version found with given arguments (provider %s/%s; version %s)", namespace, name, version)
+			return nil, ErrNotFound
 		} else {
 			return nil, fmt.Errorf("error while querying the database: %v", err)
 		}
 	}
 
-	return &v, nil
+	return &p, nil
 }
 
-// Upsert is designed to upload an entire provider, but in reality,
-// it will only upload a single version at a time
-func (r *DefaultProviderRepository) Upsert(namespace string, n provider.Provider) (*provider.Provider, error) {
-	p, err := r.Find(namespace, n.Name)
-	if err == nil {
-		// The provider already exists, check if for version conflicts
-		toUpsertVersion := &n.Versions[0]
-
-		for _, v := range p.Versions {
-			if version.Compare(version.Version(v.Version), version.Version(toUpsertVersion.Version)) == 0 {
-				return nil, fmt.Errorf("version %s already exists", v.Version)
-			}
-		}
-
-		p.Versions = append(p.Versions, *toUpsertVersion)
-
-		if err := r.Database.Handler().Save(p).Error; err != nil {
+func (r *DefaultProviderRepository) Upsert(p provider.Provider) (*provider.Provider, error) {
+	if len(p.Versions) != 1 {
+		if err := r.Database.Handler().Save(&p).Error; err != nil {
 			return nil, err
 		}
-
-		return p, nil
+	} else {
+		if err := r.Database.Handler().Create(&p).Error; err != nil {
+			return nil, err
+		}
 	}
 
-	if err := r.Database.Handler().Create(&n).Error; err != nil {
-		return nil, err
-	}
-
-	return &n, nil
+	return &p, nil
 }
 
 func (r *DefaultProviderRepository) Delete(p *provider.Provider) error {

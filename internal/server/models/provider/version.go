@@ -1,7 +1,6 @@
 package provider
 
 import (
-	"fmt"
 	"strings"
 
 	"terralist/pkg/database/entity"
@@ -37,61 +36,8 @@ func (v Version) ToVersionListVersionDTO() VersionListVersionDTO {
 	}
 }
 
-func (v Version) ToDownloadVersionDTO(os string, arch string, keys SigningKeysDTO) (DownloadVersionDTO, error) {
-	filename := fmt.Sprintf(
-		"terraform-provider-%s_%s_%s_%s.zip",
-		v.Provider.Name,
-		v.Version,
-		os,
-		arch,
-	)
-
-	var out DownloadVersionDTO
-	for _, platform := range v.Platforms {
-		if platform.System == os && platform.Architecture == arch {
-			out.System = os
-			out.Architecture = arch
-			out.FileName = filename
-			out.DownloadUrl = platform.Location
-			out.ShaSumsUrl = v.ShaSumsUrl
-			out.ShaSumsSignatureUrl = v.ShaSumsSignatureUrl
-			out.ShaSum = platform.ShaSum
-			out.Protocols = strings.Split(v.Protocols, ",")
-			out.SigningKeys = keys
-
-			return out, nil
-		}
-	}
-
-	return out, fmt.Errorf("no platform found for %s_%s machine", os, arch)
-}
-
 type VersionListVersionDTO struct {
 	Version   string                   `json:"version"`
 	Protocols []string                 `json:"protocols"`
 	Platforms []VersionListPlatformDTO `json:"platforms"`
-}
-
-type DownloadVersionDTO struct {
-	Protocols           []string       `json:"protocols"`
-	System              string         `json:"os"`
-	Architecture        string         `json:"arch"`
-	FileName            string         `json:"filename"`
-	DownloadUrl         string         `json:"download_url"`
-	ShaSumsUrl          string         `json:"shasums_url"`
-	ShaSumsSignatureUrl string         `json:"shasums_signature_url"`
-	ShaSum              string         `json:"shasum"`
-	SigningKeys         SigningKeysDTO `json:"signing_keys"`
-}
-
-type SigningKeysDTO struct {
-	Keys []PublicKeyDTO `json:"gpg_public_keys"`
-}
-
-type PublicKeyDTO struct {
-	KeyId          string `json:"key_id"`
-	AsciiArmor     string `json:"ascii_armor"`
-	TrustSignature string `json:"trust_signature"`
-	Source         string `json:"string"`
-	SourceURL      string `json:"source_url"`
 }
