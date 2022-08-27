@@ -212,7 +212,7 @@ func (s *Command) run() error {
 	}
 
 	// Initialize home directory
-	homeDirClean := filepath.Clean(flags[HomeDirectoryFlag].(*cli.StringFlag).Value)
+	homeDirClean := filepath.Clean(flags[LocalStoreFlag].(*cli.StringFlag).Value)
 	if strings.HasPrefix(homeDirClean, "~") {
 		userHomeDir, _ := os.UserHomeDir()
 		homeDirClean = fmt.Sprintf("%s%s", userHomeDir, homeDirClean[1:])
@@ -248,7 +248,6 @@ func (s *Command) run() error {
 			})
 		case "s3":
 			resolvers[name], err = storageFactory.NewResolver(storage.S3, &s3.Config{
-				HomeDirectory:   homeDir,
 				BucketName:      flags[S3BucketNameFlag].(*cli.StringFlag).Value,
 				BucketRegion:    flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
 				AccessKeyID:     flags[S3AccessKeyIDFlag].(*cli.StringFlag).Value,

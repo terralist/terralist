@@ -31,8 +31,6 @@ const (
 
 	TokenSigningSecretFlag = "token-signing-secret"
 
-	HomeDirectoryFlag = "home-dir"
-
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
 	ProvidersStorageResolverFlag = "providers-storage-resolver"
 
@@ -41,6 +39,8 @@ const (
 	S3AccessKeyIDFlag     = "s3-access-key-id"
 	S3SecretAccessKeyFlag = "s3-secret-access-key"
 	S3PresignExpireFlag   = "s3-presign-expire"
+
+	LocalStoreFlag = "local-store"
 
 	SessionStoreFlag = "session-store"
 
@@ -117,7 +117,7 @@ var flags = map[string]cli.Flag{
 		Required:    true,
 	},
 
-	HomeDirectoryFlag: &cli.StringFlag{
+	LocalStoreFlag: &cli.StringFlag{
 		Description:  "The path to a directory in which Terralist can store files.",
 		DefaultValue: "~/.terralist.d",
 	},
