@@ -211,23 +211,6 @@ func (s *Command) run() error {
 		return err
 	}
 
-	// Initialize home directory
-	homeDirClean := filepath.Clean(flags[LocalStoreFlag].(*cli.StringFlag).Value)
-	if strings.HasPrefix(homeDirClean, "~") {
-		userHomeDir, _ := os.UserHomeDir()
-		homeDirClean = fmt.Sprintf("%s%s", userHomeDir, homeDirClean[1:])
-	}
-
-	homeDir, err := filepath.Abs(homeDirClean)
-	if err != nil {
-		return fmt.Errorf("invalid value for home directory: %v", err)
-	}
-
-	// Make sure Home Directory exists
-	if err := os.MkdirAll(homeDir, os.ModePerm); err != nil {
-		return fmt.Errorf("could not create the home directory: %v", err)
-	}
-
 	// Initialize storage resolver
 	resolvers := map[string]storage.Resolver{
 		"modules":   nil,
@@ -243,6 +226,23 @@ func (s *Command) run() error {
 		case "proxy":
 			resolvers[name], err = nil, nil
 		case "local":
+			// Initialize home directory
+			homeDirClean := filepath.Clean(flags[LocalStoreFlag].(*cli.StringFlag).Value)
+			if strings.HasPrefix(homeDirClean, "~") {
+				userHomeDir, _ := os.UserHomeDir()
+				homeDirClean = fmt.Sprintf("%s%s", userHomeDir, homeDirClean[1:])
+			}
+
+			homeDir, erro := filepath.Abs(homeDirClean)
+			if erro != nil {
+				return fmt.Errorf("invalid value for home directory: %v", err)
+			}
+
+			// Make sure Home Directory exists
+			if erro := os.MkdirAll(homeDir, os.ModePerm); err != nil {
+				return fmt.Errorf("could not create the home directory: %v", erro)
+			}
+
 			resolvers[name], err = storageFactory.NewResolver(storage.LOCAL, &local.Config{
 				HomeDirectory: homeDir,
 			})
