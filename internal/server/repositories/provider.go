@@ -121,9 +121,8 @@ func (r *DefaultProviderRepository) FindVersionPlatform(
 			),
 			namespace,
 		).
-		Where(fmt.Sprintf("%s.system = ? AND %s.architecture", pltn, pltn), os, arch).
-		Preload("Version").
-		Preload("Provider").
+		Where(fmt.Sprintf("%s.system = ? AND %s.architecture = ?", pltn, pltn), os, arch).
+		Preload("Version.Provider").
 		First(&p).
 		Error
 
