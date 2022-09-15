@@ -58,7 +58,7 @@ func (p Platform) ToDownloadPlatformDTO(keys SigningKeysDTO) DownloadPlatformDTO
 	fileName := fmt.Sprintf(
 		"terraform-provider-%s_%s_%s_%s.zip",
 		p.Version.Provider.Name,
-		p.Version,
+		p.Version.Version,
 		p.System,
 		p.Architecture,
 	)
