@@ -132,8 +132,8 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 		p.Versions[0].ShaSumsUrl = keys[shaSumsKey]
 		p.Versions[0].ShaSumsSignatureUrl = keys[shaSumsSigKey]
 
-		for _, platform := range p.Versions[0].Platforms {
-			platform.Location = keys[platform.String()]
+		for i, platform := range p.Versions[0].Platforms {
+			p.Versions[0].Platforms[i].Location = keys[platform.String()]
 		}
 	}
 
