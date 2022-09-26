@@ -190,4 +190,7 @@ tests/**
 **/*.yaml
 !example.yaml
 
+# Exclude Taskfile.yaml
+!Taskfile.yaml
+
 # End of Terralist Development files
