@@ -255,7 +255,11 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		p := platform.ToPlatform()
 		osArch := p.String()
 
-		binary, err := file.FetchFile(fmt.Sprintf("%s_%s.zip", prefix, osArch), p.Location)
+		binary, err := file.FetchFileChecksum(
+			fmt.Sprintf("%s_%s.zip", prefix, osArch),
+			p.Location,
+			p.ShaSum,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch %s file: %v", osArch, err)
 		}

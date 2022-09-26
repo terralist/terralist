@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -13,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-getter"
+	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )
 
 const (
@@ -22,17 +22,30 @@ const (
 // FetchFile downloads a file from a given URL and returns it
 // as an InMemoryFile
 func FetchFile(name string, url string) (*InMemoryFile, error) {
-	return fetch(name, url, true)
+	return fetch(name, url, "", true)
+}
+
+// FetchFileChecksum downloads a file from a given URL while
+// checking a given checksum and returns it as an InMemoryFile
+func FetchFileChecksum(name string, url string, checksum string) (*InMemoryFile, error) {
+	return fetch(name, url, checksum, true)
 }
 
 // FetchDir downloads all files from a given URL and returns
 // them as an archive, stored in an InMemoryFile object
 func FetchDir(name string, url string) (*InMemoryFile, error) {
-	return fetch(name, url, false)
+	return fetch(name, url, "", false)
+}
+
+// FetchDirChecksum downloads all files from a given URL while
+// checking a given checksum and returns them as an archive,
+// stored in an InMemoryFile object
+func FetchDirChecksum(name string, url string, checksum string) (*InMemoryFile, error) {
+	return fetch(name, url, checksum, false)
 }
 
 // fetch downloads a file/directory from a given URL and loads them into the memory
-func fetch(name string, url string, isFile bool) (*InMemoryFile, error) {
+func fetch(name string, url string, checksum string, isFile bool) (*InMemoryFile, error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -44,10 +57,23 @@ func fetch(name string, url string, isFile bool) (*InMemoryFile, error) {
 		dst = path.Join(tempDir, name)
 	}
 
+	u, err := urlhelper.Parse(url)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
+	}
+
+	// Set extra arguments
+	q := u.Query()
+	q.Add("archive", "false") // Force go-getter to avoid decompressing
+	if checksum != "" {
+		q.Add("checksum", checksum) // Add a checksum to be checked if we have one
+	}
+	u.RawQuery = q.Encode()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &getter.Client{
 		Ctx: ctx,
-		Src: url,
+		Src: u.String(),
 		Dst: dst,
 		Pwd: tempDir,
 		Options: []getter.ClientOption{
@@ -103,7 +129,7 @@ func fetch(name string, url string, isFile bool) (*InMemoryFile, error) {
 // readFile reads a file from the disk and returns it
 // as an InMemoryFile
 func readFile(name, src string) (*InMemoryFile, error) {
-	content, err := ioutil.ReadFile(src)
+	content, err := os.ReadFile(src)
 	if err != nil {
 		return nil, fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
 	}
