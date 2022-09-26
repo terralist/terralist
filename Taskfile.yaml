@@ -30,5 +30,5 @@ tasks:
           -ldflags="-X 'main.Version={{.BRANCH}}' \
                     -X 'main.CommitHash={{.COMMIT_HASH}}' \
                     -X 'main.BuildTimestamp={{now | date "2006-01-02T15:04:05"}}' \
-                    -X 'main.Mode=release'" \
+                    -X 'main.Mode={{.MODE}}'" \
           ./cmd/terralist/main.go
