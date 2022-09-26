@@ -47,10 +47,15 @@ This project is not meant to replace the public Terraform Registry. Its purpose 
 
 ## Build
 
-Under the directory `scripts/`, there is a Python build script that will handle the build time variables. The script can be used to build the binary in both `debug` and `release` mode.
-
+### Release Mode
 ```
-python ./scripts/build.py release
+task build -- release
+```
+
+### Debug Mode
+Debug mode provides additional logging, but decrease the overall performance.
+```
+task build -- debug
 ```
 
 A `terralist[.exe]` file should be generated in the repository root directory.
