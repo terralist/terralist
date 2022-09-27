@@ -95,7 +95,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 
 	if s.Resolver != nil {
 		// Download module files
-		archive, err := file.FetchDir(d.Version, url)
+		archive, err := file.Fetch(d.Version, url)
 		if err != nil {
 			return err
 		}

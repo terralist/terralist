@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -20,7 +21,6 @@ func Archive(name string, files []*InMemoryFile) (*InMemoryFile, error) {
 	buffer := new(bytes.Buffer)
 
 	writer := zip.NewWriter(buffer)
-	defer writer.Close()
 
 	for _, f := range files {
 		w, err := writer.Create(f.Name)
@@ -35,6 +35,10 @@ func Archive(name string, files []*InMemoryFile) (*InMemoryFile, error) {
 
 	if !strings.HasSuffix(name, ".zip") {
 		name = fmt.Sprintf("%s.zip", name)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrArchiveFailure, err)
 	}
 
 	return &InMemoryFile{
