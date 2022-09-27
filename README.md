@@ -37,9 +37,12 @@ Terralist is a private Terraform registry for providers and modules following th
 
 * **Provider Registry**: ([docs](https://www.terraform.io/docs/internals/provider-registry-protocol.html)) Similar with modules registry.
   Currently supported private storage:
+  * AWS S3: uses a private S3 bucket
   * Proxy: forwards the URL received at creation
 
-_Note_: For _Proxy_ storage mode, the URL management is up to you. If, for example, you are providing a git URL, then the same URL will be forwarded to the requester.
+_Note_: For _Proxy_ storage mode, the URL management is up to you. If, for example, you are providing a git URL, then the same URL will be forwarded to the requester (Terraform).
+
+_Note_: Terralist uses the same library Terraform uses to make downloads ([go-getter](https://github.com/hashicorp/go-getter)), meaning that you can still use your [favorite protocols](https://github.com/hashicorp/go-getter#supported-protocols-and-detectors) while using Terralist. This is also an advantage for the _Proxy_ mode users, which can use the same source that they would normally put in Terraform.
 
 ## Disclaimer
 
@@ -80,7 +83,7 @@ Use the application web interface to generate an API key. You can allocate more 
 ### Upload a new module
 ```
 $ curl -X POST registry.example.com/v1/api/modules/my-module/provider/1.0.0/upload \
-       -H "Authorization: Bearer $TERRALIST_API_KEY" \
+       -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
        -d '{ "download_url": "/home/bob/terraform-modules/example-module" }'
 ```
 
@@ -126,8 +129,8 @@ module "example-module" {
 
 2. Upload the provider
 ```
-$ curl -X POST registry.example.com/v1/providers/random/2.0.0/upload \
-       -H "Authorization: Bearer $TERRALIST_API_KEY" \
+$ curl -X POST registry.example.com/v1/api/providers/random/2.0.0/upload \
+       -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
        -d "$(cat ~/random-2.0.0.json)"
 ```
 
@@ -148,12 +151,15 @@ terraform {
 * `GET /health`: Health Endpoint
 * `GET /.well-known/terraform.json`: Terraform Service Discovery endpoint
 
+### Providers
+
 * `GET /v1/providers/:namespace/:name/versions`: List all versions for a provider
 * `GET /v1/providers/:namespace/:name/:version/download/:system/:arch`: Download a specific provider version
 * `POST /v1/api/providers/:name/:version/upload`: Upload a new provider version
 * `DELETE /v1/api/providers/:name/remove`: Remove a provider
 * `DELETE /v1/api/providers/:name/:version/remove`: Remove a provider version
 
+### Modules
 
 * `GET /v1/modules/:namespace/:name/:provider/versions`: List all versions for a module
 * `GET /v1/modules/:namespace/:name/:provider/:version/download`: Download a specific module version
@@ -164,17 +170,6 @@ terraform {
 ## Work In Progress
 
 This project is still work-in-progress and I am planning to release it soon.
-
-## Planned Features
-* Ability to create an API key to use instead of a Bearer Token;
-* A containerized version;
-* Web interface to manage the resources;
-* Web interface to visualize modules and providers documentation;
-* Replace PostgreSQL with a lighter database;
-* Multiple authorities support;
-* S3 support for providers;
-* Google OAUTH 2.0 provider;
-* Web documentation for the entire project;
 
 ## Contributions
 
