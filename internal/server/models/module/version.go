@@ -9,6 +9,7 @@ import (
 type Version struct {
 	entity.Entity
 	ModuleID     uuid.UUID
+	Module       Module
 	Version      string       `gorm:"not null"`
 	Location     string       `gorm:"not null"`
 	Providers    []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

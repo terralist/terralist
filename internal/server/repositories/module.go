@@ -118,8 +118,12 @@ func (r *DefaultModuleRepository) FindVersionLocation(namespace, name, provider,
 		Where(fmt.Sprintf("%s.version = ?", vtn), version).
 		Scan(&location)
 
-	if res.Error != nil {
-		return nil, res.Error
+	if err := res.Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
 	}
 
 	if res.RowsAffected == 0 {

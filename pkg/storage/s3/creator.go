@@ -2,8 +2,6 @@ package s3
 
 import (
 	"fmt"
-	"os"
-	"path"
 
 	"terralist/pkg/storage"
 
@@ -20,9 +18,6 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		return nil, fmt.Errorf("unsupported configurator")
 	}
 
-	cacheDir := path.Join(cfg.HomeDirectory, "s3-cache")
-	_ = os.MkdirAll(cacheDir, os.ModePerm)
-
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(cfg.BucketRegion),
 		Credentials: credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
@@ -32,7 +27,6 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 	}
 
 	return &Resolver{
-		CacheDir:   cacheDir,
 		BucketName: cfg.BucketName,
 		LinkExpire: cfg.LinkExpire,
 

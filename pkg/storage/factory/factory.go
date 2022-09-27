@@ -5,7 +5,6 @@ import (
 
 	"terralist/pkg/storage"
 	"terralist/pkg/storage/local"
-	"terralist/pkg/storage/proxy"
 	"terralist/pkg/storage/s3"
 )
 
@@ -19,8 +18,6 @@ func NewResolver(backend storage.Backend, config storage.Configurator) (storage.
 	var creator storage.Creator
 
 	switch backend {
-	case storage.PROXY:
-		creator = &proxy.Creator{}
 	case storage.LOCAL:
 		creator = &local.Creator{}
 	case storage.S3:

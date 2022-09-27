@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"terralist/pkg/database/entity"
+	"terralist/pkg/version"
 
 	"github.com/google/uuid"
 )
@@ -28,6 +29,18 @@ func (p Provider) ToVersionListProviderDTO() VersionListProviderDTO {
 	return VersionListProviderDTO{
 		Versions: versions,
 	}
+}
+
+func (p Provider) GetVersion(v string) *Version {
+	vv := version.Version(v)
+
+	for _, ver := range p.Versions {
+		if version.Compare(version.Version(ver.Version), vv) == 0 {
+			return &ver
+		}
+	}
+
+	return nil
 }
 
 type CreateProviderDTO struct {

@@ -18,7 +18,6 @@ import (
 
 // Resolver is the concrete implementation of storage.Resolver
 type Resolver struct {
-	CacheDir   string
 	BucketName string
 	LinkExpire int
 

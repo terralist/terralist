@@ -80,7 +80,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			os := ctx.Param("os")
 			arch := ctx.Param("arch")
 
-			v, err := c.ProviderService.GetVersion(namespace, name, version, os, arch)
+			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -88,7 +88,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			ctx.JSON(http.StatusOK, v)
+			ctx.JSON(http.StatusOK, dto)
 		},
 	)
 

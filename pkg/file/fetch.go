@@ -5,34 +5,63 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/go-getter"
+	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )
 
 const (
 	tempDirPattern = "tl-fetch"
 )
 
+const (
+	file = iota
+	dir
+	any
+)
+
+// Fetch downloads a file or a directory from a given URL
+// and returns it as an InMemoryFile
+// If the file is a directory, it will be archived
+// If the file is an archive, it will be decompressed, and
+// then compressed back to zip
+func Fetch(name string, url string) (*InMemoryFile, error) {
+	return fetch(name, url, "", any)
+}
+
 // FetchFile downloads a file from a given URL and returns it
 // as an InMemoryFile
 func FetchFile(name string, url string) (*InMemoryFile, error) {
-	return fetch(name, url, true)
+	return fetch(name, url, "", file)
+}
+
+// FetchFileChecksum downloads a file from a given URL while
+// checking a given checksum and returns it as an InMemoryFile
+func FetchFileChecksum(name string, url string, checksum string) (*InMemoryFile, error) {
+	return fetch(name, url, checksum, file)
 }
 
 // FetchDir downloads all files from a given URL and returns
 // them as an archive, stored in an InMemoryFile object
 func FetchDir(name string, url string) (*InMemoryFile, error) {
-	return fetch(name, url, false)
+	return fetch(name, url, "", dir)
+}
+
+// FetchDirChecksum downloads all files from a given URL while
+// checking a given checksum and returns them as an archive,
+// stored in an InMemoryFile object
+func FetchDirChecksum(name string, url string, checksum string) (*InMemoryFile, error) {
+	return fetch(name, url, checksum, dir)
 }
 
 // fetch downloads a file/directory from a given URL and loads them into the memory
-func fetch(name string, url string, isFile bool) (*InMemoryFile, error) {
+func fetch(name string, url string, checksum string, kind int) (*InMemoryFile, error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -40,25 +69,41 @@ func fetch(name string, url string, isFile bool) (*InMemoryFile, error) {
 	defer os.RemoveAll(tempDir)
 
 	dst := tempDir
-	if isFile {
+	if kind == file {
 		dst = path.Join(tempDir, name)
 	}
+
+	u, err := urlhelper.Parse(url)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
+	}
+
+	// Set extra arguments
+	q := u.Query()
+	if kind == file {
+		// Force go-getter to avoid decompressing
+		q.Add("archive", "false")
+	}
+	if checksum != "" {
+		// Add a checksum to be checked if we have one
+		q.Add("checksum", checksum)
+	}
+	u.RawQuery = q.Encode()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &getter.Client{
 		Ctx: ctx,
-		Src: url,
+		Src: u.String(),
 		Dst: dst,
 		Pwd: tempDir,
-		Options: []getter.ClientOption{
-			getter.WithInsecure(),
-		},
 	}
 
-	if isFile {
+	if kind == file {
 		client.Mode = getter.ClientModeFile
-	} else {
+	} else if kind == dir {
 		client.Mode = getter.ClientModeDir
+	} else if kind == any {
+		client.Mode = getter.ClientModeAny
 	}
 
 	// Launch the download process
@@ -92,18 +137,41 @@ func fetch(name string, url string, isFile bool) (*InMemoryFile, error) {
 	case <-ctx.Done():
 		wg.Wait()
 
-		if isFile {
-			return readFile(name, dst)
+		// If we know the time, just parse it
+		if kind == file || kind == dir {
+			return parseResult(name, dst, kind)
 		}
 
-		return archiveDir(name, dst)
+		// We need to find out what we have downloaded
+		inf, err := os.Stat(dst)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
+		}
+
+		if inf.IsDir() {
+			return parseResult(name, dst, dir)
+		}
+
+		return parseResult(name, dst, file)
 	}
+}
+
+// parseResult parses the download result and returns an
+// InMemoryFile
+func parseResult(name, src string, kind int) (*InMemoryFile, error) {
+	if kind == file {
+		return readFile(name, src)
+	} else if kind == dir {
+		return archiveDir(name, src)
+	}
+
+	return nil, fmt.Errorf("%w: unknown file type", ErrSystemFailure)
 }
 
 // readFile reads a file from the disk and returns it
 // as an InMemoryFile
 func readFile(name, src string) (*InMemoryFile, error) {
-	content, err := ioutil.ReadFile(src)
+	content, err := os.ReadFile(src)
 	if err != nil {
 		return nil, fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
 	}
@@ -120,7 +188,7 @@ func archiveDir(name, src string) (*InMemoryFile, error) {
 	dirFiles := []*InMemoryFile{}
 
 	// Walk recursively through the given directory
-	if err := filepath.Walk(src, func(filePath string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(src, func(fpath string, info os.FileInfo, err error) error {
 		// If there's an error on other files, propagate the error and return
 		if err != nil {
 			return err
@@ -132,13 +200,15 @@ func archiveDir(name, src string) (*InMemoryFile, error) {
 		}
 
 		// Open the file
-		f, err := os.Open(filePath)
+		f, err := os.Open(fpath)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 
-		relPath, _ := filepath.Rel(src, filePath)
+		relPath, _ := filepath.Rel(src, fpath)
+		relPath = filepath.Clean(relPath)
+		relPath = strings.Replace(relPath, "\\", "/", -1)
 
 		buffer := new(bytes.Buffer)
 

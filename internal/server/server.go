@@ -137,6 +137,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
+		Resolver:           config.ProvidersResolver,
 	}
 
 	providerController := &controllers.DefaultProviderController{
