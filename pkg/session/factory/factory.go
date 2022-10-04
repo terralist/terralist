@@ -8,7 +8,7 @@ import (
 
 func NewStore(backend session.Backend, config session.Configurator) (session.Store, error) {
 	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("could not create a new resolver with invalid configuration: %v", err)
+		return nil, fmt.Errorf("could not create a new store with invalid configuration: %v", err)
 	}
 
 	config.SetDefaults()
