@@ -1,7 +1,5 @@
 package services
 
-// go:build tests
-
 import (
 	"fmt"
 	"testing"
