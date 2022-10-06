@@ -64,7 +64,7 @@ func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, expireIn int) (strin
 		AuthorityID: authorityID,
 	}
 
-	if expireIn != 0 {
+	if expireIn > 0 {
 		exp := time.Now().Add(time.Duration(expireIn) * time.Hour)
 		apiKey.Expiration = &exp
 	}
