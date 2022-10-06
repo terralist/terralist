@@ -1,0 +1,8 @@
+{
+  "gopls": {
+    "buildFlags": [
+      "-tags=tests",
+    ]
+  },
+  "go.testTags": "tests"
+}
