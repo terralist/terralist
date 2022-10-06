@@ -71,7 +71,7 @@ func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, expireIn int) (strin
 
 	apiKey, err := s.ApiKeyRepository.Create(apiKey)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return apiKey.ID.String(), nil
