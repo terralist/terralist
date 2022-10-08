@@ -47,6 +47,8 @@ tasks:
     cmds:
       - mockery --dir ./internal/server/services {{.MOCKERY_ARGS}}
       - mockery --dir ./internal/server/repositories {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/auth {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/auth/jwt {{.MOCKERY_ARGS}}
 
   remove-mocks:
     summary: "Remove any generated interface mocks."
