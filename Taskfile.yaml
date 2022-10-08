@@ -15,6 +15,11 @@ tasks:
         sh: git rev-parse --abbrev-ref HEAD
       COMMIT_HASH:
         sh: git rev-parse --short HEAD
+      BINARY_FILE_NAME:
+        sh: echo '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
+    env:
+      # Get rid of sqlite3 lib warnings
+      CGO_CFLAGS: "-g -O2 -Wno-return-local-addr"
     cmds:
       - >-
         echo "{{
@@ -25,13 +30,14 @@ tasks:
           }}"
       - >- 
         go build \
-          -o={{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}} \
+          -o={{.BINARY_FILE_NAME}} \
           -v \
           -ldflags="-X 'main.Version={{.BRANCH}}' \
                     -X 'main.CommitHash={{.COMMIT_HASH}}' \
                     -X 'main.BuildTimestamp={{now | date "2006-01-02T15:04:05"}}' \
                     -X 'main.Mode={{.MODE}}'" \
           ./cmd/terralist/main.go
+      - echo "[>] Executable wrote to '{{ .BINARY_FILE_NAME }}'."
 
   generate-mocks:
     summary: "Generate interface mocks."
