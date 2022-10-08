@@ -2,10 +2,11 @@ package services
 
 import (
 	"errors"
+	"testing"
+
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/database/entity"
-	"testing"
 
 	"github.com/google/uuid"
 	. "github.com/smartystreets/goconvey/convey"
