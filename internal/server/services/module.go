@@ -37,7 +37,7 @@ type ModuleService interface {
 
 // DefaultModuleService is the concrete implementation of ModuleService
 type DefaultModuleService struct {
-	ModuleRepository *repositories.DefaultModuleRepository
+	ModuleRepository repositories.ModuleRepository
 	AuthorityService AuthorityService
 	Resolver         storage.Resolver
 }
