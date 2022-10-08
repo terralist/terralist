@@ -20,7 +20,7 @@ tasks:
         echo "{{
           ternary 
             (printf "[>] Building in '%s' mode." .MODE) 
-            (printf "[!] Build mode '%s' unknown, fall-backing to 'release' mode." .CLI_ARGS) 
+            (printf "[!] Build mode '%s' unknown, fallback to 'release' mode." .CLI_ARGS) 
             (eq .ARG_CHECKER "true")
           }}"
       - >- 
@@ -45,8 +45,6 @@ tasks:
   remove-mocks:
     summary: "Remove any generated interface mocks."
     silent: true
-    vars:
-      TEST: 
     cmds:
       - >-
         {{if eq OS "windows"}}
