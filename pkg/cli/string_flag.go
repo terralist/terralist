@@ -93,7 +93,7 @@ func (t *StringFlag) Validate() error {
 	if len(t.Choices) > 0 {
 		if !slice.Contains(t.Choices, lv) {
 			options := strings.Join(t.Choices, ", ")
-			return fmt.Errorf("invalid value %v; must be one of: %s", options)
+			return fmt.Errorf("invalid value %v; must be one of: %s", lv, options)
 		}
 	}
 
