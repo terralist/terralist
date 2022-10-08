@@ -4,7 +4,6 @@ import (
 	"errors"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
-	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
 )
@@ -60,16 +59,14 @@ func (s *DefaultAuthorityService) Create(in authority.AuthorityCreateDTO) error 
 }
 
 func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.KeyDTO) error {
-	a := authority.Authority{
-		Entity: entity.Entity{
-			ID: authorityID,
-		},
-		Keys: []authority.Key{
-			in.ToKey(),
-		},
+	a, err := s.AuthorityRepository.Find(authorityID)
+	if err != nil {
+		return err
 	}
 
-	_, err := s.AuthorityRepository.Upsert(a)
+	a.Keys = append(a.Keys, in.ToKey())
+
+	_, err = s.AuthorityRepository.Upsert(*a)
 	return err
 }
 
