@@ -7,6 +7,7 @@ import (
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/file"
 	"terralist/pkg/storage"
 
 	"github.com/google/uuid"
@@ -159,15 +160,16 @@ func TestUploadModule(t *testing.T) {
 		mockModuleRepository := repositories.NewMockModuleRepository(t)
 		mockAuthorityService := NewMockAuthorityService(t)
 		mockResolver := storage.NewMockResolver(t)
+		mockFetcher := file.NewMockFetcher(t)
 
 		moduleService := &DefaultModuleService{
 			ModuleRepository: mockModuleRepository,
 			AuthorityService: mockAuthorityService,
 			Resolver:         mockResolver,
+			Fetcher:          mockFetcher,
 		}
 
-		// TODO: file.Fetch must be mocked
-		SkipConvey("Given a module DTO and a source download URL", func() {
+		Convey("Given a module DTO and a source download URL", func() {
 			dto := module.CreateDTO{}
 			url, _ := random.String(16)
 
@@ -246,36 +248,60 @@ func TestUploadModule(t *testing.T) {
 							})
 						})
 
-						Convey("If the resolver fails to store the module files", func() {
-							mockResolver.
-								On("Store", mock.AnythingOfType("*storage.StoreInput")).
-								Return("", errors.New(""))
+						Convey("If the resolver is set", func() {
+							// Set by default
 
-							Convey("When the service is queried", func() {
-								err := moduleService.Upload(&dto, url)
+							Convey("If the module files cannot be downloaded", func() {
+								mockFetcher.
+									On("Fetch", dto.Version, url).
+									Return(nil, errors.New(""))
 
-								Convey("An error should be returned", func() {
-									So(err, ShouldNotBeNil)
+								Convey("When the service is queried", func() {
+									err := moduleService.Upload(&dto, url)
+
+									Convey("An error should be returned", func() {
+										So(err, ShouldNotBeNil)
+									})
 								})
 							})
-						})
 
-						Convey("If the resolver is successfully stores the module files", func() {
-							location, _ := random.String(16)
+							Convey("If the module files can be downloaded", func() {
+								mockFetcher.
+									On("Fetch", dto.Version, url).
+									Return(&file.InMemoryFile{}, nil)
 
-							mockResolver.
-								On("Store", mock.AnythingOfType("*storage.StoreInput")).
-								Return(location, nil)
+								Convey("If the resolver fails to store the module files", func() {
+									mockResolver.
+										On("Store", mock.AnythingOfType("*storage.StoreInput")).
+										Return("", errors.New(""))
 
-							mockModuleRepository.
-								On("Upsert", mock.AnythingOfType("module.Module")).
-								Return(&module.Module{}, nil)
+									Convey("When the service is queried", func() {
+										err := moduleService.Upload(&dto, url)
 
-							Convey("When the service is queried", func() {
-								err := moduleService.Upload(&dto, url)
+										Convey("An error should be returned", func() {
+											So(err, ShouldNotBeNil)
+										})
+									})
+								})
 
-								Convey("No error should be returned", func() {
-									So(err, ShouldBeNil)
+								Convey("If the resolver is successfully stores the module files", func() {
+									location, _ := random.String(16)
+
+									mockResolver.
+										On("Store", mock.AnythingOfType("*storage.StoreInput")).
+										Return(location, nil)
+
+									mockModuleRepository.
+										On("Upsert", mock.AnythingOfType("module.Module")).
+										Return(&module.Module{}, nil)
+
+									Convey("When the service is queried", func() {
+										err := moduleService.Upload(&dto, url)
+
+										Convey("No error should be returned", func() {
+											So(err, ShouldBeNil)
+										})
+									})
 								})
 							})
 						})
@@ -302,36 +328,60 @@ func TestUploadModule(t *testing.T) {
 							})
 						})
 
-						Convey("If the resolver fails to store the module files", func() {
-							mockResolver.
-								On("Store", mock.AnythingOfType("*storage.StoreInput")).
-								Return("", errors.New(""))
+						Convey("If the resolver is set", func() {
+							// Set by default
 
-							Convey("When the service is queried", func() {
-								err := moduleService.Upload(&dto, url)
+							Convey("If the module files cannot be downloaded", func() {
+								mockFetcher.
+									On("Fetch", dto.Version, url).
+									Return(nil, errors.New(""))
 
-								Convey("An error should be returned", func() {
-									So(err, ShouldNotBeNil)
+								Convey("When the service is queried", func() {
+									err := moduleService.Upload(&dto, url)
+
+									Convey("An error should be returned", func() {
+										So(err, ShouldNotBeNil)
+									})
 								})
 							})
-						})
 
-						Convey("If the resolver is successfully stores the module files", func() {
-							location, _ := random.String(16)
+							Convey("If the module files can be downloaded", func() {
+								mockFetcher.
+									On("Fetch", dto.Version, url).
+									Return(&file.InMemoryFile{}, nil)
 
-							mockResolver.
-								On("Store", mock.AnythingOfType("*storage.StoreInput")).
-								Return(location, nil)
+								Convey("If the resolver fails to store the module files", func() {
+									mockResolver.
+										On("Store", mock.AnythingOfType("*storage.StoreInput")).
+										Return("", errors.New(""))
 
-							mockModuleRepository.
-								On("Upsert", mock.AnythingOfType("module.Module")).
-								Return(&module.Module{}, nil)
+									Convey("When the service is queried", func() {
+										err := moduleService.Upload(&dto, url)
 
-							Convey("When the service is queried", func() {
-								err := moduleService.Upload(&dto, url)
+										Convey("An error should be returned", func() {
+											So(err, ShouldNotBeNil)
+										})
+									})
+								})
 
-								Convey("No error should be returned", func() {
-									So(err, ShouldBeNil)
+								Convey("If the resolver is successfully stores the module files", func() {
+									location, _ := random.String(16)
+
+									mockResolver.
+										On("Store", mock.AnythingOfType("*storage.StoreInput")).
+										Return(location, nil)
+
+									mockModuleRepository.
+										On("Upsert", mock.AnythingOfType("module.Module")).
+										Return(&module.Module{}, nil)
+
+									Convey("When the service is queried", func() {
+										err := moduleService.Upload(&dto, url)
+
+										Convey("No error should be returned", func() {
+											So(err, ShouldBeNil)
+										})
+									})
 								})
 							})
 						})
