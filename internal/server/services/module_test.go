@@ -9,6 +9,7 @@ import (
 	"terralist/internal/server/repositories"
 	"terralist/pkg/storage"
 
+	"github.com/google/uuid"
 	"github.com/mazen160/go-random"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
@@ -153,7 +154,6 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 	})
 }
 
-// TODO: file.Fetch must be mocked
 func TestUploadModule(t *testing.T) {
 	Convey("Subject: Upload a new module version", t, func() {
 		mockModuleRepository := repositories.NewMockModuleRepository(t)
@@ -166,7 +166,8 @@ func TestUploadModule(t *testing.T) {
 			Resolver:         mockResolver,
 		}
 
-		Convey("Given a module DTO and a source download URL", func() {
+		// TODO: file.Fetch must be mocked
+		SkipConvey("Given a module DTO and a source download URL", func() {
 			dto := module.CreateDTO{}
 			url, _ := random.String(16)
 
@@ -331,6 +332,271 @@ func TestUploadModule(t *testing.T) {
 
 								Convey("No error should be returned", func() {
 									So(err, ShouldBeNil)
+								})
+							})
+						})
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestDeleteModule(t *testing.T) {
+	Convey("Subject: Delete a module", t, func() {
+		mockModuleRepository := repositories.NewMockModuleRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
+
+		moduleService := &DefaultModuleService{
+			ModuleRepository: mockModuleRepository,
+			AuthorityService: mockAuthorityService,
+			Resolver:         mockResolver,
+		}
+
+		Convey("Given an authority ID a module name and provider", func() {
+			authorityID, _ := uuid.NewRandom()
+			name, _ := random.String(16)
+			provider, _ := random.String(16)
+
+			Convey("If the authority does not exist", func() {
+				mockAuthorityService.
+					On("Get", authorityID).
+					Return(nil, errors.New(""))
+
+				Convey("When the service is queried", func() {
+					err := moduleService.Delete(authorityID, name, provider)
+
+					Convey("An error should be returned", func() {
+						So(err, ShouldNotBeNil)
+					})
+				})
+			})
+
+			Convey("If the authority exists", func() {
+				mockAuthorityService.
+					On("Get", authorityID).
+					Return(&authority.Authority{}, nil)
+
+				Convey("If the module does not exist", func() {
+					mockModuleRepository.
+						On("Find", mock.AnythingOfType("string"), name, provider).
+						Return(nil, errors.New(""))
+
+					Convey("When the service is queried", func() {
+						err := moduleService.Delete(authorityID, name, provider)
+
+						Convey("An error should be returned", func() {
+							So(err, ShouldNotBeNil)
+						})
+					})
+				})
+
+				Convey("If the module exists", func() {
+					mockModule := module.Module{
+						AuthorityID: authorityID,
+						Name:        name,
+						Provider:    provider,
+						Versions: []module.Version{
+							{}, // Add one version so we can mock the resolver purge call
+						},
+					}
+
+					mockModuleRepository.
+						On("Find", mock.AnythingOfType("string"), name, provider).
+						Return(&mockModule, nil)
+
+					mockModuleRepository.
+						On("Delete", &mockModule).
+						Return(nil)
+
+					Convey("If the resolver is not set", func() {
+						moduleService.Resolver = nil
+
+						Convey("When the service is queried", func() {
+							err := moduleService.Delete(authorityID, name, provider)
+
+							Convey("No error should be returned", func() {
+								So(err, ShouldBeNil)
+							})
+						})
+					})
+
+					Convey("If the resolver is set", func() {
+						mockResolver.
+							On("Purge", mock.AnythingOfType("string")).
+							Return(nil)
+
+						Convey("When the service is queried", func() {
+							err := moduleService.Delete(authorityID, name, provider)
+
+							Convey("No error should be returned", func() {
+								So(err, ShouldBeNil)
+							})
+						})
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestDeleteModuleVersion(t *testing.T) {
+	Convey("Subject: Delete a module version", t, func() {
+		mockModuleRepository := repositories.NewMockModuleRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
+
+		moduleService := &DefaultModuleService{
+			ModuleRepository: mockModuleRepository,
+			AuthorityService: mockAuthorityService,
+			Resolver:         mockResolver,
+		}
+
+		Convey("Given an authority ID a module name, provider and version", func() {
+			authorityID, _ := uuid.NewRandom()
+			name, _ := random.String(16)
+			provider, _ := random.String(16)
+			version := "1.0.0"
+
+			Convey("If the authority does not exist", func() {
+				mockAuthorityService.
+					On("Get", authorityID).
+					Return(nil, errors.New(""))
+
+				Convey("When the service is queried", func() {
+					err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+					Convey("An error should be returned", func() {
+						So(err, ShouldNotBeNil)
+					})
+				})
+			})
+
+			Convey("If the authority exists", func() {
+				mockAuthorityService.
+					On("Get", authorityID).
+					Return(&authority.Authority{}, nil)
+
+				Convey("If the module does not exist", func() {
+					mockModuleRepository.
+						On("Find", mock.AnythingOfType("string"), name, provider).
+						Return(nil, errors.New(""))
+
+					Convey("When the service is queried", func() {
+						err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+						Convey("An error should be returned", func() {
+							So(err, ShouldNotBeNil)
+						})
+					})
+				})
+
+				Convey("If the module exists", func() {
+					mockModule := module.Module{
+						AuthorityID: authorityID,
+						Name:        name,
+						Provider:    provider,
+						Versions: []module.Version{
+							{},
+						},
+					}
+
+					mockModuleRepository.
+						On("Find", mock.AnythingOfType("string"), name, provider).
+						Return(&mockModule, nil)
+
+					Convey("If the module does not have the given version", func() {
+						mockModule.Versions[0].Version = "1.0.1" // Not the same with version
+
+						Convey("When the service is queried", func() {
+							err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+							Convey("An error should be returned", func() {
+								So(err, ShouldNotBeNil)
+							})
+						})
+					})
+
+					Convey("If the module has the given version", func() {
+						mockModule.Versions[0].Version = version
+
+						Convey("If the resolver is not set", func() {
+							moduleService.Resolver = nil
+
+							Convey("If the module has only one version", func() {
+								// Only one is set by default
+
+								mockModuleRepository.
+									On("Delete", &mockModule).
+									Return(nil)
+
+								Convey("When the service is queried", func() {
+									err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+									Convey("No error should be returned, while trying to delete the module", func() {
+										So(err, ShouldBeNil)
+									})
+								})
+							})
+
+							Convey("If the module has more than one version", func() {
+								mockModule.Versions = append(mockModule.Versions, module.Version{})
+
+								mockModuleRepository.
+									On("DeleteVersion", mock.AnythingOfType("*module.Version")).
+									Return(nil)
+
+								Convey("When the service is queried", func() {
+									err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+									Convey("No error should be returned while trying to delete the module version", func() {
+										So(err, ShouldBeNil)
+									})
+								})
+							})
+						})
+
+						Convey("If the resolver is set", func() {
+							// Set by default
+
+							Convey("If the module has only one version", func() {
+								// Only one is set by default
+
+								mockResolver.
+									On("Purge", mock.AnythingOfType("string")).
+									Return(nil)
+
+								mockModuleRepository.
+									On("Delete", &mockModule).
+									Return(nil)
+
+								Convey("When the service is queried", func() {
+									err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+									Convey("No error should be returned, while trying to delete the module", func() {
+										So(err, ShouldBeNil)
+									})
+								})
+							})
+
+							Convey("If the module has more than one version", func() {
+								mockModule.Versions = append(mockModule.Versions, module.Version{})
+
+								mockResolver.
+									On("Purge", mock.AnythingOfType("string")).
+									Return(nil)
+
+								mockModuleRepository.
+									On("DeleteVersion", mock.AnythingOfType("*module.Version")).
+									Return(nil)
+
+								Convey("When the service is queried", func() {
+									err := moduleService.DeleteVersion(authorityID, name, provider, version)
+
+									Convey("No error should be returned while trying to delete the module version", func() {
+										So(err, ShouldBeNil)
+									})
 								})
 							})
 						})
