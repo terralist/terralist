@@ -86,7 +86,9 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 	dto := p.ToDownloadPlatformDTO(provider.SigningKeysDTO{Keys: keys})
 
 	if s.Resolver != nil {
-		s.resolveLocations(&dto)
+		if err := s.resolveLocations(&dto); err != nil {
+			return nil, err
+		}
 	}
 
 	return &dto, nil
