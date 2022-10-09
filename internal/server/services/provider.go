@@ -201,6 +201,10 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 
 	if s.Resolver != nil {
 		v := p.GetVersion(version)
+		if v == nil {
+			return fmt.Errorf("provider %s/%s does not contain version %s", a.Name, name, version)
+		}
+
 		s.deleteVersion(v)
 	}
 
