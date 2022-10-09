@@ -44,6 +44,7 @@ type DefaultProviderService struct {
 	ProviderRepository repositories.ProviderRepository
 	AuthorityService   AuthorityService
 	Resolver           storage.Resolver
+	Fetcher            file.Fetcher
 }
 
 func (s *DefaultProviderService) Get(namespace, name string) (*provider.VersionListProviderDTO, error) {
@@ -242,12 +243,12 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
 	// Download provider files
-	shaSums, err := file.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL)
+	shaSums, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch shaSums file: %v", err)
 	}
 
-	shaSumsSig, err := file.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL)
+	shaSumsSig, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
 	}
@@ -261,7 +262,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		p := platform.ToPlatform()
 		osArch := p.String()
 
-		binary, err := file.FetchFileChecksum(
+		binary, err := s.Fetcher.FetchFileChecksum(
 			fmt.Sprintf("%s_%s.zip", prefix, osArch),
 			p.Location,
 			p.ShaSum,

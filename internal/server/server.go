@@ -15,6 +15,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
+	"terralist/pkg/file"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/pkg/webui"
@@ -122,6 +123,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ModuleRepository: moduleRepository,
 		AuthorityService: authorityService,
 		Resolver:         config.ModulesResolver,
+		Fetcher:          file.NewFetcher(),
 	}
 
 	moduleController := &controllers.DefaultModuleController{
@@ -138,6 +140,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
 		Resolver:           config.ProvidersResolver,
+		Fetcher:            file.NewFetcher(),
 	}
 
 	providerController := &controllers.DefaultProviderController{
