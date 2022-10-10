@@ -238,6 +238,192 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 	})
 }
 
+func TestUploadProvider(t *testing.T) {
+	Convey("Subject: Upload a provider version", t, func() {
+		mockProviderRepository := mockRepositories.NewProviderRepository(t)
+		mockAuthorityService := mockServices.NewAuthorityService(t)
+		mockResolver := mockStorage.NewResolver(t)
+		mockFetcher := mockFile.NewFetcher(t)
+
+		providerService := &DefaultProviderService{
+			ProviderRepository: mockProviderRepository,
+			AuthorityService:   mockAuthorityService,
+			Resolver:           mockResolver,
+			Fetcher:            mockFetcher,
+		}
+
+		Convey("Given a provider DTO", func() {
+			dto := provider.CreateProviderDTO{}
+
+			Convey("If the version is not respecting the semantic format", func() {
+				dto.Version = "100%-not-sem-ver-valid"
+
+				Convey("When the service is queried", func() {
+					err := providerService.Upload(&dto)
+
+					Convey("An error should be returned", func() {
+						So(err, ShouldNotBeNil)
+					})
+				})
+			})
+
+			Convey("If the version is respecting the semantic format", func() {
+				dto.Version = "1.0.0"
+
+				Convey("If the authority does not exist", func() {
+					mockAuthorityService.
+						On("Get", mock.AnythingOfType("uuid.UUID")).
+						Return(nil, errors.New(""))
+
+					Convey("When the service is queried", func() {
+						err := providerService.Upload(&dto)
+
+						Convey("An error should be returned", func() {
+							So(err, ShouldNotBeNil)
+						})
+					})
+				})
+
+				Convey("If the authority exists", func() {
+					mockAuthorityService.
+						On("Get", mock.AnythingOfType("uuid.UUID")).
+						Return(&authority.Authority{}, nil)
+
+					Convey("If the provider exists and already has the given version", func() {
+						mockProviderRepository.
+							On("Find", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+							Return(&provider.Provider{
+								Versions: []provider.Version{
+									{
+										Version: dto.Version,
+									},
+								},
+							}, nil)
+
+						Convey("When the service is queried", func() {
+							err := providerService.Upload(&dto)
+
+							Convey("An error should be returned", func() {
+								So(err, ShouldNotBeNil)
+							})
+						})
+					})
+
+					similarTestData := []struct {
+						Desc string
+						Func func()
+					}{
+						{
+							Desc: "If the provider exists and does not have the given version",
+							Func: func() {
+								mockProviderRepository.
+									On("Find", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+									Return(&provider.Provider{}, nil)
+							},
+						},
+						{
+							Desc: "If the provider does not exist",
+							Func: func() {
+								mockProviderRepository.
+									On("Find", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+									Return(nil, errors.New(""))
+							},
+						},
+					}
+
+					for _, td := range similarTestData {
+						Convey(td.Desc, func() {
+							td.Func()
+
+							Convey("If the resolver is not set", func() {
+								providerService.Resolver = nil
+
+								mockProviderRepository.
+									On("Upsert", mock.AnythingOfType("provider.Provider")).
+									Return(&provider.Provider{}, nil)
+
+								Convey("When the service is queried", func() {
+									err := providerService.Upload(&dto)
+
+									Convey("No error should be returned", func() {
+										So(err, ShouldBeNil)
+									})
+								})
+							})
+
+							Convey("If the resolver is set", func() {
+								dto.ShaSums.URL, _ = random.String(16)
+								dto.ShaSums.SignatureURL, _ = random.String(16)
+
+								binaryURL, _ := random.String(16)
+								dto.Platforms = append(dto.Platforms, provider.CreatePlatformDTO{
+									Location: binaryURL,
+								})
+
+								Convey("If the provider files cannot be downloaded", func() {
+									mockFetcher.
+										On("FetchFile", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+										Return(nil, errors.New(""))
+
+									Convey("When the service is queried", func() {
+										err := providerService.Upload(&dto)
+
+										Convey("An error should be returned", func() {
+											So(err, ShouldNotBeNil)
+										})
+									})
+								})
+
+								Convey("If the provider files can be downloaded", func() {
+									mockFetcher.
+										On("FetchFile", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+										Return(&file.InMemoryFile{}, nil)
+
+									mockFetcher.
+										On("FetchFileChecksum", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+										Return(&file.InMemoryFile{}, nil)
+
+									Convey("If the resolver cannot store the provider files", func() {
+										mockResolver.
+											On("Store", mock.AnythingOfType("*storage.StoreInput")).
+											Return("", errors.New(""))
+
+										Convey("When the service is queried", func() {
+											err := providerService.Upload(&dto)
+
+											Convey("An error should be returned", func() {
+												So(err, ShouldNotBeNil)
+											})
+										})
+									})
+
+									Convey("If the resolver successfully stores the provider files", func() {
+										mockResolver.
+											On("Store", mock.AnythingOfType("*storage.StoreInput")).
+											Return("", nil)
+
+										mockProviderRepository.
+											On("Upsert", mock.AnythingOfType("provider.Provider")).
+											Return(&provider.Provider{}, nil)
+
+										Convey("When the service is queried", func() {
+											err := providerService.Upload(&dto)
+
+											Convey("No error should be returned", func() {
+												So(err, ShouldBeNil)
+											})
+										})
+									})
+								})
+							})
+						})
+					}
+				})
+			})
+		})
+	})
+}
+
 func TestDeleteProvider(t *testing.T) {
 	Convey("Subject: Delete a provider", t, func() {
 		mockProviderRepository := mockRepositories.NewProviderRepository(t)
