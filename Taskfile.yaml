@@ -43,22 +43,11 @@ tasks:
     summary: "Generate interface mocks."
     silent: true
     vars:
-      MOCKERY_ARGS: '--all --case underscore --inpackage --note "go:build mocks"'
+      MOCKERY_ARGS: '--all --case underscore --note "go:build mocks"'
     cmds:
-      - mockery --dir ./internal/server/services {{.MOCKERY_ARGS}}
-      - mockery --dir ./internal/server/repositories {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/auth {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/auth/jwt {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/file {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/storage {{.MOCKERY_ARGS}}
-
-  remove-mocks:
-    summary: "Remove any generated interface mocks."
-    silent: true
-    cmds:
-      - >-
-        {{if eq OS "windows"}}
-          powershell.exe 'Get-ChildItem -Path . -Recurse -File -Name "mock_*.go" | Remove-Item'
-        {{else}}
-          find . -name "mock_*.go" -type f -delete
-        {{end}}
+      - mockery --dir ./internal/server/services --output ./mocks/server/services {{.MOCKERY_ARGS}}
+      - mockery --dir ./internal/server/repositories --output ./mocks/server/repositories {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/auth --output ./mocks/pkg/auth {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/auth/jwt --output ./mocks/pkg/auth/jwt {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/file --output ./mocks/pkg/file {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/storage --output ./mocks/pkg/storage {{.MOCKERY_ARGS}}

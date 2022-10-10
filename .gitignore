@@ -184,6 +184,7 @@ fabric.properties
 **/*.db
 
 # Development tests
+tests
 tests/**
 
 # Config files
@@ -193,7 +194,8 @@ tests/**
 # Exclude Taskfile.yaml
 !Taskfile.yaml
 
-# End of Terralist Development files
+# Test mocks
+mocks
+mocks/**
 
-# Generated mocks
-**/mock_*.go
+# End of Terralist Development files

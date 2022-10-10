@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	"terralist/internal/server/models/authority"
-	"terralist/internal/server/repositories"
 	"terralist/pkg/database/entity"
+
+	mockRepositories "terralist/mocks/server/repositories"
 
 	"github.com/google/uuid"
 	. "github.com/smartystreets/goconvey/convey"
@@ -15,7 +16,7 @@ import (
 
 func TestFindAuthorities(t *testing.T) {
 	Convey("Subject: Finding authorities", t, func() {
-		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		mockAuthorityRepository := mockRepositories.NewAuthorityRepository(t)
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,
@@ -95,7 +96,7 @@ func TestFindAuthorities(t *testing.T) {
 
 func TestCreateAuthority(t *testing.T) {
 	Convey("Subject: Creating authorities", t, func() {
-		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		mockAuthorityRepository := mockRepositories.NewAuthorityRepository(t)
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,
@@ -125,7 +126,7 @@ func TestCreateAuthority(t *testing.T) {
 
 func TestAddKey(t *testing.T) {
 	Convey("Subject: Create authority keys", t, func() {
-		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		mockAuthorityRepository := mockRepositories.NewAuthorityRepository(t)
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,
@@ -172,7 +173,7 @@ func TestAddKey(t *testing.T) {
 
 func TestRemoveKey(t *testing.T) {
 	Convey("Subject: Delete authority keys", t, func() {
-		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		mockAuthorityRepository := mockRepositories.NewAuthorityRepository(t)
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,
@@ -279,7 +280,7 @@ func TestRemoveKey(t *testing.T) {
 
 func TestDeleteAuthority(t *testing.T) {
 	Convey("Subject: Creating authorities", t, func() {
-		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		mockAuthorityRepository := mockRepositories.NewAuthorityRepository(t)
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,

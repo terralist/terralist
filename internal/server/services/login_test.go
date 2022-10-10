@@ -8,8 +8,9 @@ import (
 	"testing"
 
 	"terralist/internal/server/models/oauth"
-	"terralist/pkg/auth"
-	"terralist/pkg/auth/jwt"
+
+	mockAuth "terralist/mocks/pkg/auth"
+	mockJWT "terralist/mocks/pkg/auth/jwt"
 
 	"github.com/mazen160/go-random"
 	. "github.com/smartystreets/goconvey/convey"
@@ -18,7 +19,7 @@ import (
 
 func TestAuthorize(t *testing.T) {
 	Convey("Subject: Compute an authorize URL", t, func() {
-		mockProvider := auth.NewMockProvider(t)
+		mockProvider := mockAuth.NewProvider(t)
 
 		loginService := &DefaultLoginService{
 			Provider: mockProvider,
@@ -45,7 +46,7 @@ func TestAuthorize(t *testing.T) {
 
 func TestUnpackCode(t *testing.T) {
 	Convey("Subject: Unpack received code", t, func() {
-		mockProvider := auth.NewMockProvider(t)
+		mockProvider := mockAuth.NewProvider(t)
 
 		loginService := &DefaultLoginService{
 			Provider: mockProvider,
@@ -130,7 +131,7 @@ func TestRedirect(t *testing.T) {
 
 func TestValidateToken(t *testing.T) {
 	Convey("Subject: Validate a token", t, func() {
-		mockJWT := jwt.NewMockJWT(t)
+		mockJWT := mockJWT.NewJWT(t)
 
 		loginService := &DefaultLoginService{
 			JWT: mockJWT,
