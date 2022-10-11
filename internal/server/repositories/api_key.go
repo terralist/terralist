@@ -44,7 +44,7 @@ func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*authority.ApiKey, error) 
 
 	if apiKey.Expiration != nil && time.Now().Unix() > apiKey.Expiration.Unix() {
 		r.Database.Handler().Delete(apiKey)
-		return nil, fmt.Errorf("%w", ErrApiKeyExpired)
+		return nil, ErrApiKeyExpired
 	}
 
 	return apiKey, nil
