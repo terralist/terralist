@@ -15,20 +15,39 @@ tasks:
         sh: git rev-parse --abbrev-ref HEAD
       COMMIT_HASH:
         sh: git rev-parse --short HEAD
+      BINARY_FILE_NAME:
+        sh: echo '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
+    env:
+      # Get rid of sqlite3 lib warnings
+      CGO_CFLAGS: "-g -O2 -Wno-return-local-addr"
     cmds:
       - >-
         echo "{{
           ternary 
             (printf "[>] Building in '%s' mode." .MODE) 
-            (printf "[!] Build mode '%s' unknown, fall-backing to 'release' mode." .CLI_ARGS) 
+            (printf "[!] Build mode '%s' unknown, fallback to 'release' mode." .CLI_ARGS) 
             (eq .ARG_CHECKER "true")
           }}"
       - >- 
         go build \
-          -o={{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}} \
+          -o={{.BINARY_FILE_NAME}} \
           -v \
           -ldflags="-X 'main.Version={{.BRANCH}}' \
                     -X 'main.CommitHash={{.COMMIT_HASH}}' \
                     -X 'main.BuildTimestamp={{now | date "2006-01-02T15:04:05"}}' \
                     -X 'main.Mode={{.MODE}}'" \
           ./cmd/terralist/main.go
+      - echo "[>] Executable wrote to '{{ .BINARY_FILE_NAME }}'."
+
+  generate-mocks:
+    summary: "Generate interface mocks."
+    silent: true
+    vars:
+      MOCKERY_ARGS: '--all --case underscore --note "go:build mocks"'
+    cmds:
+      - mockery --dir ./internal/server/services --output ./mocks/server/services {{.MOCKERY_ARGS}}
+      - mockery --dir ./internal/server/repositories --output ./mocks/server/repositories {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/auth --output ./mocks/pkg/auth {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/auth/jwt --output ./mocks/pkg/auth/jwt {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/file --output ./mocks/pkg/file {{.MOCKERY_ARGS}}
+      - mockery --dir ./pkg/storage --output ./mocks/pkg/storage {{.MOCKERY_ARGS}}

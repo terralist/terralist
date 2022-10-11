@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/terralist/main.go",
+      "env": {
+        "TERRALIST_CONFIG": "${workspaceFolder}/config.yaml"
+      },
+      "args": [
+        "server"
+      ],
+    }
+  ]
+}
