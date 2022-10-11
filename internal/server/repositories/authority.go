@@ -90,17 +90,11 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 			a.Owner = current.Owner
 
 			for _, currentKey := range current.Keys {
-				shouldUpdate := false
 				for i, newKey := range a.Keys {
 					if currentKey.KeyId == newKey.KeyId {
-						shouldUpdate = true
 						a.Keys[i].ID = currentKey.ID
 						break
 					}
-				}
-
-				if !shouldUpdate {
-					a.Keys = append(a.Keys, currentKey)
 				}
 			}
 		}
