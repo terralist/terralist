@@ -51,3 +51,33 @@ tasks:
       - mockery --dir ./pkg/auth/jwt --output ./mocks/pkg/auth/jwt {{.MOCKERY_ARGS}}
       - mockery --dir ./pkg/file --output ./mocks/pkg/file {{.MOCKERY_ARGS}}
       - mockery --dir ./pkg/storage --output ./mocks/pkg/storage {{.MOCKERY_ARGS}}
+
+  run-tests:
+    summary: "Run all tests."
+    silent: true
+    vars:
+      WITH_SUMMARY: '{{eq .CLI_ARGS "summary"}}'
+      ALL_PACKAGES:
+        sh: "go list ./..."
+      TEST_EXCLUSIONS: '{{list "mocks" "cmd" "models" | join "|"}}'
+      TEST_PACKAGES:
+        sh: >-
+          {{- $excl := .TEST_EXCLUSIONS -}}
+          {{- $pkgs := (list) -}}
+          {{- range $i, $pkg := (splitList "\n" .ALL_PACKAGES) -}}
+            {{- if not (regexMatch (printf "[/]%s[/]" $excl) $pkg) -}}
+              {{- $pkgs = append $pkgs $pkg -}}
+            {{- end -}}
+          {{- end -}}
+          echo "{{$pkgs | join " "}}"
+      BUILD_TAGS: "mocks"
+    env:
+      # Get rid of sqlite3 lib warnings
+      CGO_CFLAGS: "-g -O2 -Wno-return-local-addr"
+    cmds:
+      - >-
+        {{- if eq .WITH_SUMMARY "true" -}}
+        gotestsum -f testname -- -tags={{.BUILD_TAGS}} -count=1 {{.TEST_PACKAGES}}
+        {{- else -}}
+        go test -tags=mocks -count=1 {{.TEST_PACKAGES}}
+        {{- end -}}
