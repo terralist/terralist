@@ -1,0 +1,39 @@
+env:
+  - CGO_ENABLED=0
+
+builds:
+  - binary: terralist
+    targets:
+    - darwin_amd64
+    - darwin_arm64
+    - linux_386
+    - linux_amd64
+    - linux_arm
+    - linux_arm64
+    - windows_386
+    - windows_amd64
+
+archives:
+  - id: zip
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format: zip
+    files:
+      - none*
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  skip: true
+
+release:
+  github:
+    owner: valentindeaconu
+    name: terralist
+
+  draft: false
+
+  prerelease: auto
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
