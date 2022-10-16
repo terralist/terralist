@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+    branches:
+      - "master"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.18
+
+      - name: Install task
+        uses: arduino/setup-task@v1
+
+      - name: Install mockery
+        run: go install github.com/vektra/mockery/v2@latest
+
+      - name: Generate mocks
+        run: task generate-mocks
+
+      - name: Run unit tests
+        run: task run-tests
