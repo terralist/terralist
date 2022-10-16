@@ -199,3 +199,13 @@ mocks
 mocks/**
 
 # End of Terralist Development files
+
+### Releaser ###
+
+# GoReleaser dist
+dist/
+
+# Pre-Release temporary CHANGELOG.md
+tmp-CHANGELOG.md
+
+# End of Releaser
