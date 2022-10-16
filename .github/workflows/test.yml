@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test:
-    name: Tester
+    name: Unit Tests
     runs-on: ubuntu-22.04
 
     steps:
