@@ -78,9 +78,9 @@ jobs:
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
           ghcr.io/${{ github.repository_owner }}/terralist:${{ env.RELEASE_VERSION }}
-          ghcr.io/${{ github.repository_owner }}/terralist:prerelease-latest
+          ghcr.io/${{ github.repository_owner }}/terralist:pre-latest
         build-args: |
-          VERSION=dev
+          VERSION=${{ env.RELEASE_VERSION }}
           COMMIT_HASH=${{ env.COMMIT_HASH }}
           BUILD_TIMESTAMP=${{ env.BUILD_TIMESTAMP }}
       
@@ -95,6 +95,6 @@ jobs:
           ghcr.io/${{ github.repository_owner }}/terralist:${{ env.RELEASE_VERSION }}
           ghcr.io/${{ github.repository_owner }}/terralist:latest
         build-args: |
-          VERSION=dev
+          VERSION=${{ env.RELEASE_VERSION }}
           COMMIT_HASH=${{ env.COMMIT_HASH }}
           BUILD_TIMESTAMP=${{ env.BUILD_TIMESTAMP }}
