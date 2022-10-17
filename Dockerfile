@@ -25,7 +25,7 @@ RUN go build -a -v -o terralist \
       -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
-FROM alpine:3.15
+FROM alpine:3.16.2
 
 COPY --from=builder /go/src/terralist/terralist /usr/local/bin
 
