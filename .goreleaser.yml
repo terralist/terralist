@@ -13,6 +13,11 @@ builds:
     - linux_arm64
     - windows_386
     - windows_amd64
+    ldflags:
+      - -X main.Version={{.Env.}}
+      - -X main.CommitHash={{.Env.COMMIT_HASH}}
+      - -X main.BuildTimestamp={{.Env.BUILD_TIMESTAMP}}
+      - -X main.Mode=release
 
 archives:
   - id: zip
