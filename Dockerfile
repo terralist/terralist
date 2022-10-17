@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine3.15 AS builder
+FROM golang:1.19.2-alpine3.15 AS builder
 
 WORKDIR /go/src/terralist
 
