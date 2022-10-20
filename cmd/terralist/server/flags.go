@@ -36,6 +36,7 @@ const (
 
 	S3BucketNameFlag      = "s3-bucket-name"
 	S3BucketRegionFlag    = "s3-bucket-region"
+	S3BucketPrefixFlag    = "s3-bucket-prefix"
 	S3AccessKeyIDFlag     = "s3-access-key-id"
 	S3SecretAccessKeyFlag = "s3-secret-access-key"
 	S3PresignExpireFlag   = "s3-presign-expire"
@@ -139,6 +140,9 @@ var flags = map[string]cli.Flag{
 	},
 	S3BucketRegionFlag: &cli.StringFlag{
 		Description: "The S3 bucket region.",
+	},
+	S3BucketPrefixFlag: &cli.StringFlag{
+		Description: "A prefix to be added to the S3 bucket keys.",
 	},
 	S3AccessKeyIDFlag: &cli.StringFlag{
 		Description: "The AWS access key ID to access the S3 bucket.",

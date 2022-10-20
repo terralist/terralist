@@ -250,6 +250,7 @@ func (s *Command) run() error {
 			resolvers[name], err = storageFactory.NewResolver(storage.S3, &s3.Config{
 				BucketName:      flags[S3BucketNameFlag].(*cli.StringFlag).Value,
 				BucketRegion:    flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
+				BucketPrefix:    flags[S3BucketPrefixFlag].(*cli.StringFlag).Value,
 				AccessKeyID:     flags[S3AccessKeyIDFlag].(*cli.StringFlag).Value,
 				SecretAccessKey: flags[S3SecretAccessKeyFlag].(*cli.StringFlag).Value,
 				LinkExpire:      flags[S3PresignExpireFlag].(*cli.IntFlag).Value,

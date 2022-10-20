@@ -23,33 +23,34 @@ Terralist also supports reading the environment at run-time. For example, if you
 
 | Name                         | Type   | Required | Default                 | Description                                                           |
 | ---------------------------- | ------ | -------- | ----------------------- | --------------------------------------------------------------------- |
-| `database-backend`           | string | no       | `sqlite`                | The database backend.                                                 |
-| `local-store`                | string | no       | `~/.terralist.d`        | The path to a directory in which Terralist can store files.           |
-| `cookie-secret`              | string | no       | `n/a`                   | The secret to use for cookie encryption.                              |
-| `postgres-port`              | int    | no       | `n/a`                   | The port on which the PostgreSQL database listens.                    |
-| `oauth-provider`             | string | yes      | `n/a`                   | The OAuth 2.0 provider.                                               |
-| `gh-organization`            | string | no       | `n/a`                   | The GitHub organization to use for user validation.                   |
-| `sqlite-path`                | string | no       | `n/a`                   | The path to the SQLite database.                                      |
-| `url`                        | string | no       | `http://localhost:5758` | The URL that Terralist is accessible from.                            |
-| `postgres-host`              | string | no       | `n/a`                   | The host where the PostgreSQL database can be found.                  |
-| `modules-storage-resolver`   | string | no       | `proxy`                 | The modules storage resolver.                                         |
-| `s3-bucket-name`             | string | no       | `n/a`                   | The S3 bucket name.                                                   |
-| `s3-presign-expire`          | int    | no       | `15`                    | The number of minutes after which the presigned URLs should expire.   |
-| `session-store`              | string | no       | `cookie`                | The session store backend.                                            |
 | `config`                     | string | no       | `n/a`                   | Path to YAML config file where flag values are set.                   |
-| `s3-bucket-region`           | string | no       | `n/a`                   | The S3 bucket region.                                                 |
-| `s3-secret-access-key`       | string | no       | `n/a`                   | The AWS secret access key to access the S3 bucket.                    |
-| `token-signing-secret`       | string | yes      | `n/a`                   | The secret to use when signing authorization tokens.                  |
 | `log-level`                  | string | no       | `info`                  | The log level.                                                        |
+| `port`                       | int    | no       | `5758`                  | The port to bind to.                                                  |
+| `url`                        | string | no       | `http://localhost:5758` | The URL that Terralist is accessible from.                            |
+| `token-signing-secret`       | string | yes      | `n/a`                   | The secret to use when signing authorization tokens.                  |
+| `oauth-provider`             | string | yes      | `n/a`                   | The OAuth 2.0 provider.                                               |
+| `gh-client-id`               | string | no       | `n/a`                   | The GitHub OAuth Application client ID.                               |
+| `gh-client-secret`           | string | no       | `n/a`                   | The GitHub OAuth Application client secret.                           |
+| `gh-organization`            | string | no       | `n/a`                   | The GitHub organization to use for user validation.                   |
+| `database-backend`           | string | no       | `sqlite`                | The database backend.                                                 |
+| `postgres-url`               | string | no       | `n/a`                   | The URL that can be used to connect to PostgreSQL database.           |
+| `postgres-host`              | string | no       | `n/a`                   | The host where the PostgreSQL database can be found.                  |
+| `postgres-port`              | int    | no       | `n/a`                   | The port on which the PostgreSQL database listens.                    |
+| `postgres-username`          | string | no       | `n/a`                   | The username that can be used to authenticate to PostgreSQL database. |
 | `postgres-password`          | string | no       | `n/a`                   | The password that can be used to authenticate to PostgreSQL database. |
 | `postgres-database`          | string | no       | `n/a`                   | The schema name on which application data should be stored.           |
-| `gh-client-id`               | string | no       | `n/a`                   | The GitHub OAuth Application client ID.                               |
+| `sqlite-path`                | string | no       | `n/a`                   | The path to the SQLite database.                                      |
+| `session-store`              | string | no       | `cookie`                | The session store backend.                                            |
+| `cookie-secret`              | string | no       | `n/a`                   | The secret to use for cookie encryption.                              |
+| `modules-storage-resolver`   | string | no       | `proxy`                 | The modules storage resolver.                                         |
 | `providers-storage-resolver` | string | no       | `proxy`                 | The providers storage resolver.                                       |
-| `port`                       | int    | no       | `5758`                  | The port to bind to.                                                  |
-| `postgres-url`               | string | no       | `n/a`                   | The URL that can be used to connect to PostgreSQL database.           |
-| `postgres-username`          | string | no       | `n/a`                   | The username that can be used to authenticate to PostgreSQL database. |
-| `gh-client-secret`           | string | no       | `n/a`                   | The GitHub OAuth Application client secret.                           |
+| `s3-bucket-name`             | string | no       | `n/a`                   | The S3 bucket name.                                                   |
+| `s3-bucket-region`           | string | no       | `n/a`                   | The S3 bucket region.                                                 |
+| `s3-bucket-prefix`           | string | no       | `n/a`                   | A prefix to be added to the S3 bucket keys.                           |
+| `s3-presign-expire`          | int    | no       | `15`                    | The number of minutes after which the presigned URLs should expire.   |
 | `s3-access-key-id`           | string | no       | `n/a`                   | The AWS access key ID to access the S3 bucket.                        |
+| `s3-secret-access-key`       | string | no       | `n/a`                   | The AWS secret access key to access the S3 bucket.                    |
+| `local-store`                | string | no       | `~/.terralist.d`        | The path to a directory in which Terralist can store files.           |
 
 ## Example config file
 
