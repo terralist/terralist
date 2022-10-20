@@ -18,17 +18,19 @@ import (
 
 // Resolver is the concrete implementation of storage.Resolver
 type Resolver struct {
-	BucketName string
-	LinkExpire int
+	BucketName   string
+	BucketPrefix string
+	LinkExpire   int
 
 	Session *session.Session
 }
 
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
+
 	if _, err := s3.New(r.Session).PutObject(&s3.PutObjectInput{
 		Bucket:               aws.String(r.BucketName),
-		Key:                  aws.String(key),
+		Key:                  r.withPrefix(key),
 		ACL:                  aws.String("private"),
 		Body:                 bytes.NewReader(in.Content),
 		ContentLength:        aws.Int64(int64(len(in.Content))),
@@ -45,7 +47,7 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 func (r *Resolver) Find(key string) (string, error) {
 	req, _ := s3.New(r.Session).GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(r.BucketName),
-		Key:    aws.String(key),
+		Key:    r.withPrefix(key),
 	})
 
 	url, err := req.Presign(time.Duration(r.LinkExpire) * time.Minute)
@@ -59,10 +61,14 @@ func (r *Resolver) Find(key string) (string, error) {
 func (r *Resolver) Purge(key string) error {
 	if _, err := s3.New(r.Session).DeleteObject(&s3.DeleteObjectInput{
 		Bucket: aws.String(r.BucketName),
-		Key:    aws.String(key),
+		Key:    r.withPrefix(key),
 	}); err != nil {
 		return fmt.Errorf("could not purge object: %v", err)
 	}
 
 	return nil
+}
+
+func (r *Resolver) withPrefix(key string) *string {
+	return aws.String(fmt.Sprintf("%s%s", r.BucketPrefix, key))
 }

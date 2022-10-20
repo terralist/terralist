@@ -40,8 +40,9 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 	}
 
 	return &Resolver{
-		BucketName: cfg.BucketName,
-		LinkExpire: cfg.LinkExpire,
+		BucketName:   cfg.BucketName,
+		BucketPrefix: cfg.BucketPrefix,
+		LinkExpire:   cfg.LinkExpire,
 
 		Session: sess,
 	}, nil
