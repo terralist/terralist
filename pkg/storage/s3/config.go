@@ -33,6 +33,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("missing required attribute 'AccessKeyID'")
 	}
 
+	if c.SecretAccessKey == "" {
+		return fmt.Errorf("missing required attribute 'SecretAccessKey'")
+	}
+
 	if c.BucketPrefix != "" {
 		if strings.HasPrefix(c.BucketPrefix, "/") {
 			return fmt.Errorf("the prefix must not start with a slash ('/')")
