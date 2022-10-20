@@ -19,7 +19,8 @@ type Config struct {
 	AccessKeyID     string
 	SecretAccessKey string
 
-	LinkExpire int
+	LinkExpire         int
+	DefaultCredentials bool
 }
 
 func (c *Config) SetDefaults() {}
@@ -29,12 +30,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("missing required attribute 'BucketName'")
 	}
 
-	if c.AccessKeyID == "" {
-		return fmt.Errorf("missing required attribute 'AccessKeyID'")
-	}
-
-	if c.SecretAccessKey == "" {
-		return fmt.Errorf("missing required attribute 'SecretAccessKey'")
+	if c.AccessKeyID == "" || c.SecretAccessKey == "" {
+		c.DefaultCredentials = true
+	} else {
+		c.DefaultCredentials = false
 	}
 
 	if c.BucketPrefix != "" {

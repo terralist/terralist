@@ -18,10 +18,23 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		return nil, fmt.Errorf("unsupported configurator")
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(cfg.BucketRegion),
-		Credentials: credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
+	var creds *credentials.Credentials = nil
+	var sharedConfig session.SharedConfigState = session.SharedConfigEnable
+
+	if !cfg.DefaultCredentials {
+		creds = credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, "")
+		sharedConfig = session.SharedConfigDisable
+	}
+
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config: aws.Config{
+			Region:      aws.String(cfg.BucketRegion),
+			MaxRetries:  aws.Int(1),
+			Credentials: creds,
+		},
+		SharedConfigState: sharedConfig,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("could not initiate AWS session: %v", err)
 	}
