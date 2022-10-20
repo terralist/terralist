@@ -27,10 +27,6 @@ func (c *Config) Validate() error {
 		c.DefaultCredentials = false
 	}
 
-	if c.SecretAccessKey == "" {
-		return fmt.Errorf("missing required attribute 'SecretAccessKey'")
-	}
-
 	if c.LinkExpire <= 0 {
 		return fmt.Errorf("the expire time for links must be positive > 0")
 	}
