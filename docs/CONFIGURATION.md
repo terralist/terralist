@@ -42,6 +42,12 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `postgres-username`          | string | no       | `n/a`                   | The username that can be used to authenticate to PostgreSQL database. |
 | `postgres-password`          | string | no       | `n/a`                   | The password that can be used to authenticate to PostgreSQL database. |
 | `postgres-database`          | string | no       | `n/a`                   | The schema name on which application data should be stored.           |
+| `mysql-url`                  | string | no       | `n/a`                   | The URL that can be used to connect to MySQL database.                |
+| `mysql-host`                 | string | no       | `n/a`                   | The host where the MySQL database can be found.                       |
+| `mysql-port`                 | int    | no       | `n/a`                   | The port on which the MySQL database listens.                         |
+| `mysql-username`             | string | no       | `n/a`                   | The username that can be used to authenticate to MySQL database.      |
+| `mysql-password`             | string | no       | `n/a`                   | The password that can be used to authenticate to MySQL database.      |
+| `mysql-database`             | string | no       | `n/a`                   | The schema name on which application data should be stored.           |
 | `sqlite-path`                | string | no       | `n/a`                   | The path to the SQLite database.                                      |
 | `session-store`              | string | no       | `cookie`                | The session store backend.                                            |
 | `cookie-secret`              | string | no       | `n/a`                   | The secret to use for cookie encryption.                              |
@@ -78,6 +84,10 @@ sqlite-path: "terralist.db"
 
 # database-backend: "postgresql"
 # postgres-url: "${DATABASE_URL:postgres://admin:admin@localhost:5678/public}"
+
+# database-backend: "mysql"
+# mysql-url must have parseTime=true
+# mysql-url: "admin:admin@tcp(localhost:3306)/terralist?parseTime=true"
 
 modules-storage-resolver: "s3"
 providers-storage-resolver: "proxy"

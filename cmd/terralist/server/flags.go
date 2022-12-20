@@ -22,6 +22,13 @@ const (
 	PostgreSQLPortFlag     = "postgres-port"
 	PostgreSQLDatabaseFlag = "postgres-database"
 
+	MySQLURLFlag      = "mysql-url"
+	MySQLUsernameFlag = "mysql-username"
+	MySQLPasswordFlag = "mysql-password"
+	MySQLHostFlag     = "mysql-host"
+	MySQLPortFlag     = "mysql-port"
+	MySQLDatabaseFlag = "mysql-database"
+
 	OAuthProviderFlag = "oauth-provider"
 
 	// GitHub OAuth Flags
@@ -76,7 +83,7 @@ var flags = map[string]cli.Flag{
 
 	DatabaseBackendFlag: &cli.StringFlag{
 		Description:  "The database backend.",
-		Choices:      []string{"sqlite", "postgresql"},
+		Choices:      []string{"sqlite", "postgresql", "mysql"},
 		DefaultValue: "sqlite",
 	},
 
@@ -100,6 +107,25 @@ var flags = map[string]cli.Flag{
 		Description: "The port on which the PostgreSQL database listens.",
 	},
 	PostgreSQLDatabaseFlag: &cli.StringFlag{
+		Description: "The schema name on which application data should be stored.",
+	},
+
+	MySQLURLFlag: &cli.StringFlag{
+		Description: "The URL that can be used to connect to MySQL database.",
+	},
+	MySQLUsernameFlag: &cli.StringFlag{
+		Description: "The username that can be used to authenticate to MySQL database.",
+	},
+	MySQLPasswordFlag: &cli.StringFlag{
+		Description: "The password that can be used to authenticate to MySQL database.",
+	},
+	MySQLHostFlag: &cli.StringFlag{
+		Description: "The host where the MySQL database can be found.",
+	},
+	MySQLPortFlag: &cli.IntFlag{
+		Description: "The port on which the MySQL database listens.",
+	},
+	MySQLDatabaseFlag: &cli.StringFlag{
 		Description: "The schema name on which application data should be stored.",
 	},
 

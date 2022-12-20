@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"terralist/pkg/database"
+	"terralist/pkg/database/mysql"
 	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
 )
@@ -23,6 +24,8 @@ func NewDatabase(backend database.Backend, config database.Configurator) (databa
 		creator = &sqlite.Creator{}
 	case database.POSTGRESQL:
 		creator = &postgresql.Creator{}
+	case database.MYSQL:
+		creator = &mysql.Creator{}
 	default:
 		return nil, fmt.Errorf("unrecognized backend type")
 	}
