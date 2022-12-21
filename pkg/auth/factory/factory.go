@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"terralist/pkg/auth"
+	"terralist/pkg/auth/bitbucket"
 	"terralist/pkg/auth/github"
 )
 
@@ -19,6 +20,8 @@ func NewProvider(backend auth.Backend, config auth.Configurator) (auth.Provider,
 	switch backend {
 	case auth.GITHUB:
 		creator = &github.Creator{}
+	case auth.BITBUCKET:
+		creator = &bitbucket.Creator{}
 	default:
 		return nil, fmt.Errorf("unrecognized backend type")
 	}

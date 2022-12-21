@@ -29,6 +29,11 @@ const (
 	GitHubClientSecretFlag = "gh-client-secret"
 	GitHubOrganizationFlag = "gh-organization"
 
+	// BitBucket OAuth Flags
+	BitBucketClientIDFlag     = "bb-client-id"
+	BitBucketClientSecretFlag = "bb-client-secret"
+	BitBucketWorkspaceFlag    = "bb-workspace"
+
 	TokenSigningSecretFlag = "token-signing-secret"
 
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
@@ -100,7 +105,7 @@ var flags = map[string]cli.Flag{
 
 	OAuthProviderFlag: &cli.StringFlag{
 		Description: "The OAuth 2.0 provider.",
-		Choices:     []string{"github"},
+		Choices:     []string{"github", "bitbucket"},
 		Required:    true,
 	},
 	GitHubClientIDFlag: &cli.StringFlag{
@@ -111,6 +116,15 @@ var flags = map[string]cli.Flag{
 	},
 	GitHubOrganizationFlag: &cli.StringFlag{
 		Description: "The GitHub organization to use for user validation.",
+	},
+	BitBucketClientIDFlag: &cli.StringFlag{
+		Description: "The BitBucket OAuth Application client ID.",
+	},
+	BitBucketClientSecretFlag: &cli.StringFlag{
+		Description: "The BitBucket OAuth Application client secret.",
+	},
+	BitBucketWorkspaceFlag: &cli.StringFlag{
+		Description: "The BitBucket workspace to use for user validation.",
 	},
 
 	TokenSigningSecretFlag: &cli.StringFlag{
