@@ -32,6 +32,9 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `gh-client-id`               | string | no       | `n/a`                   | The GitHub OAuth Application client ID.                               |
 | `gh-client-secret`           | string | no       | `n/a`                   | The GitHub OAuth Application client secret.                           |
 | `gh-organization`            | string | no       | `n/a`                   | The GitHub organization to use for user validation.                   |
+| `bb-client-id`               | string | no       | `n/a`                   | The BitBucket OAuth Application client ID.                            |
+| `bb-client-secret`           | string | no       | `n/a`                   | The BitBucket OAuth Application client secret.                        |
+| `bb-workspace`               | string | no       | `n/a`                   | The BitBucket workspace to use for user validation.                   |
 | `database-backend`           | string | no       | `sqlite`                | The database backend.                                                 |
 | `postgres-url`               | string | no       | `n/a`                   | The URL that can be used to connect to PostgreSQL database.           |
 | `postgres-host`              | string | no       | `n/a`                   | The host where the PostgreSQL database can be found.                  |

@@ -36,6 +36,7 @@ _Soon_.
 Terraform authenticates users with [oauth 2.0](https://oauth.net/2/). You will need credentials of an Oauth Application from our supported providers:
 
 + [GitHub](https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app)
++ [BitBucket](https://developer.atlassian.com/cloud/bitbucket/oauth-2/)
 
 For local development, you can set the homepage URL to `http://localhost:5758` and the callback URL to `http://localhost:5758/v1/api/auth/redirect`.
 

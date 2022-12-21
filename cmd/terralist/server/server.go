@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"terralist/pkg/auth/bitbucket"
 
 	"terralist/internal/server"
 	"terralist/pkg/auth"
@@ -205,6 +206,12 @@ func (s *Command) run() error {
 			ClientID:     flags[GitHubClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret: flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
 			Organization: flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
+		})
+	case "bitbucket":
+		provider, err = authFactory.NewProvider(auth.BITBUCKET, &bitbucket.Config{
+			ClientID:     flags[BitBucketClientIDFlag].(*cli.StringFlag).Value,
+			ClientSecret: flags[BitBucketClientSecretFlag].(*cli.StringFlag).Value,
+			Workspace:    flags[BitBucketWorkspaceFlag].(*cli.StringFlag).Value,
 		})
 	}
 	if err != nil {
