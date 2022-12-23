@@ -17,6 +17,9 @@ type Config struct {
 	// The database URL can be used to establish the connection without specifying
 	// other credentials
 	URL string
+
+	// URL in parsed form
+	parsedURL *url.URL
 }
 
 func (t *Config) SetDefaults() {}
@@ -29,24 +32,28 @@ func (t *Config) Validate() error {
 		return fmt.Errorf("no method for connection was provided")
 	}
 
-	if t.URL != "" {
+	if connectionWithURL {
 		pu, err := url.Parse(t.URL)
 		if err != nil {
 			return fmt.Errorf("cannot parse connection url: %w", err)
 		}
 
-		// https://github.com/go-sql-driver/mysql#timetime-support
-		if pu.Query().Get("parseTime") != "true" {
-			return fmt.Errorf("mysql: connection url must include property parseTime=true")
-		}
+		t.parsedURL = pu
 	}
 
 	return nil
 }
 
 func (t *Config) DSN() string {
-	if t.URL != "" {
-		return t.URL
+	// MySQL DSN needs to have parseTime=true (https://github.com/go-sql-driver/mysql#timetime-support)
+
+	if t.parsedURL != nil {
+		pu := *t.parsedURL
+		values := pu.Query()
+		values.Set("parseTime", "true")
+		pu.RawQuery = values.Encode()
+
+		return pu.String()
 	}
 
 	return fmt.Sprintf(

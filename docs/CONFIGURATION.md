@@ -86,8 +86,7 @@ sqlite-path: "terralist.db"
 # postgres-url: "${DATABASE_URL:postgres://admin:admin@localhost:5678/public}"
 
 # database-backend: "mysql"
-# mysql-url must have parseTime=true
-# mysql-url: "admin:admin@tcp(localhost:3306)/terralist?parseTime=true"
+# mysql-url: "admin:admin@tcp(localhost:3306)/terralist"
 
 modules-storage-resolver: "s3"
 providers-storage-resolver: "proxy"
