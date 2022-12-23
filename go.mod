@@ -29,6 +29,7 @@ require (
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -73,6 +74,7 @@ require (
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/driver/mysql v1.4.4 // indirect
 )
 
 require (

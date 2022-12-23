@@ -3,6 +3,7 @@ package database
 const (
 	SQLITE = iota
 	POSTGRESQL
+	MYSQL
 )
 
 type Backend = int

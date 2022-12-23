@@ -14,6 +14,7 @@ import (
 	"terralist/pkg/cli"
 	"terralist/pkg/database"
 	dbFactory "terralist/pkg/database/factory"
+	"terralist/pkg/database/mysql"
 	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
 	"terralist/pkg/session"
@@ -192,6 +193,15 @@ func (s *Command) run() error {
 			Hostname: flags[PostgreSQLHostFlag].(*cli.StringFlag).Value,
 			Port:     flags[PostgreSQLPortFlag].(*cli.IntFlag).Value,
 			Name:     flags[PostgreSQLDatabaseFlag].(*cli.StringFlag).Value,
+		})
+	case "mysql":
+		db, err = dbFactory.NewDatabase(database.MYSQL, &mysql.Config{
+			URL:      flags[MySQLURLFlag].(*cli.StringFlag).Value,
+			Username: flags[MySQLUsernameFlag].(*cli.StringFlag).Value,
+			Password: flags[MySQLPasswordFlag].(*cli.StringFlag).Value,
+			Hostname: flags[MySQLHostFlag].(*cli.StringFlag).Value,
+			Port:     flags[MySQLPortFlag].(*cli.IntFlag).Value,
+			Name:     flags[MySQLDatabaseFlag].(*cli.StringFlag).Value,
 		})
 	}
 	if err != nil {
