@@ -1,19 +1,24 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { clickOutside } from 'svelte-use-click-outside';
+  import Device from 'svelte-system-info';
 
   import { fetchArtifacts, type Artifact } from '../../api/artifacts';
+  import Input from '../Input.svelte';
+  import KeyboardAction from '../KeyboardAction.svelte';
 
   let open: boolean = false;
 
-  let query: String = '';
+  let query: string = "";
 
-  let searchbar: HTMLInputElement;
+  let searchbar: any;
   let searchEntries: HTMLLIElement[] = Array.from({ length: 10 }, () => null);
   let selectedSearchEntry: number = 0;
 
   let artifacts: Artifact[] = [];
   let filteredArtifacts: Artifact[] = [];
+
+  const useMetaKey = ["macOS", "iPadOS", "iOS"].includes(Device.OSName);
 
   const filterArtifacts = () => {
     const sanitizer: (s: String | undefined) => string = (
@@ -33,52 +38,31 @@
     open = true;
   };
 
-  const redirectToArtifact = (id: Number) => {
+  const redirectToArtifact = (id: string) => {
     open = false;
 
     // TODO: Perform the actual redirect
     console.log('Open page for artifact with ID', id);
   };
 
-  const onKeyDown = (e: KeyboardEvent) => {
-    switch (e.key) {
-      case '/':
-        e.preventDefault();
+  const moveSelector = (operator: -1 | 1) => {
+    selectedSearchEntry = Math.min(Math.max(selectedSearchEntry + operator, 0), filteredArtifacts.length - 1);
 
-        triggerSearchbar();
+    searchEntries[selectedSearchEntry].focus();
+  };
 
-        break;
-    }
 
-    if (open) {
-      switch (e.key) {
-        case 'ArrowDown':
-        case 'ArrowUp':
-          e.preventDefault();
+  const moveSelectorUp = () => { moveSelector(-1); };
 
-          let operator: number = e.key == 'ArrowUp' ? -1 : 1;
+  const moveSelectorDown = () => { moveSelector(1); }
 
-          selectedSearchEntry = Math.min(Math.max(selectedSearchEntry + operator, 0), filteredArtifacts.length - 1);
-          searchEntries[selectedSearchEntry].focus();
+  const openEntry = () => {
+    searchEntries[selectedSearchEntry].click();
+  };
 
-          break;
-
-        case 'Enter':
-          e.preventDefault();
-
-          searchEntries[selectedSearchEntry].click();
-
-          break;
-
-        case 'Escape':
-          e.preventDefault();
-
-          open = false;
-          searchbar.blur();
-
-          break;
-      }
-    }
+  const escapeSearchbar = () => {
+    open = false;
+    searchbar.blur();
   };
 
   onMount(() => {
@@ -86,27 +70,38 @@
   });
 </script>
 
-<svelte:window on:keydown={onKeyDown} />
+{#if open}
+  <KeyboardAction trigger={'ArrowUp'} action={moveSelectorUp} preventDefault={true} />
+  <KeyboardAction trigger={'ArrowDown'} action={moveSelectorDown} preventDefault={true} />
+  <KeyboardAction trigger={'Enter'} action={openEntry} preventDefault={true} />
+  <KeyboardAction trigger={'Escape'} action={escapeSearchbar} preventDefault={true} />
+{:else}
+  {#if useMetaKey}
+    <KeyboardAction trigger={'Meta+/'} action={triggerSearchbar} preventDefault={true} />
+  {:else}
+    <KeyboardAction trigger={'Control+/'} action={triggerSearchbar} preventDefault={true} />
+  {/if}
+{/if}
 
 <nav 
   class="mt-6 lg:mt-0 lg:justify-self-center lg:w-1/2 relative" 
 >
   <div class="w-screen lg:w-full relative">
     <div class="mx-8 lg:mx-0">
-      <i class="absolute fa fa-search px-2 py-3 text-center text-slate-400"></i>
-      <input type="text"
-        class="w-full h-10 pl-8 pr-0.5 bg-zinc-100 dark:bg-zinc-700 text-slate-800 dark:text-slate-200 shadow border-none text-sm rounded-lg focus:ring-0 outline-none"
-        placeholder="Search modules or providers (/)"
-        bind:this={searchbar}
+      <Input 
+        placeholder="Search modules or providers ({useMetaKey ? `Cmd` : `Ctrl`}+/)"
+        onClick={triggerSearchbar}
+        onInput={triggerSearchbar}
         bind:value={query}
-        on:click={triggerSearchbar}
-        on:input={triggerSearchbar}
-      />
+        bind:this={searchbar}
+      >
+        <i class="absolute fa fa-search px-2 py-3 text-center text-slate-400"></i>      
+      </Input>
     </div>
     {#if open}
       <div
         use:clickOutside={() => {open = false}}
-        class="w-10/12 lg:w-full inset-x-0 mx-auto absolute top-12 flex flex-col justify-start bg-white list-none py-2 rounded-lg shadow-md bg-zinc-100 dark:bg-zinc-700 text-slate-800 dark:text-slate-200"
+        class="w-10/12 lg:w-full inset-x-0 mx-auto absolute top-12 flex flex-col justify-start bg-white list-none py-2 rounded-lg shadow-md bg-zinc-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
       >
         {#if filteredArtifacts.length === 0 && query !== ''}
           <div class="py-1 px-5">0 results found.</div>

@@ -1,11 +1,13 @@
 <script lang="ts">
+  import Button from "../../Button.svelte";
+
   export let className: string = "";
-  export let onClick: (e) => void = () => {};
+  export let onClick: () => void = () => {};
   export let enabled: boolean = false;
 </script>
 
 {#key enabled}
-  <button class={className} on:click={onClick}>
-    <i class="fa fa-caret-{enabled ? 'up' : 'down'} cursor-pointer hover:text-zinc-500"></i>
-  </button>
+  <Button className={className} onClick={onClick}>
+    <i class="fa fa-caret-{enabled ? 'up' : 'down'}"></i>
+  </Button>
 {/key}

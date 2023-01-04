@@ -3,6 +3,7 @@
   import ApiKey from "./ApiKey.svelte";
   import type { Authority } from "../../../api/authorities";
   import CaretButton from "./CaretButton.svelte";
+    import Button from "../../Button.svelte";
 
   export let authority: Authority;
 
@@ -21,32 +22,48 @@
 </script>
 
 <div class="mb-4">
-  <div class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-6 lg:grid-cols-10 place-items-start text-white">
+  <div class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-6 lg:grid-cols-10 place-items-start">
     <span class="col-span-2 lg:col-span-6">{authority.name}</span>
     <span>
       {#if authority.policyUrl}
         <a href={authority.policyUrl} target="_blank" rel="noreferrer">
-          <i class="fa fa-arrow-up-right-from-square"></i>
+          <Button>
+            <i class="fa fa-arrow-up-right-from-square"></i>
+          </Button>
         </a>
       {:else}
         <span>-</span>
       {/if}
     </span>
-    <span class="flex items-center">
-      {authority.keys.length}
+    <span class="flex flex-col md:flex-row justify-center items-center">
+      <Button>
+        <i class="fa fa-plus w-3 h-3"></i>
+      </Button>
+      <span class="ml-0 md:ml-2">
+        {authority.keys.length}
+      </span>
       {#if authority.keys.length > 0}
         <CaretButton className="ml-2" onClick={toggleShowKeys} enabled={showKeys} />
       {/if}
     </span>
-    <span class="flex items-center">
-      {authority.apiKeys.length}
+    <span class="flex flex-col md:flex-row justify-center items-center">
+      <Button>
+        <i class="fa fa-plus w-3 h-3"></i>
+      </Button>
+      <span class="ml-0 md:ml-2">
+        {authority.apiKeys.length}
+      </span>
       {#if authority.apiKeys.length > 0}
-        <CaretButton className="ml-2" onClick={toggleShowApiKeys} enabled={showApiKeys} />
+        <CaretButton className="ml-0 md:ml-2" onClick={toggleShowApiKeys} enabled={showApiKeys} />
       {/if}
     </span>
-    <span class="place-self-end">
-      <i class="fa fa-pen-to-square cursor-pointer hover:text-zinc-500"></i>
-      <i class="fa fa-trash cursor-pointer hover:text-zinc-500"></i>
+    <span class="place-self-end flex justify-center items-center">
+      <Button>
+        <i class="fa fa-pen-to-square"></i>
+      </Button>
+      <Button>
+        <i class="fa fa-trash"></i>
+      </Button>
     </span>
   </div>
   {#if showKeys}
