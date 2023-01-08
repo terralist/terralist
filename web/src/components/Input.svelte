@@ -66,7 +66,7 @@
 
   onMount(() => {
     if (ref && type !== "textarea") {
-      ref.type = type;
+      (ref as HTMLInputElement).type = type;
     }
   });
 </script>
