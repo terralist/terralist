@@ -1,5 +1,7 @@
+import { successAPIResult, errorAPIResult, type APIResult } from "./api.utils";
+
 type Key = {
-  id: string,
+  id?: string,
   keyId: string,
   asciiArmor?: string,
   trustSignature?: string,
@@ -10,22 +12,24 @@ type ApiKey = {
 };
 
 type Authority = {
-  id: string,
+  id?: string,
   name: string,
   policyUrl: string,
-  keys: Key[],
-  apiKeys: ApiKey[]
+  keys?: Key[],
+  apiKeys?: ApiKey[]
 };
 
-const cache: {
-  authorities: Authority[],
-} = {
+const cache: { authorities: Authority[] } = {
   authorities: [],
 };
 
-const fetchAuthorities = (refresh: boolean = false) => {
+const fetchAuthorities = (refresh: boolean = false): APIResult<Authority[]> => {
   if (refresh) {
     ;
+  }
+
+  if (false) {
+    return errorAPIResult(500);
   }
 
   cache.authorities = [
@@ -50,11 +54,113 @@ const fetchAuthorities = (refresh: boolean = false) => {
     },
   ];
 
-  return cache.authorities;
+  return successAPIResult(cache.authorities);
 };
 
-export type { Authority, Key, ApiKey };
+const createAuthority = (name: string, policyUrl: string = ""): APIResult<Authority> => {
+  let authority = {
+    name: name,
+    policyUrl: policyUrl,
+  } satisfies Authority;
+
+  // TODO: Call create API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(authority);
+};
+
+const updateAuthority = (authority: Authority): APIResult<Authority> => {
+  // TODO: Call update API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(null);
+};
+
+const deleteAuthority = (authority: Authority): APIResult<boolean> => {
+  // TODO: Call delete API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(true);
+};
+
+const createKey = (authority: Authority, keyId: string, asciiArmor?: string, trustSignature?: string): APIResult<Key> => {
+  let key = {
+    keyId: keyId,
+    asciiArmor: asciiArmor,
+    trustSignature: trustSignature,
+  } satisfies Key;
+
+  // TODO: Call create authority key API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(key);
+};
+
+const updateKey = (authority: Authority, key: Key): APIResult<Key> => {
+  // TODO: Call update authority key API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(null);
+};
+
+const deleteKey = (authority: Authority, key: Key): APIResult<boolean> => {
+  // TODO: Call delete authority key API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(true);
+};
+
+const createApiKey = (authority: Authority): APIResult<ApiKey> => {
+  // TODO: Call create authority api key API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(null);
+};
+
+const deleteApiKey = (authority: Authority, apiKey: ApiKey): APIResult<boolean> => {
+  // TODO: Call delete authority key API
+
+  if (false) {
+    return errorAPIResult(500);
+  }
+
+  return successAPIResult(true);
+};
 
 export {
-  fetchAuthorities
+  type Authority,
+  fetchAuthorities,
+  createAuthority,
+  updateAuthority,
+  deleteAuthority,
+
+  type Key,
+  createKey,
+  updateKey,
+  deleteKey,
+
+  type ApiKey,
+  createApiKey,
+  deleteApiKey,
 };

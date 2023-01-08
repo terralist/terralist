@@ -1,8 +1,14 @@
 <script lang="ts">
   import type { ApiKey } from "../../../api/authorities";
   import Button from "../../Button.svelte";
+  import ConfirmationModal from "../../ConfirmationModal.svelte";
+
+  import { useFlag } from "../../../api/hooks";
 
   export let apiKey: ApiKey;
+  export let authorityName: string;
+
+  let [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 </script>
 
 <div class="mt-2 mx-4">
@@ -11,9 +17,17 @@
       {apiKey.id}
     </span>
     <span class="place-self-end">
-      <Button>
+      <Button onClick={showDeleteModal}>
         <i class="fa fa-trash"></i>
       </Button>
     </span>
   </div>
 </div>
+
+<ConfirmationModal
+  title={`Remove Api Key ${apiKey.id} of ${authorityName}`} 
+  enabled={$deleteModalEnabled}
+  onClose={hideDeleteModal}
+>
+  Are you sure?
+</ConfirmationModal>
