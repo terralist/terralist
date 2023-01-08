@@ -29,26 +29,20 @@
   ];
 
   let ref: HTMLInputElement | HTMLTextAreaElement;
-  let currentHighlight: string[];
+  let highlightClassList: string[];
 
   export function highlight(type: "none" | "success" | "error" = "none") {
-    if (currentHighlight) {
-      for (let className of currentHighlight) {
-        ref.classList.remove(className);
-      }
+    if (highlightClassList) {
+      highlightClassList.forEach(className => ref.classList.remove(className));
     }
 
-    currentHighlight = (() => {
-      switch (type) {
-        case "success": return ["ring-1", "outline-none", "ring-green-500", "dark:ring-green-200"];
-        case "error": return ["ring-1", "outline-none", "ring-red-500", "dark:ring-red-200"];
-        case "none": return [];
-      }
-    })();
+    highlightClassList = {
+      "success": ["ring-1", "outline-none", "ring-green-500", "dark:ring-green-200"],
+      "error":   ["ring-1", "outline-none", "ring-red-500", "dark:ring-red-200"],
+      "none":    [],
+    }[type];
 
-    for (let className of currentHighlight) {
-      ref.classList.add(className);
-    }
+    highlightClassList.forEach(className => ref.classList.add(className));
   }
 
   export function focus() {

@@ -14,7 +14,7 @@ const validateEntry = (entry: FormEntry): ValidationResult => {
   if (entry.required && !entry.value) {
     return {
       passed: false,
-      message: "Required field.",
+      message: "This field is required.",
     } satisfies ValidationResult;
   }
 
