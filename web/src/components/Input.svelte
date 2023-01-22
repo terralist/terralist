@@ -8,6 +8,7 @@
   export let type: InputType = 'text';
   export let placeholder: string = "";
   export let value: string = "";
+  export let disabled: boolean = false;
 
   export let onClick: () => void = () => {};
   export let onInput: () => void = () => {};
@@ -25,6 +26,10 @@
     "rounded-lg",
     "focus:ring-0",
     "outline-none",
+    "disabled:opacity-50",
+    "disabled:bg-slate-300",
+    "dark:disabled:bg-slate-800",
+    "dark:disabled:text-slate-300",
     $$slots?.default ? 'pl-8' : 'pl-2',
   ];
 
@@ -53,6 +58,15 @@
     ref.blur();
   }
 
+  export function setValue(value?: string) {
+    if (!value) {
+      value = "";
+    }
+
+    value = value;
+    ref.value = value;
+  }
+
   const handleChange = () => {
     value = ref.value;
     onInput();
@@ -76,6 +90,8 @@
     id={id}
     class="{classList.join(" ")} py-3 h-20"
     placeholder={placeholder}
+    disabled={disabled}
+    value={value}
     on:click={onClick}
     on:input={handleChange}
     bind:this={ref}
@@ -85,6 +101,8 @@
     id={id}
     class="{classList.join(" ")} h-10"
     placeholder={placeholder}
+    disabled={disabled}
+    value={value}
     on:click={onClick}
     on:input={handleChange}
     bind:this={ref}

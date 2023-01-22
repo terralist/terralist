@@ -1,6 +1,7 @@
 <script lang="ts">
   export let onClick: () => void = () => {};
   export let className: string = "";
+  export let disabled: boolean = false;
 </script>
 
 <button
@@ -20,7 +21,9 @@
     ml-auto
     inline-flex
     items-center
+    disabled:opacity-75
     {className}
-  ">
+  "
+  disabled={disabled}>
   <slot></slot>
 </button>

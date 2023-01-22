@@ -2,19 +2,35 @@
   import Key from "./Key.svelte";
   import ApiKey from "./ApiKey.svelte";
   import type { Authority } from "../../../api/authorities";
+  import { URLValidation } from "../../../lib/validation";
   import CaretButton from "./CaretButton.svelte";
   import Button from "../../Button.svelte";
   import ConfirmationModal from "../../ConfirmationModal.svelte";
   import { useFlag, useToggle } from "../../../api/hooks";
-    import FormModal from "../../FormModal.svelte";
+  import FormModal from "../../FormModal.svelte";
 
   export let authority: Authority;
 
   const [createKeyModalEnabled, showCreateKeyModal, hideCreateKeyModal] = useFlag(false);
   const [createApiKeyModalEnabled, showCreateApiKeyModal, hideCreateApiKeyModal] = useFlag(false);
+  const [updateModalEnabled, showUpdateModal, hideUpdateModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
-  const [showKeys, toggleShowKeys] = useToggle(false, () => { showApiKeys.set(false); });
-  const [showApiKeys, toggleShowApiKeys] = useToggle(false, () => { showKeys.set(false); });
+
+  // To avoid a circular dependency, we will create a wrapper fn for toggleShowKeys
+  const [showKeys, _toggleShowKeys] = useToggle(false);
+  const [showApiKeys, toggleShowApiKeys] = useToggle(false, () => {
+    if ($showKeys) {
+      _toggleShowKeys();
+    }
+  });
+
+  const toggleShowKeys = () => {
+    if ($showApiKeys) {
+      toggleShowApiKeys();
+    }
+
+    _toggleShowKeys();
+  }
 </script>
 
 <div class="mb-4">
@@ -54,7 +70,7 @@
       {/if}
     </span>
     <span class="place-self-end flex justify-center items-center">
-      <Button>
+      <Button onClick={showUpdateModal}>
         <i class="fa fa-pen-to-square"></i>
       </Button>
       <Button onClick={showDeleteModal}>
@@ -98,6 +114,28 @@
       {/key}
     {/each}
   {/if}
+
+  <FormModal 
+    title={`Update authority ${authority.name}`}
+    enabled={$updateModalEnabled}
+    onClose={hideUpdateModal}
+    onSubmit={() => {}}
+
+    entries={[
+      {
+        name: "Name",
+        type: "text",
+        disabled: true,
+        value: authority.name,
+      },
+      {
+        name: "Policy",
+        type: "text",
+        value: authority.policyUrl,
+        validations: [URLValidation()],
+      },
+    ]}
+  />
 
   <ConfirmationModal 
     title={`Remove authority ${authority.name}`} 

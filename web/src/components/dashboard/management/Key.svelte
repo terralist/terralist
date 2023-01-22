@@ -30,9 +30,6 @@
       </Button>
     </span>
     <span class="place-self-end">
-      <Button>
-        <i class="fa fa-pen-to-square"></i>
-      </Button>
       <Button onClick={showDeleteModal}>
         <i class="fa fa-trash"></i>
       </Button>

@@ -18,9 +18,17 @@
   let entriesErrors: string[] = Array.from({ length: entries.length }, () => "");
 
   const reset = () => {
+    // Disable all highlights and errors
     entriesRefs.forEach(ref => ref.highlight("none"));
     entriesErrors.forEach((_, i) => {entriesErrors[i] = "";});
+
+    // Reset the form
     ref.reset();
+
+    // Put back values for disabled inputs
+    entriesRefs
+      .filter((_, i) => entries[i].disabled)
+      .forEach((ref, i) => ref.setValue(entries[i].value));
   };
 
   const submit = () => {
@@ -72,7 +80,7 @@
   <span slot="body">
     <form id={id} on:submit={confirm} class="p-2 w-full grid grid-cols-4 gap-4" bind:this={ref}>
       {#each entries as entry, index}
-        <label for={entry.name.toLowerCase()} class="pt-2">
+        <label for={entry.name.toLowerCase()} class="pt-2 {entry.disabled ? 'italic' : ''}">
           {entry.name}
           {#if entry.required}
             <span class="text-red-700 dark:text-red-200 text-sm text-light">
@@ -84,6 +92,8 @@
           <Input 
             id={entry.name.toLowerCase()}
             type={entry.type}
+            value={entry.value}
+            disabled={entry.disabled}
             bind:this={entriesRefs[index]}
           />
           {#if entriesErrors[index]}

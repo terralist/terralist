@@ -7,6 +7,7 @@ type FormEntry = {
   value?: string,
   type: InputType,
   required?: boolean,
+  disabled?: boolean,
   validations?: Validation<any>[],
 };
 
