@@ -22,6 +22,8 @@ Terralist is a private Terraform registry for providers and modules following th
 * A secure way to distribute your confidential modules and providers;
 * [_Soon_] A management interface to visualize documentation;
 
+NB: this version has been modified to support Gitlab as identity provider
+
 ## Highlights
 * **Login Functionality** ([docs](https://www.terraform.io/docs/internals/login-protocol.html)): Require a token to access the data. It is integrated with Terraform, so you can authenticate to the registry directly through Terraform:
   ```
