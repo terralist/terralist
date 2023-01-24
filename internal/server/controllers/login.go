@@ -81,7 +81,6 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 
 		state, err := r.ToPayload(c.EncryptSalt)
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
 			ctx.Redirect(
 				http.StatusFound,
 				c.redirectWithError(r.RedirectURI, r.State, oauth.WrapError(err, oauth.ServerError)),
@@ -91,19 +90,16 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 
 		authorizeURL, erro := c.LoginService.Authorize(state)
 		if erro != nil {
-			fmt.Printf("error: %s\n", erro)
 			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, r.State, erro))
 			return
 		}
 
-		fmt.Println("redirectining to ", authorizeURL)
 		ctx.Redirect(http.StatusFound, authorizeURL)
 	})
 
 	tfApi.POST(tokenRoute, func(ctx *gin.Context) {
 		var r oauth.TokenValidationRequest
 		if err := ctx.Bind(&r); err != nil {
-			fmt.Printf("something went wrong: %s\n", err)
 			// if we catch an error, we don't know where to redirect, just exit the routine
 			return
 		}
@@ -129,7 +125,6 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			return
 		}
 
-		fmt.Println("going to validate the token")
 		resp, erro := c.LoginService.ValidateToken(&codeComponents, r.CodeVerifier)
 		if erro != nil {
 			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, "", erro))
