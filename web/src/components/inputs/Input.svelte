@@ -4,7 +4,6 @@
   import type { InputType } from "../../lib/form";
 
   export let id: string = Math.random().toString();
-  export let className: string = "";
   export let type: InputType = 'text';
   export let placeholder: string = "";
   export let value: string = "";
@@ -81,7 +80,7 @@
 
 <svelte:options accessors={true}/>
 
-<div class={className}>
+<div class={$$props.class}>
   {#if $$slots?.default}
     <slot></slot>
   {/if}

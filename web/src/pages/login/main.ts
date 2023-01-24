@@ -1,5 +1,4 @@
 import './login.css'
-import '@fortawesome/fontawesome-free/js/all.js';
 
 import Login from './Login.svelte'
 

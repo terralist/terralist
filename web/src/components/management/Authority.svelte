@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from "../inputs/Button.svelte";
   import CaretButton from "./CaretButton.svelte";
+  import Icon from "../icons/Icon.svelte";
 
   import FormModal from "../modals/FormModal.svelte";
   import ConfirmationModal from "../modals/ConfirmationModal.svelte";
@@ -100,7 +101,7 @@
       {#if authority.policyUrl}
         <a href={authority.policyUrl} target="_blank" rel="noreferrer">
           <Button>
-            <i class="fa fa-arrow-up-right-from-square"></i>
+            <Icon name="external-link" />
           </Button>
         </a>
       {:else}
@@ -109,32 +110,32 @@
     </span>
     <span class="flex flex-col md:flex-row justify-center items-center">
       <Button onClick={showCreateKeyModal}>
-        <i class="fa fa-plus w-3 h-3"></i>
+        <Icon name="plus" />
       </Button>
       <span class="ml-0 md:ml-2">
         {authority.keys.length}
       </span>
       {#if authority.keys.length > 0}
-        <CaretButton className="ml-2" onClick={toggleShowKeys} enabled={$showKeys} />
+        <CaretButton class="ml-0 md:ml-2" onClick={toggleShowKeys} enabled={$showKeys} />
       {/if}
     </span>
     <span class="flex flex-col md:flex-row justify-center items-center">
       <Button onClick={showCreateApiKeyModal}>
-        <i class="fa fa-plus w-3 h-3"></i>
+        <Icon name="plus" />
       </Button>
       <span class="ml-0 md:ml-2">
         {authority.apiKeys.length}
       </span>
       {#if authority.apiKeys.length > 0}
-        <CaretButton className="ml-0 md:ml-2" onClick={toggleShowApiKeys} enabled={$showApiKeys} />
+        <CaretButton class="ml-0 md:ml-2" onClick={toggleShowApiKeys} enabled={$showApiKeys} />
       {/if}
     </span>
     <span class="place-self-end flex justify-center items-center">
       <Button onClick={showUpdateModal}>
-        <i class="fa fa-pen-to-square"></i>
+        <Icon name="edit-box" />
       </Button>
       <Button onClick={showDeleteModal}>
-        <i class="fa fa-trash"></i>
+        <Icon name="trash" />
       </Button>
     </span>
   </div>

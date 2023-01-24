@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from "../inputs/Button.svelte";
+  import Icon from "../icons/Icon.svelte";
 
   import Modal from "../modals/Modal.svelte";
   import ConfirmationModal from "../modals/ConfirmationModal.svelte";
@@ -29,17 +30,17 @@
     </span>
     <span>
       <Button onClick={showAsciiArmorModal}>
-        <i class="fa fa-eye"></i>
+        <Icon name="eye" />
       </Button>
     </span>
     <span>
       <Button onClick={showTrustSignatureModal}>
-        <i class="fa fa-eye"></i>
+        <Icon name="eye" />
       </Button>
     </span>
     <span class="place-self-end">
       <Button onClick={showDeleteModal}>
-        <i class="fa fa-trash"></i>
+        <Icon name="trash" />
       </Button>
     </span>
   </div>

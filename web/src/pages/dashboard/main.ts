@@ -1,5 +1,4 @@
 import './dashboard.css'
-import '@fortawesome/fontawesome-free/js/all.js';
 
 import Dashboard from './Dashboard.svelte'
 

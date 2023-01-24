@@ -5,6 +5,7 @@
 
   import Input from '../inputs/Input.svelte';
   import KeyboardAction from '../inputs/KeyboardAction.svelte';
+  import Icon from '../icons/Icon.svelte';
 
   import { fetchArtifacts, type Artifact } from '../../api/artifacts';
 
@@ -96,7 +97,7 @@
         bind:value={query}
         bind:this={searchbar}
       >
-        <i class="absolute fa fa-search px-2 py-3 text-center text-slate-400"></i>      
+        <Icon name="search" width="2rem" class="absolute mt-3 md:fill-slate-400" />
       </Input>
     </div>
     {#if open}
@@ -116,20 +117,35 @@
               on:click={() => redirectToArtifact(artifact.id)}
               bind:this={searchEntries[index]}
               tabindex="{index}"
-              class="relative cursor-pointer hover:bg-teal-700 hover:text-white focus:bg-teal-700 focus:text-white select-none py-1 px-2 flex flex-row justify-between">
+              class="
+                relative
+                cursor-pointer
+                hover:bg-teal-700
+                hover:text-white
+                hover:fill-white
+                focus:bg-teal-700
+                focus:text-white
+                focus:fill-white
+                select-none
+                py-1
+                px-2
+                flex
+                flex-row
+                justify-between
+              ">
               <span class="block truncate hover:underline focus:underline">
                 {artifact.fullName}
               </span>
               {#if artifact.type === 'provider'}
-                <div class="absolute top-1 right-2">
+                <div class="absolute top-1 right-2 flex justify-between gap-1 items-center fill-inherit">
                   <span class="text-xs">(provider)</span>
-                  <i class="fa fa-cloud"></i>
+                  <Icon name="cloud" class="fill-inherit"/>
                 </div>
               {/if}
               {#if artifact.type === 'module'}
-                <div class="absolute top-1 right-2">
+                <div class="absolute top-1 right-2 flex justify-between gap-1 items-center fill-inherit">
                   <span class="text-xs">(module)</span>
-                  <i class="fa fa-hammer"></i>
+                  <Icon name="hammer" class="fill-inherit"/>
                 </div>
               {/if}
             </li>

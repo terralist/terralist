@@ -1,5 +1,4 @@
 import './management.css'
-import '@fortawesome/fontawesome-free/js/all.js';
 
 import Management from './Management.svelte'
 

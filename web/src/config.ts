@@ -21,12 +21,12 @@ const config: Configuration = {
   runtime: {
     env: {
       TERRALIST_COMPANY_NAME: orDefault(runtimeEnv.TERRALIST_COMPANY_NAME, ""),
-      TERRALIST_OAUTH_PROVIDERS: orDefault(runtimeEnv.TERRALIST_OAUTH_PROVIDERS, "[]"),
+      TERRALIST_OAUTH_PROVIDERS: orDefault(runtimeEnv.TERRALIST_OAUTH_PROVIDERS, JSON.stringify(["github", "google", "bitbucket"])),
     },
   },
   build: {
     env: {
-      TERRALIST_VERSION: import.meta.env.VITE_TERRALIST_VERSION,
+      TERRALIST_VERSION: import.meta.env.VITE_TERRALIST_VERSION || "dev",
     },
   }
 } satisfies Configuration;

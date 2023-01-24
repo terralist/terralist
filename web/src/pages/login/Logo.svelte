@@ -1,9 +1,10 @@
 <script lang="ts">
-  export let className: String = "";
+  import Icon from "../../components/icons/Icon.svelte";
 </script>
 
-<img
-  src="https://raw.githubusercontent.com/RobThree/NIdenticon/master/examples/ex04.png" 
-  class="w-32 aspect-square object-cover rounded-full {className}"
-  alt="Terralist Logo"
+<Icon 
+  name="terraform" 
+  width="8rem" 
+  height="8rem" 
+  class="aspect-square object-cover rounded-full {$$props.class}"
 />

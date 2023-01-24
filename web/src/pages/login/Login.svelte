@@ -1,7 +1,7 @@
 <script lang="ts">
   import config from "../../config";
 
-  import Button from "../../components/login/Button.svelte";
+  import Button from '../../components/login/Button.svelte';
   import Logo from "./Logo.svelte";
 
   const providers: string[] = JSON.parse(config.runtime.env.TERRALIST_OAUTH_PROVIDERS) || [];
@@ -14,7 +14,7 @@
   <container 
     class="fixed top-50 left-50 -translate-x-1/2 -translate-y-1/2 w-11/12 pt-16 pb-11 px-8 transition-width trainsition-slowest ease rounded-2xl bg-slate-200 grid place-items-center text-center sm:w-96 md:top-0 md:right-0 md:left-auto md:m-0 md:h-full md:rounded-none md:translate-x-0 md:translate-y-0 xl:w-1/4 "
   >
-    <Logo className="mb-5 md:hidden" />
+    <Logo class="mb-5 md:hidden" />
     <div class="mb-8">
       <h2 class="text-3xl font-semibold mt-0 mx-0">
         Terralist

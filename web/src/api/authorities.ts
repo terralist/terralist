@@ -80,7 +80,7 @@ const createAuthority = (name: string, policyUrl: string = ""): APIResult<Author
 const updateAuthority = (authority: Authority): APIResult<Authority> => {
   // TODO: Call update API
 
-  if (false) {
+  if (true) {
     return errorAPIResult(500);
   }
 

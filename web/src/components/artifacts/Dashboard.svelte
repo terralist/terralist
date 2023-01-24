@@ -5,6 +5,8 @@
   import { fetchArtifacts, type Artifact } from "../../api/artifacts";
 
   import { defaultIfNull } from '../../lib/utils';
+
+  import Icon from "../icons/Icon.svelte";
   import ArtifactCard from "./Card.svelte";
 
   let pagesToDisplay: number = 5;
@@ -133,7 +135,7 @@
         on:click={() => buildPages(0)}
         disabled={currentPage === 0 ? true : false}
       >
-        <i class="fa fa-caret-left"></i>
+        <Icon name="arrow-left" width="1.25rem" height="1.25rem" />
       </button>
 
       {#each pages as page}
@@ -150,7 +152,7 @@
         on:click={() => buildPages(pageCount - 1)}
         disabled={currentPage === (pageCount - 1) ? true : false}
       >
-        <i class="fa fa-caret-right"></i>
+        <Icon name="arrow-right" width="1.25rem" height="1.25rem" />
       </button>
     </div>
   {/if}

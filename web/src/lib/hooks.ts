@@ -41,8 +41,7 @@ const useToggle: (
   return [toggle, flip];
 }
 
-
 export {
   useFlag,
-  useToggle
+  useToggle,
 };
