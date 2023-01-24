@@ -9,7 +9,7 @@ const (
 )
 
 // Config implements auth.Configurator interface and
-// handles the configuration parameters for bitbucket authentication
+// handles the configuration parameters for gitlab authentication
 type Config struct {
 	ClientID                   string
 	ClientSecret               string
