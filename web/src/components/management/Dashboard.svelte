@@ -1,13 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import { type Authority as AuthorityT, fetchAuthorities } from "../../../api/authorities";
-  import { StringMinimumLengthValidation, URLValidation } from "../../../lib/validation";
-  import { useFlag } from "../../../api/hooks";
+  import FormModal from "../modals/FormModal.svelte";
+  import ErrorModal from "../modals/ErrorModal.svelte";
 
   import Authority from "./Authority.svelte";
-  import ErrorModal from "../../ErrorModal.svelte";
-  import FormModal from "../../FormModal.svelte";
+
+  import { type Authority as AuthorityT, fetchAuthorities, createAuthority, updateAuthority, deleteAuthority } from "../../api/authorities";
+
+  import { StringMinimumLengthValidation, URLValidation } from "../../lib/validation";
+  import { useFlag } from "../../lib/hooks";
 
   let authorities: AuthorityT[] = [];
 
@@ -15,9 +17,35 @@
 
   let errorMessage: string = "";
 
-  const onCreateSubmit = () => {
+  const onAuthorityCreateSubmit = (entries: Map<string, any>) => {
+    let result = createAuthority(entries.get("name"), entries.get("policyUrl"));
 
+    if (result.status === 'OK') {
+      authorities = [...authorities, result.data];
+    } else {
+      errorMessage = result.message;
+    }
   };
+
+  const onAuthorityUpdateSubmit = (_, authority: AuthorityT) => {
+    let result = updateAuthority(authority);
+
+    if (result.status === 'OK') {
+      authorities = [...authorities.map(a => a.id == authority.id ? authority : a)];
+    } else {
+      errorMessage = result.message;
+    }
+  };
+
+  const onAuthorityDeleteSubmit = (id: string) => {
+    let result = deleteAuthority(authorities.find(a => a.id === id));
+
+    if (result.status === 'OK') {
+      authorities = [...authorities.filter(a => a.id !== id)]
+    } else {
+      errorMessage = result.message;
+    }
+  }
 
   onMount(() => {
     let result = fetchAuthorities();
@@ -52,7 +80,11 @@
       </div>
       {#each authorities as authority}
         {#key authority.id}
-          <Authority authority={authority} />
+          <Authority 
+            authority={authority} 
+            onUpdate={onAuthorityUpdateSubmit}
+            onDelete={onAuthorityDeleteSubmit}
+          />
         {/key}
       {/each}
     {/if}
@@ -69,23 +101,25 @@
   </section>
 
   {#if errorMessage}
-    <ErrorModal errorMessage={errorMessage} />
+    <ErrorModal bind:message={errorMessage} />
   {/if}
 
   <FormModal 
     title={"New authority"}
     enabled={$createModalEnabled}
     onClose={hideCreateModal}
-    onSubmit={onCreateSubmit}
+    onSubmit={onAuthorityCreateSubmit}
 
     entries={[
       {
+        id: "name",
         name: "Name",
         required: true,
         type: "text",
         validations: [StringMinimumLengthValidation(4)],
       },
       {
+        id: "policyUrl",
         name: "Policy",
         type: "text",
         validations: [URLValidation()],

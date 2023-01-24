@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { Artifact } from "../../../api/artifacts";
-  import Button from "../../Button.svelte";
+  import type { Artifact } from "../../api/artifacts";
 
   export let artifact: Artifact;
 </script>

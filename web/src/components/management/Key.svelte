@@ -1,17 +1,25 @@
 <script lang="ts">
-  import type { Key } from "../../../api/authorities";
-  import { useFlag } from "../../../api/hooks";
-  import Button from "../../Button.svelte";
-  import ConfirmationModal from "../../ConfirmationModal.svelte";
-  import Modal from "../../Modal.svelte";
+  import Button from "../inputs/Button.svelte";
+
+  import Modal from "../modals/Modal.svelte";
+  import ConfirmationModal from "../modals/ConfirmationModal.svelte";
+
+  import type { Key } from "../../api/authorities";
+
+  import { useFlag } from "../../lib/hooks";
 
   export let authorityKey: Key;
   export let authorityName: string;
   export let isAlone: boolean = false;
+  export let onDelete: (id: string) => void = () => {};
 
   const [asciiArmorModalEnabled, showAsciiArmorModal, hideAsciiArmorModal] = useFlag(false);
   const [trustSignatureModalEnabled, showTrustSignatureModal, hideTrustSignatureModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
+
+  const remove = () => {
+    onDelete(authorityKey.id);
+  };
 </script>
 
 <div class="mt-2 mx-4">
@@ -53,6 +61,7 @@
   title={`Remove Key ID ${authorityKey.keyId} of ${authorityName}`} 
   enabled={$deleteModalEnabled}
   onClose={hideDeleteModal}
+  onSubmit={remove}
 >
   {#if isAlone}
     This is the last key of <b>{authorityName}</b> authority. 

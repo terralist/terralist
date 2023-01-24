@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { fetchArtifacts, type Artifact } from "../../../api/artifacts";
   import { writable, type Writable } from "svelte/store";
 
-  import { defaultIfNull } from '../../../lib/utils';
+  import { fetchArtifacts, type Artifact } from "../../api/artifacts";
+
+  import { defaultIfNull } from '../../lib/utils';
   import ArtifactCard from "./Card.svelte";
 
   let pagesToDisplay: number = 5;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import type { InputType } from "../lib/form";
+  import type { InputType } from "../../lib/form";
 
   export let id: string = Math.random().toString();
   export let className: string = "";

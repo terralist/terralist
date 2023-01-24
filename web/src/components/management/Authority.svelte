@@ -1,15 +1,24 @@
 <script lang="ts">
+  import Button from "../inputs/Button.svelte";
+  import CaretButton from "./CaretButton.svelte";
+
+  import FormModal from "../modals/FormModal.svelte";
+  import ConfirmationModal from "../modals/ConfirmationModal.svelte";
+  import ErrorModal from "../modals/ErrorModal.svelte";
+
   import Key from "./Key.svelte";
   import ApiKey from "./ApiKey.svelte";
-  import type { Authority } from "../../../api/authorities";
-  import { URLValidation } from "../../../lib/validation";
-  import CaretButton from "./CaretButton.svelte";
-  import Button from "../../Button.svelte";
-  import ConfirmationModal from "../../ConfirmationModal.svelte";
-  import { useFlag, useToggle } from "../../../api/hooks";
-  import FormModal from "../../FormModal.svelte";
+
+  import { createApiKey, createKey, deleteApiKey, deleteKey, type Authority } from "../../api/authorities";
+
+  import { URLValidation } from "../../lib/validation";
+  import { useFlag, useToggle } from "../../lib/hooks";
 
   export let authority: Authority;
+  export let onUpdate: (id: string, authority: Authority) => void = () => {};
+  export let onDelete: (id: string) => void = () => {};
+
+  let errorMessage: string = "";
 
   const [createKeyModalEnabled, showCreateKeyModal, hideCreateKeyModal] = useFlag(false);
   const [createApiKeyModalEnabled, showCreateApiKeyModal, hideCreateApiKeyModal] = useFlag(false);
@@ -31,6 +40,57 @@
 
     _toggleShowKeys();
   }
+
+  const update = (entries: Map<string, any>) => {
+    onUpdate(
+      authority.id, 
+      {...authority, policyUrl: entries.get("policyUrl")}
+    );
+  };
+
+  const remove = () => {
+    onDelete(authority.id);
+  };
+
+  const createKeySubmit = (entries: Map<string, any>) => {
+    let result = createKey(authority, entries.get("key_id"), entries.get("ascii_armor"), entries.get("trust_signature"));
+
+    if (result.status === 'OK') {
+      authority.keys = [...authority.keys, result.data];
+    } else {
+      errorMessage = result.message;
+    }
+  };
+
+  const onKeyDelete = (id: string) => {
+    let result = deleteKey(authority, authority.keys.find(k => k.id === id));
+
+    if (result.status === 'OK') {
+      authority.keys = [...authority.keys.filter(k => k.id !== id)];
+    } else {
+      errorMessage = result.message;
+    }
+  };
+
+  const createApiKeySubmit = () => {
+    let result = createApiKey(authority);
+
+    if (result.status === 'OK') {
+      authority.apiKeys = [...authority.apiKeys, result.data];
+    } else {
+      errorMessage = result.message;
+    }
+  };
+
+  const onApiKeyDelete = (id: string) => {
+    let result = deleteApiKey(authority, authority.apiKeys.find(ak => ak.id === id));
+
+    if (result.status === 'OK') {
+      authority.apiKeys = [...authority.apiKeys.filter(ak => ak.id !== id)];
+    } else {
+      errorMessage = result.message;
+    }
+  };
 </script>
 
 <div class="mb-4">
@@ -95,7 +155,7 @@
     </div>
     {#each authority.keys as key}
       {#key key.id}
-        <Key authorityKey={key} authorityName={authority.name} isAlone={authority.keys.length === 1} />
+        <Key authorityKey={key} authorityName={authority.name} isAlone={authority.keys.length === 1} onDelete={onKeyDelete} />
       {/key}
     {/each}
   {/if}
@@ -110,7 +170,7 @@
     </div>
     {#each authority.apiKeys as apiKey}
       {#key apiKey.id}
-        <ApiKey apiKey={apiKey} authorityName={authority.name} />
+        <ApiKey apiKey={apiKey} authorityName={authority.name} onDelete={onApiKeyDelete} />
       {/key}
     {/each}
   {/if}
@@ -119,16 +179,18 @@
     title={`Update authority ${authority.name}`}
     enabled={$updateModalEnabled}
     onClose={hideUpdateModal}
-    onSubmit={() => {}}
+    onSubmit={update}
 
     entries={[
       {
+        id: "name",
         name: "Name",
         type: "text",
         disabled: true,
         value: authority.name,
       },
       {
+        id: "policyUrl",
         name: "Policy",
         type: "text",
         value: authority.policyUrl,
@@ -141,6 +203,7 @@
     title={`Remove authority ${authority.name}`} 
     enabled={$deleteModalEnabled}
     onClose={hideDeleteModal}
+    onSubmit={remove}
   >
     Removing the <b>{authority.name}</b> authority will also remove all artifacts uploaded to the <b>{authority.name}</b> namespace.
     <br/><br/>
@@ -151,21 +214,24 @@
     title={`Add a new authority key to ${authority.name}`}
     enabled={$createKeyModalEnabled}
     onClose={hideCreateKeyModal}
-    onSubmit={() => {}}
+    onSubmit={createKeySubmit}
 
     entries={[
       {
+        id: "key_id",
         name: "Key ID",
         required: true,
         type: "text",
         validations: [],
       },
       {
+        id: "ascii_armor",
         name: "ASCII Armor",
         type: "textarea",
         validations: [],
       },
       {
+        id: "trust_signature",
         name: "Trust Signature",
         type: "textarea",
         validations: [],
@@ -177,7 +243,12 @@
     title={`Add a new API key to ${authority.name}`} 
     enabled={$createApiKeyModalEnabled}
     onClose={hideCreateApiKeyModal}
+    onSubmit={createApiKeySubmit}
   >
     Are you sure?
   </ConfirmationModal>
+
+  {#if errorMessage}
+    <ErrorModal bind:message={errorMessage} />
+  {/if}
 </div>

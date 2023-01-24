@@ -1,8 +1,10 @@
 <script lang="ts">
-    import Button from "../../components/login/Button.svelte";
-    import Logo from "../../components/Logo.svelte";
+  import config from "../../config";
 
-  
+  import Button from "../../components/login/Button.svelte";
+  import Logo from "./Logo.svelte";
+
+  const providers: string[] = JSON.parse(config.runtime.env.TERRALIST_OAUTH_PROVIDERS) || [];
 </script>
 
 <main>
@@ -16,14 +18,22 @@
     <div class="mb-8">
       <h2 class="text-3xl font-semibold mt-0 mx-0">
         Terralist
-        <span class="opacity-40 mb-1.5 font-medium text-base">v0.1.0</span>
+        <span class="opacity-40 mb-1.5 font-medium text-base">v{config.build.env.TERRALIST_VERSION}</span>
       </h2>
-      <h3 class="opacity-40 mb-1.5 font-medium text-base">Company</h3>
+      {#if config.runtime.env.TERRALIST_COMPANY_NAME}
+        <h3 class="opacity-40 mb-1.5 font-medium text-base">{config.runtime.env.TERRALIST_COMPANY_NAME}</h3>
+      {/if}
     </div>
     <section class="grid gap-8 place-items-center w-full m-0">
-      <Button brandName="GitHub" />
-      <Button brandName="Google" />
-      <Button brandName="BitBucket" />
+      {#if providers.includes("github")}
+        <Button brandName="GitHub" />
+      {/if}
+      {#if providers.includes("google")}
+        <Button brandName="Google" />
+      {/if}
+      {#if providers.includes("bitbucket")}
+        <Button brandName="BitBucket" />
+      {/if}
     </section>
   </container>
 </main>

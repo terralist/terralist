@@ -3,9 +3,10 @@
   import { clickOutside } from 'svelte-use-click-outside';
   import Device from 'svelte-system-info';
 
+  import Input from '../inputs/Input.svelte';
+  import KeyboardAction from '../inputs/KeyboardAction.svelte';
+
   import { fetchArtifacts, type Artifact } from '../../api/artifacts';
-  import Input from '../Input.svelte';
-  import KeyboardAction from '../KeyboardAction.svelte';
 
   let open: boolean = false;
 

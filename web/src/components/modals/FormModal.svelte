@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { validateEntry, type FormEntry } from '../lib/form';
+  import { validateEntry, type FormEntry } from '../../lib/form';
+
+  import Input from '../inputs/Input.svelte';
+  import KeyboardAction from '../inputs/KeyboardAction.svelte';
 
   import Modal from './Modal.svelte'
-  import Input from './Input.svelte';
-  import KeyboardAction from './KeyboardAction.svelte';
 
   export let id: string = Math.random().toString();
   export let title: string;
   export let enabled: boolean = false;
   export let onClose: () => void = () => { };
-  export let onConfirm: () => void = () => { };
-  export let onSubmit: () => void = () => { };
+  export let onSubmit: (entries: Map<string, any>) => void = () => { };
   export let entries: FormEntry[] = [];
 
   let ref: HTMLFormElement;
@@ -31,18 +31,13 @@
       .forEach((ref, i) => ref.setValue(entries[i].value));
   };
 
-  const submit = () => {
-    reset();
-    onSubmit();
-  };
-
   const close = () => {
     reset();
     enabled = false;
     onClose();
   };
 
-  const confirm = () => {
+  const submit = () => {
     entries.forEach((entry: FormEntry, index: number) => {
       entry.value = entriesRefs[index].value;
 
@@ -66,21 +61,23 @@
       return false;
     }
 
-    onConfirm();
-    submit();
+    onSubmit(
+      new Map(entries.map((entry: FormEntry, index: number) => [entry.id, entriesRefs[index].value]))
+    );
+
     close();
   }
 </script>
 
 {#if enabled}
-  <KeyboardAction trigger={'Enter'} action={confirm} />
+  <KeyboardAction trigger={'Enter'} action={submit} />
 {/if}
 
 <Modal title={title} enabled={enabled} onClose={close}>
   <span slot="body">
-    <form id={id} on:submit={confirm} class="p-2 w-full grid grid-cols-4 gap-4" bind:this={ref}>
+    <form id={id} on:submit={submit} class="p-2 w-full grid grid-cols-4 gap-4" bind:this={ref}>
       {#each entries as entry, index}
-        <label for={entry.name.toLowerCase()} class="pt-2 {entry.disabled ? 'italic' : ''}">
+        <label for={entry.id} class="pt-2 {entry.disabled ? 'italic' : ''}">
           {entry.name}
           {#if entry.required}
             <span class="text-red-700 dark:text-red-200 text-sm text-light">
@@ -90,7 +87,7 @@
         </label>
         <div class="col-span-3">
           <Input 
-            id={entry.name.toLowerCase()}
+            id={entry.id}
             type={entry.type}
             value={entry.value}
             disabled={entry.disabled}
@@ -111,7 +108,7 @@
         Reset
       </span>
     </button>
-    <button on:click={confirm} class="inline-flex justify-center items-center py-2 px-3 text-sm font-medium shadow text-center bg-teal-400 shadow rounded-lg hover:bg-teal-500 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-teal-700 dark:hover:bg-teal-800 dark:focus:ring-green-700">
+    <button on:click={submit} class="inline-flex justify-center items-center py-2 px-3 text-sm font-medium shadow text-center bg-teal-400 shadow rounded-lg hover:bg-teal-500 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-teal-700 dark:hover:bg-teal-800 dark:focus:ring-green-700">
       <span class="text-sm text-light uppercase">
         Continue
       </span>

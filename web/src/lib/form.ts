@@ -3,6 +3,7 @@ import type { Validation, ValidationResult } from "./validation";
 type InputType = 'email' | 'text' | 'textarea' | 'password' | 'number';
 
 type FormEntry = {
+  id: string,
   name: string,
   value?: string,
   type: InputType,
@@ -25,14 +26,16 @@ const validateEntry = (entry: FormEntry): ValidationResult => {
     } satisfies ValidationResult;
   }
 
-  for (let validation of entry.validations) {
-    let result = validation(entry.value);
+  if (entry.validations) {
+    for (let validation of entry.validations) {
+      let result = validation(entry.value);
 
-    if (!result.passed) {
-      return {
-        passed: false,
-        message: result.message
-      } satisfies ValidationResult
+      if (!result.passed) {
+        return {
+          passed: false,
+          message: result.message
+        } satisfies ValidationResult
+      }
     }
   }
 

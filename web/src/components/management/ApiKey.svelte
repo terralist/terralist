@@ -1,18 +1,25 @@
 <script lang="ts">
-  import type { ApiKey } from "../../../api/authorities";
-  import Button from "../../Button.svelte";
-  import ConfirmationModal from "../../ConfirmationModal.svelte";
-  import Modal from "../../Modal.svelte";
+  import Button from "../inputs/Button.svelte";
 
-  import { useFlag } from "../../../api/hooks";
+  import Modal from "../modals/Modal.svelte";
+  import ConfirmationModal from "../modals/ConfirmationModal.svelte";
+  import ErrorModal from "../modals/ErrorModal.svelte";
+
+  import type { ApiKey } from "../../api/authorities";
+
+  import { useFlag } from "../../lib/hooks";
+
 
   export let apiKey: ApiKey;
   export let authorityName: string;
+  export let onDelete: (id: string) => void = () => {};
 
   const [clipboardUpdated, setClipboardUpdated, resetClipboardUpdated] = useFlag(false);
 
   const [apiKeyModalEnabled, showApiKeyModal, hideApiKeyModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
+
+  let errorMessage: string = "";
 
   const censor = (value: string) => {
     return `****${value.slice(-4)}`;
@@ -22,6 +29,10 @@
     navigator.clipboard.writeText(apiKey.id);
     setClipboardUpdated();
     setTimeout(resetClipboardUpdated, 1000);
+  };
+
+  const remove = () => {
+    onDelete(apiKey.id);
   };
 </script>
 
@@ -57,6 +68,11 @@
   title={`Remove API Key ${censor(apiKey.id)} of ${authorityName}`} 
   enabled={$deleteModalEnabled}
   onClose={hideDeleteModal}
+  onSubmit={remove}
 >
   Are you sure?
 </ConfirmationModal>
+
+{#if errorMessage}
+  <ErrorModal bind:message={errorMessage} />
+{/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Button from "../../Button.svelte";
+  import Button from "../inputs/Button.svelte";
 
   export let className: string = "";
   export let onClick: () => void = () => {};

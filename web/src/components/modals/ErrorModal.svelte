@@ -1,13 +1,15 @@
 <script lang="ts">
-  import Button from './Button.svelte';
+  import Button from '../inputs/Button.svelte';
+
   import Modal from './Modal.svelte'
 
-  export let errorMessage: string;
+  export let message: string;
 
   let enabled: boolean = true;
 
   const close = () => {
     enabled = false;
+    message = "";
   };
 </script>
 
@@ -32,7 +34,7 @@
       </g>
     </svg>
     <span class="justify-self-start">
-      {errorMessage}
+      {message}
     </span>
   </span>
   

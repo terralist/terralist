@@ -4,16 +4,16 @@
   export let title: string;
   export let enabled: boolean = false;
   export let onClose: () => void = () => { };
-  export let onConfirm: () => void = () => { };
+  export let onSubmit: () => void = () => { };
 
   const close = () => {
     enabled = false;
     onClose();
   };
 
-  const confirm = () => {
+  const submit = () => {
     close();
-    onConfirm();
+    onSubmit();
   }
 </script>
 
@@ -28,7 +28,7 @@
         Cancel
       </span>
     </button>
-    <button on:click={confirm} class="inline-flex justify-center items-center py-2 px-3 text-sm font-medium shadow text-center bg-teal-400 shadow rounded-lg hover:bg-teal-500 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-teal-700 dark:hover:bg-teal-800 dark:focus:ring-green-700">
+    <button on:click={submit} class="inline-flex justify-center items-center py-2 px-3 text-sm font-medium shadow text-center bg-teal-400 shadow rounded-lg hover:bg-teal-500 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-teal-700 dark:hover:bg-teal-800 dark:focus:ring-green-700">
       <span class="text-sm text-light uppercase">
         Continue
       </span>

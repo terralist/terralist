@@ -2,10 +2,12 @@
   import { onMount } from "svelte";
   import { clickOutside } from 'svelte-use-click-outside';
 
-  import { defaultIfNull } from '../../lib/utils';
-
   import Searchbar from "./Searchbar.svelte";
   import Anchor from './Anchor.svelte';
+
+  import config from "../../config";
+
+  import { defaultIfNull } from '../../lib/utils';
 
   let open = false;
 
@@ -47,7 +49,7 @@
   </button>
 
   <h1 class="m-0 text-base lg:justify-self-start lg:mr-auto">
-    <a href="index.html">Terralist v0.1.0</a>
+    <a href="index.html">Terralist v{config.build.env.TERRALIST_VERSION}</a>
   </h1>
 
   <Searchbar />

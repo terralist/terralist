@@ -1,7 +1,8 @@
 <script lang="ts">
   import { clickOutside } from 'svelte-use-click-outside';
-  import Button from './Button.svelte';
-  import KeyboardAction from './KeyboardAction.svelte';
+
+  import Button from '../inputs/Button.svelte';
+  import KeyboardAction from '../inputs/KeyboardAction.svelte';
 
   export let title: string;
   export let enabled: boolean = false;
