@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"terralist/pkg/auth/bitbucket"
+	"terralist/pkg/auth/gitlab"
 
 	"terralist/internal/server"
 	"terralist/pkg/auth"
@@ -222,6 +223,13 @@ func (s *Command) run() error {
 			ClientID:     flags[BitBucketClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret: flags[BitBucketClientSecretFlag].(*cli.StringFlag).Value,
 			Workspace:    flags[BitBucketWorkspaceFlag].(*cli.StringFlag).Value,
+		})
+	case "gitlab":
+		provider, err = authFactory.NewProvider(auth.GITLAB, &gitlab.Config{
+			ClientID:                   flags[GitLabClientIDFlag].(*cli.StringFlag).Value,
+			ClientSecret:               flags[GitLabClientSecretFlag].(*cli.StringFlag).Value,
+			GitlabHostWithOptionalPort: flags[GitLabHostWithOptionalPort].(*cli.StringFlag).Value,
+			TerralistHostAndPort:       userConfig.URL,
 		})
 	}
 	if err != nil {
