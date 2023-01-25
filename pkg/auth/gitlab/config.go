@@ -13,7 +13,7 @@ const (
 type Config struct {
 	ClientID                   string
 	ClientSecret               string
-	TerralistHostAndPort       string
+	TerralistSchemeHostAndPort string
 	GitlabHostWithOptionalPort string
 }
 

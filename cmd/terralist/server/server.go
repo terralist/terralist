@@ -229,7 +229,7 @@ func (s *Command) run() error {
 			ClientID:                   flags[GitLabClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret:               flags[GitLabClientSecretFlag].(*cli.StringFlag).Value,
 			GitlabHostWithOptionalPort: flags[GitLabHostWithOptionalPort].(*cli.StringFlag).Value,
-			TerralistHostAndPort:       userConfig.URL,
+			TerralistSchemeHostAndPort: userConfig.URL,
 		})
 	}
 	if err != nil {
