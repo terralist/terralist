@@ -39,7 +39,6 @@ Terraform authenticates users with [oauth 2.0](https://oauth.net/2/). You will n
 + [BitBucket](https://developer.atlassian.com/cloud/bitbucket/oauth-2/)
 + [GitLab](https://docs.gitlab.com/ee/integration/oauth_provider.html#create-an-instance-wide-application)
   - the `email` and `openid` scopes must assigned for the gitlab oauth application
-  - the redirecturl must be `http://localhost:5758/v1/api/auth/redirect` when using the default installation 
 
 For local development, you can set the homepage URL to `http://localhost:5758` and the callback URL to `http://localhost:5758/v1/api/auth/redirect`.
 
