@@ -4,10 +4,6 @@ import (
 	"fmt"
 )
 
-const (
-	defaultGitLabHost = "gitlab.com"
-)
-
 // Config implements auth.Configurator interface and
 // handles the configuration parameters for gitlab authentication
 type Config struct {
@@ -17,11 +13,7 @@ type Config struct {
 	GitlabHostWithOptionalPort string
 }
 
-func (c *Config) SetDefaults() {
-	if c.GitlabHostWithOptionalPort == "" {
-		c.GitlabHostWithOptionalPort = defaultGitLabHost
-	}
-}
+func (c *Config) SetDefaults() {}
 
 func (c *Config) Validate() error {
 	if c.ClientID == "" {
