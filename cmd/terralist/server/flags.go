@@ -44,7 +44,7 @@ const (
 	// GitLab OAuth Flags
 	GitLabClientIDFlag         = "gl-client-id"
 	GitLabClientSecretFlag     = "gl-client-secret"
-	GitLabHostWithOptionalPort = "gl-host-with-optional-port"
+	GitLabHost = "gl-host"
 
 	TokenSigningSecretFlag = "token-signing-secret"
 
