@@ -11,17 +11,17 @@ interface Configuration {
   }
 }
 
-const goTemplatePattern = new RegExp("^[{]{2}\s*[.][A-Z_]+\s*[}]{2}$");
+const goTplPattern = new RegExp("^[{]{2}\s*[.][A-Z_]+\s*[}]{2}$");
 
 const orDefault = (value: string, def: string = "") => {
-  return goTemplatePattern.test(value) ? def : value;
+  return goTplPattern.test(value) ? def : value;
 };
 
 const config: Configuration = {
   runtime: {
     env: {
       TERRALIST_COMPANY_NAME: orDefault(runtimeEnv.TERRALIST_COMPANY_NAME, ""),
-      TERRALIST_OAUTH_PROVIDERS: orDefault(runtimeEnv.TERRALIST_OAUTH_PROVIDERS, JSON.stringify(["github", "google", "bitbucket"])),
+      TERRALIST_OAUTH_PROVIDERS: orDefault(runtimeEnv.TERRALIST_OAUTH_PROVIDERS, JSON.stringify(["github", "google", "bitbucket", "gitlab"])),
     },
   },
   build: {

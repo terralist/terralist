@@ -25,14 +25,17 @@
       {/if}
     </div>
     <section class="grid gap-8 place-items-center w-full m-0">
+      {#if providers.includes("bitbucket")}
+        <Button brandName="BitBucket" />
+      {/if}
       {#if providers.includes("github")}
         <Button brandName="GitHub" />
       {/if}
+      {#if providers.includes("gitlab")}
+        <Button brandName="GitLab" />
+      {/if}
       {#if providers.includes("google")}
         <Button brandName="Google" />
-      {/if}
-      {#if providers.includes("bitbucket")}
-        <Button brandName="BitBucket" />
       {/if}
     </section>
   </container>
