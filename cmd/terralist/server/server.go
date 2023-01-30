@@ -228,7 +228,7 @@ func (s *Command) run() error {
 		provider, err = authFactory.NewProvider(auth.GITLAB, &gitlab.Config{
 			ClientID:                   flags[GitLabClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret:               flags[GitLabClientSecretFlag].(*cli.StringFlag).Value,
-			GitlabHostWithOptionalPort: flags[GitLabHostWithOptionalPort].(*cli.StringFlag).Value,
+			GitlabHostWithOptionalPort: flags[GitLabHostFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
 		})
 	}
