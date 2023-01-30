@@ -42,9 +42,9 @@ const (
 	BitBucketWorkspaceFlag    = "bb-workspace"
 
 	// GitLab OAuth Flags
-	GitLabClientIDFlag         = "gl-client-id"
-	GitLabClientSecretFlag     = "gl-client-secret"
-	GitLabHost = "gl-host"
+	GitLabClientIDFlag     = "gl-client-id"
+	GitLabClientSecretFlag = "gl-client-secret"
+	GitLabHostFlag         = "gl-host"
 
 	TokenSigningSecretFlag = "token-signing-secret"
 
