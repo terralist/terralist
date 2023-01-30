@@ -163,7 +163,7 @@ var flags = map[string]cli.Flag{
 	GitLabClientSecretFlag: &cli.StringFlag{
 		Description: "The GitLab OAuth Application client secret.",
 	},
-	GitLabHostWithOptionalPort: &cli.StringFlag{
+	GitLabHostFlag: &cli.StringFlag{
 		Description: "The GitLab host to use.",
 		DefaultValue: "gitlab.com",
 	},
