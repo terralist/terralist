@@ -3,6 +3,7 @@ package auth
 const (
 	GITHUB = iota
 	BITBUCKET
+	GITLAB
 )
 
 type Backend = int
