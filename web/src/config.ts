@@ -20,6 +20,7 @@ const orDefault = (value: string, def: string = "") => {
 const config: Configuration = {
   runtime: {
     env: {
+      TERRALIST_CANONICAL_DOMAIN: orDefault(runtimeEnv.TERRALIST_CANONICAL_DOMAIN, "localhost"),
       TERRALIST_COMPANY_NAME: orDefault(runtimeEnv.TERRALIST_COMPANY_NAME, ""),
       TERRALIST_OAUTH_PROVIDERS: orDefault(runtimeEnv.TERRALIST_OAUTH_PROVIDERS, JSON.stringify(["github", "google", "bitbucket", "gitlab"])),
     },

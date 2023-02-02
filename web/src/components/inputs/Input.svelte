@@ -6,8 +6,9 @@
   export let id: string = Math.random().toString();
   export let type: InputType = 'text';
   export let placeholder: string = "";
-  export let value: string = "";
+  export let value: string | string[] = "";
   export let disabled: boolean = false;
+  export let slotPosition: "start" | "end" = "start";
 
   export let onClick: () => void = () => {};
   export let onInput: () => void = () => {};
@@ -29,7 +30,9 @@
     "disabled:bg-slate-300",
     "dark:disabled:bg-slate-800",
     "dark:disabled:text-slate-300",
-    $$slots?.default ? 'pl-8' : 'pl-2',
+    $$slots?.default ? (
+      slotPosition === "start" ? 'pl-8 pr-2' : 'pl-2 pr-8'
+    ) : 'px-2',
   ];
 
   let ref: HTMLInputElement | HTMLTextAreaElement;
@@ -72,7 +75,7 @@
   }
 
   onMount(() => {
-    if (ref && type !== "textarea") {
+    if (ref && !["textarea"].includes(type)) {
       (ref as HTMLInputElement).type = type;
     }
   });
@@ -80,8 +83,9 @@
 
 <svelte:options accessors={true}/>
 
-<div class={$$props.class}>
-  {#if $$slots?.default}
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div class={$$props.class} on:click={onClick}>
+  {#if slotPosition === "start" && $$slots?.default}
     <slot></slot>
   {/if}
   {#if type === "textarea"}
@@ -91,7 +95,6 @@
     placeholder={placeholder}
     disabled={disabled}
     value={value}
-    on:click={onClick}
     on:input={handleChange}
     bind:this={ref}
   />
@@ -102,9 +105,11 @@
     placeholder={placeholder}
     disabled={disabled}
     value={value}
-    on:click={onClick}
     on:input={handleChange}
     bind:this={ref}
   />
+  {/if}
+  {#if slotPosition === "end" && $$slots?.default}
+    <slot></slot>
   {/if}
 </div>

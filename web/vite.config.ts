@@ -8,8 +8,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
+        artifact: resolve(__dirname, 'artifact.html'),
         login: resolve(__dirname, 'login.html'),
+        main: resolve(__dirname, 'index.html'),
         management: resolve(__dirname, 'management.html'),
         runtime: resolve(__dirname, 'src', 'runtime.ts'),
       },

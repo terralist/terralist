@@ -1,10 +1,13 @@
-type Artifact = {
+import cmp from 'semver-compare';
+
+interface Artifact {
   id: string,
   fullName: string,
   authority: string,
   name: string,
   provider?: string,
   type: "provider" | "module",
+  versions?: string[],
 };
 
 const cache: {
@@ -35,8 +38,48 @@ const fetchArtifacts = (refresh: boolean = false) => {
   return cache.artifacts;
 };
 
+const fetchArtifact = (slug: string, refresh: boolean = false) => {
+  if (refresh) {
+    ;
+  }
+
+  return cache.artifacts.find(({ fullName }) => fullName === slug);
+}
+
+const fetchArtifactVersions = (slug: string, refresh: boolean = false) => {
+  if (refresh) {
+    ;
+  }
+
+  let artifact = cache.artifacts.find(a => a.fullName.toLowerCase() === slug.toLowerCase());
+
+  if (!artifact.versions || (artifact.versions && refresh)) {
+    artifact.versions = [...new Array(Math.floor(Math.random() * 100) % 10 + 3)]
+      .map((_, i) => `${i}.${Math.floor(Math.random() * 100) % 100}.${Math.floor(Math.random() * 100) % 100}`);
+  
+    artifact.versions = ["9.0.0", ...artifact.versions];
+
+    artifact.versions = artifact.versions.sort(cmp).reverse();
+  }
+
+  cache.artifacts.map(a => a.id === artifact.id ? artifact : a);
+
+  return artifact.versions;
+}
+
+const fetchProviderVersions = (namespace: string, name: string, refresh: boolean = false) => {
+  return fetchArtifactVersions(`${namespace}/${name}`, refresh);
+}
+
+const fetchModuleVersions = (namespace: string, name: string, provider: string, refresh: boolean = false) => {
+  return fetchArtifactVersions(`${namespace}/${name}/${provider}`, refresh);
+}
+
 export type { Artifact };
 
 export {
-  fetchArtifacts
+  fetchArtifact,
+  fetchArtifacts,
+  fetchProviderVersions,
+  fetchModuleVersions,
 };
