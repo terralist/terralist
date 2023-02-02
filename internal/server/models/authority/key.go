@@ -10,8 +10,8 @@ type Key struct {
 	entity.Entity
 	AuthorityID    uuid.UUID
 	KeyId          string `gorm:"not null"`
-	AsciiArmor     string `gorm:"not null"`
-	TrustSignature string `gorm:"not null"`
+	AsciiArmor     string `gorm:"size:10000,not null"`
+	TrustSignature string `gorm:"size:10000,not null"`
 }
 
 func (Key) TableName() string {
