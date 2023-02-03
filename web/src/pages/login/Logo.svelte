@@ -1,9 +1,8 @@
 <script lang="ts">
-  import Icon from "../../components/icons/Icon.svelte";
+  import Logo from "../../components/icons/Logo.svelte";
 </script>
 
-<Icon 
-  name="terraform" 
+<Logo 
   width="8rem" 
   height="8rem" 
   class="aspect-square object-cover rounded-full {$$props.class}"
