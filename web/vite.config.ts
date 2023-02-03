@@ -1,17 +1,26 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [
+    svelte({
+      preprocess: [vitePreprocess()],
+      onwarn: (warning, handler) => {
+          if (warning.code.startsWith('a11y-')) {
+              return; // silence a11y warnings
+          }
+          handler(warning);
+      },
+    }),
+  ],
+  envPrefix: "TERRALIST",
+  base: "./",
   build: {
     rollupOptions: {
       input: {
-        artifact: resolve(__dirname, 'artifact.html'),
-        login: resolve(__dirname, 'login.html'),
-        main: resolve(__dirname, 'index.html'),
-        management: resolve(__dirname, 'management.html'),
+        index: resolve(__dirname, 'index.html'),
         runtime: resolve(__dirname, 'src', 'runtime.ts'),
       },
       output: {
@@ -24,5 +33,10 @@ export default defineConfig({
         },
       },
     },
+  },
+  resolve: {
+    alias: {
+      '@': __dirname + '/src',
+    }
   },
 });

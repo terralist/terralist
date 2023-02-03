@@ -8,6 +8,9 @@ interface Artifact {
   provider?: string,
   type: "provider" | "module",
   versions?: string[],
+  latest: string,
+  createdAt: Date,
+  updatedAt: Date,
 };
 
 const cache: {
@@ -22,17 +25,17 @@ const fetchArtifacts = (refresh: boolean = false) => {
   }
 
   cache.artifacts = [
-    { id: "1", fullName: "HashiCorp/aws", authority: 'HashiCorp', name: 'aws', type: 'provider' },
-    { id: "2", fullName: "HashiCorp/null", authority: 'HashiCorp', name: 'null', type: 'provider' },
-    { id: "3", fullName: "HashiCorp/vpc/aws", authority: 'HashiCorp', name: 'vpc', provider: 'aws', type: 'module' },
-    { id: "4", fullName: "HashiCorp/iam/aws", authority: 'HashiCorp', name: 'iam', provider: 'aws', type: 'module' },
-    { id: "5", fullName: "Heroku/heroku", authority: 'Heroku', name: 'heroku', type: 'provider' },
-    { id: "6", fullName: "Heroku/heroku2", authority: 'Heroku', name: 'heroku2', type: 'provider' },
-    { id: "7", fullName: "Heroku/heroku3", authority: 'Heroku', name: 'heroku3', type: 'provider' },
-    { id: "8", fullName: "Heroku/heroku4", authority: 'Heroku', name: 'heroku4', type: 'provider' },
-    { id: "9", fullName: "Heroku/heroku5", authority: 'Heroku', name: 'heroku5', type: 'provider' },
-    { id: "10", fullName: "Heroku/heroku6", authority: 'Heroku', name: 'heroku6', type: 'provider' },
-    { id: "11", fullName: "Heroku/heroku7", authority: 'Heroku', name: 'heroku7', type: 'provider' },
+    { id: "1", fullName: "HashiCorp/aws", authority: 'HashiCorp', name: 'aws', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "2", fullName: "HashiCorp/null", authority: 'HashiCorp', name: 'null', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "3", fullName: "HashiCorp/vpc/aws", authority: 'HashiCorp', name: 'vpc', provider: 'aws', type: 'module', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "4", fullName: "HashiCorp/iam/aws", authority: 'HashiCorp', name: 'iam', provider: 'aws', type: 'module', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "5", fullName: "Heroku/heroku", authority: 'Heroku', name: 'heroku', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "6", fullName: "Heroku/heroku2", authority: 'Heroku', name: 'heroku2', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "7", fullName: "Heroku/heroku3", authority: 'Heroku', name: 'heroku3', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "8", fullName: "Heroku/heroku4", authority: 'Heroku', name: 'heroku4', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "9", fullName: "Heroku/heroku5", authority: 'Heroku', name: 'heroku5', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "10", fullName: "Heroku/heroku6", authority: 'Heroku', name: 'heroku6', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
+    { id: "11", fullName: "Heroku/heroku7", authority: 'Heroku', name: 'heroku7', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
   ];
 
   return cache.artifacts;

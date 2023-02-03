@@ -27,7 +27,7 @@ const config: Configuration = {
   },
   build: {
     env: {
-      TERRALIST_VERSION: import.meta.env.VITE_TERRALIST_VERSION || "dev",
+      TERRALIST_VERSION: import.meta.env.TERRALIST_VERSION || "dev",
     },
   }
 } satisfies Configuration;
