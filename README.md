@@ -52,6 +52,7 @@ This project is not meant to replace the public Terraform Registry. Its purpose 
 
 + [Getting Started](./docs/GETTING-STARTED.md)
 + [Configuration](./docs/CONFIGURATION.md)
++ [Local Testing](./docs/LOCAL-TESTING.md)
 + [API Endpoints](./docs/ENDPOINTS.md)
 
 ## Work In Progress
