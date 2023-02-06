@@ -89,6 +89,19 @@ If the server correctly started, you should see the following log line:
 
 ## How to use it
 
+### Running on a local development environment
+
+Since the terraform cli expects all responses to be from an HTTPS server, the standard `localhost:5758` will return an error when trying to login. Specifically: 
+
+```console
+terraform login localhost:5758                                                                      
+│ Error: Service discovery failed for localhost:5758
+│
+│ Failed to request discovery document: Get "https://localhost:5758/.well-known/terraform.json": http: server gave HTTP response to HTTPS client.
+```
+
+To work around this, a proxy with a trusted SSL certificate or a service like `ngrok` should be used. See [local-testing](./LOCAL-TESTING.md) for all the details.
+
 ### Authenticate
 ```console
 terraform login registry.example.com
