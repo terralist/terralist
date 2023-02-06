@@ -1,0 +1,52 @@
+#!/bin/sh
+DOWNLOAD_BASE=https://github.com/org/repo/releases/download/
+ARTIFACTS_FILE=./dist/artifacts.json
+PROTOCOL_VERSIONS_CSV="6.0"
+
+usage="$(basename "$0") [-h] [-u <base url>] [-a <artifacts file>]-- create new provider version payload from goreleaser artifacts file
+    -h  show this help text
+    -u  set the base for the download path (default $DOWNLOAD_BASE)
+    -a  artifacts file location (default $ARTIFACTS_FILE)
+    -p  supported protocol versoin (multiple can be provided)
+    "
+
+while getopts 'hu:a:p:' option; do
+  case "$option" in
+    h) echo "$usage"
+       exit
+       ;;
+    a) ARTIFACTS_FILE=$OPTARG
+       ;;
+    u) DOWNLOAD_BASE=$OPTARG
+       ;;
+    p) PROTOCOL_VERSIONS+=("$OPTARG") 
+       ;;
+   \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+       echo "$usage" >&2
+       exit 1
+       ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+if ! command -v jq &> /dev/null; then 
+	echo "error: cannot run because 'jq' is not installed or not available accessible from PATH"
+	exit -1
+fi;
+
+if [ ! -f $ARTIFACTS_FILE ]; then
+	echo "artifacts file ($ARTIFACTS_FILE) not found"
+	exit -1
+fi;
+
+echo $PROTOCOL_VERSIONS
+
+PROTOCOL_VERSIONS_ARRAY=${PROTOCOL_VERSIONS[@]}
+PROTOCOL_VERSIONS_CSV=${PROTOCOL_VERSIONS_ARRAY// /,}
+
+jq '.[]  | select(.type=="Archive")' $ARTIFACTS_FILE \
+                | jq -n '.artifacts |= [inputs]' \
+                | jq '.artifacts | [map(.) | .[] | { os: .goos , arch: .goarch, download_url: ($DOWNLOAD_BASE+ (.path | ltrimstr("dist/"))), shasum: .extra.Checksum | ltrimstr("sha256:") }]'  --arg DOWNLOAD_BASE $DOWNLOAD_BASE \
+                | jq -n '.platforms |= inputs' \
+                | jq '{"shasums": { "url": ($DOWNLOAD_BASE + $SHASUMURL), "signature_url": ($DOWNLOAD_BASE + $SIGURL) }} + .' --arg SHASUMURL `jq -r '.[] | select(.type=="Checksum") | .name' $ARTIFACTS_FILE` --arg SIGURL `jq -r '.[] | select(.type=="Signature") | .name' $ARTIFACTS_FILE` --arg DOWNLOAD_BASE ${DOWNLOAD_BASE} \
+                | jq '{"protocols": [$PROTOCOL_VERSIONS_CSV] } + .' --arg PROTOCOL_VERSIONS_CSV $PROTOCOL_VERSIONS_CSV
