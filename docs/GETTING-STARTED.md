@@ -37,6 +37,8 @@ Terraform authenticates users with [oauth 2.0](https://oauth.net/2/). You will n
 
 + [GitHub](https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app)
 + [BitBucket](https://developer.atlassian.com/cloud/bitbucket/oauth-2/)
++ [GitLab](https://docs.gitlab.com/ee/integration/oauth_provider.html#create-an-instance-wide-application)
+  - the `email` and `openid` scopes must assigned for the gitlab oauth application
 
 For local development, you can set the homepage URL to `http://localhost:5758` and the callback URL to `http://localhost:5758/v1/api/auth/redirect`.
 
@@ -86,6 +88,19 @@ If the server correctly started, you should see the following log line:
 ```
 
 ## How to use it
+
+### Running on a local development environment
+
+Since the terraform cli expects all responses to be from an HTTPS server, the standard `localhost:5758` will return an error when trying to login. Specifically: 
+
+```console
+terraform login localhost:5758                                                                      
+│ Error: Service discovery failed for localhost:5758
+│
+│ Failed to request discovery document: Get "https://localhost:5758/.well-known/terraform.json": http: server gave HTTP response to HTTPS client.
+```
+
+To work around this, a proxy with a trusted SSL certificate or a service like `ngrok` should be used. See [local-testing](./LOCAL-TESTING.md) for all the details.
 
 ### Authenticate
 ```console

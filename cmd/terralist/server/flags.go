@@ -41,6 +41,11 @@ const (
 	BitBucketClientSecretFlag = "bb-client-secret"
 	BitBucketWorkspaceFlag    = "bb-workspace"
 
+	// GitLab OAuth Flags
+	GitLabClientIDFlag     = "gl-client-id"
+	GitLabClientSecretFlag = "gl-client-secret"
+	GitLabHostFlag         = "gl-host"
+
 	TokenSigningSecretFlag = "token-signing-secret"
 
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
@@ -131,7 +136,7 @@ var flags = map[string]cli.Flag{
 
 	OAuthProviderFlag: &cli.StringFlag{
 		Description: "The OAuth 2.0 provider.",
-		Choices:     []string{"github", "bitbucket"},
+		Choices:     []string{"github", "bitbucket", "gitlab"},
 		Required:    true,
 	},
 	GitHubClientIDFlag: &cli.StringFlag{
@@ -151,6 +156,16 @@ var flags = map[string]cli.Flag{
 	},
 	BitBucketWorkspaceFlag: &cli.StringFlag{
 		Description: "The BitBucket workspace to use for user validation.",
+	},
+	GitLabClientIDFlag: &cli.StringFlag{
+		Description: "The GitLab OAuth Application client ID.",
+	},
+	GitLabClientSecretFlag: &cli.StringFlag{
+		Description: "The GitLab OAuth Application client secret.",
+	},
+	GitLabHostFlag: &cli.StringFlag{
+		Description: "The GitLab host to use.",
+		DefaultValue: "gitlab.com",
 	},
 
 	TokenSigningSecretFlag: &cli.StringFlag{
