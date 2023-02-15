@@ -1,7 +1,6 @@
 FROM golang:1.18-alpine3.15 AS builder
 
 WORKDIR /go/src/terralist
-
 # Install gcc
 RUN apk add build-base
 
@@ -9,9 +8,10 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
-ADD cmd/terralist ./cmd/terralist/
-ADD pkg ./pkg
-ADD internal ./internal/
+COPY cmd/terralist ./cmd/terralist/
+COPY pkg ./pkg
+COPY internal ./internal/
+COPY entrypoint.sh ./entrypoint.sh
 
 ARG VERSION="dev"
 ARG COMMIT_HASH="n/a"
@@ -28,8 +28,9 @@ RUN go build -a -v -o terralist \
 FROM alpine:3.15
 
 COPY --from=builder /go/src/terralist/terralist /usr/local/bin
+COPY --from=builder /go/src/terralist/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /root
 
-ENTRYPOINT [ "terralist" ]
-CMD [ "server" ]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
