@@ -72,6 +72,7 @@ func (r *DefaultAuthorityRepository) FindAll(owner string) ([]*authority.Authori
 
 	asp := []*authority.Authority{}
 	for _, a := range as {
+		a := a
 		asp = append(asp, &a)
 	}
 
