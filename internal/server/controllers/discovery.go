@@ -27,19 +27,17 @@ type DefaultServiceDiscoveryController struct {
 }
 
 func (c *DefaultServiceDiscoveryController) Paths() []string {
-	return []string{
-		"/.well-known", // Terraform API route
-	}
+	return []string{""} // bind to router's default
 }
 
 func (c *DefaultServiceDiscoveryController) Subscribe(apis ...*gin.RouterGroup) {
 	// tfApi should be compliant with the Terraform Registry Protocol for
 	// service discovery
 	// Docs: https://www.terraform.io/internals/remote-service-discovery
-	tfApi := apis[0]
+	api := apis[0]
 
 	// Terraform Service Discovery API
-	tfApi.GET(
+	api.GET(
 		"/terraform.json",
 		func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{

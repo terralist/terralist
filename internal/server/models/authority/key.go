@@ -18,18 +18,20 @@ func (Key) TableName() string {
 	return "authority_keys"
 }
 
+type KeyDTO struct {
+	ID             string `json:"id"`
+	KeyId          string `json:"key_id"`
+	AsciiArmor     string `json:"ascii_armor"`
+	TrustSignature string `json:"trust_signature"`
+}
+
 func (k Key) ToKeyDTO() KeyDTO {
 	return KeyDTO{
+		ID:             k.ID.String(),
 		KeyId:          k.KeyId,
 		AsciiArmor:     k.AsciiArmor,
 		TrustSignature: k.TrustSignature,
 	}
-}
-
-type KeyDTO struct {
-	KeyId          string `json:"key_id"`
-	AsciiArmor     string `json:"ascii_armor"`
-	TrustSignature string `json:"trust_signature"`
 }
 
 func (d KeyDTO) ToKey() Key {

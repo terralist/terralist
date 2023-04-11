@@ -2,15 +2,18 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
+	"sort"
+	"strings"
+	"sync/atomic"
 	"time"
 
 	"terralist/internal/server/controllers"
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
-	"terralist/internal/server/views"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
@@ -18,7 +21,6 @@ import (
 	"terralist/pkg/file"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
-	"terralist/pkg/webui"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mazen160/go-random"
@@ -29,13 +31,16 @@ import (
 type Server struct {
 	Port int
 
+	Router *gin.Engine
+
 	JWT      jwt.JWT
-	Router   *gin.Engine
 	Provider auth.Provider
 	Database database.Engine
 	Resolver storage.Resolver
 
-	Controllers []api.RestController
+	Routers []api.Router
+
+	Readiness *atomic.Bool
 }
 
 // Config holds the server configuration that isn't configurable by the user
@@ -72,10 +77,31 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	// Initialize webUI manager
-	manager, err := webui.NewManager(views.FS)
-	if err != nil {
-		return nil, fmt.Errorf("could not create a new view manager: %v", err)
-	}
+	// manager, err := webui.NewManager(web.FS, map[string]string{
+	// 	"TERRALIST_HOST": 						"localhost",
+	// 	"TERRALIST_COMPANY_NAME":     "",
+	// 	"TERRALIST_OAUTH_PROVIDERS":  `["github"]`,
+	// })
+
+	// if err != nil {
+	// 	return nil, fmt.Errorf("could not create a new view manager: %v", err)
+	// }
+
+	probeRouter := api.NewRouter(api.RouterOptions{
+		Prefix:   "/check",
+		Priority: api.RouterMaxPriority,
+	})
+
+	readiness := &atomic.Bool{}
+
+	probeRouter.Register(&controllers.DefaultProbeController{
+		Ready: readiness,
+	})
+
+	apiV1Router := api.NewRouter(api.RouterOptions{
+		Prefix:   "/v1",
+		Priority: api.RouterMinPriority - 1,
+	})
 
 	jwtManager, _ := jwt.New(userConfig.TokenSigningSecret)
 
@@ -97,6 +123,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		EncryptSalt: salt,
 		HostURL:     hostURL,
 	}
+
+	apiV1Router.Register(loginController)
 
 	authorityRepository := &repositories.DefaultAuthorityRepository{
 		Database: config.Database,
@@ -132,6 +160,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		JWT:           jwtManager,
 	}
 
+	apiV1Router.Register(moduleController)
+
 	providerRepository := &repositories.DefaultProviderRepository{
 		Database: config.Database,
 	}
@@ -149,62 +179,106 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		JWT:             jwtManager,
 	}
 
-	serviceDiscoveryController := &controllers.DefaultServiceDiscoveryController{
-		AuthorizationEndpoint: loginController.AuthorizationRoute(),
-		TokenEndpoint:         loginController.TokenRoute(),
-		ModuleEndpoint:        moduleController.TerraformApi(),
-		ProviderEndpoint:      providerController.TerraformApi(),
-	}
+	apiV1Router.Register(providerController)
 
-	webController := &controllers.DefaultWebController{
-		Store:            config.Store,
-		UIManager:        manager,
+	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
 		ApiKeyService:    apiKeyService,
-
-		ProviderName:          config.Provider.Name(),
-		HostURL:               hostURL,
-		AuthorizationEndpoint: loginController.AuthorizationRoute(),
+		JWT:              jwtManager,
 	}
+
+	apiV1Router.Register(authorityController)
+
+	staticRouter := api.NewRouter(api.RouterOptions{
+		Prefix:   "/",
+		Priority: api.RouterMinPriority,
+	})
+
+	staticRouter.Register(&controllers.DefaultWebController{})
+
+	wellKnownRouter := api.NewRouter(api.RouterOptions{
+		Prefix:   "/.well-known",
+		Priority: api.RouterMaxPriority,
+	})
+
+	wellKnownRouter.Register(&controllers.DefaultServiceDiscoveryController{
+		AuthorizationEndpoint: apiV1Router.Prefix() + loginController.AuthorizationRoute(),
+		TokenEndpoint:         apiV1Router.Prefix() + loginController.TokenRoute(),
+		ModuleEndpoint:        apiV1Router.Prefix() + moduleController.TerraformApi(),
+		ProviderEndpoint:      apiV1Router.Prefix() + providerController.TerraformApi(),
+	})
+
+	internalRouter := api.NewRouter(api.RouterOptions{
+		Prefix:   "/internal",
+		Priority: api.RouterMaxPriority + 1,
+	})
+
+	internalRouter.Register(&controllers.DefaultInternalController{
+		HostURL:               hostURL.String(),
+		CanonicalDomain:       hostURL.Host,
+		CustomCompanyName:     userConfig.CustomCompanyName,
+		OauthProviders:        []string{userConfig.OauthProvider},
+		AuthorizationEndpoint: apiV1Router.Prefix() + loginController.AuthorizationRoute(),
+		SessionDetailsRoute:   apiV1Router.Prefix() + loginController.SessionDetailsRoute(),
+		ClearSessionRoute:   apiV1Router.Prefix() + loginController.ClearSessionRoute(),
+	})
+
+	routers := []api.Router{
+		probeRouter,
+		apiV1Router,
+		staticRouter,
+		wellKnownRouter,
+		internalRouter,
+	}
+
+	sort.SliceStable(routers, func(i, j int) bool {
+		return routers[i].Priority() < routers[j].Priority()
+	})
 
 	return &Server{
 		Port: userConfig.Port,
 
-		Router:   router,
+		Router: router,
+
+		JWT:      jwtManager,
 		Provider: config.Provider,
 		Database: config.Database,
-		JWT:      jwtManager,
 
-		Controllers: []api.RestController{
-			serviceDiscoveryController,
-			loginController,
-			moduleController,
-			providerController,
-			webController,
-		},
+		Routers: routers,
+
+		Readiness: readiness,
 	}, nil
 }
 
 // Start initializes the routes and starts serving
 func (s *Server) Start() error {
-	// Health Check API
-	s.Router.GET("/health", handlers.Health())
+	s.Router.Any("/*path", func(c *gin.Context) {
+		path := c.Param("path")
 
-	for _, c := range s.Controllers {
-		var groups []*gin.RouterGroup
-
-		paths := c.Paths()
-		for _, p := range paths {
-			groups = append(groups, s.Router.Group(p))
+		for _, r := range s.Routers {
+			if strings.HasPrefix(path, r.Prefix()) {
+				r.Router().HandleContext(c)
+				return
+			}
 		}
 
-		c.Subscribe(groups...)
-	}
+		if c.Writer.Status() >= 400 {
+			c.String(
+				c.Writer.Status(),
+				"%d: %s",
+				c.Writer.Status(),
+				http.StatusText(c.Writer.Status()),
+			)
+		}
+	})
 
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)
 
 	go func() {
+		// Mark the service as available
+		s.Readiness.Store(true)
+
 		log.Info().Msgf("Terralist started, listening on port %v", s.Port)
 
 		err := s.Router.Run(fmt.Sprintf(":%d", s.Port))
@@ -223,6 +297,9 @@ func (s *Server) Start() error {
 
 // waitForDrain blocks the process until draining is complete
 func (s *Server) waitForDrain() {
+	// Mark the service as unavailable
+	s.Readiness.Store(true)
+
 	drainComplete := make(chan bool, 1)
 
 	go func() {

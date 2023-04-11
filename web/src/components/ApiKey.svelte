@@ -6,7 +6,7 @@
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import ErrorModal from "./ErrorModal.svelte";
 
-  import type { ApiKey } from "@/api/authorities";
+  import type { ApiKey } from "@/api/apiKeys";
 
   import { useFlag } from "@/lib/hooks";
 

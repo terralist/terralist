@@ -10,13 +10,15 @@
   import Key from "./Key.svelte";
   import ApiKey from "./ApiKey.svelte";
 
-  import { createApiKey, createKey, deleteApiKey, deleteKey, type Authority } from "@/api/authorities";
+  import type { Authority as AuthorityT } from "@/api/authorities";
+  import { Keys, type Key as KeyT } from "@/api/keys";
+  import { ApiKeys, type ApiKey as ApiKeyT } from "@/api/apiKeys";
 
   import { URLValidation } from "@/lib/validation";
   import { useFlag, useToggle } from "@/lib/hooks";
 
-  export let authority: Authority;
-  export let onUpdate: (id: string, authority: Authority) => void = () => {};
+  export let authority: AuthorityT;
+  export let onUpdate: (id: string, authority: AuthorityT) => void = () => {};
   export let onDelete: (id: string) => void = () => {};
 
   let errorMessage: string = "";
@@ -53,8 +55,13 @@
     onDelete(authority.id);
   };
 
-  const createKeySubmit = (entries: Map<string, any>) => {
-    let result = createKey(authority, entries.get("key_id"), entries.get("ascii_armor"), entries.get("trust_signature"));
+  const createKeySubmit = async (entries: Map<string, any>) => {
+    let result = await Keys.create(
+      authority.id,
+      entries.get("key_id"),
+      entries.get("ascii_armor"),
+      entries.get("trust_signature")
+    );
 
     if (result.status === 'OK') {
       authority.keys = [...authority.keys, result.data];
@@ -63,18 +70,18 @@
     }
   };
 
-  const onKeyDelete = (id: string) => {
-    let result = deleteKey(authority, authority.keys.find(k => k.id === id));
+  const onKeyDelete = async (id: string) => {
+    let result = await Keys.delete(authority.id, authority.keys.find((k: KeyT) => k.id === id).id);
 
     if (result.status === 'OK') {
-      authority.keys = [...authority.keys.filter(k => k.id !== id)];
+      authority.keys = [...authority.keys.filter((k: KeyT) => k.id !== id)];
     } else {
       errorMessage = result.message;
     }
   };
 
-  const createApiKeySubmit = () => {
-    let result = createApiKey(authority);
+  const createApiKeySubmit = async () => {
+    let result = await ApiKeys.create(authority.id, "");
 
     if (result.status === 'OK') {
       authority.apiKeys = [...authority.apiKeys, result.data];
@@ -83,11 +90,11 @@
     }
   };
 
-  const onApiKeyDelete = (id: string) => {
-    let result = deleteApiKey(authority, authority.apiKeys.find(ak => ak.id === id));
+  const onApiKeyDelete = async (id: string) => {
+    let result = await ApiKeys.delete(authority.id, authority.apiKeys.find((ak: ApiKeyT) => ak.id === id).id);
 
     if (result.status === 'OK') {
-      authority.apiKeys = [...authority.apiKeys.filter(ak => ak.id !== id)];
+      authority.apiKeys = [...authority.apiKeys.filter((ak: ApiKeyT) => ak.id !== id)];
     } else {
       errorMessage = result.message;
     }

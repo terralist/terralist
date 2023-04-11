@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { push } from 'svelte-spa-router';
 
   import config from "@/config";
   import { indent } from "@/lib/utils";
+  import { useQuery } from '@/lib/hooks';
 
   import Icon from "./Icon.svelte";
   import Dropdown from "./Dropdown.svelte";
 
-  import { fetchArtifact, fetchModuleVersions, fetchProviderVersions } from '@/api/artifacts';
+  import { Artifacts, type ArtifactVersion } from '@/api/artifacts';
 
   export let type: "module" | "provider";
   export let namespace: string;
@@ -18,7 +18,7 @@
 
   const moduleTemplate = `
     module "${name}" {
-      source  = "${config.runtime.env.TERRALIST_CANONICAL_DOMAIN}/${namespace}/${name}/${provider}"
+      source  = "${config.runtime.TERRALIST_CANONICAL_DOMAIN}/${namespace}/${name}/${provider}"
       version = "${version}"
     }
   `;
@@ -27,7 +27,7 @@
     terraform {
       required_providers {
         ${name} = {
-          source = "${config.runtime.env.TERRALIST_CANONICAL_DOMAIN}/${namespace}/${name}"
+          source = "${config.runtime.TERRALIST_CANONICAL_DOMAIN}/${namespace}/${name}"
           version = "${version}"
         }
       }
@@ -49,17 +49,16 @@
     push(`/${url}`);
   };
 
-  let versions: string[] = [];
   let label: string = version;
 
-  onMount(() => {
-    if (type === "module") {
-      versions = fetchModuleVersions(namespace, name, provider);
-    } else {
-      versions = fetchProviderVersions(namespace, name);
-    }
+  const {
+    data: versions,
+    isLoading: areVersionsLoading,
+    error: errorMessage,
+  } = useQuery<ArtifactVersion[]>(Artifacts.getAllVersionsForOne, `${namespace}/${name}/${provider}`);
 
-    if (version === versions[0]) {
+  versions.subscribe(() => {
+    if ($versions.length > 0 && $versions[0] === version) {
       label = `${version} (latest)`
     }
   });
@@ -90,7 +89,11 @@
         </div>
       </div>
       <div class="w-full lg:w-auto">
-        <Dropdown label={label} options={versions} onSelect={onOptionSelect} />
+        {#if $areVersionsLoading}
+          <Icon name="circle-loader" class={"stroke-teal-400 dark:stroke-teal-600"} />
+        {:else}
+          <Dropdown label={label} options={$versions} onSelect={onOptionSelect} />
+        {/if}
       </div>
     </div>
     <div class="bg-gray-100 dark:bg-gray-800 border border-teal-400 dark:border-teal-600 p-4 flex flex-col gap-4">

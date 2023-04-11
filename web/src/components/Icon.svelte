@@ -204,6 +204,24 @@
       name: "terraform",
       svg: `<path d="M1.44 0v7.575l6.561 3.79V3.787zm21.12 4.227l-6.561 3.791v7.574l6.56-3.787zM8.72 4.23v7.575l6.561 3.787V8.018zm0 8.405v7.575L15.28 24v-7.578z"/>`
     },
+
+    // Loaders
+    {
+      box: 24,
+      name: "circle-loader",
+      svg: `<circle
+        cx="50"
+        cy="50"
+        r="24"
+        fill="none"
+        stroke-width="5"
+        stroke-dasharray="113.09733552923255 39.69911184307752"
+      >
+        <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s"
+          values="0 50 50;360 50 50" keyTimes="0;1">
+        </animateTransform>
+      </circle>`
+    }
   ];
   
   let icon = icons.find((e) => e.name === name);

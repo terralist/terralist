@@ -5,13 +5,22 @@
   import Button from '@/components/Button.svelte';
   import Logo from "@/components/Logo.svelte";
 
-  let providers: string[] = (JSON.parse(config.runtime.env.TERRALIST_OAUTH_PROVIDERS) || []).sort();
+  let providers: string[] = config.runtime.TERRALIST_OAUTH_PROVIDERS.sort();
+
+  let formRef: { [provider: string]: HTMLFormElement } = Object.fromEntries(providers.map(p => [p, null]));
+
+  const hostUrl: string = config.runtime.TERRALIST_HOST_URL;
+  const authorizationEndpoint: string = config.runtime.TERRALIST_AUTHORIZATION_ENDPOINT;
 
   const providersDisplayName = {
     "bitbucket": "BitBucket",
     "github": "GitHub",
     "gitlab": "GitLab",
     "google": "Google",
+  };
+
+  const onLogin = async (provider: string) => {
+    formRef[provider].submit();
   };
 </script>
 
@@ -68,19 +77,22 @@
     <div class="mb-8">
       <h2 class="text-3xl font-semibold mt-0 mx-0">
         Terralist
-        <span class="opacity-40 mb-1.5 font-medium text-base">v{config.build.env.TERRALIST_VERSION}</span>
       </h2>
-      {#if config.runtime.env.TERRALIST_COMPANY_NAME}
-        <h3 class="opacity-40 mb-1.5 font-medium text-base">{config.runtime.env.TERRALIST_COMPANY_NAME}</h3>
+      <h4 class="opacity-40 mb-1.5 font-medium text-xs">{config.build.TERRALIST_VERSION}</h4>
+      {#if config.runtime.TERRALIST_COMPANY_NAME}
+        <h3 class="opacity-40 mb-1.5 font-medium text-base">{config.runtime.TERRALIST_COMPANY_NAME}</h3>
       {/if}
     </div>
     <section class="grid gap-8 place-items-center w-full m-0">
       {#each providers as provider}
         {#if providersDisplayName[provider]}
-          <Button class="grid grid-cols-6 place-items-center h-10">
-            <Icon name={provider} />
-            <span class="col-span-5">Continue with {providersDisplayName[provider]}</span>
-          </Button>
+          <form class="w-full" bind:this={formRef[provider]} method="get" action={authorizationEndpoint}>
+            <input type="hidden" name="redirect_uri" value={hostUrl} />
+            <Button class="w-full grid grid-cols-6 place-items-center h-10" onClick={() => onLogin(provider)} >
+              <Icon name={provider} />
+              <span class="col-span-5">Continue with {providersDisplayName[provider]}</span>
+            </Button>
+          </form>
         {/if}
       {/each}
     </section>

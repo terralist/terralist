@@ -37,7 +37,6 @@
   const toggleTheme = () => {
     context.setTheme(currentTheme === "light" ? "dark" : "light");
   };
-
 </script>
 
 <header
@@ -50,8 +49,11 @@
     <Icon name="menu" />
   </button>
 
-  <h1 class="m-0 text-base lg:justify-self-start lg:mr-auto">
-    <a href="/" use:link>Terralist v{config.build.env.TERRALIST_VERSION}</a>
+  <h1 class="m-0 text-base lg:justify-self-start lg:mr-auto max-w-xs">
+    <a href="/" use:link>
+      Terralist
+      <span class="text-xs break-all">{config.build.TERRALIST_VERSION}</span>
+    </a>
   </h1>
 
   <Searchbar />

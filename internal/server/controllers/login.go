@@ -16,12 +16,14 @@ import (
 )
 
 const (
-	authTerraformApiBase = "/v1/auth"
-	authDefaultApiBase   = "/v1/api/auth"
+	authTerraformApiBase = "/auth"
+	authDefaultApiBase   = "/api/auth"
 
 	authorizeRoute = "/authorization"
 	tokenRoute     = "/token"
 	redirectRoute  = "/redirect"
+
+	sessionRoute = "/session"
 )
 
 // LoginController registers the endpoints required to handle the OAUTH 2.0
@@ -36,6 +38,14 @@ type LoginController interface {
 	// TokenRoute returns the endpoint where Terraform can call to validate
 	// the code components and obtain the authorization token
 	TokenRoute() string
+
+	// SessionDetailsRoute returns the endpoint where user' session details
+	// can be found
+	SessionDetailsRoute() string
+
+	// ClearSessionRoute returns the endpoint where user' session can be
+	// cleared
+	ClearSessionRoute() string
 }
 
 // DefaultLoginController is a concrete implementation of LoginController
@@ -61,6 +71,14 @@ func (c *DefaultLoginController) AuthorizationRoute() string {
 
 func (c *DefaultLoginController) TokenRoute() string {
 	return fmt.Sprintf("%s%s", authTerraformApiBase, tokenRoute)
+}
+
+func (c *DefaultLoginController) SessionDetailsRoute() string {
+	return fmt.Sprintf("%s%s", authDefaultApiBase, sessionRoute)
+}
+
+func (c *DefaultLoginController) ClearSessionRoute() string {
+	return fmt.Sprintf("%s%s", authDefaultApiBase, sessionRoute)
 }
 
 func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
@@ -219,6 +237,44 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 		ctx.Redirect(http.StatusFound, redirectURL)
 	})
 
+	api.GET(sessionRoute, func(ctx *gin.Context) {
+		sess, err := c.Store.Get(ctx.Request)
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		user, ok := sess.Get("user")
+		if !ok || user == nil {
+			ctx.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		u, ok := user.(*auth.User)
+		if !ok {
+			ctx.AbortWithStatus(http.StatusConflict)
+			return
+		}
+
+		if u == nil {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"name":         u.Name,
+			"email":        u.Email,
+			"authority_id": u.AuthorityID,
+		})
+	})
+
+	api.DELETE(sessionRoute, func(ctx *gin.Context) {
+		sess, err := c.Store.Get(ctx.Request)
+		if err == nil {
+			sess.Set("user", nil)
+			c.Store.Save(ctx.Request, ctx.Writer, sess)
+		}
+	})
 }
 
 func (c *DefaultLoginController) redirectWithError(

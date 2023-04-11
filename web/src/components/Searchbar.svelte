@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { link } from 'svelte-spa-router';
   import { clickOutside } from 'svelte-use-click-outside';
 
@@ -9,7 +8,8 @@
   import KeyboardAction from './KeyboardAction.svelte';
   import Icon from './Icon.svelte';
 
-  import { fetchArtifacts, type Artifact } from '@/api/artifacts';
+  import { Artifacts, type Artifact } from '@/api/artifacts';
+  import { useQuery } from '@/lib/hooks';
 
   let open: boolean = false;
 
@@ -19,7 +19,12 @@
   let searchEntries: HTMLAnchorElement[] = Array.from({ length: 10 }, () => null);
   let selectedSearchEntry: number = 0;
 
-  let artifacts: Artifact[] = [];
+  const {
+    data: artifacts,
+    isLoading: areArtifactsLoading,
+    error: errorMessage
+  } = useQuery(Artifacts.getAll);
+
   let filteredArtifacts: Artifact[] = [];
 
   const useMetaKey = ["macOS", "iPadOS", "iOS"].includes(Device.OSName);
@@ -29,7 +34,7 @@
       (s) => s ? s.toLowerCase().replace(/\s+/g, '') : ""
     );
     
-    filteredArtifacts = artifacts.
+    filteredArtifacts = ($artifacts ?? [] as Artifact[]).
       filter(({ fullName }) => sanitizer(fullName).includes(sanitizer(query))).
       filter((_, i) => i < 10);
     
@@ -72,10 +77,6 @@
     
     return `/${slug}`;
   };
-
-  onMount(() => {
-    artifacts = fetchArtifacts();
-  });
 </script>
 
 {#if open}
@@ -111,7 +112,11 @@
         use:clickOutside={escapeSearchbar}
         class="w-10/12 lg:w-full inset-x-0 mx-auto absolute top-12 flex flex-col justify-start bg-white list-none py-2 rounded-lg shadow-md bg-zinc-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200"
       >
-        {#if filteredArtifacts.length === 0 && query !== ''}
+        {#if $areArtifactsLoading}
+          <div class="py-1 px-5">Loading...</div>
+        {:else if $errorMessage}
+          <div class="py-1 px-5">{$errorMessage}</div>
+        {:else if filteredArtifacts.length === 0 && query !== ''}
           <div class="py-1 px-5">0 results found.</div>
         {/if}
 

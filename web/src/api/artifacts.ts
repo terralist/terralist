@@ -1,4 +1,9 @@
+import axios from "axios";
+import { handleResponse, handleError, type Result } from "@/api/api.utils";
+
 import cmp from 'semver-compare';
+
+type ArtifactVersion = string;
 
 interface Artifact {
   id: string,
@@ -7,82 +12,58 @@ interface Artifact {
   name: string,
   provider?: string,
   type: "provider" | "module",
-  versions?: string[],
+  versions?: ArtifactVersion[],
   latest: string,
   createdAt: Date,
   updatedAt: Date,
 };
 
-const cache: {
-  artifacts: Artifact[],
-} = {
-  artifacts: [],
+const client = axios.create({
+  baseURL: "/v1/api/artifact",
+  timeout: 120,
+});
+
+const sortVersions = (r: Result<ArtifactVersion[]>): Result<ArtifactVersion[]> => {
+  const {data: versions, ...rest} = r;
+
+  return {
+    data: versions.sort(cmp).reverse(),
+    ...rest,
+  } as Result<ArtifactVersion[]>;
 };
 
-const fetchArtifacts = (refresh: boolean = false) => {
-  if (refresh) {
-    ;
-  }
+const actions = {
+  getAll: () => client
+    .get<Artifact[]>("/")
+    .then(handleResponse<Artifact[]>)
+    .catch(handleError),
 
-  cache.artifacts = [
-    { id: "1", fullName: "HashiCorp/aws", authority: 'HashiCorp', name: 'aws', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "2", fullName: "HashiCorp/null", authority: 'HashiCorp', name: 'null', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "3", fullName: "HashiCorp/vpc/aws", authority: 'HashiCorp', name: 'vpc', provider: 'aws', type: 'module', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "4", fullName: "HashiCorp/iam/aws", authority: 'HashiCorp', name: 'iam', provider: 'aws', type: 'module', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "5", fullName: "Heroku/heroku", authority: 'Heroku', name: 'heroku', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "6", fullName: "Heroku/heroku2", authority: 'Heroku', name: 'heroku2', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "7", fullName: "Heroku/heroku3", authority: 'Heroku', name: 'heroku3', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "8", fullName: "Heroku/heroku4", authority: 'Heroku', name: 'heroku4', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "9", fullName: "Heroku/heroku5", authority: 'Heroku', name: 'heroku5', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "10", fullName: "Heroku/heroku6", authority: 'Heroku', name: 'heroku6', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-    { id: "11", fullName: "Heroku/heroku7", authority: 'Heroku', name: 'heroku7', type: 'provider', latest: "9.0.0", createdAt: new Date("2022-07-01"), updatedAt: new Date("2023-01-17")},
-  ];
+  getOne: (slug: string) => client
+    .get<Artifact>(`/${slug}`)
+    .then(handleResponse<Artifact>)
+    .catch(handleError),
 
-  return cache.artifacts;
+  getAllVersionsForOne: (slug: string) => client
+    .get<ArtifactVersion[]>(`/${slug}/version`)
+    .then(handleResponse<ArtifactVersion[]>)
+    .then(sortVersions)
+    .catch(handleError),
+
+  delete: (slug: string, version: string) => client
+    .delete<boolean>(`/${slug}/version/${version}`)
+    .then(handleResponse<boolean>)
+    .catch(handleError)
 };
 
-const fetchArtifact = (slug: string, refresh: boolean = false) => {
-  if (refresh) {
-    ;
-  }
-
-  return cache.artifacts.find(({ fullName }) => fullName === slug);
-}
-
-const fetchArtifactVersions = (slug: string, refresh: boolean = false) => {
-  if (refresh) {
-    ;
-  }
-
-  let artifact = cache.artifacts.find(a => a.fullName.toLowerCase() === slug.toLowerCase());
-
-  if (!artifact.versions || (artifact.versions && refresh)) {
-    artifact.versions = [...new Array(Math.floor(Math.random() * 100) % 10 + 3)]
-      .map((_, i) => `${i}.${Math.floor(Math.random() * 100) % 100}.${Math.floor(Math.random() * 100) % 100}`);
-  
-    artifact.versions = ["9.0.0", ...artifact.versions];
-
-    artifact.versions = artifact.versions.sort(cmp).reverse();
-  }
-
-  cache.artifacts.map(a => a.id === artifact.id ? artifact : a);
-
-  return artifact.versions;
-}
-
-const fetchProviderVersions = (namespace: string, name: string, refresh: boolean = false) => {
-  return fetchArtifactVersions(`${namespace}/${name}`, refresh);
-}
-
-const fetchModuleVersions = (namespace: string, name: string, provider: string, refresh: boolean = false) => {
-  return fetchArtifactVersions(`${namespace}/${name}/${provider}`, refresh);
-}
-
-export type { Artifact };
+const Artifacts = {
+  getAll: async () => await actions.getAll(),
+  getOne: async (slug: string) => await actions.getOne(slug),
+  getAllVersionsForOne: async (slug: string) => await actions.getAllVersionsForOne(slug),
+  delete: async (slug: string, version: string) => await actions.delete(slug, version),
+};
 
 export {
-  fetchArtifact,
-  fetchArtifacts,
-  fetchProviderVersions,
-  fetchModuleVersions,
+  type Artifact,
+  type ArtifactVersion,
+  Artifacts
 };

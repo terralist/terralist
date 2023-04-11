@@ -4,6 +4,8 @@ import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database/entity"
+
+	"github.com/ssoroka/slice"
 )
 
 type Authority struct {
@@ -20,6 +22,30 @@ type Authority struct {
 
 func (Authority) TableName() string {
 	return "authorities"
+}
+
+type AuthorityDTO struct {
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	PolicyURL string      `json:"policy_url"`
+	Keys      []KeyDTO    `json:"keys"`
+	ApiKeys   []ApiKeyDTO `json:"api_keys"`
+}
+
+func (a Authority) ToDTO() AuthorityDTO {
+	return AuthorityDTO{
+		ID:        a.ID.String(),
+		Name:      a.Name,
+		PolicyURL: a.PolicyURL,
+
+		Keys: slice.Map[Key, KeyDTO](a.Keys, func(k Key) KeyDTO {
+			return k.ToKeyDTO()
+		}),
+
+		ApiKeys: slice.Map[ApiKey, ApiKeyDTO](a.ApiKeys, func(a ApiKey) ApiKeyDTO {
+			return a.ToDTO()
+		}),
+	}
 }
 
 type AuthorityCreateDTO struct {

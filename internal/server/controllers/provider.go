@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	providersTerraformApiBase = "/v1/providers"
-	providersDefaultApiBase   = "/v1/api/providers"
+	providersTerraformApiBase = "/providers"
+	providersDefaultApiBase   = "/api/providers"
 )
 
 // ProviderController registers the routes that handles the modules

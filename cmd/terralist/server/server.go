@@ -159,6 +159,8 @@ func (s *Command) run() error {
 		Port:               flags[PortFlag].(*cli.IntFlag).Value,
 		URL:                flags[URLFlag].(*cli.StringFlag).Value,
 		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
+		OauthProvider:      flags[OAuthProviderFlag].(*cli.StringFlag).Value,
+		CustomCompanyName:  flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {

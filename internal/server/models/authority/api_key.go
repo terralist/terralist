@@ -17,3 +17,13 @@ type ApiKey struct {
 func (ApiKey) TableName() string {
 	return "authority_api_keys"
 }
+
+type ApiKeyDTO struct {
+	ID string `json:"id"`
+}
+
+func (a ApiKey) ToDTO() ApiKeyDTO {
+	return ApiKeyDTO{
+		ID: a.ID.String(),
+	}
+}

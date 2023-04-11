@@ -1,28 +1,39 @@
+import type { AxiosError, AxiosResponse } from "axios";
 import { decodeError, type ErrorCode } from "./api.errors";
 
-type APIResult<T> = {
+interface Result<T> {
   status: 'OK' | 'ERROR',
   message?: string,
   data?: T,
 };
 
-const successAPIResult = <T>(data: T): APIResult<T> => {
+const withSuccess = <T>(data: T): Result<T> => {
   return {
     status: 'OK',
     data: data,
-  } satisfies APIResult<T>;
+    message: undefined,
+  } satisfies Result<T>;
 };
 
-const errorAPIResult = (errorCode: ErrorCode = undefined): APIResult<any> => {
+const withError = (errorCode: ErrorCode = undefined): Result<undefined> => {
   return {
     status: 'ERROR',
     message: decodeError(errorCode),
-  } satisfies APIResult<any>;
+  } satisfies Result<undefined>;
 };
 
-export type { APIResult };
+const handleResponse = <T>(response: AxiosResponse<T>): Result<T> => {
+  if ([200, 201].includes(response.status)) {
+    return withSuccess<T>(response.data);
+  }
+
+  return withError(response.status);
+}
+
+const handleError = (error: AxiosError): Result<undefined> => withError(error.response?.status);
 
 export {
-  successAPIResult,
-  errorAPIResult,
+  type Result,
+  handleResponse,
+  handleError,
 };

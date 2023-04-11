@@ -1,7 +1,12 @@
 <script lang="ts">
-  import Router, { push, replace, type RouteLoadingEvent } from 'svelte-spa-router';
+  import Router, {
+    push,
+    replace,
+    type ConditionsFailedEvent,
+    type RouteLoadingEvent,
+  } from "svelte-spa-router";
 
-  import routes from './routes';
+  import routes from "./routes";
 
   let title: string = "Terralist";
 
@@ -19,8 +24,10 @@
     currentRoute = e?.detail?.location;
   };
 
-  const onRouteFailure = () => {
-    replace("/");
+  const onRouteFailure = (e: ConditionsFailedEvent) => {
+    if (e.detail?.userData) {
+      replace(e.detail.userData["onFailureRedirectTo"]);
+    }
   };
 </script>
 
@@ -29,7 +36,11 @@
 </svelte:head>
 
 <main>
-  <Router {routes} on:routeLoading={onRouteLoading} on:conditionsFailed={onRouteFailure} />
+  <Router
+    {routes}
+    on:routeLoading={onRouteLoading}
+    on:conditionsFailed={onRouteFailure}
+  />
   <!-- <Header /> -->
   <!-- <Dashboard /> -->
 </main>

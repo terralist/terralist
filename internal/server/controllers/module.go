@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	modulesTerraformApiBase = "/v1/modules"
-	modulesDefaultApiBase   = "/v1/api/modules"
+	modulesTerraformApiBase = "/modules"
+	modulesDefaultApiBase   = "/api/modules"
 )
 
 // ModuleController registers the routes that handles the modules

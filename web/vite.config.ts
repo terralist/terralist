@@ -21,17 +21,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: resolve(__dirname, 'index.html'),
-        runtime: resolve(__dirname, 'src', 'runtime.ts'),
-      },
-      output: {
-        entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'runtime') {
-            return 'runtime.js'
-          }
-
-          return 'assets/[name]-[hash].js'
-        },
-      },
+      }
     },
   },
   resolve: {

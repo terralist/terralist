@@ -10,7 +10,7 @@
 </script>
 
 <button
-  class="bg-transparent p-2 flex items-center lg:block fill-slate-200 md:fill-slate-900 {$$props.class}"
+  class="bg-transparent p-2 flex items-center lg:block fill-slate-200 lg:fill-slate-900 {$$props.class}"
   on:click={onClick}
 >
   <span

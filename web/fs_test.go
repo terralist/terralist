@@ -1,4 +1,4 @@
-package views
+package web
 
 import (
 	"fmt"
@@ -14,6 +14,11 @@ func TestCanCompileTemplates(t *testing.T) {
 	Convey("Subject: UI templates can compile", t, func() {
 		fs.WalkDir(FS, ".", func(path string, d fs.DirEntry, err error) error {
 			So(err, ShouldBeNil)
+
+			// Skip directories
+			if d.IsDir() {
+				return nil
+			}
 
 			Convey(fmt.Sprintf("Analyzing the file %s", path), func() {
 				_, err := template.New(path).Funcs(sprig.FuncMap()).ParseFS(FS, path)

@@ -16,7 +16,7 @@
   href={href}
   use:link
   use:active={{className: "md:bg-slate-200/25 dark:md:bg-slate-800/25"}}
-  class="bg-transparent rounded-lg p-2 flex items-center lg:block fill-slate-200 md:fill-slate-900 {$$props.class}"
+  class="bg-transparent rounded-lg p-2 flex items-center lg:block fill-slate-200 lg:fill-slate-900 {$$props.class}"
 >
   <span
     on:mouseover={() => {show = true}}
