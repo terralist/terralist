@@ -195,6 +195,16 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Router.Register(authorityController)
 
+	artifactController := &controllers.DefaultArtifactController{
+		AuthorityService: authorityService,
+		ModuleService:    moduleService,
+		ProviderService:  providerService,
+
+		Authorization: authorization,
+	}
+
+	apiV1Router.Register(artifactController)
+
 	staticRouter := api.NewRouter(api.RouterOptions{
 		Prefix:   "/",
 		Priority: api.RouterMinPriority,
