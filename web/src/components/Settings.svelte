@@ -57,7 +57,9 @@
 
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
   <section class="mt-20 lg:mx-20">
-    {#if ($authorities ?? []).length > 0}
+    {#if $areAuthoritiesLoading}
+      <p>Loading...</p>
+    {:else if ($authorities ?? []).length > 0}
       <div
         class="w-full p-2 px-6 grid grid-cols-6 lg:grid-cols-10 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200"
       >

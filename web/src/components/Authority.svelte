@@ -120,9 +120,9 @@
         <Icon name="plus" />
       </TransparentButton>
       <span class="ml-0 md:ml-2">
-        {authority.keys.length}
+        {authority.keys?.length ?? 0}
       </span>
-      {#if authority.keys.length > 0}
+      {#if authority.keys?.length > 0}
         <CaretButton class="ml-0 md:ml-2" onClick={toggleShowKeys} enabled={$showKeys} />
       {/if}
     </span>
@@ -131,9 +131,9 @@
         <Icon name="plus" />
       </TransparentButton>
       <span class="ml-0 md:ml-2">
-        {authority.apiKeys.length}
+        {authority.apiKeys?.length ?? 0}
       </span>
-      {#if authority.apiKeys.length > 0}
+      {#if authority.apiKeys?.length > 0}
         <CaretButton class="ml-0 md:ml-2" onClick={toggleShowApiKeys} enabled={$showApiKeys} />
       {/if}
     </span>
