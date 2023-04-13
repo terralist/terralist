@@ -1,5 +1,5 @@
-import axios, { AxiosError } from "axios";
-import { handleResponse, handleError } from "@/api/api.utils";
+import { AxiosError } from "axios";
+import { createClient, handleResponse, handleError } from "@/api/api.utils";
 import type { Key } from "@/api/keys";
 import type { ApiKey } from "@/api/apiKeys";
 
@@ -11,7 +11,7 @@ interface Authority {
   apiKeys?: ApiKey[]
 };
 
-const client = axios.create({
+const client = createClient({
   baseURL: "/v1/api/authority",
   timeout: 120,
 });

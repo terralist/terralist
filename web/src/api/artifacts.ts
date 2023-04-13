@@ -1,5 +1,4 @@
-import axios from "axios";
-import { handleResponse, handleError, type Result } from "@/api/api.utils";
+import { createClient, handleResponse, handleError, type Result } from "@/api/api.utils";
 
 import cmp from 'semver-compare';
 
@@ -18,7 +17,7 @@ interface Artifact {
   updatedAt: Date,
 };
 
-const client = axios.create({
+const client = createClient({
   baseURL: "/v1/api/artifact",
   timeout: 120,
 });

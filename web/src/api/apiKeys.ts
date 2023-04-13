@@ -1,12 +1,12 @@
 import axios, { AxiosError } from "axios";
-import { handleError, handleResponse } from "@/api/api.utils";
+import { createClient, handleError, handleResponse } from "@/api/api.utils";
 
 interface ApiKey {
   id: string,
   label: string,
 }
 
-const client = axios.create({
+const client = createClient({
   baseURL: "/v1/api/authority",
   timeout: 120,
 });
