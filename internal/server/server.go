@@ -143,6 +143,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 	}
 
+	authorization := &handlers.Authorization{
+		JWT:           jwtManager,
+		ApiKeyService: apiKeyService,
+		Store:         config.Store,
+	}
+
 	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,
 	}
@@ -156,8 +162,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	moduleController := &controllers.DefaultModuleController{
 		ModuleService: moduleService,
-		ApiKeyService: apiKeyService,
-		JWT:           jwtManager,
+
+		Authorization: authorization,
 	}
 
 	apiV1Router.Register(moduleController)
@@ -175,16 +181,16 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	providerController := &controllers.DefaultProviderController{
 		ProviderService: providerService,
-		ApiKeyService:   apiKeyService,
-		JWT:             jwtManager,
+
+		Authorization: authorization,
 	}
 
 	apiV1Router.Register(providerController)
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
-		ApiKeyService:    apiKeyService,
-		JWT:              jwtManager,
+
+		Authorization: authorization,
 	}
 
 	apiV1Router.Register(authorityController)
@@ -220,7 +226,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		OauthProviders:        []string{userConfig.OauthProvider},
 		AuthorizationEndpoint: apiV1Router.Prefix() + loginController.AuthorizationRoute(),
 		SessionDetailsRoute:   apiV1Router.Prefix() + loginController.SessionDetailsRoute(),
-		ClearSessionRoute:   apiV1Router.Prefix() + loginController.ClearSessionRoute(),
+		ClearSessionRoute:     apiV1Router.Prefix() + loginController.ClearSessionRoute(),
 	})
 
 	routers := []api.Router{
