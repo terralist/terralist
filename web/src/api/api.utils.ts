@@ -17,7 +17,11 @@ const withSuccess = <T>(data: T): Result<T> => {
   } satisfies Result<T>;
 };
 
-const withError = (errorCode: ErrorCode = undefined): Result<undefined> => {
+const withError = (errorCode: ErrorCode = undefined, data?: any): Result<undefined> => {
+  if (data) {
+    console.log("API Response:", errorCode, data);
+  }
+
   return {
     status: 'ERROR',
     message: decodeError(errorCode),
@@ -32,7 +36,7 @@ const handleResponse = <T>(response: AxiosResponse<T>): Result<T> => {
   return withError(response.status);
 }
 
-const handleError = (error: AxiosError): Result<undefined> => withError(error.response?.status);
+const handleError = (error: AxiosError): Result<undefined> => withError(error.response?.status, error.response?.data);
 
 const responseConvertor = (response: AxiosResponse): AxiosResponse => {
   let { data, ...rest } = response;

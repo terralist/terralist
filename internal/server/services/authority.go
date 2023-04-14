@@ -6,6 +6,8 @@ import (
 	"terralist/internal/server/repositories"
 
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
+	"github.com/ssoroka/slice"
 )
 
 var (
@@ -24,7 +26,7 @@ type AuthorityService interface {
 	Create(authority.AuthorityCreateDTO) error
 
 	// AddKey adds a new key to an existing authority
-	AddKey(uuid.UUID, authority.KeyDTO) error
+	AddKey(uuid.UUID, authority.KeyDTO) (*authority.KeyDTO, error)
 
 	// RemoveKey removes an existing key from an existing authority
 	// If no keys are left, the entire authority is removed
@@ -58,16 +60,26 @@ func (s *DefaultAuthorityService) Create(in authority.AuthorityCreateDTO) error 
 	return nil
 }
 
-func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.KeyDTO) error {
+func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.KeyDTO) (*authority.KeyDTO, error) {
 	a, err := s.AuthorityRepository.Find(authorityID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	a.Keys = append(a.Keys, in.ToKey())
 
-	_, err = s.AuthorityRepository.Upsert(*a)
-	return err
+	updated, err := s.AuthorityRepository.Upsert(*a)
+	if err != nil {
+		return nil, err
+	}
+
+	// The find operation cannot fail if the upsert method passes
+	updatedKey, _ := slice.Find(updated.Keys, func(key authority.Key) bool {
+		return key.KeyId == in.ToKey().KeyId
+	})
+
+	dto := updatedKey.ToKeyDTO()
+	return &dto, nil
 }
 
 func (s *DefaultAuthorityService) RemoveKey(authorityID uuid.UUID, keyID uuid.UUID) error {

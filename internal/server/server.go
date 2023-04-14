@@ -176,6 +176,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
+		ApiKeyService:    apiKeyService,
 
 		Authorization: authorization,
 	}

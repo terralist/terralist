@@ -13,7 +13,7 @@ const client = createClient({
 
 const actions = {
   create: (authorityId: string, label: string) => client
-    .post<ApiKey>(`/${authorityId}/api-key`, { label })
+    .post<ApiKey>(`/${authorityId}/api-keys`, { label })
     .then(handleResponse<ApiKey>)
     .catch(handleError),
 
@@ -23,7 +23,7 @@ const actions = {
     }
 
     return client
-      .delete<boolean>(`/${authorityId}/api-key/${id}`)
+      .delete<boolean>(`/${authorityId}/api-keys/${id}`)
       .then(handleResponse<boolean>)
       .catch(handleError)
   }

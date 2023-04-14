@@ -8,6 +8,7 @@ import (
 	"terralist/pkg/database"
 
 	"github.com/google/uuid"
+	"github.com/ssoroka/slice"
 	"gorm.io/gorm"
 )
 
@@ -80,34 +81,35 @@ func (r *DefaultAuthorityRepository) FindAll(owner string) ([]*authority.Authori
 }
 
 func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.Authority, error) {
+	toDeleteKeys := make([]authority.Key, 0, len(a.Keys))
+
 	if !a.Empty() {
 		current, err := r.Find(a.ID)
 		if err == nil {
-			if a.PolicyURL == "" {
-				a.PolicyURL = current.PolicyURL
-			}
-
 			a.Name = current.Name
 			a.Owner = current.Owner
+		}
 
-			for _, currentKey := range current.Keys {
-				shouldUpdate := false
-				for i, newKey := range a.Keys {
-					if currentKey.KeyId == newKey.KeyId {
-						shouldUpdate = true
-						a.Keys[i].ID = currentKey.ID
-						break
-					}
-				}
-
-				if !shouldUpdate {
-					a.Keys = append(a.Keys, currentKey)
-				}
+		for _, key := range current.Keys {
+			if !slice.Contains(a.Keys, key) {
+				toDeleteKeys = append(toDeleteKeys, key)
 			}
 		}
 	}
 
-	if err := r.Database.Handler().Save(&a).Error; err != nil {
+	if err := r.Database.Handler().Transaction(func(tx *gorm.DB) error {
+		if len(toDeleteKeys) > 0 {
+			if err := tx.Delete(&toDeleteKeys).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Save(&a).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 

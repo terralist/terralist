@@ -15,7 +15,7 @@ const client = createClient({
 
 const actions = {
   create: (authorityId: string, keyId: string, asciiArmor?: string, trustSignature?: string) => client
-    .post<Key>(`/${authorityId}/key`, { keyId, asciiArmor, trustSignature })
+    .post<Key>(`/${authorityId}/keys`, { keyId, asciiArmor, trustSignature })
     .then(handleResponse<Key>)
     .catch(handleError),
 
@@ -25,7 +25,7 @@ const actions = {
     }
 
     return client
-      .delete<boolean>(`/${authorityId}/key/${id}`)
+      .delete<boolean>(`/${authorityId}/keys/${id}`)
       .then(handleResponse<boolean>)
       .catch(handleError)
   }

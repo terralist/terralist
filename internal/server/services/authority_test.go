@@ -146,10 +146,16 @@ func TestAddKey(t *testing.T) {
 					Return(&authority.Authority{}, nil)
 
 				Convey("When the service is queried", func() {
-					err := authorityService.AddKey(authorityID, dto)
+					result, err := authorityService.AddKey(authorityID, dto)
 
 					Convey("No error should be returned", func() {
 						So(err, ShouldBeNil)
+					})
+
+					Convey("The returned key should have the same attributes", func() {
+						So(result.KeyId, ShouldEqual, dto.KeyId)
+						So(result.AsciiArmor, ShouldEqual, dto.AsciiArmor)
+						So(result.TrustSignature, ShouldEqual, dto.TrustSignature)
 					})
 				})
 			})
@@ -160,10 +166,14 @@ func TestAddKey(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					err := authorityService.AddKey(authorityID, dto)
+					result, err := authorityService.AddKey(authorityID, dto)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
+					})
+
+					Convey("The returned object should be nil", func() {
+						So(result, ShouldBeNil)
 					})
 				})
 			})
