@@ -6,7 +6,6 @@ import (
 	"terralist/internal/server/repositories"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"github.com/ssoroka/slice"
 )
 
