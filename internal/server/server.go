@@ -2,11 +2,8 @@ package server
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
-	"sort"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -21,7 +18,9 @@ import (
 	"terralist/pkg/file"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
+	"terralist/web"
 
+	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/mazen160/go-random"
 	"github.com/rs/zerolog/log"
@@ -37,8 +36,6 @@ type Server struct {
 	Provider auth.Provider
 	Database database.Engine
 	Resolver storage.Resolver
-
-	Routers []api.Router
 
 	Readiness *atomic.Bool
 }
@@ -76,31 +73,21 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("could not apply initial migration: %v", err)
 	}
 
-	// Initialize webUI manager
-	// manager, err := webui.NewManager(web.FS, map[string]string{
-	// 	"TERRALIST_HOST": 						"localhost",
-	// 	"TERRALIST_COMPANY_NAME":     "",
-	// 	"TERRALIST_OAUTH_PROVIDERS":  `["github"]`,
-	// })
+	// Serve static files (frontend) as middleware
+	router.Use(static.Serve("/", web.StaticFS()))
 
-	// if err != nil {
-	// 	return nil, fmt.Errorf("could not create a new view manager: %v", err)
-	// }
-
-	probeRouter := api.NewRouter(api.RouterOptions{
-		Prefix:   "/check",
-		Priority: api.RouterMaxPriority,
+	probeGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "/check",
 	})
 
 	readiness := &atomic.Bool{}
 
-	probeRouter.Register(&controllers.DefaultProbeController{
+	probeGroup.Register(&controllers.DefaultProbeController{
 		Ready: readiness,
 	})
 
-	apiV1Router := api.NewRouter(api.RouterOptions{
-		Prefix:   "/v1",
-		Priority: api.RouterMinPriority - 1,
+	apiV1Group := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "/v1",
 	})
 
 	jwtManager, _ := jwt.New(userConfig.TokenSigningSecret)
@@ -124,7 +111,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		HostURL:     hostURL,
 	}
 
-	apiV1Router.Register(loginController)
+	apiV1Group.Register(loginController)
 
 	authorityRepository := &repositories.DefaultAuthorityRepository{
 		Database: config.Database,
@@ -166,7 +153,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authorization: authorization,
 	}
 
-	apiV1Router.Register(moduleController)
+	apiV1Group.Register(moduleController)
 
 	providerRepository := &repositories.DefaultProviderRepository{
 		Database: config.Database,
@@ -185,7 +172,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authorization: authorization,
 	}
 
-	apiV1Router.Register(providerController)
+	apiV1Group.Register(providerController)
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
@@ -193,7 +180,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authorization: authorization,
 	}
 
-	apiV1Router.Register(authorityController)
+	apiV1Group.Register(authorityController)
 
 	artifactController := &controllers.DefaultArtifactController{
 		AuthorityService: authorityService,
@@ -203,52 +190,31 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authorization: authorization,
 	}
 
-	apiV1Router.Register(artifactController)
+	apiV1Group.Register(artifactController)
 
-	staticRouter := api.NewRouter(api.RouterOptions{
-		Prefix:   "/",
-		Priority: api.RouterMinPriority,
+	wellKnownGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "/.well-known",
 	})
 
-	staticRouter.Register(&controllers.DefaultWebController{})
-
-	wellKnownRouter := api.NewRouter(api.RouterOptions{
-		Prefix:   "/.well-known",
-		Priority: api.RouterMaxPriority,
+	wellKnownGroup.Register(&controllers.DefaultServiceDiscoveryController{
+		AuthorizationEndpoint: apiV1Group.Prefix() + loginController.AuthorizationRoute(),
+		TokenEndpoint:         apiV1Group.Prefix() + loginController.TokenRoute(),
+		ModuleEndpoint:        apiV1Group.Prefix() + moduleController.TerraformApi(),
+		ProviderEndpoint:      apiV1Group.Prefix() + providerController.TerraformApi(),
 	})
 
-	wellKnownRouter.Register(&controllers.DefaultServiceDiscoveryController{
-		AuthorizationEndpoint: apiV1Router.Prefix() + loginController.AuthorizationRoute(),
-		TokenEndpoint:         apiV1Router.Prefix() + loginController.TokenRoute(),
-		ModuleEndpoint:        apiV1Router.Prefix() + moduleController.TerraformApi(),
-		ProviderEndpoint:      apiV1Router.Prefix() + providerController.TerraformApi(),
+	internalGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "/internal",
 	})
 
-	internalRouter := api.NewRouter(api.RouterOptions{
-		Prefix:   "/internal",
-		Priority: api.RouterMaxPriority + 1,
-	})
-
-	internalRouter.Register(&controllers.DefaultInternalController{
+	internalGroup.Register(&controllers.DefaultInternalController{
 		HostURL:               hostURL.String(),
 		CanonicalDomain:       hostURL.Host,
 		CustomCompanyName:     userConfig.CustomCompanyName,
 		OauthProviders:        []string{userConfig.OauthProvider},
-		AuthorizationEndpoint: apiV1Router.Prefix() + loginController.AuthorizationRoute(),
-		SessionDetailsRoute:   apiV1Router.Prefix() + loginController.SessionDetailsRoute(),
-		ClearSessionRoute:     apiV1Router.Prefix() + loginController.ClearSessionRoute(),
-	})
-
-	routers := []api.Router{
-		probeRouter,
-		apiV1Router,
-		staticRouter,
-		wellKnownRouter,
-		internalRouter,
-	}
-
-	sort.SliceStable(routers, func(i, j int) bool {
-		return routers[i].Priority() < routers[j].Priority()
+		AuthorizationEndpoint: apiV1Group.Prefix() + loginController.AuthorizationRoute(),
+		SessionDetailsRoute:   apiV1Group.Prefix() + loginController.SessionDetailsRoute(),
+		ClearSessionRoute:     apiV1Group.Prefix() + loginController.ClearSessionRoute(),
 	})
 
 	return &Server{
@@ -260,34 +226,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Provider: config.Provider,
 		Database: config.Database,
 
-		Routers: routers,
-
 		Readiness: readiness,
 	}, nil
 }
 
 // Start initializes the routes and starts serving
 func (s *Server) Start() error {
-	s.Router.Any("/*path", func(c *gin.Context) {
-		path := c.Param("path")
-
-		for _, r := range s.Routers {
-			if strings.HasPrefix(path, r.Prefix()) {
-				r.Router().HandleContext(c)
-				return
-			}
-		}
-
-		if c.Writer.Status() >= 400 {
-			c.String(
-				c.Writer.Status(),
-				"%d: %s",
-				c.Writer.Status(),
-				http.StatusText(c.Writer.Status()),
-			)
-		}
-	})
-
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)
 
@@ -298,7 +242,6 @@ func (s *Server) Start() error {
 		log.Info().Msgf("Terralist started, listening on port %v", s.Port)
 
 		err := s.Router.Run(fmt.Sprintf(":%d", s.Port))
-
 		if err != nil {
 			log.Error().AnErr("error", err).Send()
 		}
