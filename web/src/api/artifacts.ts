@@ -18,7 +18,7 @@ interface Artifact {
 };
 
 const client = createClient({
-  baseURL: "/v1/api/artifact",
+  baseURL: "/v1/api/artifacts",
   timeout: 120,
 });
 

@@ -12,7 +12,7 @@ interface Authority {
 };
 
 const client = createClient({
-  baseURL: "/v1/api/authority",
+  baseURL: "/v1/api/authorities",
   timeout: 120,
 });
 

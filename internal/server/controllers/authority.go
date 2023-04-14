@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	authorityApiBase = "/api/authority"
+	authorityApiBase = "/api/authorities"
 )
 
 // AuthorityController registers the endpoints to control authorities

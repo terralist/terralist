@@ -8,7 +8,6 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
-	"terralist/pkg/slug"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -16,7 +15,7 @@ import (
 )
 
 const (
-	artifactApiBase = "/api/artifact"
+	artifactApiBase = "/api/artifacts"
 )
 
 // ArtifactController registers the endpoints to control authorities
@@ -51,95 +50,104 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 
 	api.GET(
-		"/:slug/version",
+		"/:namespace/:name/:provider/version",
 		func(ctx *gin.Context) {
-			s, err := slug.Parse(ctx.Param("slug"))
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
 
+			dto, err := c.ModuleService.Get(namespace, name, provider)
 			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
+				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
 			}
 
-			var versions []string
-			if s.Provider != "" {
-				dto, err := c.ModuleService.Get(s.Namespace, s.Name, s.Provider)
-				if err != nil {
-					ctx.JSON(http.StatusNotFound, gin.H{
-						"errors": []string{err.Error()},
-					})
-					return
-				}
+			versions := slice.Map[module.VersionListDTO, string](
+				dto.Modules[0].Versions,
+				func(v module.VersionListDTO) string {
+					return v.Version
+				},
+			)
 
-				versions = slice.Map[module.VersionListDTO, string](
-					dto.Modules[0].Versions,
-					func(v module.VersionListDTO) string {
-						return v.Version
-					},
-				)
-			} else {
-				dto, err := c.ProviderService.Get(s.Namespace, s.Name)
-				if err != nil {
-					ctx.JSON(http.StatusNotFound, gin.H{
-						"errors": []string{err.Error()},
-					})
-					return
-				}
+			ctx.JSON(http.StatusOK, versions)
+		},
+	)
 
-				versions = slice.Map[provider.VersionListVersionDTO, string](
-					dto.Versions,
-					func(v provider.VersionListVersionDTO) string {
-						return v.Version
-					},
-				)
+	api.GET(
+		"/:namespace/:name/version",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+
+			dto, err := c.ProviderService.Get(namespace, name)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
 			}
+
+			versions := slice.Map[provider.VersionListVersionDTO, string](
+				dto.Versions,
+				func(v provider.VersionListVersionDTO) string {
+					return v.Version
+				},
+			)
 
 			ctx.JSON(http.StatusOK, versions)
 		},
 	)
 
 	api.DELETE(
-		"/:slug/version/:version",
+		"/:namespace/:name/:provider/version/:version",
 		func(ctx *gin.Context) {
-			s, err := slug.Parse(ctx.Param("slug"))
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			_ = namespace
+
+			err := c.ModuleService.DeleteVersion(
+				uuid.Must(uuid.NewRandom()), // TODO: Find authority based on namespace
+				name,
+				provider,
+				version,
+			)
+
 			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
+				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
 			}
 
+			ctx.JSON(http.StatusOK, true)
+		},
+	)
+
+	api.DELETE(
+		"/:namespace/:name/version/:version",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
 			version := ctx.Param("version")
 
-			if s.Provider != "" {
-				err := c.ModuleService.DeleteVersion(
-					uuid.Must(uuid.NewRandom()),
-					s.Name,
-					s.Provider,
-					version,
-				)
+			_ = namespace
 
-				if err != nil {
-					ctx.JSON(http.StatusNotFound, gin.H{
-						"errors": []string{err.Error()},
-					})
-					return
-				}
+			err := c.ProviderService.DeleteVersion(
+				uuid.Must(uuid.NewRandom()), // TODO: Find authority based on namespace
+				name,
+				version,
+			)
 
-			} else {
-				err := c.ProviderService.DeleteVersion(
-					uuid.Must(uuid.NewRandom()),
-					s.Name,
-					version,
-				)
-
-				if err != nil {
-					ctx.JSON(http.StatusNotFound, gin.H{
-						"errors": []string{err.Error()},
-					})
-					return
-				}
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
 			}
 
 			ctx.JSON(http.StatusOK, true)
