@@ -58,8 +58,6 @@
   const moveSelectorDown = () => { moveSelector(1); }
 
   const openEntry = () => {
-    console.log(searchEntries);
-
     searchEntries[selectedSearchEntry].click();
   };
 
