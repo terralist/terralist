@@ -42,11 +42,7 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 	api.GET(
 		"/",
 		func(ctx *gin.Context) {
-			// TODO: Should return all authorities, not the ones owned by someone
-			owner, _ := ctx.Get("userEmail")
-			ownerStr, _ := owner.(string)
-
-			authorities, err := c.AuthorityService.GetAll(ownerStr)
+			authorities, err := c.AuthorityService.GetAll()
 			if err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{
 					"errors": []string{err.Error()},
@@ -90,8 +86,23 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 	api.POST(
 		"/",
 		func(ctx *gin.Context) {
-			// TODO
-			ctx.JSON(http.StatusCreated, gin.H{})
+			var body authority.AuthorityCreateDTO
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			authority, err := c.AuthorityService.Create(body)
+			if err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusCreated, authority)
 		},
 	)
 
@@ -106,10 +117,23 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			// TODO
-			_ = id
+			var body authority.AuthorityDTO
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
 
-			ctx.JSON(http.StatusOK, gin.H{})
+			authority, err := c.AuthorityService.Update(id, body)
+			if err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, authority)
 		},
 	)
 

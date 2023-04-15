@@ -48,6 +48,21 @@ func (a Authority) ToDTO() AuthorityDTO {
 	}
 }
 
+func (d AuthorityDTO) ToAuthority() Authority {
+	return Authority{
+		Name:      d.Name,
+		PolicyURL: d.PolicyURL,
+
+		Keys: slice.Map[KeyDTO, Key](d.Keys, func(k KeyDTO) Key {
+			return k.ToKey()
+		}),
+
+		ApiKeys: slice.Map[ApiKeyDTO, ApiKey](d.ApiKeys, func(a ApiKeyDTO) ApiKey {
+			return a.ToApiKey()
+		}),
+	}
+}
+
 type AuthorityCreateDTO struct {
 	Name      string `json:"name"`
 	PolicyURL string `json:"policy_url"`

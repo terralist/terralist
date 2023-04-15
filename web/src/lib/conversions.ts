@@ -8,7 +8,7 @@ const snakeToCamel: StringTransformer = (v: string) => v.replace(/([_][a-z])/g, 
 const camelToSnake: StringTransformer = (v: string) => v.replace(/([a-z][A-Z])/g, group => group.toLowerCase().split("").join("_"));
 
 const transformKeys = (o: any, t: StringTransformer = nullTransformer): any => {
-  if (typeof o !== 'object') {
+  if (typeof o !== 'object' || [null, undefined].includes(o)) {
     return o;
   }
 

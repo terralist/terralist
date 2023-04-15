@@ -38,9 +38,7 @@ const actions = {
       }
 
       return client
-        .patch<Authority>(`/${authority.id}`, {
-          ...authority
-        })
+        .patch<Authority>(`/${authority.id}`, authority)
         .then(handleResponse<Authority>)
         .catch(handleError);
     },

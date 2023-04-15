@@ -65,7 +65,7 @@ func TestFindAuthorities(t *testing.T) {
 					Return([]*authority.Authority{{Owner: owner}}, nil)
 
 				Convey("When the service is queried", func() {
-					authorities, err := authorityService.GetAll(owner)
+					authorities, err := authorityService.GetAllByOwner(owner)
 
 					Convey("A list with a single authority should be returned", func() {
 						So(authorities, ShouldNotBeNil)
@@ -81,7 +81,7 @@ func TestFindAuthorities(t *testing.T) {
 					Return([]*authority.Authority{}, nil)
 
 				Convey("When the service is queried", func() {
-					authorities, err := authorityService.GetAll(owner)
+					authorities, err := authorityService.GetAllByOwner(owner)
 
 					Convey("An empty list should be returned", func() {
 						So(authorities, ShouldNotBeNil)
@@ -114,10 +114,19 @@ func TestCreateAuthority(t *testing.T) {
 				Return(&authority.Authority{}, nil)
 
 			Convey("When the service is queried", func() {
-				err := authorityService.Create(dto)
+				created, err := authorityService.Create(dto)
 
 				Convey("No error should be returned", func() {
 					So(err, ShouldBeNil)
+				})
+
+				Convey("Created authority should have and ID", func() {
+					So(created.ID, ShouldNotBeEmpty)
+				})
+
+				Convey("Created authority should have the same attributes", func() {
+					So(created.Name, ShouldEqual, dto.Name)
+					So(created.PolicyURL, ShouldEqual, created.PolicyURL)
 				})
 			})
 		})
