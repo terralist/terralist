@@ -10,6 +10,7 @@
 
   import { Artifacts, type Artifact } from '@/api/artifacts';
   import { useQuery } from '@/lib/hooks';
+  import { computeArtifactUrl } from '@/lib/artifact';
 
   let open: boolean = false;
 
@@ -64,16 +65,6 @@
   const escapeSearchbar = () => {
     open = false;
     searchbar.blur();
-  };
-
-  const computeArtifactUrl = (artifact: Artifact) => {
-    const slug = [artifact.authority, artifact.name]
-        .concat(artifact.type === 'module' ? [artifact.provider] : [])
-        .concat(artifact.latest)
-        .join("/")
-        .toLowerCase();
-    
-    return `/${slug}`;
   };
 </script>
 

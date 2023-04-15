@@ -71,7 +71,7 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			authority, err := c.AuthorityService.Get(id)
+			authority, err := c.AuthorityService.GetByID(id)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},

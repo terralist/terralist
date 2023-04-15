@@ -1,30 +1,20 @@
-interface Artifact {
-  type: "module" | "provider",
-  namespace: string,
-  name: string,
-  provider?: string | undefined,
-  version: string
-};
+import type { Artifact } from "@/api/artifacts";
 
-const pathRegex = /^\/(?<namespace>[^/]+)\/(?<name>[^/]+)(?:\/(?<provider>[^/]+))?\/(?<version>[^/]+)$/gm;
+const computeArtifactUrl = (artifact: Artifact) => {
+  const slug = [artifact.namespace, artifact.name]
+      .concat(artifact.type === 'module' ? [artifact.provider] : [])
+      .concat(artifact.versions[0])
+      .join("/")
+      .toLowerCase();
+  
+  const category = {
+    "module": "modules",
+    "provider": "providers",
+  }[artifact.type];
 
-const fromPath = (path: string) => {
-  let m = pathRegex.exec(path);
-
-  if (m === null) {
-    return null;
-  }
-
-  return {
-    type: m.groups.provider ? "module" : "provider",
-    namespace: m.groups.namespace,
-    name: m.groups.name,
-    provider: m.groups.provider,
-    version: m.groups.version,
-  } satisfies Artifact;
+  return `/${category}/${slug}`;
 };
 
 export {
-  fromPath,
-  type Artifact
+  computeArtifactUrl
 };

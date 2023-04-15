@@ -16,7 +16,10 @@ var (
 // AuthorityService describes a service that can interact with the authorities database
 type AuthorityService interface {
 	// Get returns an authority with a specific ID
-	Get(id uuid.UUID) (*authority.Authority, error)
+	GetByID(id uuid.UUID) (*authority.Authority, error)
+
+	// Get returns an authority with a specific name
+	GetByName(name string) (*authority.Authority, error)
 
 	// GetAll returns all authorities
 	GetAll() ([]*authority.Authority, error)
@@ -46,8 +49,12 @@ type DefaultAuthorityService struct {
 	AuthorityRepository repositories.AuthorityRepository
 }
 
-func (s *DefaultAuthorityService) Get(id uuid.UUID) (*authority.Authority, error) {
-	return s.AuthorityRepository.Find(id)
+func (s *DefaultAuthorityService) GetByID(id uuid.UUID) (*authority.Authority, error) {
+	return s.AuthorityRepository.FindByID(id)
+}
+
+func (s *DefaultAuthorityService) GetByName(name string) (*authority.Authority, error) {
+	return s.AuthorityRepository.FindByName(name)
 }
 
 func (s *DefaultAuthorityService) GetAll() ([]*authority.Authority, error) {
@@ -92,7 +99,7 @@ func (s *DefaultAuthorityService) Update(id uuid.UUID, in authority.AuthorityDTO
 }
 
 func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.KeyDTO) (*authority.KeyDTO, error) {
-	a, err := s.AuthorityRepository.Find(authorityID)
+	a, err := s.AuthorityRepository.FindByID(authorityID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +121,7 @@ func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.Key
 }
 
 func (s *DefaultAuthorityService) RemoveKey(authorityID uuid.UUID, keyID uuid.UUID) error {
-	a, err := s.AuthorityRepository.Find(authorityID)
+	a, err := s.AuthorityRepository.FindByID(authorityID)
 	if err != nil {
 		return err
 	}

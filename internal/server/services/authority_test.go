@@ -10,6 +10,7 @@ import (
 	mockRepositories "terralist/mocks/server/repositories"
 
 	"github.com/google/uuid"
+	"github.com/mazen160/go-random"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
 )
@@ -27,11 +28,11 @@ func TestFindAuthorities(t *testing.T) {
 
 			Convey("If the authority exists in the database", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}}, nil)
 
 				Convey("When the service is queried", func() {
-					authority, err := authorityService.Get(authorityID)
+					authority, err := authorityService.GetByID(authorityID)
 
 					Convey("The authority should be returned", func() {
 						So(authority, ShouldNotBeNil)
@@ -42,11 +43,50 @@ func TestFindAuthorities(t *testing.T) {
 
 			Convey("If the authority does not exist in the database", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					authority, err := authorityService.Get(authorityID)
+					authority, err := authorityService.GetByID(authorityID)
+
+					Convey("An error should be returned", func() {
+						So(authority, ShouldBeNil)
+						So(err, ShouldNotBeNil)
+					})
+				})
+			})
+		})
+
+		Convey("Given a valid authority name", func() {
+			name, _ := random.String(16)
+
+			Convey("If the authority exists in the database", func() {
+				mockAuthorityRepository.
+					On("FindByName", name).
+					Return(&authority.Authority{
+						Entity: entity.Entity{ID: uuid.Must(uuid.NewRandom())},
+						Name:   name,
+					}, nil)
+
+				Convey("When the service is queried", func() {
+					authority, err := authorityService.GetByName(name)
+
+					Convey("The authority should be returned", func() {
+						So(authority, ShouldNotBeNil)
+						So(err, ShouldBeNil)
+						So(authority.ID, ShouldNotBeNil)
+						So(authority.Name, ShouldEqual, name)
+					})
+				})
+			})
+
+			Convey("If the authority does not exist in the database", func() {
+				mockAuthorityRepository.
+					On("FindByName", name).
+					Return(nil, errors.New(""))
+
+				Convey("When the service is queried", func() {
+					authority, err := authorityService.GetByName(name)
 
 					Convey("An error should be returned", func() {
 						So(authority, ShouldBeNil)
@@ -147,7 +187,7 @@ func TestAddKey(t *testing.T) {
 
 			Convey("If the authority exists", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(&authority.Authority{}, nil)
 
 				mockAuthorityRepository.
@@ -171,7 +211,7 @@ func TestAddKey(t *testing.T) {
 
 			Convey("If the authority does not exist", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
@@ -204,7 +244,7 @@ func TestRemoveKey(t *testing.T) {
 
 			Convey("If the authority exists and the key is associated with the authority", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(&authority.Authority{
 						Keys: []authority.Key{},
 					}, nil)
@@ -221,7 +261,7 @@ func TestRemoveKey(t *testing.T) {
 
 			Convey("If the authority exists and the key is the only key associated with the authority", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(&authority.Authority{
 						Keys: []authority.Key{
 							{
@@ -249,7 +289,7 @@ func TestRemoveKey(t *testing.T) {
 				otherKeyID, _ := uuid.NewRandom()
 
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(&authority.Authority{
 						Keys: []authority.Key{
 							{
@@ -282,7 +322,7 @@ func TestRemoveKey(t *testing.T) {
 
 			Convey("If the authority does not exists", func() {
 				mockAuthorityRepository.
-					On("Find", authorityID).
+					On("FindByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {

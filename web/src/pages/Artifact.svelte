@@ -6,7 +6,7 @@
     namespace: string,
     name: string,
     provider?: string,
-    version: string
+    version?: string
   };
 </script>
 

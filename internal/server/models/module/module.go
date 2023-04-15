@@ -3,10 +3,12 @@ package module
 import (
 	"fmt"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database/entity"
 	"terralist/pkg/version"
 
 	"github.com/google/uuid"
+	"github.com/ssoroka/slice"
 )
 
 type Module struct {
@@ -38,6 +40,20 @@ func (m Module) ToListResponseDTO() ListResponseDTO {
 
 	return ListResponseDTO{
 		Modules: []ModuleDTO{module},
+	}
+}
+
+func (m Module) ToArtifact() artifact.Artifact {
+	return artifact.Artifact{
+		ID:       m.ID.String(),
+		Name:     m.Name,
+		Provider: m.Provider,
+		Type:     artifact.TypeModule,
+		Versions: slice.Map[Version, string](m.Versions, func(v Version) string {
+			return v.Version
+		}),
+		CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt: m.UpdatedAt.Format("2006-01-02T15:04:05"),
 	}
 }
 

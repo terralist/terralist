@@ -1,18 +1,15 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
+  
+  import Icon from "./Icon.svelte";
+
   import type { Artifact } from "@/api/artifacts";
   import { timeSince } from "@/lib/utils";
-  import Icon from "./Icon.svelte";
+  import { computeArtifactUrl } from '@/lib/artifact';
 
   export let artifact: Artifact;
 
-  const slug = [artifact.authority, artifact.name]
-      .concat(artifact.type === 'module' ? [artifact.provider] : [])
-      .concat(artifact.latest)
-      .join("/")
-      .toLowerCase();
-  
-  const url = `/${slug}`;
+  const url = computeArtifactUrl(artifact);
 </script>
 
 {#key artifact.id}
@@ -25,7 +22,7 @@
           </h2>
         </a>
         <h3 class="text-zinc-800 dark:text-zinc-100">
-          @{artifact.authority}
+          @{artifact.namespace}
         </h3>
       </div>
       <div class="flex flex-col justify-center items-center dark:text-white">
@@ -41,11 +38,11 @@
     </div>
     <div class="grid grid-cols-2 gap-4 mb-3 font-normal text-gray-700 dark:text-gray-400 text-sm">
       <p class="place-self-start">Version:</p>
-      <p class="place-self-end">{artifact.latest}</p>
+      <p class="place-self-end">{artifact.versions[0]}</p>
       <p class="place-self-start">Updated:</p>
-      <p class="place-self-end">{timeSince(artifact.createdAt)}</p>
-      <p class="place-self-start">Published:</p>
       <p class="place-self-end">{timeSince(artifact.updatedAt)}</p>
+      <p class="place-self-start">Published:</p>
+      <p class="place-self-end">{timeSince(artifact.createdAt)}</p>
     </div>
     <a
       class="

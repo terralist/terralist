@@ -7,20 +7,61 @@ type ArtifactVersion = string;
 interface Artifact {
   id: string,
   fullName: string,
-  authority: string,
+  namespace: string,
   name: string,
   provider?: string,
   type: "provider" | "module",
   versions?: ArtifactVersion[],
-  latest: string,
   createdAt: Date,
   updatedAt: Date,
+};
+
+const createDateAttributes = (artifact: Artifact): Artifact => {
+  return {
+    ...artifact,
+    createdAt: new Date(artifact.createdAt),
+    updatedAt: new Date(artifact.updatedAt),
+  } as Artifact;
 };
 
 const client = createClient({
   baseURL: "/v1/api/artifacts",
   timeout: 120,
 });
+
+const setDateAttributes = (r: Result<Artifact[]> | Result<Artifact>): Result<Artifact[]> | Result<Artifact> => {
+  const {data, ...rest} = r;
+
+  if (Array.isArray(data)) {
+    return {
+      data: data.map(createDateAttributes),
+      ...rest
+    } as Result<Artifact[]>;
+  }
+
+  return {
+    data: createDateAttributes(data),
+    ...rest
+  } as Result<Artifact>;
+};
+
+const sortArtifactsVersions = (r: Result<Artifact[]>): Result<Artifact[]> => {
+  const {data: artifacts, ...rest} = r;
+
+  const result = artifacts.map(
+    a => {
+      return {
+        ...a,
+        versions: a.versions.sort(cmp).reverse(),
+      };
+    }
+  );
+
+  return {
+    data: result,
+    ...rest,
+  } as Result<Artifact[]>;
+};
 
 const sortVersions = (r: Result<ArtifactVersion[]>): Result<ArtifactVersion[]> => {
   const {data: versions, ...rest} = r;
@@ -35,11 +76,14 @@ const actions = {
   getAll: () => client
     .get<Artifact[]>("/")
     .then(handleResponse<Artifact[]>)
+    .then(setDateAttributes)
+    .then(sortArtifactsVersions)
     .catch(handleError),
 
   getOne: (namespace: string, name: string, provider: string | undefined) => client
     .get<Artifact>([namespace, name, provider].filter(e => e).join("/"))
     .then(handleResponse<Artifact>)
+    .then(setDateAttributes)
     .catch(handleError),
 
   getAllVersionsForOne: (namespace: string, name: string, provider: string | undefined) => client

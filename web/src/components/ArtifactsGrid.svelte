@@ -80,7 +80,7 @@
 
   let filtersUnsubscribe: () => void;
 
-  onMount(() => {
+  const artifactsUnsubscribe = artifacts.subscribe(() => {
     updateArtifacts();
 
     initPages();
@@ -96,6 +96,7 @@
 
   onDestroy(() => {
     filtersUnsubscribe();
+    artifactsUnsubscribe();
   });
 </script>
 

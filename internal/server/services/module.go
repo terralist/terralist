@@ -81,7 +81,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 	m := d.ToModule()
 
 	// Find the authority
-	a, err := s.AuthorityService.Get(m.AuthorityID)
+	a, err := s.AuthorityService.GetByID(m.AuthorityID)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 }
 
 func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provider string) error {
-	a, err := s.AuthorityService.Get(authorityID)
+	a, err := s.AuthorityService.GetByID(authorityID)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 }
 
 func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string, provider string, version string) error {
-	a, err := s.AuthorityService.Get(authorityID)
+	a, err := s.AuthorityService.GetByID(authorityID)
 	if err != nil {
 		return err
 	}

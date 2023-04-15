@@ -67,7 +67,15 @@ const routes = {
       onFailureRedirectTo: "/login",
     },
   }),
-  "/:namespace/:name/:provider?/:version": wrap({
+  "/modules/:namespace/:name/:provider/:version?": wrap({
+    asyncComponent: () => import("@/pages/Artifact.svelte"),
+    loadingComponent: Loading,
+    conditions: baseConditions.concat([isAuthenticatedCondition()]),
+    userData: {
+      onFailureRedirectTo: "/login",
+    },
+  }),
+  "/providers/:namespace/:name/:version?": wrap({
     asyncComponent: () => import("@/pages/Artifact.svelte"),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),

@@ -1,16 +1,17 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"terralist/internal/server/handlers"
+	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/ssoroka/slice"
 )
 
@@ -44,8 +45,39 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 	api.GET(
 		"/",
 		func(ctx *gin.Context) {
+			authorities, err := c.AuthorityService.GetAll()
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
 
-			ctx.JSON(http.StatusOK, gin.H{})
+			artifactsCount := 0
+			for _, a := range authorities {
+				artifactsCount += len(a.Modules) + len(a.Providers)
+			}
+
+			artifacts := make([]artifact.Artifact, 0, artifactsCount)
+			for _, a := range authorities {
+				for _, m := range a.Modules {
+					artifact := m.ToArtifact()
+					artifact.Namespace = a.Name
+					artifact.FullName = fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)
+
+					artifacts = append(artifacts, artifact)
+				}
+
+				for _, p := range a.Providers {
+					artifact := p.ToArtifact()
+					artifact.Namespace = a.Name
+					artifact.FullName = fmt.Sprintf("%s/%s", a.Name, p.Name)
+
+					artifacts = append(artifacts, artifact)
+				}
+			}
+
+			ctx.JSON(http.StatusOK, artifacts)
 		},
 	)
 
@@ -108,16 +140,20 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			_ = namespace
+			authority, err := c.AuthorityService.GetByName(namespace)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
 
-			err := c.ModuleService.DeleteVersion(
-				uuid.Must(uuid.NewRandom()), // TODO: Find authority based on namespace
+			if err := c.ModuleService.DeleteVersion(
+				authority.ID,
 				name,
 				provider,
 				version,
-			)
-
-			if err != nil {
+			); err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
@@ -135,15 +171,19 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 			name := ctx.Param("name")
 			version := ctx.Param("version")
 
-			_ = namespace
+			authority, err := c.AuthorityService.GetByName(namespace)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
 
-			err := c.ProviderService.DeleteVersion(
-				uuid.Must(uuid.NewRandom()), // TODO: Find authority based on namespace
+			if err := c.ProviderService.DeleteVersion(
+				authority.ID,
 				name,
 				version,
-			)
-
-			if err != nil {
+			); err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})

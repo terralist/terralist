@@ -8,8 +8,10 @@
   import Icon from "./Icon.svelte";
   import Dropdown from "./Dropdown.svelte";
   import FullPageError from './FullPageError.svelte';
+  import LoadingScreen from './LoadingScreen.svelte';
 
   import { Artifacts, type ArtifactVersion } from '@/api/artifacts';
+  import { computeArtifactUrl } from '@/lib/artifact';
 
   export let type: "module" | "provider";
   export let namespace: string;
@@ -46,8 +48,18 @@
   });
   
   const onOptionSelect = (option: string) => {
-    const url = [namespace, name].concat(type === 'module' ? [provider] : []).concat(option).join("/").toLowerCase();
-    push(`/${url}`);
+    const url = computeArtifactUrl({
+      id: null,
+      fullName: null,
+      createdAt: null,
+      updatedAt: null,
+      namespace: namespace,
+      name: name,
+      provider: provider,
+      versions: [option],
+      type: type,
+    });
+    push(url);
   };
 
   let label: string = version;
@@ -59,6 +71,10 @@
   } = useQuery<ArtifactVersion[]>(Artifacts.getAllVersionsForOne, namespace, name, provider);
 
   versions.subscribe(() => {
+    if (($versions?.length ?? 0) > 0 && (!version || version === "latest")) {
+      version = $versions[0];
+    }
+
     if (($versions?.length ?? 0) > 0 && $versions[0] === version) {
       label = `${version} (latest)`
     }
@@ -68,7 +84,7 @@
 
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
   {#if $areVersionsLoading}
-    <p>Loading...</p>
+    <LoadingScreen />
   {:else if $errorMessage}
     <FullPageError code={0} message={$errorMessage} />
   {:else if !$versions.includes(version)}
