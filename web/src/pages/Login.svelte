@@ -19,8 +19,13 @@
     "google": "Google",
   };
 
+  let loginDisabled: boolean = false;
+
   const onLogin = async (provider: string) => {
-    formRef[provider].submit();
+    if (!loginDisabled) {
+      loginDisabled = true;
+      formRef[provider].submit();
+    }
   };
 </script>
 
@@ -88,9 +93,12 @@
         {#if providersDisplayName[provider]}
           <form class="w-full" bind:this={formRef[provider]} method="get" action={authorizationEndpoint}>
             <input type="hidden" name="redirect_uri" value={hostUrl} />
-            <Button class="w-full grid grid-cols-6 place-items-center h-10" onClick={() => onLogin(provider)} >
+            <Button class="w-full grid grid-cols-6 place-items-center h-10" onClick={() => onLogin(provider)} disabled={loginDisabled}>
               <Icon name={provider} />
-              <span class="col-span-5">Continue with {providersDisplayName[provider]}</span>
+              <span class={loginDisabled ? "col-span-4" : "col-span-5"}>Continue with {providersDisplayName[provider]}</span>
+              {#if loginDisabled}
+                <Icon name={"circle-loader"} class={"stroke-white"} />
+              {/if}
             </Button>
           </form>
         {/if}

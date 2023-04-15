@@ -1,5 +1,6 @@
 <script lang="ts">
   export let onClick: () => void = () => {};
+  export let disabled: boolean | null = null;
 </script>
 
 <button
@@ -17,16 +18,18 @@
     dark:text-slate-200
     bg-teal-400
     rounded-lg
-    hover:bg-teal-500
-    focus:ring-4
-    focus:outline-none
-    focus:ring-green-300
+    enabled:hover:bg-teal-500
+    enabled:focus:ring-4
+    enabled:focus:outline-none
+    enabled:focus:ring-green-300
     dark:bg-teal-700
-    dark:hover:bg-teal-800
-    dark:focus:ring-green-700
+    dark:enabled:hover:bg-teal-800
+    dark:enabled:focus:ring-green-700
+    disabled:opacity-75
     {$$props.class}
   "
   on:click={onClick}
+  {disabled}
 >
   <slot></slot>
 </button>
