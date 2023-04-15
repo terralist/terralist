@@ -98,6 +98,10 @@
     } else {
       errorMessage = result.message;
     }
+
+    if (authority.apiKeys.length === 0) {
+      toggleShowApiKeys();
+    }
   };
 </script>
 
