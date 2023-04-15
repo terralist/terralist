@@ -37,28 +37,28 @@ const actions = {
     .then(handleResponse<Artifact[]>)
     .catch(handleError),
 
-  getOne: (slug: string) => client
-    .get<Artifact>(`/${slug}`)
+  getOne: (namespace: string, name: string, provider: string | undefined) => client
+    .get<Artifact>([namespace, name, provider].filter(e => e).join("/"))
     .then(handleResponse<Artifact>)
     .catch(handleError),
 
-  getAllVersionsForOne: (slug: string) => client
-    .get<ArtifactVersion[]>(`/${slug}/version`)
+  getAllVersionsForOne: (namespace: string, name: string, provider: string | undefined) => client
+    .get<ArtifactVersion[]>(`/${[namespace, name, provider].filter(e => e).join("/")}/version`)
     .then(handleResponse<ArtifactVersion[]>)
     .then(sortVersions)
     .catch(handleError),
 
-  delete: (slug: string, version: string) => client
-    .delete<boolean>(`/${slug}/version/${version}`)
+  delete: (namespace: string, name: string, provider: string | undefined, version: string) => client
+    .delete<boolean>(`/${[namespace, name, provider].filter(e => e).join("/")}/version/${version}`)
     .then(handleResponse<boolean>)
     .catch(handleError)
 };
 
 const Artifacts = {
   getAll: async () => await actions.getAll(),
-  getOne: async (slug: string) => await actions.getOne(slug),
-  getAllVersionsForOne: async (slug: string) => await actions.getAllVersionsForOne(slug),
-  delete: async (slug: string, version: string) => await actions.delete(slug, version),
+  getOne: async (namespace: string, name: string, provider: string | undefined) => await actions.getOne(namespace, name, provider),
+  getAllVersionsForOne: async (namespace: string, name: string, provider: string | undefined) => await actions.getAllVersionsForOne(namespace, name, provider),
+  delete: async (namespace: string, name: string, provider: string | undefined, version: string) => await actions.delete(namespace, name, provider, version),
 };
 
 export {
