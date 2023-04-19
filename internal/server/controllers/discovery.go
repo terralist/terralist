@@ -31,12 +31,10 @@ func (c *DefaultServiceDiscoveryController) Paths() []string {
 }
 
 func (c *DefaultServiceDiscoveryController) Subscribe(apis ...*gin.RouterGroup) {
-	// tfApi should be compliant with the Terraform Registry Protocol for
-	// service discovery
-	// Docs: https://www.terraform.io/internals/remote-service-discovery
 	api := apis[0]
 
 	// Terraform Service Discovery API
+	// Docs: https://www.terraform.io/internals/remote-service-discovery
 	api.GET(
 		"/terraform.json",
 		func(ctx *gin.Context) {
