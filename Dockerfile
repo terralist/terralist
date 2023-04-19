@@ -1,4 +1,16 @@
-FROM golang:1.18-alpine3.15 AS builder
+ARG ALPINE_VERSION="3.17"
+
+FROM node:19.3-alpine${ALPINE_VERSION} AS frontend
+
+WORKDIR /home/node/terralist
+
+COPY ./web/package.json ./web/yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+COPY ./web ./
+RUN yarn build
+
+FROM golang:1.20.3-alpine${ALPINE_VERSION} AS backend
 
 WORKDIR /go/src/terralist
 
@@ -9,9 +21,11 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
-ADD cmd/terralist ./cmd/terralist/
-ADD pkg ./pkg
-ADD internal ./internal/
+COPY cmd/terralist/ ./cmd/terralist
+COPY pkg/ ./pkg/
+COPY internal/ ./internal/
+COPY web/ ./web/
+COPY --from=frontend /home/node/terralist/dist ./web/dist
 
 ARG VERSION="dev"
 ARG COMMIT_HASH="n/a"
@@ -25,9 +39,9 @@ RUN go build -a -v -o terralist \
       -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
-FROM alpine:3.15
+FROM alpine:${ALPINE_VERSION}
 
-COPY --from=builder /go/src/terralist/terralist /usr/local/bin
+COPY --from=backend /go/src/terralist/terralist /usr/local/bin
 
 WORKDIR /root
 
