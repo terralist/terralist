@@ -101,7 +101,7 @@ func TestFindAuthorities(t *testing.T) {
 
 			Convey("If the owner is associated with one or more authorities", func() {
 				mockAuthorityRepository.
-					On("FindAll", owner).
+					On("FindAllByOwner", owner).
 					Return([]*authority.Authority{{Owner: owner}}, nil)
 
 				Convey("When the service is queried", func() {
@@ -117,7 +117,7 @@ func TestFindAuthorities(t *testing.T) {
 
 			Convey("If the owner is not associated with any authority", func() {
 				mockAuthorityRepository.
-					On("FindAll", owner).
+					On("FindAllByOwner", owner).
 					Return([]*authority.Authority{}, nil)
 
 				Convey("When the service is queried", func() {
@@ -151,7 +151,10 @@ func TestCreateAuthority(t *testing.T) {
 
 			mockAuthorityRepository.
 				On("Upsert", mock.AnythingOfType("authority.Authority")).
-				Return(&authority.Authority{}, nil)
+				Return(&authority.Authority{
+					Name:      dto.Name,
+					PolicyURL: dto.PolicyURL,
+				}, nil)
 
 			Convey("When the service is queried", func() {
 				created, err := authorityService.Create(dto)

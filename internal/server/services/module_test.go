@@ -193,7 +193,7 @@ func TestUploadModule(t *testing.T) {
 
 				Convey("If the authority does not exist", func() {
 					mockAuthorityService.
-						On("Get", mock.AnythingOfType("uuid.UUID")).
+						On("GetByID", mock.AnythingOfType("uuid.UUID")).
 						Return(nil, errors.New(""))
 
 					Convey("When the service is queried", func() {
@@ -207,7 +207,7 @@ func TestUploadModule(t *testing.T) {
 
 				Convey("If the authority exists", func() {
 					mockAuthorityService.
-						On("Get", mock.AnythingOfType("uuid.UUID")).
+						On("GetByID", mock.AnythingOfType("uuid.UUID")).
 						Return(&authority.Authority{}, nil)
 
 					Convey("If the module exists and already have the given version", func() {
@@ -356,7 +356,7 @@ func TestDeleteModule(t *testing.T) {
 
 			Convey("If the authority does not exist", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
@@ -370,7 +370,7 @@ func TestDeleteModule(t *testing.T) {
 
 			Convey("If the authority exists", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(&authority.Authority{}, nil)
 
 				Convey("If the module does not exist", func() {
@@ -456,7 +456,7 @@ func TestDeleteModuleVersion(t *testing.T) {
 
 			Convey("If the authority does not exist", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
@@ -470,7 +470,7 @@ func TestDeleteModuleVersion(t *testing.T) {
 
 			Convey("If the authority exists", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(&authority.Authority{}, nil)
 
 				Convey("If the module does not exist", func() {
