@@ -2,7 +2,8 @@
 
 ## General Purpose
 
-* `GET /health`: Health Endpoint
+* `GET /check/healthz`: Liveness Probe - Responds with 200 OK status and empty body
+* `GET /check/readyz`: Readiness Probe - Responds with 200 OK status and empty body
 
 ## Service Discovery
 

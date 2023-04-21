@@ -7,15 +7,14 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
-	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 const (
-	providersTerraformApiBase = "/v1/providers"
-	providersDefaultApiBase   = "/v1/api/providers"
+	providersTerraformApiBase = "/providers"
+	providersDefaultApiBase   = "/api/providers"
 )
 
 // ProviderController registers the routes that handles the modules
@@ -30,8 +29,8 @@ type ProviderController interface {
 // DefaultProviderController is a concrete implementation of ProviderController
 type DefaultProviderController struct {
 	ProviderService services.ProviderService
-	ApiKeyService   services.ApiKeyService
-	JWT             jwt.JWT
+
+	Authorization *handlers.Authorization
 }
 
 func (c *DefaultProviderController) Paths() []string {
@@ -50,7 +49,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 	// providers
 	// Docs: https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
 	tfApi := apis[0]
-	tfApi.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
+	tfApi.Use(c.Authorization.ApiAuthentication())
 
 	tfApi.GET(
 		"/:namespace/:name/versions",
@@ -94,7 +93,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
-	api.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
+	api.Use(c.Authorization.ApiAuthentication())
 
 	// Upload a new provider version
 	api.POST(

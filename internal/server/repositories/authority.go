@@ -8,16 +8,23 @@ import (
 	"terralist/pkg/database"
 
 	"github.com/google/uuid"
+	"github.com/ssoroka/slice"
 	"gorm.io/gorm"
 )
 
 // AuthorityRepository describes a service that can interact with the authority database
 type AuthorityRepository interface {
-	// Find searches for a specific authority
-	Find(uuid.UUID) (*authority.Authority, error)
+	// Find searches for a specific authority by its ID
+	FindByID(uuid.UUID) (*authority.Authority, error)
 
-	// FindAll searches for all authorities created by a specific owner
-	FindAll(owner string) ([]*authority.Authority, error)
+	// Find searches for a specific authority by its name
+	FindByName(string) (*authority.Authority, error)
+
+	// FindAll searches for all authorities
+	FindAll() ([]*authority.Authority, error)
+
+	// FindAllByOwner searches for all authorities created by a specific owner
+	FindAllByOwner(owner string) ([]*authority.Authority, error)
 
 	// Upsert either updates or creates a new (if it does not already exist) authority
 	Upsert(authority.Authority) (*authority.Authority, error)
@@ -31,7 +38,7 @@ type DefaultAuthorityRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultAuthorityRepository) Find(id uuid.UUID) (*authority.Authority, error) {
+func (r *DefaultAuthorityRepository) FindByID(id uuid.UUID) (*authority.Authority, error) {
 	a := &authority.Authority{}
 
 	err := r.Database.Handler().
@@ -52,7 +59,58 @@ func (r *DefaultAuthorityRepository) Find(id uuid.UUID) (*authority.Authority, e
 	return a, nil
 }
 
-func (r *DefaultAuthorityRepository) FindAll(owner string) ([]*authority.Authority, error) {
+func (r *DefaultAuthorityRepository) FindByName(name string) (*authority.Authority, error) {
+	a := &authority.Authority{}
+
+	err := r.Database.Handler().
+		Where("name = ?", name).
+		Preload("Keys").
+		Preload("ApiKeys").
+		First(&a).
+		Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no authority found")
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
+	}
+
+	return a, nil
+}
+
+func (r *DefaultAuthorityRepository) FindAll() ([]*authority.Authority, error) {
+	as := []authority.Authority{}
+
+	err := r.Database.Handler().
+		Preload("Keys").
+		Preload("ApiKeys").
+		Preload("Modules").
+		Preload("Modules.Versions").
+		Preload("Providers").
+		Preload("Providers.Versions").
+		Find(&as).
+		Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no authority found")
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
+	}
+
+	asp := make([]*authority.Authority, len(as))
+	for i, a := range as {
+		a := a
+		asp[i] = &a
+	}
+
+	return asp, nil
+}
+
+func (r *DefaultAuthorityRepository) FindAllByOwner(owner string) ([]*authority.Authority, error) {
 	as := []authority.Authority{}
 
 	err := r.Database.Handler().
@@ -80,34 +138,35 @@ func (r *DefaultAuthorityRepository) FindAll(owner string) ([]*authority.Authori
 }
 
 func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.Authority, error) {
-	if !a.Empty() {
-		current, err := r.Find(a.ID)
-		if err == nil {
-			if a.PolicyURL == "" {
-				a.PolicyURL = current.PolicyURL
-			}
+	toDeleteKeys := make([]authority.Key, 0, len(a.Keys))
 
+	if !a.Empty() {
+		current, err := r.FindByID(a.ID)
+		if err == nil {
 			a.Name = current.Name
 			a.Owner = current.Owner
+		}
 
-			for _, currentKey := range current.Keys {
-				shouldUpdate := false
-				for i, newKey := range a.Keys {
-					if currentKey.KeyId == newKey.KeyId {
-						shouldUpdate = true
-						a.Keys[i].ID = currentKey.ID
-						break
-					}
-				}
-
-				if !shouldUpdate {
-					a.Keys = append(a.Keys, currentKey)
-				}
+		for _, key := range current.Keys {
+			if !slice.Contains(a.Keys, key) {
+				toDeleteKeys = append(toDeleteKeys, key)
 			}
 		}
 	}
 
-	if err := r.Database.Handler().Save(&a).Error; err != nil {
+	if err := r.Database.Handler().Transaction(func(tx *gorm.DB) error {
+		if len(toDeleteKeys) > 0 {
+			if err := tx.Delete(&toDeleteKeys).Error; err != nil {
+				return err
+			}
+		}
+
+		if err := tx.Save(&a).Error; err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +174,7 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 }
 
 func (r *DefaultAuthorityRepository) Delete(id uuid.UUID) error {
-	a, err := r.Find(id)
+	a, err := r.FindByID(id)
 	if err != nil {
 		return err
 	}

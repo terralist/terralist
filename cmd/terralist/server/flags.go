@@ -63,6 +63,8 @@ const (
 	SessionStoreFlag = "session-store"
 
 	CookieSecretFlag = "cookie-secret"
+
+	CustomCompanyNameFlag = "custom-company-name"
 )
 
 var flags = map[string]cli.Flag{
@@ -218,5 +220,9 @@ var flags = map[string]cli.Flag{
 
 	CookieSecretFlag: &cli.StringFlag{
 		Description: "The secret to use for cookie encryption.",
+	},
+
+	CustomCompanyNameFlag: &cli.StringFlag{
+		Description: "The name of the company hosting the Terralist instance.",
 	},
 }

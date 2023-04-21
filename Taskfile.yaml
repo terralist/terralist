@@ -17,10 +17,19 @@ tasks:
         sh: git rev-parse --short HEAD
       BINARY_FILE_NAME:
         sh: echo '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
+      ALL_TAGS:
+        sh: git tag
+      LATEST_TAG: '{{splitList "\n" .ALL_TAGS | last}}'
+      TERRALIST_VERSION: "{{.LATEST_TAG}}-{{.BRANCH}}+{{.COMMIT_HASH}}"
     env:
       # Get rid of sqlite3 lib warnings
       CGO_CFLAGS: "-g -O2 -Wno-return-local-addr"
+      TERRALIST_VERSION: "{{.TERRALIST_VERSION}}"
     cmds:
+      - echo "[>] Installing web application dependencies."
+      - yarn --cwd ./web install
+      - echo "[>] Building web application."
+      - yarn --cwd ./web build
       - >-
         echo "{{
           ternary 
@@ -28,11 +37,11 @@ tasks:
             (printf "[!] Build mode '%s' unknown, fallback to 'release' mode." .CLI_ARGS) 
             (eq .ARG_CHECKER "true")
           }}"
-      - >- 
+      - >-
         go build \
           -o={{.BINARY_FILE_NAME}} \
           -v \
-          -ldflags="-X 'main.Version={{.BRANCH}}' \
+          -ldflags="-X 'main.Version={{.TERRALIST_VERSION}}' \
                     -X 'main.CommitHash={{.COMMIT_HASH}}' \
                     -X 'main.BuildTimestamp={{now | date "2006-01-02T15:04:05"}}' \
                     -X 'main.Mode={{.MODE}}'" \

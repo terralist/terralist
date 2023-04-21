@@ -118,7 +118,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 					Return(&mockProviderPlatform, nil)
 
 				mockAuthorityService.
-					On("Get", mock.AnythingOfType("uuid.UUID")).
+					On("GetByID", mock.AnythingOfType("uuid.UUID")).
 					Return(&authority.Authority{}, nil)
 
 				Convey("If the resolver is not set", func() {
@@ -272,7 +272,7 @@ func TestUploadProvider(t *testing.T) {
 
 				Convey("If the authority does not exist", func() {
 					mockAuthorityService.
-						On("Get", mock.AnythingOfType("uuid.UUID")).
+						On("GetByID", mock.AnythingOfType("uuid.UUID")).
 						Return(nil, errors.New(""))
 
 					Convey("When the service is queried", func() {
@@ -286,7 +286,7 @@ func TestUploadProvider(t *testing.T) {
 
 				Convey("If the authority exists", func() {
 					mockAuthorityService.
-						On("Get", mock.AnythingOfType("uuid.UUID")).
+						On("GetByID", mock.AnythingOfType("uuid.UUID")).
 						Return(&authority.Authority{}, nil)
 
 					Convey("If the provider exists and already has the given version", func() {
@@ -442,7 +442,7 @@ func TestDeleteProvider(t *testing.T) {
 
 			Convey("If the authority does not exist", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
@@ -456,7 +456,7 @@ func TestDeleteProvider(t *testing.T) {
 
 			Convey("If the authority exists", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(&authority.Authority{}, nil)
 
 				Convey("If the provider does not exist", func() {
@@ -544,7 +544,7 @@ func TestDeleteProviderVersion(t *testing.T) {
 
 			Convey("If the authority does not exist", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
@@ -558,7 +558,7 @@ func TestDeleteProviderVersion(t *testing.T) {
 
 			Convey("If the authority exists", func() {
 				mockAuthorityService.
-					On("Get", authorityID).
+					On("GetByID", authorityID).
 					Return(&authority.Authority{}, nil)
 
 				Convey("If the provider does not exist", func() {

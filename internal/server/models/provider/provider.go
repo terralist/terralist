@@ -3,10 +3,12 @@ package provider
 import (
 	"strings"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database/entity"
 	"terralist/pkg/version"
 
 	"github.com/google/uuid"
+	"github.com/ssoroka/slice"
 )
 
 type Provider struct {
@@ -41,6 +43,19 @@ func (p Provider) GetVersion(v string) *Version {
 	}
 
 	return nil
+}
+
+func (p Provider) ToArtifact() artifact.Artifact {
+	return artifact.Artifact{
+		ID:   p.ID.String(),
+		Name: p.Name,
+		Type: artifact.TypeProvider,
+		Versions: slice.Map[Version, string](p.Versions, func(v Version) string {
+			return v.Version
+		}),
+		CreatedAt: p.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt: p.UpdatedAt.Format("2006-01-02T15:04:05"),
+	}
 }
 
 type CreateProviderDTO struct {

@@ -7,15 +7,14 @@ import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
-	"terralist/pkg/auth/jwt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 const (
-	modulesTerraformApiBase = "/v1/modules"
-	modulesDefaultApiBase   = "/v1/api/modules"
+	modulesTerraformApiBase = "/modules"
+	modulesDefaultApiBase   = "/api/modules"
 )
 
 // ModuleController registers the routes that handles the modules
@@ -30,8 +29,8 @@ type ModuleController interface {
 // DefaultModuleController is a concrete implementation of ModuleController
 type DefaultModuleController struct {
 	ModuleService services.ModuleService
-	ApiKeyService services.ApiKeyService
-	JWT           jwt.JWT
+
+	Authorization *handlers.Authorization
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -50,7 +49,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// modules
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
-	tfApi.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
+	tfApi.Use(c.Authorization.ApiAuthentication())
 
 	tfApi.GET(
 		"/:namespace/:name/:provider/versions",
@@ -97,7 +96,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
-	api.Use(handlers.Authorize(c.JWT, c.ApiKeyService))
+	api.Use(c.Authorization.ApiAuthentication())
 
 	// Upload a new module version
 	api.POST(

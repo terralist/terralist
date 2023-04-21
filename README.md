@@ -7,13 +7,14 @@
   "MD041": false
 } -->
 
-<div align="center" markdown="1">
-
 # Terralist
 
-A _truly_ private Terraform registry
-<br />
+[![Latest Release](https://img.shields.io/github/release/valentindeaconu/terralist.svg)](https://github.com/valentindeaconu/terralist/releases/latest)
 
+<div align="center" markdown="1">
+  <img alt="Terralist Logo" src="./static/terralist.png" />
+  <br/><br/>
+  <b>A <i>truly</i> private Terraform registry</b>
 </div>
 
 ## About
@@ -28,7 +29,7 @@ Terralist is a private Terraform registry for providers and modules following th
   $ terraform login registry.example.com
   $ terraform logout registry.example.com
   ```
-  It can also generate custom API keys for an authenticated user, which can be used in pipelines: to upload and delete modules and providers; to fetch data - useful if you are using a Terraform Pull Request Automation tool.
+  It can also generate custom API keys for an authenticated user, which can be used in pipelines: to upload and delete modules and providers, to fetch data.
 
 * **Modules Registry**: ([docs](https://www.terraform.io/docs/internals/module-registry-protocol.html)) Stores modules data in a *private* storage (for example, an S3 bucket). When download request is received, calls the remote storage to generate a temporary public download URL and forwards the URL to the requester.
   Currently supported private storage:
@@ -54,10 +55,6 @@ This project is not meant to replace the public Terraform Registry. Its purpose 
 + [Configuration](./docs/CONFIGURATION.md)
 + [Local Testing](./docs/LOCAL-TESTING.md)
 + [API Endpoints](./docs/ENDPOINTS.md)
-
-## Work In Progress
-
-This project is still work-in-progress and I am planning to release it soon.
 
 ## Contributions
 

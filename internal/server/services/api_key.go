@@ -48,7 +48,7 @@ func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}
 
-	authority, err := s.AuthorityService.Get(apiKey.AuthorityID)
+	authority, err := s.AuthorityService.GetByID(apiKey.AuthorityID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}

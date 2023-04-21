@@ -67,7 +67,7 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 		return nil, err
 	}
 
-	a, err := s.AuthorityService.Get(p.Version.Provider.AuthorityID)
+	a, err := s.AuthorityService.GetByID(p.Version.Provider.AuthorityID)
 	if err != nil {
 		return nil, fmt.Errorf("could not find authority: %v", err)
 	}
@@ -105,7 +105,7 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 	p := d.ToProvider()
 
 	// Find the authority
-	a, err := s.AuthorityService.Get(p.AuthorityID)
+	a, err := s.AuthorityService.GetByID(p.AuthorityID)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 }
 
 func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) error {
-	a, err := s.AuthorityService.Get(authorityID)
+	a, err := s.AuthorityService.GetByID(authorityID)
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) erro
 }
 
 func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name string, version string) error {
-	a, err := s.AuthorityService.Get(authorityID)
+	a, err := s.AuthorityService.GetByID(authorityID)
 	if err != nil {
 		return err
 	}

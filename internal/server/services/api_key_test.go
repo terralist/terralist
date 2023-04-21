@@ -41,7 +41,7 @@ func TestGetUserDetails(t *testing.T) {
 		})
 
 		Convey("Given a valid but expired API key", func() {
-			apiKey, _ := uuid.NewRandom()
+			apiKey := uuid.Must(uuid.NewRandom())
 			apiKeyStr := apiKey.String()
 
 			mockApiKeyRepository.On("Find", apiKey).Return(nil, repositories.ErrApiKeyExpired)
@@ -66,7 +66,7 @@ func TestGetUserDetails(t *testing.T) {
 			mockApiKeyRepository.On("Find", apiKey).Return(&authority.ApiKey{AuthorityID: authorityID}, nil)
 
 			Convey("If the API key is associated to an invalid authority", func() {
-				mockAuthorityService.On("Get", authorityID).Return(nil, repositories.ErrNotFound)
+				mockAuthorityService.On("GetByID", authorityID).Return(nil, repositories.ErrNotFound)
 
 				Convey("When the service is queried", func() {
 					user, err := apiKeyService.GetUserDetails(apiKeyStr)
@@ -80,7 +80,7 @@ func TestGetUserDetails(t *testing.T) {
 			})
 
 			Convey("If the API key is associated to a valid authority", func() {
-				mockAuthorityService.On("Get", authorityID).Return(&authority.Authority{Owner: userEmail}, nil)
+				mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Owner: userEmail}, nil)
 
 				Convey("When the service is queried", func() {
 					user, err := apiKeyService.GetUserDetails(apiKeyStr)
