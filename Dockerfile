@@ -1,4 +1,4 @@
-FROM node:19-alpine3.15 AS frontend
+FROM node:18-alpine3.17 AS frontend
 
 WORKDIR /home/node/terralist
 
@@ -8,7 +8,7 @@ RUN yarn install --frozen-lockfile
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.19-alpine3.15 AS backend
+FROM golang:1.20-alpine3.17 AS backend
 
 WORKDIR /go/src/terralist
 
@@ -37,7 +37,7 @@ RUN go build -a -v -o terralist \
       -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
-FROM alpine:3.15
+FROM alpine:3.17
 
 COPY --from=backend /go/src/terralist/terralist /usr/local/bin
 
