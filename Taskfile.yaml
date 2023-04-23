@@ -12,13 +12,13 @@ tasks:
       MODE:
         sh: echo "{{ternary .ARG "release" (eq .ARG_CHECKER "true")}}"
       BRANCH:
-        sh: git rev-parse --abbrev-ref HEAD
+        sh: git rev-parse --abbrev-ref HEAD || echo "dev"
       COMMIT_HASH:
-        sh: git rev-parse --short HEAD
+        sh: git rev-parse --short HEAD || echo "dev"
       BINARY_FILE_NAME:
         sh: echo '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
       ALL_TAGS:
-        sh: git tag
+        sh: git tag || echo "dev"
       LATEST_TAG: '{{splitList "\n" .ALL_TAGS | last}}'
       TERRALIST_VERSION: "{{.LATEST_TAG}}-{{.BRANCH}}+{{.COMMIT_HASH}}"
     env:
@@ -90,3 +90,12 @@ tasks:
         {{- else -}}
         go test -tags=mocks -count=1 {{.TEST_PACKAGES}}
         {{- end -}}
+
+  watch:
+    summary: "Launch a server with a files watcher."
+    silent: true
+    vars:
+      BINARY_FILE_NAME:
+        sh: echo '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
+    cmds:
+      - air -c .air.toml --build.bin "{{.BINARY_FILE_NAME}}"
