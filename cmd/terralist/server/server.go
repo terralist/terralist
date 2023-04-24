@@ -158,6 +158,8 @@ func (s *Command) run() error {
 		LogLevel:           flags[LogLevelFlag].(*cli.StringFlag).Value,
 		Port:               flags[PortFlag].(*cli.IntFlag).Value,
 		URL:                flags[URLFlag].(*cli.StringFlag).Value,
+		CertFile:           flags[CertFileFlag].(*cli.StringFlag).Value,
+		KeyFile:            flags[KeyFileFlag].(*cli.StringFlag).Value,
 		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
 		OauthProvider:      flags[OAuthProviderFlag].(*cli.StringFlag).Value,
 		CustomCompanyName:  flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
