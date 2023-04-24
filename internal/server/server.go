@@ -28,7 +28,9 @@ import (
 
 // Server represents the Terralist server
 type Server struct {
-	Port int
+	Port     int
+	CertFile string
+	KeyFile  string
 
 	Router *gin.Engine
 
@@ -219,7 +221,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	})
 
 	return &Server{
-		Port: userConfig.Port,
+		Port:     userConfig.Port,
+		CertFile: userConfig.CertFile,
+		KeyFile:  userConfig.KeyFile,
 
 		Router: router,
 
@@ -233,6 +237,17 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 // Start initializes the routes and starts serving
 func (s *Server) Start() error {
+	useTLS := s.CertFile != "" && s.KeyFile != ""
+
+	if !useTLS {
+		log.Warn().
+			Msgf(
+				"%s %s",
+				"Terralist is running in HTTP mode which is not supported by Terraform.",
+				"If you're using a proxy to serve on HTTPS, ignore this warning.",
+			)
+	}
+
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)
 
@@ -241,8 +256,14 @@ func (s *Server) Start() error {
 		s.Readiness.Store(true)
 
 		log.Info().Msgf("Terralist started, listening on port %v", s.Port)
+		var err error
 
-		err := s.Router.Run(fmt.Sprintf(":%d", s.Port))
+		if useTLS {
+			err = s.Router.RunTLS(fmt.Sprintf(":%d", s.Port), s.CertFile, s.KeyFile)
+		} else {
+			err = s.Router.Run(fmt.Sprintf(":%d", s.Port))
+		}
+
 		if err != nil {
 			log.Error().AnErr("error", err).Send()
 		}

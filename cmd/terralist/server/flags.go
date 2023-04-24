@@ -11,6 +11,9 @@ const (
 
 	URLFlag = "url"
 
+	CertFileFlag = "cert-file"
+	KeyFileFlag  = "key-file"
+
 	DatabaseBackendFlag = "database-backend"
 
 	SQLitePathFlag = "sqlite-path"
@@ -86,6 +89,13 @@ var flags = map[string]cli.Flag{
 	URLFlag: &cli.StringFlag{
 		Description:  "The URL that Terralist is accessible from.",
 		DefaultValue: "http://localhost:5758",
+	},
+
+	CertFileFlag: &cli.StringFlag{
+		Description: "The path to the certificate file (pem format).",
+	},
+	KeyFileFlag: &cli.StringFlag{
+		Description: "The path to the certificate key file (pem format).",
 	},
 
 	DatabaseBackendFlag: &cli.StringFlag{
@@ -166,7 +176,7 @@ var flags = map[string]cli.Flag{
 		Description: "The GitLab OAuth Application client secret.",
 	},
 	GitLabHostFlag: &cli.StringFlag{
-		Description: "The GitLab host to use.",
+		Description:  "The GitLab host to use.",
 		DefaultValue: "gitlab.com",
 	},
 

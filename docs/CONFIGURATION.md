@@ -27,6 +27,8 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `log-level`                  | string | no       | `info`                  | The log level.                                                        |
 | `port`                       | int    | no       | `5758`                  | The port to bind to.                                                  |
 | `url`                        | string | no       | `http://localhost:5758` | The URL that Terralist is accessible from.                            |
+| `cert-file`                  | string | no       | `n/a`                   | The path to the certificate file (pem format).                        |
+| `key-file`                   | string | no       | `n/a`                   | "The path to the certificate key file (pem format).                   |
 | `token-signing-secret`       | string | yes      | `n/a`                   | The secret to use when signing authorization tokens.                  |
 | `oauth-provider`             | string | yes      | `n/a`                   | The OAuth 2.0 provider.                                               |
 | `gh-client-id`               | string | no       | `n/a`                   | The GitHub OAuth Application client ID.                               |
