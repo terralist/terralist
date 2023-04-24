@@ -39,9 +39,20 @@ RUN go build -a -v -o terralist \
 
 FROM alpine:3.17
 
+RUN addgroup terralist && \
+    adduser -S -G terralist terralist && \
+    adduser terralist root && \
+    chown terralist:root /home/terralist/ && \
+    chmod g=u /home/terralist/ && \
+    chmod g=u /etc/passwd
+
+RUN apk add --no-cache \
+      libcap~=2.66 \
+      dumb-init~=1.2 \
+      su-exec~=0.2
+
+COPY docker-entrypoint.sh /usr/local/bin/
 COPY --from=backend /go/src/terralist/terralist /usr/local/bin
 
-WORKDIR /root
-
-ENTRYPOINT [ "terralist" ]
+ENTRYPOINT [ "docker-entrypoint.sh" ]
 CMD [ "server" ]
