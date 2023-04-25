@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/go-getter v1.7.0
+	github.com/hashicorp/go-getter v1.7.1
 	github.com/mazen160/go-random v0.0.0-20210308102632-d2b501c85c03
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.29.0
