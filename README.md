@@ -9,7 +9,7 @@
 
 # Terralist
 
-[![Latest Release](https://img.shields.io/github/release/valentindeaconu/terralist.svg)](https://github.com/valentindeaconu/terralist/releases/latest)
+[![Latest Release](https://img.shields.io/github/release/terralist/terralist.svg)](https://github.com/terralist/terralist/releases/latest)
 
 <div align="center" markdown="1">
   <img alt="Terralist Logo" src="./static/terralist.png" />
