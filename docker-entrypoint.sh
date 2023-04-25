@@ -1,7 +1,7 @@
 #!/usr/bin/dumb-init /bin/sh
 set -e
 
-# Source: https://github.com/runatlantis/atlantis/blob/main/docker-entrypoint.sh
+# Modified: https://github.com/runatlantis/atlantis/blob/bbb0ed2f0041844dc4abfddef2d1fe2f25340249/docker-entrypoint.sh
 
 # If arguments are received directly, then pass them to the Terralist command
 if [ "$(echo "${1}" | cut -c1)" = "-" ]; then
