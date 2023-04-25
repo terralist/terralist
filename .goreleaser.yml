@@ -34,7 +34,7 @@ changelog:
 
 release:
   github:
-    owner: valentindeaconu
+    owner: terralist
     name: terralist
 
   draft: false
