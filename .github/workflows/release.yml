@@ -8,6 +8,9 @@ on:
       - "v*.*.*"
       - "v*.*.*-pre.*"
 
+permissions:
+  contents: read
+
 jobs:
   goreleaser:
     name: GoReleaser
