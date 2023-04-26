@@ -9,7 +9,7 @@ on:
       - "v*.*.*-pre.*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   goreleaser:
