@@ -8,7 +8,7 @@ RUN yarn install --frozen-lockfile
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.20-alpine3.17 AS backend
+FROM golang:1.21-alpine3.17 AS backend
 
 WORKDIR /go/src/terralist
 
