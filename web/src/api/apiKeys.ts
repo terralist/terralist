@@ -8,7 +8,7 @@ interface ApiKey {
 
 const client = createClient({
   baseURL: "/v1/api/authorities",
-  timeout: 120,
+  timeout: 120000,
 });
 
 const actions = {

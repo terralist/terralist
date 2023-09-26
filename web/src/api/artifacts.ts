@@ -26,7 +26,7 @@ const createDateAttributes = (artifact: Artifact): Artifact => {
 
 const client = createClient({
   baseURL: "/v1/api/artifacts",
-  timeout: 120,
+  timeout: 120000,
 });
 
 const setDateAttributes = (r: Result<Artifact[]> | Result<Artifact>): Result<Artifact[]> | Result<Artifact> => {
