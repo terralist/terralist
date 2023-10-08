@@ -1,0 +1,12 @@
+label: Allow authority artifacts upload
+effect: Allow
+actions:
+  - modules:POST
+  - modules:PATCH
+  - modules:DELETE
+  - providers:POST
+  - providers:PATCH
+  - providers:DELETE
+resources:
+  - authority:HashiCorp
+  - authority:1213912-3213102-32213
