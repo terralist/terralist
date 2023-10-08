@@ -6,6 +6,7 @@ import (
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/auth"
 	"terralist/pkg/database/entity"
 
 	mockRepositories "terralist/mocks/server/repositories"
@@ -63,7 +64,7 @@ func TestGetUserDetails(t *testing.T) {
 			authorityID, _ := uuid.NewRandom()
 			userEmail := "test@example.com"
 
-			mockApiKeyRepository.On("Find", apiKey).Return(&authority.ApiKey{AuthorityID: authorityID}, nil)
+			mockApiKeyRepository.On("Find", apiKey).Return(&auth.ApiKey{AuthorityID: authorityID}, nil)
 
 			Convey("If the API key is associated to an invalid authority", func() {
 				mockAuthorityService.On("GetByID", authorityID).Return(nil, repositories.ErrNotFound)
@@ -115,8 +116,8 @@ func TestGrant(t *testing.T) {
 
 				Convey("When the service is queried", func() {
 					mockApiKeyRepository.
-						On("Create", &authority.ApiKey{AuthorityID: authorityID}).
-						Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
+						On("Create", &auth.ApiKey{AuthorityID: authorityID}).
+						Return(&auth.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
 
 					apiKey, err := apiKeyService.Grant(authorityID, expireIn)
 
@@ -140,8 +141,8 @@ func TestGrant(t *testing.T) {
 
 						Convey("When the service is queried", func() {
 							mockApiKeyRepository.
-								On("Create", mock.AnythingOfType("*authority.ApiKey")).
-								Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
+								On("Create", mock.AnythingOfType("*auth.ApiKey")).
+								Return(&auth.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
 
 							apiKey, err := apiKeyService.Grant(authorityID, expireIn)
 

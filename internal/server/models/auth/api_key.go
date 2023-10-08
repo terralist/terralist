@@ -1,4 +1,4 @@
-package authority
+package auth
 
 import (
 	"time"
@@ -10,16 +10,18 @@ import (
 
 type ApiKey struct {
 	entity.Entity
-	AuthorityID uuid.UUID
-	Expiration  *time.Time
+	Label      string `gorm:"not null"`
+	Expiration *time.Time
+	Policies   []Policy `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (ApiKey) TableName() string {
-	return "authority_api_keys"
+	return "api_keys"
 }
 
 type ApiKeyDTO struct {
 	ID         string `json:"id"`
+	Label      string `json:"label"`
 	Expiration string `json:"expiration"`
 }
 
@@ -31,6 +33,7 @@ func (a ApiKey) ToDTO() ApiKeyDTO {
 
 	return ApiKeyDTO{
 		ID:         a.ID.String(),
+		Label:      a.Label,
 		Expiration: exp,
 	}
 }
@@ -50,6 +53,7 @@ func (d ApiKeyDTO) ToApiKey() ApiKey {
 		Entity: entity.Entity{
 			ID: uuid.MustParse(d.ID),
 		},
+		Label:      d.Label,
 		Expiration: exp,
 	}
 }

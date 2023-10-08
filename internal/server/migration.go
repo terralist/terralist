@@ -1,6 +1,7 @@
 package server
 
 import (
+	"terralist/internal/server/models/auth"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
@@ -11,9 +12,9 @@ type InitialMigration struct{}
 
 func (*InitialMigration) Migrate(db *database.DB) error {
 	if err := db.AutoMigrate(
+		&auth.ApiKey{},
 		&authority.Authority{},
 		&authority.Key{},
-		&authority.ApiKey{},
 		&provider.Provider{},
 		&provider.Version{},
 		&provider.Platform{},
@@ -25,8 +26,6 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 	); err != nil {
 		return err
 	}
-
-	
 
 	return nil
 }

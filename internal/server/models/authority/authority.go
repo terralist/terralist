@@ -15,7 +15,6 @@ type Authority struct {
 	PolicyURL string              `gorm:"not null"`
 	Owner     string              `gorm:"not null;index"`
 	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	ApiKeys   []ApiKey            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Modules   []module.Module     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Providers []provider.Provider `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
@@ -25,11 +24,10 @@ func (Authority) TableName() string {
 }
 
 type AuthorityDTO struct {
-	ID        string      `json:"id"`
-	Name      string      `json:"name"`
-	PolicyURL string      `json:"policy_url"`
-	Keys      []KeyDTO    `json:"keys"`
-	ApiKeys   []ApiKeyDTO `json:"api_keys"`
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	PolicyURL string   `json:"policy_url"`
+	Keys      []KeyDTO `json:"keys"`
 }
 
 func (a Authority) ToDTO() AuthorityDTO {
@@ -41,10 +39,6 @@ func (a Authority) ToDTO() AuthorityDTO {
 		Keys: slice.Map[Key, KeyDTO](a.Keys, func(k Key) KeyDTO {
 			return k.ToKeyDTO()
 		}),
-
-		ApiKeys: slice.Map[ApiKey, ApiKeyDTO](a.ApiKeys, func(a ApiKey) ApiKeyDTO {
-			return a.ToDTO()
-		}),
 	}
 }
 
@@ -55,10 +49,6 @@ func (d AuthorityDTO) ToAuthority() Authority {
 
 		Keys: slice.Map[KeyDTO, Key](d.Keys, func(k KeyDTO) Key {
 			return k.ToKey()
-		}),
-
-		ApiKeys: slice.Map[ApiKeyDTO, ApiKey](d.ApiKeys, func(a ApiKeyDTO) ApiKey {
-			return a.ToApiKey()
 		}),
 	}
 }

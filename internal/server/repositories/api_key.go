@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"terralist/internal/server/models/authority"
+	"terralist/internal/server/models/auth"
 	"terralist/pkg/database"
 
 	"github.com/google/uuid"
@@ -18,10 +18,10 @@ var (
 // ApiKeyRepository describes a service that can interact with the API keys database
 type ApiKeyRepository interface {
 	// Find searches for a specific ApiKey
-	Find(id uuid.UUID) (*authority.ApiKey, error)
+	Find(id uuid.UUID) (*auth.ApiKey, error)
 
 	// Create creates a new ApiKey
-	Create(*authority.ApiKey) (*authority.ApiKey, error)
+	Create(*auth.ApiKey) (*auth.ApiKey, error)
 
 	// Delete removes an ApiKey from the database
 	Delete(id uuid.UUID) error
@@ -32,8 +32,8 @@ type DefaultApiKeyRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*authority.ApiKey, error) {
-	apiKey := &authority.ApiKey{}
+func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*auth.ApiKey, error) {
+	apiKey := &auth.ApiKey{}
 
 	if err := r.Database.Handler().
 		Where("id = ?", id).
@@ -50,7 +50,7 @@ func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*authority.ApiKey, error) 
 	return apiKey, nil
 }
 
-func (r *DefaultApiKeyRepository) Create(apiKey *authority.ApiKey) (*authority.ApiKey, error) {
+func (r *DefaultApiKeyRepository) Create(apiKey *auth.ApiKey) (*auth.ApiKey, error) {
 	if err := r.Database.Handler().Create(apiKey).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
@@ -61,7 +61,7 @@ func (r *DefaultApiKeyRepository) Create(apiKey *authority.ApiKey) (*authority.A
 func (r *DefaultApiKeyRepository) Delete(id uuid.UUID) error {
 	if err := r.Database.Handler().
 		Where("id = ?", id).
-		Delete(&authority.ApiKey{}).
+		Delete(&auth.ApiKey{}).
 		Error; err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}

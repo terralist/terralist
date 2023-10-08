@@ -3,10 +3,11 @@ package services
 import (
 	"errors"
 	"fmt"
-	"terralist/internal/server/models/authority"
+	"time"
+
+	authModel "terralist/internal/server/models/auth"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -60,7 +61,7 @@ func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
 }
 
 func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, expireIn int) (string, error) {
-	apiKey := &authority.ApiKey{
+	apiKey := &authModel.ApiKey{
 		AuthorityID: authorityID,
 	}
 
