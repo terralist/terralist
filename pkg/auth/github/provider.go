@@ -132,7 +132,15 @@ func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
 		return "", err
 	}
 
-	return data["name"].(string), nil
+	if name, ok := data["name"].(string); ok {
+		return name, nil
+	}
+
+	if login, ok := data["login"].(string); ok {
+		return login, nil
+	}
+
+	return "", fmt.Errorf("could not get the user or login name")
 }
 
 func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
