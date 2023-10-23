@@ -185,6 +185,10 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			return
 		}
 
+		log.Debug().
+			Str("uri.Host", uri.Host).
+			Str("c.HostURL.Host", c.HostURL.Host).Msg("DEBUG")
+
 		// Check if the call was made from this origin
 		if uri.Host == c.HostURL.Host {
 			// There's no need in validating the request, if we made this call

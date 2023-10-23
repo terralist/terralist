@@ -58,6 +58,8 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `cookie-secret`              | string | no       | `n/a`                   | The secret to use for cookie encryption.                              |
 | `modules-storage-resolver`   | string | no       | `proxy`                 | The modules storage resolver.                                         |
 | `providers-storage-resolver` | string | no       | `proxy`                 | The providers storage resolver.                                       |
+| `modules-anonymous-read`     | bool   | no       | `false`                 | Allows anonymous read and download of modules. |
+| `providers-anonymous-read`   | bool   | no       | `false`                 | Allows anonymous read and download of providers. |
 | `s3-bucket-name`             | string | no       | `n/a`                   | The S3 bucket name.                                                   |
 | `s3-bucket-region`           | string | no       | `n/a`                   | The S3 bucket region.                                                 |
 | `s3-bucket-prefix`           | string | no       | `n/a`                   | A prefix to be added to the S3 bucket keys.                           |

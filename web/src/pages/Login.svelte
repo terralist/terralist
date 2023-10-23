@@ -17,6 +17,7 @@
     "github": "GitHub",
     "gitlab": "GitLab",
     "google": "Google",
+    "oidc": "OIDC",
   };
 
   let loginDisabled: boolean = false;

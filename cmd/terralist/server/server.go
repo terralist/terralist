@@ -7,6 +7,7 @@ import (
 	"strings"
 	"terralist/pkg/auth/bitbucket"
 	"terralist/pkg/auth/gitlab"
+	"terralist/pkg/auth/oidc"
 
 	"terralist/internal/server"
 	"terralist/pkg/auth"
@@ -163,6 +164,8 @@ func (s *Command) run() error {
 		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
 		OauthProvider:      flags[OAuthProviderFlag].(*cli.StringFlag).Value,
 		CustomCompanyName:  flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
+		ModulesAnonymousRead:   flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
+		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {
@@ -215,6 +218,7 @@ func (s *Command) run() error {
 
 	// Initialize Auth provider
 	var provider auth.Provider
+	log.Printf("provider = %s", flags[OAuthProviderFlag].(*cli.StringFlag).Value)
 	switch flags[OAuthProviderFlag].(*cli.StringFlag).Value {
 	case "github":
 		provider, err = authFactory.NewProvider(auth.GITHUB, &github.Config{
@@ -233,6 +237,15 @@ func (s *Command) run() error {
 			ClientID:                   flags[GitLabClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret:               flags[GitLabClientSecretFlag].(*cli.StringFlag).Value,
 			GitlabHostWithOptionalPort: flags[GitLabHostFlag].(*cli.StringFlag).Value,
+			TerralistSchemeHostAndPort: userConfig.URL,
+		})
+	case "oidc":
+		provider, err = authFactory.NewProvider(auth.OIDC, &oidc.Config{
+			ClientID:                   flags[OidcClientIDFlag].(*cli.StringFlag).Value,
+			ClientSecret:               flags[OidcClientSecretFlag].(*cli.StringFlag).Value,
+			AuthorizeUrl:               flags[OidcAuthorizeUrlFlag].(*cli.StringFlag).Value,
+			TokenUrl:                   flags[OidcTokenUrlFlag].(*cli.StringFlag).Value,
+			UserInfoUrl:                flags[OidcUserInfoUrlFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
 		})
 	}

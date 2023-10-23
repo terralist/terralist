@@ -151,8 +151,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	moduleController := &controllers.DefaultModuleController{
 		ModuleService: moduleService,
-
 		Authorization: authorization,
+		AnonymousRead: userConfig.ModulesAnonymousRead,
 	}
 
 	apiV1Group.Register(moduleController)
@@ -170,8 +170,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	providerController := &controllers.DefaultProviderController{
 		ProviderService: providerService,
-
-		Authorization: authorization,
+		Authorization:   authorization,
+		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
 
 	apiV1Group.Register(providerController)

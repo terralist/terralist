@@ -29,8 +29,8 @@ type ProviderController interface {
 // DefaultProviderController is a concrete implementation of ProviderController
 type DefaultProviderController struct {
 	ProviderService services.ProviderService
-
-	Authorization *handlers.Authorization
+	Authorization   *handlers.Authorization
+	AnonymousRead   bool
 }
 
 func (c *DefaultProviderController) Paths() []string {
@@ -49,7 +49,9 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 	// providers
 	// Docs: https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
 	tfApi := apis[0]
-	tfApi.Use(c.Authorization.ApiAuthentication())
+	if !c.AnonymousRead {
+		tfApi.Use(c.Authorization.ApiAuthentication())
+	}
 
 	tfApi.GET(
 		"/:namespace/:name/versions",
