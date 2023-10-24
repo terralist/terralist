@@ -156,14 +156,14 @@ func (s *Command) run() error {
 	}
 
 	userConfig := server.UserConfig{
-		LogLevel:           flags[LogLevelFlag].(*cli.StringFlag).Value,
-		Port:               flags[PortFlag].(*cli.IntFlag).Value,
-		URL:                flags[URLFlag].(*cli.StringFlag).Value,
-		CertFile:           flags[CertFileFlag].(*cli.StringFlag).Value,
-		KeyFile:            flags[KeyFileFlag].(*cli.StringFlag).Value,
-		TokenSigningSecret: flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
-		OauthProvider:      flags[OAuthProviderFlag].(*cli.StringFlag).Value,
-		CustomCompanyName:  flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
+		LogLevel:               flags[LogLevelFlag].(*cli.StringFlag).Value,
+		Port:                   flags[PortFlag].(*cli.IntFlag).Value,
+		URL:                    flags[URLFlag].(*cli.StringFlag).Value,
+		CertFile:               flags[CertFileFlag].(*cli.StringFlag).Value,
+		KeyFile:                flags[KeyFileFlag].(*cli.StringFlag).Value,
+		TokenSigningSecret:     flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
+		OauthProvider:          flags[OAuthProviderFlag].(*cli.StringFlag).Value,
+		CustomCompanyName:      flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
 		ModulesAnonymousRead:   flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
 		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 	}
@@ -218,7 +218,7 @@ func (s *Command) run() error {
 
 	// Initialize Auth provider
 	var provider auth.Provider
-	log.Printf("provider = %s", flags[OAuthProviderFlag].(*cli.StringFlag).Value)
+
 	switch flags[OAuthProviderFlag].(*cli.StringFlag).Value {
 	case "github":
 		provider, err = authFactory.NewProvider(auth.GITHUB, &github.Config{
