@@ -54,14 +54,15 @@ const (
 	OidcAuthorizeUrlFlag = "oi-authorize-url"
 	OidcTokenUrlFlag     = "oi-token-url"
 	OidcUserInfoUrlFlag  = "oi-userinfo-url"
+	OidcScopeFlag        = "oi-scope"
 
 	TokenSigningSecretFlag = "token-signing-secret"
 
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
 	ProvidersStorageResolverFlag = "providers-storage-resolver"
 
-	ModulesAnonymousReadFlag  = "modules-anonymous-read"
-	ProvidersAnonymousReadFlag  = "providers-anonymous-read"
+	ModulesAnonymousReadFlag   = "modules-anonymous-read"
+	ProvidersAnonymousReadFlag = "providers-anonymous-read"
 
 	S3BucketNameFlag      = "s3-bucket-name"
 	S3BucketRegionFlag    = "s3-bucket-region"
@@ -203,6 +204,10 @@ var flags = map[string]cli.Flag{
 	OidcUserInfoUrlFlag: &cli.StringFlag{
 		Description: "The OIDC Provider userinfo endpoint url.",
 	},
+	OidcScopeFlag: &cli.StringFlag{
+		Description:  "The scopes requested during OIDC authorization.",
+		DefaultValue: "openid email",
+	},
 
 	TokenSigningSecretFlag: &cli.StringFlag{
 		Description: "The secret to use when signing authorization tokens.",
@@ -234,8 +239,8 @@ var flags = map[string]cli.Flag{
 	ProvidersAnonymousReadFlag: &cli.BoolFlag{
 		Description:  "Allow anonymous read to providers.",
 		DefaultValue: false,
-	},  
-	
+	},
+
 	S3BucketNameFlag: &cli.StringFlag{
 		Description: "The S3 bucket name.",
 	},

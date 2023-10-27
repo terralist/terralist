@@ -21,6 +21,7 @@ func (t *Creator) New(config auth.Configurator) (auth.Provider, error) {
 		AuthorizeUrl: cfg.AuthorizeUrl,
 		TokenUrl:     cfg.TokenUrl,
 		UserInfoUrl:  cfg.UserInfoUrl,
+		Scope:        cfg.Scope,
 		RedirectUrl:  strings.TrimSuffix(cfg.TerralistSchemeHostAndPort, "/") + "/v1/api/auth/redirect",
 	}, nil
 }

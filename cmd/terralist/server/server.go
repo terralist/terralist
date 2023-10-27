@@ -246,6 +246,7 @@ func (s *Command) run() error {
 			AuthorizeUrl:               flags[OidcAuthorizeUrlFlag].(*cli.StringFlag).Value,
 			TokenUrl:                   flags[OidcTokenUrlFlag].(*cli.StringFlag).Value,
 			UserInfoUrl:                flags[OidcUserInfoUrlFlag].(*cli.StringFlag).Value,
+			Scope:                      flags[OidcScopeFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
 		})
 	}

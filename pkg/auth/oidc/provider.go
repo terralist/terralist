@@ -16,6 +16,7 @@ type Provider struct {
 	AuthorizeUrl string
 	TokenUrl     string
 	UserInfoUrl  string
+	Scope        string
 	RedirectUrl  string
 }
 
@@ -24,8 +25,7 @@ type tokenResponse struct {
 }
 
 var (
-	httpClient          = &http.Client{}
-	scope      []string = []string{"openid"}
+	httpClient = &http.Client{}
 )
 
 func (p *Provider) Name() string {
@@ -38,7 +38,7 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 		"state":         {state},
 		"response_type": {"code"},
 		"redirect_uri":  {p.RedirectUrl},
-		"scope":         {strings.Join(scope, " ")},
+		"scope":         {p.Scope},
 	}
 	return fmt.Sprintf(
 		"%s?%s",

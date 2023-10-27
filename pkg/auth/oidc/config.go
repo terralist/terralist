@@ -12,6 +12,7 @@ type Config struct {
 	AuthorizeUrl               string
 	TokenUrl                   string
 	UserInfoUrl                string
+	Scope                      string
 	TerralistSchemeHostAndPort string
 }
 
@@ -32,6 +33,10 @@ func (c *Config) Validate() error {
 
 	if c.TokenUrl == "" {
 		return fmt.Errorf("missing required token url")
+	}
+
+	if c.Scope == "" {
+		return fmt.Errorf("missing required scope")
 	}
 
 	if c.UserInfoUrl == "" {

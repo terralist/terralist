@@ -30,7 +30,7 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `cert-file`                  | string | no       | `n/a`                   | The path to the certificate file (pem format).                        |
 | `key-file`                   | string | no       | `n/a`                   | "The path to the certificate key file (pem format).                   |
 | `token-signing-secret`       | string | yes      | `n/a`                   | The secret to use when signing authorization tokens.                  |
-| `oauth-provider`             | string | yes      | `n/a`                   | The OAuth 2.0 provider.                                               |
+| `oauth-provider`             | string | yes      | `n/a`                   | The OAuth 2.0 provider (`github`, `bitbucket`, `gitlab`, `oidc`).                                               |
 | `gh-client-id`               | string | no       | `n/a`                   | The GitHub OAuth Application client ID.                               |
 | `gh-client-secret`           | string | no       | `n/a`                   | The GitHub OAuth Application client secret.                           |
 | `gh-organization`            | string | no       | `n/a`                   | The GitHub organization to use for user validation.                   |
@@ -40,6 +40,12 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `gl-client-id`               | string | no       | `n/a`                   | The GitLab OAuth Application client ID.                               |
 | `gl-client-secret`           | string | no       | `n/a`                   | The Gitlab OAuth Application client secret.                           |
 | `gl-host`                    | string | no       | `gitlab.com`            | The (self hosted) GitLab host to use. E.g. gitlab.mycompany.com:8443  |
+| `oi-client-id`               | string | no       | `n/a`                   | The OpenID Connect client ID.                               |
+| `oi-client-secret`           | string | no       | `n/a`                   | The OpenID Connect client secret.                           |
+| `oi-authorize-url`                    | string | no       | `n/a`            | The url to [OpenID Connect authorization endpoint](https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint). E.g. `https://login.mycompany.com/auth/realms/developer/protocol/openid-connect/auth` |
+| `oi-token-url`                    | string | no       | `n/a`            | The url to [OpenID Connect token endpoint](https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint). E.g. `https://login.mycompany.com/auth/realms/developer/protocol/openid-connect/token`  |
+| `oi-userinfo-url`                    | string | no       | `n/a`            | The url to [OpenID Connect userinfo endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo). E.g. `https://login.mycompany.com/auth/realms/developer/protocol/openid-connect/userinfo`  |
+| `oi-scope`                    | string | no       | `openid email`            | The OpenID Connect scope requested during authorization to ensure to get claims `sub` and `email`.  |
 | `database-backend`           | string | no       | `sqlite`                | The database backend.                                                 |
 | `postgres-url`               | string | no       | `n/a`                   | The URL that can be used to connect to PostgreSQL database.           |
 | `postgres-host`              | string | no       | `n/a`                   | The host where the PostgreSQL database can be found.                  |
