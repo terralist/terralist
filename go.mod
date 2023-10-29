@@ -16,7 +16,7 @@ require (
 	github.com/spf13/viper v1.15.0
 	gorm.io/driver/mysql v1.5.0
 	gorm.io/driver/postgres v1.5.0
-	gorm.io/driver/sqlite v1.4.4
+	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.3
 )
 
