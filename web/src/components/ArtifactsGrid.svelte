@@ -15,6 +15,7 @@
   let itemsPerPage: number = 8;
   let pages: number[] = [];
   let currentPage: number = 0;
+  let artifactsCount: number = 0;
 
   const {
     data: artifacts,
@@ -73,10 +74,14 @@
       $filters.providersEnabled ? ['provider'] : []
     );
 
-    filteredArtifacts = ($artifacts ?? [] as Artifact[]).
-      filter((artifact: Artifact) => currentFilters.includes(artifact.type)).
+    const matchingTypeArtifacts = ($artifacts ?? [] as Artifact[]).
+      filter((artifact: Artifact) => currentFilters.includes(artifact.type));
+
+    artifactsCount = matchingTypeArtifacts.length;
+
+    filteredArtifacts = matchingTypeArtifacts.
       filter((_, id) => (id >= itemsPerPage * currentPage && id < itemsPerPage * (1 + currentPage)));
-  };
+    };
 
   let filtersUnsubscribe: () => void;
 
