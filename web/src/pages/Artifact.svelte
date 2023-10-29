@@ -14,9 +14,9 @@
 {#key params}
   <Artifact
     type={params.provider ? "module" : "provider"}
-    namespace={params.namespace}
-    name={params.name}
-    provider={params.provider}
+    namespace={params.namespace.toLowerCase()}
+    name={params.name.toLowerCase()}
+    provider={params.provider.toLowerCase()}
     version={params.version}
   />
 {/key}
