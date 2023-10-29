@@ -44,7 +44,7 @@ func (r *DefaultModuleRepository) Find(namespace, name, provider string) (*modul
 
 	err := r.Database.Handler().
 		Where(
-			fmt.Sprintf("%s.name = LOWER(?) AND %s.provider = LOWER(?)", mtn, mtn),
+			fmt.Sprintf("LOWER(%s.name) = LOWER(?) AND LOWER(%s.provider) = LOWER(?)", mtn, mtn),
 			name,
 			provider,
 		).

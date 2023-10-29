@@ -45,7 +45,7 @@ func (r *DefaultProviderRepository) Find(namespace, name string) (*provider.Prov
 
 	err := r.Database.Handler().
 		Where(
-			fmt.Sprintf("%s.name = LOWER(?)", ptn),
+			fmt.Sprintf("LOWER(%s.name) = LOWER(?)", ptn),
 			name,
 		).
 		Joins(
