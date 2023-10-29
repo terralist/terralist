@@ -40,7 +40,7 @@
   const initPages = () => {
     const artifactsCount = filteredArtifacts.length;
 
-    pageCount = artifactsCount > 0 ? Math.floor(artifactsCount / itemsPerPage + 1) : 0;
+    pageCount = artifactsCount > 0 ? Math.floor((artifactsCount - 1) / itemsPerPage + 1) : 0;
     pagesToDisplay = Math.min(pageCount, 5);
   };
 
