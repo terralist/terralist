@@ -29,8 +29,8 @@ type ModuleController interface {
 // DefaultModuleController is a concrete implementation of ModuleController
 type DefaultModuleController struct {
 	ModuleService services.ModuleService
-
 	Authorization *handlers.Authorization
+	AnonymousRead bool
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -49,7 +49,9 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// modules
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
-	tfApi.Use(c.Authorization.ApiAuthentication())
+	if !c.AnonymousRead {
+		tfApi.Use(c.Authorization.ApiAuthentication())
+	}
 
 	tfApi.GET(
 		"/:namespace/:name/:provider/versions",

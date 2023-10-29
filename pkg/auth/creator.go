@@ -4,6 +4,7 @@ const (
 	GITHUB = iota
 	BITBUCKET
 	GITLAB
+	OIDC
 )
 
 type Backend = int
