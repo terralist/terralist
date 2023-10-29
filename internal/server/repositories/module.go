@@ -43,10 +43,11 @@ func (r *DefaultModuleRepository) Find(namespace, name, provider string) (*modul
 	mtn := (module.Module{}).TableName()
 
 	err := r.Database.Handler().
-		Where(module.Module{
-			Name:     name,
-			Provider: provider,
-		}).
+		Where(
+			fmt.Sprintf("LOWER(%s.name) = LOWER(?) AND LOWER(%s.provider) = LOWER(?)", mtn, mtn),
+			name,
+			provider,
+		).
 		Joins(
 			fmt.Sprintf(
 				"JOIN %s ON %s.id = %s.authority_id AND LOWER(%s.name) = LOWER(?)",
