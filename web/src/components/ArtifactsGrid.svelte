@@ -15,6 +15,7 @@
   let itemsPerPage: number = 8;
   let pages: number[] = [];
   let currentPage: number = 0;
+  let artifactsCount: number = 0;
 
   const {
     data: artifacts,
@@ -40,7 +41,7 @@
   const initPages = () => {
     const artifactsCount = filteredArtifacts.length;
 
-    pageCount = artifactsCount > 0 ? Math.floor(artifactsCount / itemsPerPage + 1) : 0;
+    pageCount = artifactsCount > 0 ? Math.floor((artifactsCount - 1) / itemsPerPage + 1) : 0;
     pagesToDisplay = Math.min(pageCount, 5);
   };
 
@@ -73,10 +74,14 @@
       $filters.providersEnabled ? ['provider'] : []
     );
 
-    filteredArtifacts = ($artifacts ?? [] as Artifact[]).
-      filter((artifact: Artifact) => currentFilters.includes(artifact.type)).
+    const matchingTypeArtifacts = ($artifacts ?? [] as Artifact[]).
+      filter((artifact: Artifact) => currentFilters.includes(artifact.type));
+
+    artifactsCount = matchingTypeArtifacts.length;
+
+    filteredArtifacts = matchingTypeArtifacts.
       filter((_, id) => (id >= itemsPerPage * currentPage && id < itemsPerPage * (1 + currentPage)));
-  };
+    };
 
   let filtersUnsubscribe: () => void;
 
@@ -146,7 +151,9 @@
     {#if pageCount > 0}
       <div class="mt-4 flex flex-col justify-center items-center sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {#each filteredArtifacts as artifact}
-          <ArtifactCard artifact={artifact}/>
+          {#key artifact.id}
+            <ArtifactCard artifact={artifact}/>
+          {/key}
         {/each}
       </div>
     {/if}
