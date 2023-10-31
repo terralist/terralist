@@ -23,4 +23,4 @@
 * `GET /v1/modules/:namespace/:name/:provider/:version/download`: Download a specific module version
 * `POST /v1/api/modules/:name/:provider/:version/upload`: Upload a new modules version
 * `DELETE /v1/api/modules/:name/:provider/remove`: Remove a modules
-* `DELETE /v1/api/modules/:name/:provider/remove`: Remove a modules version
+* `DELETE /v1/api/modules/:name/:provider/:version/remove`: Remove a modules version
