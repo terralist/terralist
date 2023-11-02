@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { onDestroy } from "svelte";
   import { writable, type Writable } from "svelte/store";
   import { useQuery } from "@/lib/hooks";
 
@@ -39,14 +39,13 @@
   };
 
   const initPages = () => {
-    const artifactsCount = filteredArtifacts.length;
-
     pageCount = artifactsCount > 0 ? Math.floor((artifactsCount - 1) / itemsPerPage + 1) : 0;
     pagesToDisplay = Math.min(pageCount, 5);
   };
 
   const buildPages = (pageIndex: number) => {
     currentPage = pageIndex;
+
     updateArtifacts();
 
     let start: number = 0,
