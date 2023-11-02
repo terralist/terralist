@@ -16,7 +16,7 @@
     type={params.provider ? "module" : "provider"}
     namespace={params.namespace.toLowerCase()}
     name={params.name.toLowerCase()}
-    provider={params.provider.toLowerCase()}
+    provider={params.provider?.toLowerCase()}
     version={params.version}
   />
 {/key}
