@@ -131,13 +131,29 @@ func parseResult(name, src string, kind int) (*InMemoryFile, error) {
 // readFile reads a file from the disk and returns it
 // as an InMemoryFile
 func readFile(name, src string) (*InMemoryFile, error) {
-	content, err := os.ReadFile(src)
+	// Open the file
+	f, err := os.Open(fpath)
 	if err != nil {
-		return nil, fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
+		return err
+	}
+	defer f.Close()
+
+	// Fetch file headers
+    fi, err := f.Stat()
+    if err != nil {
+        return err
+    }
+
+	buffer := new(bytes.Buffer)
+
+	// Copy the file to the buffer
+	if _, err := io.Copy(buffer, f); err != nil {
+		return err
 	}
 
 	return &InMemoryFile{
 		Name:    name,
+		FileInfo: fi,
 		Content: content,
 	}, nil
 }
@@ -159,28 +175,12 @@ func archiveDir(name, src string) (*InMemoryFile, error) {
 			return nil
 		}
 
-		// Open the file
-		f, err := os.Open(fpath)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
 		relPath, _ := filepath.Rel(src, fpath)
 		relPath = filepath.Clean(relPath)
 		relPath = strings.Replace(relPath, "\\", "/", -1)
 
-		buffer := new(bytes.Buffer)
-
-		// Copy the file to the buffer
-		if _, err := io.Copy(buffer, f); err != nil {
-			return err
-		}
-
-		dirFiles = append(dirFiles, &InMemoryFile{
-			Name:    relPath,
-			Content: buffer.Bytes(),
-		})
+		file = readFile(relPath, fpath)
+		dirFiles = append(dirFiles, file)
 
 		return nil
 	}); err != nil {

@@ -11,6 +11,7 @@ import (
 // InMemoryFile holds a file in-memory
 type InMemoryFile struct {
 	Name    string
+	FileInfo FileInfo 
 	Content []byte
 }
 
@@ -25,6 +26,15 @@ func Archive(name string, files []*InMemoryFile) (*InMemoryFile, error) {
 		w, err := writer.Create(f.Name)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrArchiveFailure, err)
+		}
+
+		hdr, err := zip.FileInfoHeader(f.FileInfo)
+		if err != nil {
+			return err
+		}
+
+		if _, err := w.CreateHeader(hdr); err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
 		}
 
 		if _, err := w.Write(f.Content); err != nil {
@@ -42,6 +52,7 @@ func Archive(name string, files []*InMemoryFile) (*InMemoryFile, error) {
 
 	return &InMemoryFile{
 		Name:    name,
+		FileInfo: nil,
 		Content: buffer.Bytes(),
 	}, nil
 }
