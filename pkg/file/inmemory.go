@@ -4,14 +4,16 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"strings"
 )
 
 // InMemoryFile holds a file in-memory
 type InMemoryFile struct {
-	Name    string
-	Content []byte
+	Name     string
+	FileInfo fs.FileInfo
+	Content  []byte
 }
 
 // Archive archives a slice of InMemoryFiles and returns the
@@ -22,7 +24,14 @@ func Archive(name string, files []*InMemoryFile) (*InMemoryFile, error) {
 	writer := zip.NewWriter(buffer)
 
 	for _, f := range files {
-		w, err := writer.Create(f.Name)
+		// fetch file info and set file path to relative one to preserve directories
+		hdr, err := zip.FileInfoHeader(f.FileInfo)
+		hdr.Name = f.Name
+		if err != nil {
+			return nil, fmt.Errorf("%w: %v", ErrArchiveFailure, err)
+		}
+
+		w, err := writer.CreateHeader(hdr)
 		if err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrArchiveFailure, err)
 		}
@@ -41,8 +50,9 @@ func Archive(name string, files []*InMemoryFile) (*InMemoryFile, error) {
 	}
 
 	return &InMemoryFile{
-		Name:    name,
-		Content: buffer.Bytes(),
+		Name:     name,
+		FileInfo: nil,
+		Content:  buffer.Bytes(),
 	}, nil
 }
 
