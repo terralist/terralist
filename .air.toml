@@ -1,0 +1,34 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "task build -- release"
+bin = "terralist.exe"
+include_ext = ["go", "svelte", "ts", "html", "css", "json", "cjs"]
+exclude_dir = [".github", ".vscode", "docs", "mocks", "tests", "tmp", "web\\.vite", "web/.vite", "web/dist", "web\\dist", "web/node_modules", "web\\node_modules"]
+exclude_regex = ["_test\\.go"]
+exclude_unchanged = true
+follow_symlink = true
+log = "air.log"
+poll = false
+poll_interval = 500 # ms
+delay = 1000 # ms
+stop_on_error = true
+send_interrupt = false
+kill_delay = 500 # ms
+rerun = false
+rerun_delay = 500
+args_bin = ["server", "--config=config.yaml"]
+
+[log]
+time = false
+main_only = false
+
+[color]
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+clean_on_exit = true
