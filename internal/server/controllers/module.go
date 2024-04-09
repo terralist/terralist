@@ -90,7 +90,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			ctx.Header("X-Terraform-Get", *location)
-			ctx.JSON(http.StatusOK, gin.H{
+			ctx.JSON(http.StatusNoContent, gin.H{
 				"errors": []string{},
 			})
 		},
