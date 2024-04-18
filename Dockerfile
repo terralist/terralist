@@ -5,6 +5,9 @@ WORKDIR /home/node/terralist
 COPY ./web/package.json ./web/yarn.lock ./
 RUN yarn install --frozen-lockfile
 
+ARG VERSION="dev"
+ENV TERRALIST_VERSION=${VERSION}
+
 COPY ./web ./
 RUN yarn build
 
