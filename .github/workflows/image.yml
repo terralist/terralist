@@ -57,7 +57,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build and push development image
-      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && startsWith(github.ref, 'refs/heads/') }}
+      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && !startsWith(github.ref, 'refs/tags/') }}
       uses: docker/build-push-action@v5
       with:
         context: .
