@@ -46,6 +46,12 @@ jobs:
         TERRALIST_VERSION: ${{ env.RELEASE_VERSION }}
       run: yarn --cwd ./web build
 
+    # yarn build will remove the .gitkeep file from web/dist so
+    # goreleaser will fail because of the dirty state;
+    # we need to put back the file
+    - name: Fix git dirty state
+      run: touch web/dist/.gitkeep
+
     - name: Release stable
       uses: goreleaser/goreleaser-action@v4
       if: (!contains(github.ref, '-pre.'))
