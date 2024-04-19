@@ -20,11 +20,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3.5.0
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
-
     - name: Set release version
       run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
@@ -33,6 +28,23 @@ jobs:
 
     - name: Set the build Timestamp
       run: echo "BUILD_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%S")" >> $GITHUB_ENV
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Install web UI dependencies
+      run: yarn --cwd ./web install
+
+    - name: Build web UI
+      env:
+        TERRALIST_VERSION: ${{ env.RELEASE_VERSION }}
+      run: yarn --cwd ./web build
 
     - name: Release stable
       uses: goreleaser/goreleaser-action@v4
