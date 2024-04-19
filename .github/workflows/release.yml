@@ -33,6 +33,11 @@ jobs:
       with:
         node-version: 18
 
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
     - name: Install web UI dependencies
       run: yarn --cwd ./web install
 
@@ -40,11 +45,6 @@ jobs:
       env:
         TERRALIST_VERSION: ${{ env.RELEASE_VERSION }}
       run: yarn --cwd ./web build
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
 
     - name: Release stable
       uses: goreleaser/goreleaser-action@v4
