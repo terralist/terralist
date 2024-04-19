@@ -122,7 +122,7 @@ func TestRedirect(t *testing.T) {
 
 					query := parsedURL.Query()
 					So(query.Get("state"), ShouldEqual, state)
-					So(query.Get("code"), ShouldEqual, payload)
+					So(query.Get("code"), ShouldEqual, payload.String())
 				})
 			})
 		})
