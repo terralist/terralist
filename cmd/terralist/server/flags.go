@@ -71,6 +71,10 @@ const (
 	S3SecretAccessKeyFlag = "s3-secret-access-key"
 	S3PresignExpireFlag   = "s3-presign-expire"
 
+	AzureAccountNameFlag   = "azure-account-name"
+	AzureAccountKeyFlag    = "azure-account-key"
+	AzureContainerNameFlag = "azure-container-name"
+
 	LocalStoreFlag = "local-store"
 
 	SessionStoreFlag = "session-store"
@@ -221,13 +225,13 @@ var flags = map[string]cli.Flag{
 
 	ModulesStorageResolverFlag: &cli.StringFlag{
 		Description:  "The modules storage resolver.",
-		Choices:      []string{"proxy", "local", "s3"},
+		Choices:      []string{"proxy", "local", "s3", "azure"},
 		DefaultValue: "proxy",
 	},
 
 	ProvidersStorageResolverFlag: &cli.StringFlag{
 		Description:  "The providers storage resolver.",
-		Choices:      []string{"proxy", "local", "s3"},
+		Choices:      []string{"proxy", "local", "s3", "azure"},
 		DefaultValue: "proxy",
 	},
 
@@ -259,6 +263,16 @@ var flags = map[string]cli.Flag{
 	S3PresignExpireFlag: &cli.IntFlag{
 		Description:  "The number of minutes after which the presigned URLs should expire.",
 		DefaultValue: 15,
+	},
+
+	AzureAccountNameFlag: &cli.StringFlag{
+		Description: "The Azure account name.",
+	},
+	AzureAccountKeyFlag: &cli.StringFlag{
+		Description: "The Azure account key.",
+	},
+	AzureContainerNameFlag: &cli.StringFlag{
+		Description: "The Azure container name.",
 	},
 
 	SessionStoreFlag: &cli.StringFlag{

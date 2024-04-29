@@ -4,6 +4,7 @@ const (
 	PROXY = iota
 	LOCAL
 	S3
+	AZURE
 )
 
 type Backend = int
