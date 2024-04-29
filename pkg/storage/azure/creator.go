@@ -18,37 +18,35 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		return nil, fmt.Errorf("unsupported configurator")
 	}
 
-	var blobClient *azblob.Client
+	var client *azblob.Client
 	var defaultCredentials bool
 	// var err error
 
 	ctx := context.Background()
 
-	if !(cfg.AccountKey == "" || cfg.AccountName == "") {
-		// Creating new client with provided credentials
-
-		creds, err := azblob.NewSharedKeyCredential(cfg.AccountName, cfg.AccountKey)
-		if err != nil {
-			return nil, fmt.Errorf("could not create shared key credentials: %v", err)
-		}
-		blobClient, err = azblob.NewClientWithSharedKeyCredential(fmt.Sprintf("https://%s.blob.core.windows.net", cfg.AccountName), creds, nil)
-		if err != nil {
-			return nil, fmt.Errorf("could not create blob client: %v", err)
-		}
-	} else {
+	if cfg.DefaultCredentials {
 		defaultAzureCredentials, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
 			return nil, fmt.Errorf("could not get DefaultAzureCredentials: %v", err)
 		}
-		blobClient, err = azblob.NewClient(fmt.Sprintf("https://%s.blob.core.windows.net", cfg.AccountName), defaultAzureCredentials, nil)
-		defaultCredentials = true
+		client, err = azblob.NewClient(fmt.Sprintf("https://%s.blob.core.windows.net", cfg.AccountName), defaultAzureCredentials, nil)
+		if err != nil {
+			return nil, fmt.Errorf("could not create blob client: %v", err)
+		}
+	} else {
+		// Creating new client with provided credentials
+		creds, err := azblob.NewSharedKeyCredential(cfg.AccountName, cfg.AccountKey)
+		if err != nil {
+			return nil, fmt.Errorf("could not create shared key credentials: %v", err)
+		}
+		client, err = azblob.NewClientWithSharedKeyCredential(fmt.Sprintf("https://%s.blob.core.windows.net", cfg.AccountName), creds, nil)
 		if err != nil {
 			return nil, fmt.Errorf("could not create blob client: %v", err)
 		}
 	}
 
-	// using the blobClient check is the Container exists or create a new one
-	pager := blobClient.NewListContainersPager(&azblob.ListContainersOptions{
+	// using the client check is the Container exists or create a new one
+	pager := client.NewListContainersPager(&azblob.ListContainersOptions{
 		Include: azblob.ListContainersInclude{Metadata: true, Deleted: true},
 	})
 	containerFound := false
@@ -68,8 +66,9 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 			break
 		}
 	}
+
 	if !containerFound {
-		_, err := blobClient.CreateContainer(ctx, cfg.ContainerName, nil)
+		_, err := client.CreateContainer(ctx, cfg.ContainerName, nil)
 		if err != nil {
 			return nil, fmt.Errorf("could not create container: %v", err)
 		}
@@ -79,6 +78,7 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		ContainerName: cfg.ContainerName,
 		AccountName:   cfg.AccountName,
 		AccountKey:    cfg.AccountKey,
+		Client:        client,
 
 		DefaultCredentials: defaultCredentials,
 	}, nil
