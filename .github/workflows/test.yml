@@ -30,7 +30,7 @@ jobs:
           go-version: '1.22'
 
       - name: Install task
-        uses: arduino/setup-task@v1
+        uses: arduino/setup-task@v2
 
       - name: Install mockery
         run: go install github.com/vektra/mockery/v2@latest
