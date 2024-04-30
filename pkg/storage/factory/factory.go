@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"terralist/pkg/storage"
+	"terralist/pkg/storage/azure"
 	"terralist/pkg/storage/local"
 	"terralist/pkg/storage/s3"
 )
@@ -22,6 +23,8 @@ func NewResolver(backend storage.Backend, config storage.Configurator) (storage.
 		creator = &local.Creator{}
 	case storage.S3:
 		creator = &s3.Creator{}
+	case storage.AZURE:
+		creator = &azure.Creator{}
 	default:
 		return nil, fmt.Errorf("unrecognized backend type")
 	}

@@ -73,6 +73,10 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `s3-access-key-id`           | string | no       | `n/a`                   | The AWS access key ID to access the S3 bucket.                        |
 | `s3-secret-access-key`       | string | no       | `n/a`                   | The AWS secret access key to access the S3 bucket.                    |
 | `local-store`                | string | no       | `~/.terralist.d`        | The path to a directory in which Terralist can store files.           |
+| `azure-account-name`         | string | no       | `n/a`                   | The Azure account name.|
+|	`azure-account-key`          | string | no       | `n/a`                   | The Azure account key.|
+|	`azure-container-name`       | string | no       | `n/a`                   | The Azure container name.|
+|	`azure-sas-expire`           | int    | no       | `15`                    | The number of minutes after which the Azure Shared Access Signature(SAS) should expire.|
 
 ## Example config file
 
@@ -101,13 +105,19 @@ sqlite-path: "terralist.db"
 # database-backend: "mysql"
 # mysql-url: "admin:admin@tcp(localhost:3306)/terralist"
 
-modules-storage-resolver: "s3"
+modules-storage-resolver: "s3" # or "azure"
 providers-storage-resolver: "proxy"
 
 s3-bucket-name: "<< YOUR_S3_BUCKET_NAME >>"
 s3-bucket-region: "<< S3_BUCKET_REGION >>"
 s3-access-key-id: "<< YOUR_ACCESS_KEY_ID >>"
 s3-secret-access-key: "<< YOUR_SECRET_ACCESS_KEY >>"
+
+# azure-account-name: "Globally unique name of your storage account"
+# azure-container-name: "Name of the container in the storage account"
+# azure-account-key: "Access key of the storage account" # If not using DefaultAzureCredentials
+# azure-sas-expire: 45 # The number of minutes after which the SAS should expire.
+
 
 # local-store: "~/.terralist.d"
 

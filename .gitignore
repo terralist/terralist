@@ -209,3 +209,8 @@ dist/
 tmp-CHANGELOG.md
 
 # End of Releaser
+
+### Ngrok ###
+ngrok.yml
+demo/
+terralist
