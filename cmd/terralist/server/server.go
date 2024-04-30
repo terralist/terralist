@@ -23,6 +23,7 @@ import (
 	"terralist/pkg/session/cookie"
 	sessionFactory "terralist/pkg/session/factory"
 	"terralist/pkg/storage"
+	"terralist/pkg/storage/azure"
 	storageFactory "terralist/pkg/storage/factory"
 	"terralist/pkg/storage/local"
 	"terralist/pkg/storage/s3"
@@ -298,7 +299,16 @@ func (s *Command) run() error {
 				SecretAccessKey: flags[S3SecretAccessKeyFlag].(*cli.StringFlag).Value,
 				LinkExpire:      flags[S3PresignExpireFlag].(*cli.IntFlag).Value,
 			})
+		case "azure":
+			resolvers[name], err = storageFactory.NewResolver(storage.AZURE, &azure.Config{
+				AccountName:        flags[AzureAccountNameFlag].(*cli.StringFlag).Value,
+				AccountKey:         flags[AzureAccountKeyFlag].(*cli.StringFlag).Value,
+				ContainerName:      flags[AzureContainerNameFlag].(*cli.StringFlag).Value,
+				SASExpire:          flags[AzureSASExpireFlag].(*cli.IntFlag).Value,
+				DefaultCredentials: false,
+			})
 		}
+
 		if err != nil {
 			return err
 		}
