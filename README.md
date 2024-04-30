@@ -34,11 +34,13 @@ Terralist is a private Terraform registry for providers and modules following th
 * **Modules Registry**: ([docs](https://www.terraform.io/docs/internals/module-registry-protocol.html)) Stores modules data in a *private* storage (for example, an S3 bucket). When download request is received, calls the remote storage to generate a temporary public download URL and forwards the URL to the requester.
   Currently supported private storage:
   * AWS S3: uses a private S3 bucket
+  * Azure Blob: uses a private Azure Storage Account
   * Proxy: forwards the URL received at creation
 
 * **Provider Registry**: ([docs](https://www.terraform.io/docs/internals/provider-registry-protocol.html)) Similar with modules registry.
   Currently supported private storage:
   * AWS S3: uses a private S3 bucket
+  * Azure Blob: uses a private Azure Storage Account
   * Proxy: forwards the URL received at creation
 
 _Note_: For _Proxy_ storage mode, the URL management is up to you. If, for example, you are providing a git URL, then the same URL will be forwarded to the requester (Terraform).
