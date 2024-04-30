@@ -304,6 +304,7 @@ func (s *Command) run() error {
 				AccountName:        flags[AzureAccountNameFlag].(*cli.StringFlag).Value,
 				AccountKey:         flags[AzureAccountKeyFlag].(*cli.StringFlag).Value,
 				ContainerName:      flags[AzureContainerNameFlag].(*cli.StringFlag).Value,
+				SASExpire:          flags[AzureSASExpireFlag].(*cli.IntFlag).Value,
 				DefaultCredentials: false,
 			})
 		}

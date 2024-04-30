@@ -20,6 +20,7 @@ type Resolver struct {
 	ContainerName string
 	AccountName   string
 	AccountKey    string
+	SASExpire     int
 	Client        *azblob.Client
 
 	// DefaultAzureCredentials *azidentity.DefaultAzureCredential
@@ -68,20 +69,20 @@ func (r *Resolver) GetSASURL(blobName string) (string, error) {
 		sasQueryParams, err := sas.BlobSignatureValues{
 			Protocol:      sas.ProtocolHTTPS,
 			StartTime:     time.Now().UTC().Add(time.Second * -10),
-			ExpiryTime:    time.Now().UTC().Add(15 * time.Minute),
+			ExpiryTime:    time.Now().UTC().Add(time.Duration(r.SASExpire) * time.Minute),
 			Permissions:   to.Ptr(sas.BlobPermissions{Read: true, List: true}).String(),
 			ContainerName: r.ContainerName,
 			BlobName:      blobName,
 		}.SignWithUserDelegation(udc)
 		if err != nil {
-			return "", fmt.Errorf("Could not sign with UserDelegationCredential: %v", err)
+			return "", fmt.Errorf("could not sign with UserDelegationCredential: %v", err)
 		}
 
 		sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", r.AccountName, r.ContainerName, blobName) + "?" + sasQueryParams.Encode()
 		return sasURL, nil
 	}
 	start := time.Now()
-	expiry := start.Add(15 * time.Minute)
+	expiry := start.Add(time.Duration(r.SASExpire) * time.Minute)
 
 	return r.Client.ServiceClient().NewContainerClient(r.ContainerName).NewBlobClient(blobName).GetSASURL(
 		sas.BlobPermissions{Read: true, List: true},

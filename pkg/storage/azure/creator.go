@@ -76,6 +76,7 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		ContainerName: cfg.ContainerName,
 		AccountName:   cfg.AccountName,
 		AccountKey:    cfg.AccountKey,
+		SASExpire:     cfg.SASExpire,
 		Client:        client,
 
 		DefaultCredentials: cfg.DefaultCredentials,

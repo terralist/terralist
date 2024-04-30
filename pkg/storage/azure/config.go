@@ -11,6 +11,7 @@ type Config struct {
 	AccountName        string
 	AccountKey         string
 	ContainerName      string
+	SASExpire          int
 	DefaultCredentials bool
 }
 
@@ -30,6 +31,9 @@ func (c *Config) Validate() error {
 	}
 	if c.ContainerName == "" {
 		return fmt.Errorf("missing required attribute 'ContainerName'")
+	}
+	if c.SASExpire <= 0 {
+		return fmt.Errorf("the expire time for SAS must be positive > 0")
 	}
 
 	return nil

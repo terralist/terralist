@@ -74,6 +74,7 @@ const (
 	AzureAccountNameFlag   = "azure-account-name"
 	AzureAccountKeyFlag    = "azure-account-key"
 	AzureContainerNameFlag = "azure-container-name"
+	AzureSASExpireFlag     = "azure-sas-expire"
 
 	LocalStoreFlag = "local-store"
 
@@ -264,7 +265,6 @@ var flags = map[string]cli.Flag{
 		Description:  "The number of minutes after which the presigned URLs should expire.",
 		DefaultValue: 15,
 	},
-
 	AzureAccountNameFlag: &cli.StringFlag{
 		Description: "The Azure account name.",
 	},
@@ -273,6 +273,10 @@ var flags = map[string]cli.Flag{
 	},
 	AzureContainerNameFlag: &cli.StringFlag{
 		Description: "The Azure container name.",
+	},
+	AzureSASExpireFlag: &cli.IntFlag{
+		Description:  "The number of minutes after which the Azure Shared Access Signature(SAS) should expire.",
+		DefaultValue: 15,
 	},
 
 	SessionStoreFlag: &cli.StringFlag{
