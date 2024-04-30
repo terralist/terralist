@@ -19,8 +19,6 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 	}
 
 	var client *azblob.Client
-	var defaultCredentials bool
-	// var err error
 
 	ctx := context.Background()
 
@@ -80,6 +78,6 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		AccountKey:    cfg.AccountKey,
 		Client:        client,
 
-		DefaultCredentials: defaultCredentials,
+		DefaultCredentials: cfg.DefaultCredentials,
 	}, nil
 }
