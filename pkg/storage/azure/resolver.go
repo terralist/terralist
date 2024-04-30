@@ -4,7 +4,6 @@ package azure
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"terralist/pkg/storage"
@@ -54,7 +53,7 @@ func (r *Resolver) GetSASURL(blobName string) (string, error) {
 
 		// Prepare SAS Token Input field
 		now := time.Now().UTC().Add(-10 * time.Second)
-		expiry := now.Add(48 * time.Hour)
+		expiry := now.Add(4 * time.Hour)
 		info := service.KeyInfo{
 			Start:  to.Ptr(now.UTC().Format(sas.TimeFormat)),
 			Expiry: to.Ptr(expiry.UTC().Format(sas.TimeFormat)),
@@ -75,7 +74,7 @@ func (r *Resolver) GetSASURL(blobName string) (string, error) {
 			BlobName:      blobName,
 		}.SignWithUserDelegation(udc)
 		if err != nil {
-			log.Fatal(err.Error())
+			return "", fmt.Errorf("Could not sign with UserDelegationCredential: %v", err)
 		}
 
 		sasURL := fmt.Sprintf("https://%s.blob.core.windows.net/%s/%s", r.AccountName, r.ContainerName, blobName) + "?" + sasQueryParams.Encode()
@@ -106,8 +105,6 @@ func (r *Resolver) Find(keys string) (string, error) {
 				if err != nil {
 					return "", fmt.Errorf("could not get SAS URL: %v", err)
 				}
-				fmt.Printf("URL: %s\n", url)
-
 				return url, nil
 			}
 		}
