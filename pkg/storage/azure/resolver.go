@@ -93,7 +93,7 @@ func (r *Resolver) GetSASURL(blobName string) (string, error) {
 }
 func (r *Resolver) Find(keys string) (string, error) {
 
-	pager := r.Client.NewListBlobsFlatPager(r.ContainerName, &container.ListBlobsFlatOptions{})
+	pager := r.Client.NewListBlobsFlatPager(r.ContainerName, &container.ListBlobsFlatOptions{Prefix: &keys})
 
 	for pager.More() {
 		page, err := pager.NextPage(context.Background())
