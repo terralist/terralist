@@ -8,12 +8,12 @@ import (
 
 type Version struct {
 	entity.Entity
-	ModuleID     uuid.UUID
+	ModuleID     uuid.UUID `gorm:"size:256"`
 	Module       Module
 	Version      string       `gorm:"not null"`
 	Location     string       `gorm:"not null"`
-	Providers    []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Dependencies []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Providers    []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:NO ACTION,OnDelete:NO ACTION"`
+	Dependencies []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:NO ACTION,OnDelete:NO ACTION"`
 	Submodules   []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 

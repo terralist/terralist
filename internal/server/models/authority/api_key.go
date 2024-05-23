@@ -10,7 +10,7 @@ import (
 
 type ApiKey struct {
 	entity.Entity
-	AuthorityID uuid.UUID
+	AuthorityID uuid.UUID `gorm:"size:256"`
 	Expiration  *time.Time
 }
 

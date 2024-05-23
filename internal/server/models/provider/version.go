@@ -10,7 +10,7 @@ import (
 
 type Version struct {
 	entity.Entity
-	ProviderID          uuid.UUID
+	ProviderID          uuid.UUID `gorm:"size:256"`
 	Provider            Provider
 	Version             string     `gorm:"not null"`
 	Protocols           string     `gorm:"not null"`

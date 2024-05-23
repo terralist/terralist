@@ -13,7 +13,7 @@ import (
 
 type Module struct {
 	entity.Entity
-	AuthorityID uuid.UUID
+	AuthorityID uuid.UUID `gorm:"size:256"`
 	Name        string    `gorm:"not null"`
 	Provider    string    `gorm:"not null"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -79,9 +79,9 @@ type ModuleDTO struct {
 
 type CreateDTO struct {
 	VersionDTO
-	AuthorityID uuid.UUID
-	Name        string `json:"name"`
-	Provider    string `json:"provider"`
+	AuthorityID uuid.UUID `gorm:"size:256"`
+	Name        string    `json:"name"`
+	Provider    string    `json:"provider"`
 }
 
 type CreateFromURLDTO struct {

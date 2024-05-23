@@ -13,7 +13,7 @@ import (
 
 type Provider struct {
 	entity.Entity
-	AuthorityID uuid.UUID
+	AuthorityID uuid.UUID `gorm:"size:256"`
 	Name        string    `gorm:"not null;index"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
@@ -59,7 +59,7 @@ func (p Provider) ToArtifact() artifact.Artifact {
 }
 
 type CreateProviderDTO struct {
-	AuthorityID uuid.UUID
+	AuthorityID uuid.UUID `gorm:"size:256"`
 	Name        string
 	Version     string
 	ShaSums     CreateProviderShaSumsDTO `json:"shasums"`

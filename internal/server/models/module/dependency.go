@@ -8,7 +8,7 @@ import (
 
 type Dependency struct {
 	entity.Entity
-	ParentID uuid.UUID
+	ParentID uuid.UUID `gorm:"size:256"`
 }
 
 func (Dependency) TableName() string {
