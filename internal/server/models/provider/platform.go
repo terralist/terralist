@@ -10,7 +10,7 @@ import (
 
 type Platform struct {
 	entity.Entity
-	VersionID    uuid.UUID
+	VersionID    uuid.UUID `gorm:"size:256"`
 	Version      Version
 	System       string `gorm:"not null"`
 	Architecture string `gorm:"not null"`

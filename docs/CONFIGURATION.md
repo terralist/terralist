@@ -59,6 +59,12 @@ Terralist also supports reading the environment at run-time. For example, if you
 | `mysql-username`             | string | no       | `n/a`                   | The username that can be used to authenticate to MySQL database.      |
 | `mysql-password`             | string | no       | `n/a`                   | The password that can be used to authenticate to MySQL database.      |
 | `mysql-database`             | string | no       | `n/a`                   | The schema name on which application data should be stored.           |
+| `mssql-url`                  | string | no       | `n/a`                   | The URL that can be used to connect to MSSQL database.                |
+| `mssql-host`                 | string | no       | `n/a`                   | The host where the MSSQL database can be found.                       |
+| `mssql-port`                 | int    | no       | `n/a`                   | The port on which the MSSQL database listens.                         |
+| `mssql-username`             | string | no       | `n/a`                   | The username that can be used to authenticate to MSSQL database.      |
+| `mssql-password`             | string | no       | `n/a`                   | The password that can be used to authenticate to MSSQL database.      |
+| `mssql-database`             | string | no       | `n/a`                   | The schema name on which application data should be stored.           |
 | `sqlite-path`                | string | no       | `n/a`                   | The path to the SQLite database.                                      |
 | `session-store`              | string | no       | `cookie`                | The session store backend.                                            |
 | `cookie-secret`              | string | no       | `n/a`                   | The secret to use for cookie encryption.                              |
@@ -104,6 +110,9 @@ sqlite-path: "terralist.db"
 
 # database-backend: "mysql"
 # mysql-url: "admin:admin@tcp(localhost:3306)/terralist"
+
+# database-backend: "mssql"
+# mssql-url: "sqlserver://admin:admin@localhost:1433?database=terralist"
 
 modules-storage-resolver: "s3" # or "azure"
 providers-storage-resolver: "proxy"

@@ -32,6 +32,13 @@ const (
 	MySQLPortFlag     = "mysql-port"
 	MySQLDatabaseFlag = "mysql-database"
 
+	MSSQLURLFlag      = "mssql-url"
+	MSSQLUsernameFlag = "mssql-username"
+	MSSQLPasswordFlag = "mssql-password"
+	MSSQLHostFlag     = "mssql-host"
+	MSSQLPortFlag     = "mssql-port"
+	MSSQLDatabaseFlag = "mssql-database"
+
 	OAuthProviderFlag = "oauth-provider"
 
 	// GitHub OAuth Flags
@@ -115,7 +122,7 @@ var flags = map[string]cli.Flag{
 
 	DatabaseBackendFlag: &cli.StringFlag{
 		Description:  "The database backend.",
-		Choices:      []string{"sqlite", "postgresql", "mysql"},
+		Choices:      []string{"sqlite", "postgresql", "mysql", "mssql"},
 		DefaultValue: "sqlite",
 	},
 
@@ -158,6 +165,25 @@ var flags = map[string]cli.Flag{
 		Description: "The port on which the MySQL database listens.",
 	},
 	MySQLDatabaseFlag: &cli.StringFlag{
+		Description: "The schema name on which application data should be stored.",
+	},
+
+	MSSQLURLFlag: &cli.StringFlag{
+		Description: "The URL that can be used to connect to MSSQL database.",
+	},
+	MSSQLUsernameFlag: &cli.StringFlag{
+		Description: "The username that can be used to authenticate to MSSQL database.",
+	},
+	MSSQLPasswordFlag: &cli.StringFlag{
+		Description: "The password that can be used to authenticate to MSSQL database.",
+	},
+	MSSQLHostFlag: &cli.StringFlag{
+		Description: "The host where the MSSQL database can be found.",
+	},
+	MSSQLPortFlag: &cli.IntFlag{
+		Description: "The port on which the MSSQL database listens.",
+	},
+	MSSQLDatabaseFlag: &cli.StringFlag{
 		Description: "The schema name on which application data should be stored.",
 	},
 

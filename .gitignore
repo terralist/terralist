@@ -203,7 +203,7 @@ mocks/**
 ### Releaser ###
 
 # GoReleaser dist
-dist/
+/dist/
 
 # Pre-Release temporary CHANGELOG.md
 tmp-CHANGELOG.md

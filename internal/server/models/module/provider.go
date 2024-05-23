@@ -8,11 +8,11 @@ import (
 
 type Provider struct {
 	entity.Entity
-	ParentID  uuid.UUID
-	Name      string `gorm:"not null"`
-	Namespace string `gorm:"not null"`
-	Source    string `gorm:"not null"`
-	Version   string `gorm:"not null"`
+	ParentID  uuid.UUID `gorm:"size:256"`
+	Name      string    `gorm:"not null"`
+	Namespace string    `gorm:"not null"`
+	Source    string    `gorm:"not null"`
+	Version   string    `gorm:"not null"`
 }
 
 func (Provider) TableName() string {

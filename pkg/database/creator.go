@@ -4,6 +4,7 @@ const (
 	SQLITE = iota
 	POSTGRESQL
 	MYSQL
+	MSSQL
 )
 
 type Backend = int

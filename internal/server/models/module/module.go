@@ -13,7 +13,7 @@ import (
 
 type Module struct {
 	entity.Entity
-	AuthorityID uuid.UUID
+	AuthorityID uuid.UUID `gorm:"size:256"`
 	Name        string    `gorm:"not null"`
 	Provider    string    `gorm:"not null"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
