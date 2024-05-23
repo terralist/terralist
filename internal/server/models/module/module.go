@@ -79,9 +79,9 @@ type ModuleDTO struct {
 
 type CreateDTO struct {
 	VersionDTO
-	AuthorityID uuid.UUID `gorm:"size:256"`
-	Name        string    `json:"name"`
-	Provider    string    `json:"provider"`
+	AuthorityID uuid.UUID
+	Name        string `json:"name"`
+	Provider    string `json:"provider"`
 }
 
 type CreateFromURLDTO struct {

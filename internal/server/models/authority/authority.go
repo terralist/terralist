@@ -11,9 +11,9 @@ import (
 type Authority struct {
 	entity.Entity
 
-	Name      string              `gorm:"size:900;not null;uniqueIndex"`
+	Name      string              `gorm:"size:256;not null;uniqueIndex"`
 	PolicyURL string              `gorm:"not null"`
-	Owner     string              `gorm:"size:900;not null;index"`
+	Owner     string              `gorm:"size:256;not null;index"`
 	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	ApiKeys   []ApiKey            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Modules   []module.Module     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
