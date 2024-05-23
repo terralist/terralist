@@ -49,6 +49,7 @@ func (t *Config) DSN() string {
 		return t.parsedURL.String()
 	}
 
+	// MSSQL DSN format: sqlserver://username:password@host:port?database=dbname
 	return fmt.Sprintf(
 		"sqlserver://%s:%s@%s:%d?database=%s",
 		t.Username,
