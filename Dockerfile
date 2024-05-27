@@ -40,7 +40,7 @@ RUN go build -a -v -o terralist \
       -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
-FROM alpine:3.17
+FROM alpine:3.20
 
 RUN addgroup terralist && \
     adduser -S -G terralist terralist && \
