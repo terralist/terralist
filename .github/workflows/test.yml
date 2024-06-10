@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
+  unit-test:
     name: Unit Tests
     runs-on: ubuntu-22.04
 
@@ -40,3 +40,127 @@ jobs:
 
       - name: Run unit tests
         run: task run-tests
+
+  build-terralist-binary:
+    name: Build Terralist
+    runs-on: ubuntu-22.04
+
+    container: ghcr.io/terralist/test-base:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mark repo clone as safe
+        run: git config --global --add safe.directory /__w/terralist/terralist
+
+      - name: Build Terralist
+        run: task build -- release
+
+      - name: Save binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: terralist
+          path: terralist
+          if-no-files-found: error
+          retention-days: 1
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-22.04
+
+    needs: [build-terralist-binary]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        database-backend: [postgresql, sqlite, mysql]
+
+    container: ghcr.io/terralist/test-base:latest
+
+    services:
+      postgres:
+        image: public.ecr.aws/docker/library/postgres:16.3
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: 'terralist'
+          POSTGRES_PASSWORD: 'terralist'
+          POSTGRES_DB: 'terralist'
+      mysql:
+        image: public.ecr.aws/docker/library/mysql:8.4
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_USER: 'terralist'
+          MYSQL_PASSWORD: 'terralist'
+          MYSQL_DATABASE: 'terralist'
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+
+    env:
+      TERRALIST_PORT: 5758
+      TERRALIST_LOG_LEVEL: debug
+      TERRALIST_OAUTH_PROVIDER: github
+      TERRALIST_GH_CLIENT_ID: 1234567890abcdef0123
+      TERRALIST_GH_CLIENT_SECRET: 1234567890abcdef1234567890abcdef01234567
+      TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
+      TERRALIST_MODULES_STORAGE_RESOLVER: "proxy"
+      TERRALIST_PROVIDERS_STORAGE_RESOLVER: "proxy"
+      TERRALIST_SESSION_STORE: "cookie"
+      TERRALIST_COOKIE_SECRET: "someotherrandomvalue"
+
+      TERRALIST_DATABASE_BACKEND: ${{ matrix.database-backend }}
+      TERRALIST_POSTGRES_URL: postgres://terralist:terralist@postgres:5432/terralist
+      TERRALIST_MYSQL_HOST: mysql
+      TERRALIST_MYSQL_PORT: 3306
+      TERRALIST_MYSQL_USERNAME: terralist
+      TERRALIST_MYSQL_PASSWORD: terralist
+      TERRALIST_MYSQL_DATABASE: terralist
+
+    steps:
+      - name: Download terralist binary
+        uses: actions/download-artifact@v4
+        with:
+          name: terralist
+          path: /usr/local/bin/terralist
+
+      - name: Make Terralist binary executable
+        run: |
+          chmod +x /usr/local/bin/terralist/terralist
+          echo "PATH=$PATH:/usr/local/bin/terralist" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: 
+            e2e
+
+      - name: Setup test data
+        run: |
+          if [ "$TERRALIST_DATABASE_BACKEND" = "postgresql" ]; then
+            psql "$TERRALIST_POSTGRES_URL" -f ./e2e/data/terralist.postgres.sql
+          elif [ "$TERRALIST_DATABASE_BACKEND" = "sqlite" ]; then
+            export TERRALIST_SQLITE_PATH="$HOME/local.db"
+            echo "TERRALIST_SQLITE_PATH=$TERRALIST_SQLITE_PATH" >> $GITHUB_ENV
+            sqlite3 "$TERRALIST_SQLITE_PATH" "VACUUM;"
+            sqlite3 "$TERRALIST_SQLITE_PATH" < ./e2e/data/terralist.sqlite.sql
+          elif [ "$TERRALIST_DATABASE_BACKEND" = "mysql" ]; then
+            mysql \
+              -u $TERRALIST_MYSQL_USERNAME \
+              -p"${TERRALIST_MYSQL_PASSWORD}" \
+              -h $TERRALIST_MYSQL_HOST \
+              -P $TERRALIST_MYSQL_PORT \
+              -D $TERRALIST_MYSQL_DATABASE \
+              < ./e2e/data/terralist.mysql.sql
+          else
+            echo "Error: Unsupported backend for E2E testing: $TERRALIST_DATABASE_BACKEND"
+            exit 1
+          fi
+
+      - name: Bootstrap Terralist Server
+        run: |
+          nohup terralist server &
+
+      - name: Run E2E Tests
+        run: venom run --var-from-file ./e2e/variables.yaml ./e2e/suites
