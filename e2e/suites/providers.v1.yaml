@@ -1,0 +1,260 @@
+
+name: Providers.v1 API
+
+vars:
+  namespace: hashicorp
+  goodName: aws
+  badName: aws-not-found
+  goodVersion: 5.46.0
+  badVersion: 5.47.0
+  system: linux
+  arch: amd64
+
+testcases:
+- name: List Providers Versions - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/versions
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: List Providers Versions - Authenticated Not Found
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/versions
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 1
+- name: List Providers Versions - Authenticated OK
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.goodName}}/versions
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey versions
+    - result.bodyjson.versions ShouldHaveLength 1
+    - result.bodyjson.versions.versions0 ShouldContainKey platforms
+    - result.bodyjson.versions.versions0 ShouldContainKey protocols
+    - result.bodyjson.versions.versions0 ShouldContainKey version
+- name: Download Provider Version - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/{{.badVersion}}/download/{{.system}}/{{.arch}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: Download Provider Version - Authenticated Not Found Provider
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/{{.goodVersion}}/download/{{.system}}/{{.arch}}
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 1
+- name: Download Provider Version - Authenticated Not Found Version
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.goodName}}/{{.badVersion}}/download/{{.system}}/{{.arch}}
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 1
+- name: Download Provider Version
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.namespace}}/{{.goodName}}/{{.goodVersion}}/download/{{.system}}/{{.arch}}
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey os
+    - result.bodyjson.os ShouldEqual {{.system}}
+    - result.bodyjson ShouldContainKey arch
+    - result.bodyjson.arch ShouldEqual {{.arch}}
+    - result.bodyjson ShouldContainKey download_url
+    - result.bodyjson.download_url ShouldNotBeEmpty
+    - result.bodyjson ShouldContainKey shasums_url
+    - result.bodyjson.shasums_url ShouldNotBeEmpty
+    - result.bodyjson ShouldContainKey shasum
+    - result.bodyjson.shasums_signature_url ShouldNotBeEmpty
+    - result.bodyjson ShouldContainKey shasum
+    - result.bodyjson.shasum ShouldNotBeEmpty
+- name: Create Provider - Unauthenticated
+  steps:
+  - type: http
+    method: POST
+    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: Create Provider - Authenticated No Request Body
+  steps:
+  - type: http
+    method: POST
+    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 400
+    - result.timeseconds ShouldBeLessThan 1
+- name: Create Provider - Authenticated With Request Body
+  steps:
+  - type: http
+    method: POST
+    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
+    body: >-
+      {
+        "protocols": ["5.0"],
+        "shasums": {
+          "url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS",
+          "signature_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS.72D7468F.sig"
+        },
+        "platforms": [
+          {
+            "os": "linux",
+            "arch": "amd64",
+            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zipp",
+            "shasum": "e31ffcfd560132ffbff2f574928ba392e663202a750750ed39a8950031b75623"
+          }
+        ]
+      }
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 409
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors.errors0 ShouldEqual version {{.goodVersion}} already exists
+- name: Create/Delete Provider Version - Authenticated Upload New Version, Delete Version
+  steps:
+  - name: create-provider
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.badVersion}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    body: >-
+      {
+        "protocols": ["5.0"],
+        "shasums": {
+          "url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS",
+          "signature_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS.72D7468F.sig"
+        },
+        "platforms": [
+          {
+            "os": "linux",
+            "arch": "amd64",
+            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zipp",
+            "shasum": "e31ffcfd560132ffbff2f574928ba392e663202a750750ed39a8950031b75623"
+          }
+        ]
+      }
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldHaveLength 0
+    vars:
+      result:
+        from: result.code
+        default: ""
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.badVersion}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    skip:
+    - create-provider.result ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+- name: Create/Delete Provider - Authenticated Upload New Version, Delete Provider
+  steps:
+  - name: create-provider
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/providers/{{.badName}}/{{.badVersion}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    body: >-
+      {
+        "protocols": ["5.0"],
+        "shasums": {
+          "url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS",
+          "signature_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS.72D7468F.sig"
+        },
+        "platforms": [
+          {
+            "os": "linux",
+            "arch": "amd64",
+            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zipp",
+            "shasum": "e31ffcfd560132ffbff2f574928ba392e663202a750750ed39a8950031b75623"
+          }
+        ]
+      }
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldHaveLength 0
+    vars:
+      result:
+        from: result.code
+        default: ""
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/providers/{{.badName}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 5
+    skip:
+    - create-provider.result ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+- name: Delete Provider Version - Unauthenticated
+  steps:
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/remove
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: Delete Provider - Unauthenticated
+  steps:
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/providers/{{.goodName}}/remove
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1

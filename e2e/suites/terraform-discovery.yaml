@@ -1,0 +1,15 @@
+name: Terraform Discovery API
+
+testcases:
+- name: GET /.well-known/terraform.json
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/.well-known/terraform.json
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey login.v1
+    - result.bodyjson ShouldContainKey modules.v1
+    - result.bodyjson ShouldContainKey providers.v1
