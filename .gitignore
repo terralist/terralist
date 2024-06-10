@@ -14,6 +14,7 @@
 
 # Test binary, built with `go test -c`
 *.test
+!Dockerfile.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
@@ -188,7 +189,7 @@ tests
 tests/**
 
 # Config files
-**/*.yaml
+config.yaml
 !example.yaml
 
 # Exclude Taskfile.yaml
@@ -197,6 +198,14 @@ tests/**
 # Test mocks
 mocks
 mocks/**
+
+# Binaries
+terralist
+terralist.exe
+
+# Docker Volumes
+.volumes
+.volumes/**
 
 # End of Terralist Development files
 
@@ -210,7 +219,5 @@ tmp-CHANGELOG.md
 
 # End of Releaser
 
-### Ngrok ###
+### Ngrok Config ###
 ngrok.yml
-demo/
-terralist
