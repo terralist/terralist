@@ -1,0 +1,205 @@
+
+name: Modules.v1 API
+
+vars:
+  namespace: terraform-aws-modules
+  goodName: vpc
+  badName: vpc-not-found
+  provider: aws
+  goodVersion: 5.7.1
+  badVersion: 5.7.2
+
+testcases:
+- name: List Modules Versions - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/versions
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: List Modules Versions - Authenticated Not Found
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/versions
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 1
+- name: List Modules Versions - Authenticated OK
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/versions
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey modules
+    - result.bodyjson.modules ShouldHaveLength 1
+    - result.bodyjson.modules.modules0 ShouldContainKey versions
+    - result.bodyjson.modules.modules0.versions ShouldHaveLength 4
+- name: Download Module Version - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/{{.badVersion}}/download
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: Download Module Version - Authenticated Not Found Module
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/{{.goodVersion}}/download
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 1
+- name: Download Module Version - Authenticated Not Found Version
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.badVersion}}/download
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 1
+- name: Download Module Version
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.goodVersion}}/download
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 204
+    - result.timeseconds ShouldBeLessThan 1
+    - result.headers.X-Terraform-Get ShouldNotBeEmpty
+- name: Create Module - Unauthenticated
+  steps:
+  - type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: Create Module - Authenticated No Request Body
+  steps:
+  - type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 400
+    - result.timeseconds ShouldBeLessThan 1
+- name: Create Module - Authenticated With Request Body
+  steps:
+  - type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
+    body: |
+      {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 409
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors.errors0 ShouldEqual version {{.goodVersion}} already exists
+- name: Create/Delete Module Version - Authenticated Upload New Version, Delete Version
+  steps:
+  - name: create-module
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.badVersion}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    body: |
+      {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldHaveLength 0
+    vars:
+      result:
+        from: result.code
+        default: ""
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.badVersion}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    skip:
+    - create-module.result ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+- name: Create/Delete Module - Authenticated Upload New Version, Delete Module
+  steps:
+  - name: create-module
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/{{.badName}}/{{.provider}}/{{.badVersion}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    body: |
+      {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldHaveLength 0
+    vars:
+      result:
+        from: result.code
+        default: ""
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/{{.badName}}/{{.provider}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 5
+    skip:
+    - create-module.result ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+- name: Delete Module Version - Unauthenticated
+  steps:
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/remove
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1
+- name: Delete Module - Unauthenticated
+  steps:
+  - type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/remove
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 1

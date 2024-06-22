@@ -1,0 +1,42 @@
+FROM public.ecr.aws/docker/library/debian:bookworm
+
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends \
+      ca-certificates \
+      curl \
+      git \
+      gnupg \
+      postgresql-client \
+      sqlite3 \
+      default-mysql-client
+
+# Install GoLang
+ARG GOLANG_VERSION=1.22.4
+RUN curl -sL https://go.dev/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz -o golang.tar.gz \
+  && tar -C /usr/local -xzf golang.tar.gz \
+  && /usr/local/go/bin/go version
+ENV PATH $PATH:/usr/local/go/bin
+
+# Install Node.js
+RUN curl -fsSL curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+  apt-get install -y nodejs \
+  build-essential && \
+  node --version && \ 
+  npm --version 
+
+# Install yarn
+RUN npm install --global yarn
+
+# Install venom
+ARG VENOM_VERSION=1.2.0
+RUN curl -sL https://github.com/ovh/venom/releases/download/v${VENOM_VERSION}/venom.${TARGETOS}-${TARGETARCH} -o venom \
+  && mv venom /usr/local/bin \
+  && chmod +x /usr/local/bin/venom
+
+# Install task
+RUN npm install --global @go-task/cli
+
+ENTRYPOINT [ "/bin/bash" ]

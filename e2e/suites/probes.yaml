@@ -1,0 +1,21 @@
+name: Probes API
+
+testcases:
+- name: GET /check/healthz
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/check/healthz
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
+- name: GET /check/readyz
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/check/readyz
+    timeout: 5
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 1
