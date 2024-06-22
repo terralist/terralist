@@ -19,19 +19,21 @@
 
 ## About
 
-Terralist is a private Terraform registry for providers and modules following the published HashiCorp protocols. It provides:
+Terralist is a private Terraform registry for providers and modules that follows the published HashiCorp protocols. It provides:
 * A secure way to distribute your confidential modules and providers;
 * [_Soon_] A management interface to visualize documentation;
 
 ## Highlights
+
 * **Login Functionality** ([docs](https://www.terraform.io/docs/internals/login-protocol.html)): Require a token to access the data. It is integrated with Terraform, so you can authenticate to the registry directly through Terraform:
   ```
-  $ terraform login registry.example.com
-  $ terraform logout registry.example.com
+  terraform login registry.example.com
+  terraform logout registry.example.com
   ```
-  It can also generate custom API keys for an authenticated user, which can be used in pipelines: to upload and delete modules and providers, to fetch data.
+  It can also generate custom API keys for an authenticated user, which can be used in pipelines to upload and delete modules and in providers to fetch data.
 
-* **Modules Registry**: ([docs](https://www.terraform.io/docs/internals/module-registry-protocol.html)) Stores modules data in a *private* storage (for example, an S3 bucket). When download request is received, calls the remote storage to generate a temporary public download URL and forwards the URL to the requester.
+* **Modules Registry**: ([docs](https://www.terraform.io/docs/internals/module-registry-protocol.html)) Stores modules data in a *private* storage (for example, an S3 bucket). When a download request is received, it calls the remote storage to generate a temporary public download URL and forwards it to the requester.
+
   Currently supported private storage:
   * AWS S3: uses a private S3 bucket
   * Azure Blob: uses a private Azure Storage Account
@@ -60,4 +62,4 @@ This project is not meant to replace the public Terraform Registry. Its purpose 
 
 ## Contributions
 
-Each contribution is welcomed, if you want to contribute, open an issue or fork the repository and open a PR.
+All contributions are welcome. If you want to contribute, open an issue or fork the repository and open a PR.
