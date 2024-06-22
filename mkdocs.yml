@@ -1,0 +1,57 @@
+site_name: Terralist
+site_url: https://www.terralist.io
+site_description: Terraform/OpenTofu Private Registry for modules and providers manageable from a REST API
+site_author: Valentin Deaconu
+
+repo_url: https://github.com/terralist/terralist/
+edit_uri: blob/master/docs/
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.code.select
+  logo: assets/terralist.svg
+  favicon: assets/terralist.svg
+  palette: 
+    - scheme: default
+      primary: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+      font:
+        text: Monserrat
+        code: Roboto Mono
+    - scheme: slate
+      primary: green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+      font:
+        text: Monserrat
+        code: Roboto Mono
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Getting Started: getting-started.md
+  - Configuration: configuration.md
+  # - User Guide: user-guide/
+  - Developer Guide: dev-guide/
+
+copyright: Made with ❤️ by Terralist contributors.
+
+markdown_extensions:
+  - toc:
+      permalink: ¶
+  - attr_list
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
