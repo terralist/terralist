@@ -158,9 +158,19 @@ jobs:
             exit 1
           fi
 
-      - name: Bootstrap Terralist Server
-        run: |
-          nohup terralist server &
+      - name: Spin up Terralist server
+        uses: miguelteixeiraa/action-run-in-background@v1
+        with:
+          shell: bash
+          script: terralist server
+          timeout: 30
+          readiness-script: |
+            if curl -sSf http://localhost:${{ env.TERRALIST_PORT }}/check/readyz >/dev/null; then
+              echo "Terralist is ready."
+            else
+              echo "Terralist is not yet ready."
+              exit 1
+            fi
 
       - name: Run E2E Tests
         run: venom run --var-from-file ./e2e/variables.yaml ./e2e/suites
