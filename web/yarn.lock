@@ -939,10 +939,12 @@ svelte-spa-router@^3.3.0:
   dependencies:
     regexparam "2.0.1"
 
-svelte-system-info@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/svelte-system-info/-/svelte-system-info-1.0.0.tgz#be641e99e18ebd04042a4fb6510d6bf91cb3174b"
-  integrity sha512-2mVvB+DX5nkjoJ/yv6e8OKGYX+qh8Zsw4GsH6hxSAI0I5eO/PeEV5Ty879/ZLSXAwNL+EY8vUFgG8oXNkHw4OQ==
+svelte-system-info@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/svelte-system-info/-/svelte-system-info-1.0.2.tgz#0dd2678f5564443bfc48268427d0d423d703c857"
+  integrity sha512-X6kspnmqRYQBhefk5tMcEH5hyI41halHB8+hFAlVOdnvci+PEbxpbgsq3YL+Lo+7NAhvCVV6G0gLt0sdi8s+1A==
+  dependencies:
+    tslib "^2.6.2"
 
 svelte-use-click-outside@^1.0.0:
   version "1.0.0"
@@ -990,10 +992,10 @@ to-regex-range@^5.0.1:
   dependencies:
     is-number "^7.0.0"
 
-tslib@^2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.4.1.tgz#0d0bfbaac2880b91e22df0768e55be9753a5b17e"
-  integrity sha512-tGyy4dAjRIEwI7BzsB0lynWgOpfqjUdq91XXAlIWD2OwKBH7oCl/GZG/HT4BOHrTlPMOASlMQ7veyTqpmRcrNA==
+tslib@^2.4.1, tslib@^2.6.2:
+  version "2.6.3"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.3.tgz#0438f810ad7a9edcde7a241c3d80db693c8cbfe0"
+  integrity sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==
 
 typescript@*, typescript@^4.9.3:
   version "4.9.4"
