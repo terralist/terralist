@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            docs/**
+            docs
             mkdocs.yml
 
       - name: Configure Git Credentials
