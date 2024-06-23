@@ -51,5 +51,5 @@ jobs:
         run: pip install mkdocs-material 
 
       - name: Deploy Documentation
-        if: ${{ github.event_name != 'pull_request' }}
+        # if: ${{ github.event_name != 'pull_request' }}
         run: mkdocs gh-deploy --force
