@@ -1,0 +1,55 @@
+name: Publish Documentation
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - docs/**
+      - mkdocs.yml
+      - .github/workflows/publish-docs.yml
+  pull_request:
+    types: [opened, synchronize]
+    paths: 
+      - docs/**
+      - mkdocs.yml
+      - .github/workflows/publish-docs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docs/**
+            mkdocs.yml
+
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-mkdocs-material
+          path: .cache
+          restore-keys: |
+            ${{ runner.os}}-mkdocs-material-
+
+      - name: Install MkDocs Material
+        run: pip install mkdocs-material 
+
+      - name: Deploy Documentation
+        if: ${{ github.event_name != 'pull_request' }}
+        run: mkdocs gh-deploy --force
