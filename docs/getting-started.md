@@ -12,7 +12,7 @@ Terraform authenticates users with [Oauth 2.0](https://oauth.net/2/). You will n
   <br/>The `email` and `openid` scopes must assigned for the GitLab Oauth application
 - [OpenID Connect](https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowAuth)
 
-For local development, you can set the homepage URL to `http://localhost:5758` and the callback URL to `http://localhost:5758/v1/api/auth/redirect`.
+!!! note "For local development, you can set the homepage URL to `http://localhost:5758` and the callback URL to `http://localhost:5758/v1/api/auth/redirect`."
 
 !!! note "The port `5758` is the default. If you decide to change it, you will also need to change it in the Oauth App settings."
 
@@ -92,13 +92,51 @@ You can authenticate in Terralist by using the `login` subcommand:
 
 ## Create an authority
 
-Use the application web interface to authenticate using your third-party oauth provider, then create an authority and assign a GPG key to it.
+Authorities represents namespaces in Terralist. Every authority can have modules and providers which can be uploaded to Terralist by using an authority API key. 
+
+!!! note "You may notice that during the upload process of modules and providers you are not asked to input the namespace. This is happening because Terralist will decide the namespace based on your authorization token."
+
+To create a new authority, you must use the web dashboard. Access your Terralist instance by opening a browser and navigating to your `TERRALIST_URL` address (by default, it should be [http://localhost:5758](https://localhost:5758)).
+
+=== "Go to the settings page"
+
+    ![Access the settings page](./assets/create-authority-1.png)
+
+    Open the settings page (step 1) and then press on the `New Authority` button (step 2).
+
+=== "Fill the Authority form"
+
+    ![Create Authority Modal](./assets/create-authority-2.png)
+
+    Fill in your authority details. Only the name is required (step 1). When you are done, press on the `Continue` button (step 2).
+
+    !!! note "Terralist is case insensitive, so it doesn't matter if you choose to use upper-case letters here, but then you want to use lower-case letters in your TF files."
+
+!!! warning "Once you have your authority, if you're planning to use it to host custom providers, you should add a signing key. Providers are signed with a GPG key and Terraform/OpenTofu use this registry-provided signing key to validate the authenticity of the newly downloaded provider."
 
 ## Generate an API Key
 
-Use the application web interface to generate an API key. You can allocate more than one API key for an authority and use them to upload modules and providers under that specific authority (namespace).
+To create a new API key, you must use the web dashboard. Access your Terralist instance by opening a browser and navigating to your `TERRALIST_URL` address (by default, it should be [http://localhost:5758](https://localhost:5758)), then navigate to the Settings page.
 
-!!! note "The API key generated at this point will be referenced later on in this document as `TERRALIST_API_KEY`. To follow along, you may want to export it as an environment variable."
+=== "Create an API key"
+
+    ![Create a new API key](./assets/create-api-key-1.png)
+
+    Under your authority, press on the "+" sign (step 1) to create a new API key. A confirmation modal should open, awaiting for your confirmation. Press `Continue` (step 2).
+
+=== "View the API key"
+
+    ![Open API Key View](./assets/create-api-key-2.png)
+
+    Once you have the API key, you can open a modal to view it. Press on the arrow down symbol (step 1) to open the API keys list for your authority, then press the eye symbol to open the view modal (step 2).
+
+=== "Copy the API key"
+
+    ![API Key Modal View](./assets/create-api-key-3.png)
+
+    You can use this modal view to check the value of your API key.
+
+    !!! note "If you read this documentation as a step-by-step guide, copy this API key and export it as `TERRALIST_API_KEY` environment variable."
 
 ## Upload a new module
 
@@ -116,7 +154,7 @@ curl -X POST http://localhost:5758/v1/api/modules/my-module/provider/1.0.0/uploa
 ### Use the module
 ``` hcl
 module "example-module" {
-  source  = "localhost:5758/example/my-module/provider"
+  source  = "localhost:5758/my-authority/my-module/provider"
   version = "1.0.0"
 
   // ...
@@ -162,12 +200,14 @@ curl -X POST localhost:5758/v1/api/providers/random/2.0.0/upload \
      -d "$(cat random-2.0.0.json)"
 ```
 
+!!! note "In order for this provider to be fully validated by Terraform/OpenTofu, you should add the public GPG key of HashiCorp to your authority."
+
 ### Use the provider
 ``` hcl
 terraform {
   required_providers {
-    aws = {
-      source  = "localhost:5758/hashicorp/random"
+    random = {
+      source  = "localhost:5758/my-authority/random"
       version = "2.0.0"
     }
   }
