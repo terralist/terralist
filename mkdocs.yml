@@ -11,6 +11,7 @@ theme:
   features:
     - content.code.copy
     - content.code.select
+    - navigation.indexes
   logo: assets/terralist.svg
   favicon: assets/terralist.svg
   palette: 
@@ -36,8 +37,10 @@ nav:
   - Installation: installation.md
   - Getting Started: getting-started.md
   - Configuration: configuration.md
-  # - User Guide: user-guide/
-  - Developer Guide: dev-guide/
+  - Developer Guide: 
+    - dev-guide/index.md
+    - API Reference: dev-guide/api-reference.md
+    - Local Development: dev-guide/local-development.md
 
 copyright: Made with ❤️ by Terralist contributors.
 

@@ -80,7 +80,7 @@ The path to the certificate file (pem format).
 
 ### `key-file`
 
-"The path to the certificate key file (pem format).
+The path to the certificate key file (pem format).
 
 | Name | Value |
 | --- | --- |
@@ -670,6 +670,18 @@ The number of minutes after which the Azure Shared Access Signature(SAS) should 
 | default | `15` |
 | cli | `--azure-sas-expire` |
 | env | `TERRALIST_AZURE_SAS_EXPIRE` |
+
+### `custom-company-name`
+
+A small NIT branding of Terralist. The name of the company set by this variable will appear on the login page.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--custom-company-name` |
+| env | `TERRALIST_CUSTOM_COMPANY_NAME` |
 
 ## Example YAML configuration file
 
