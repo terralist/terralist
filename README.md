@@ -27,8 +27,8 @@ Terralist is a private Terraform registry for providers and modules that follows
 
 * **Login Functionality** ([docs](https://www.terraform.io/docs/internals/login-protocol.html)): Require a token to access the data. It is integrated with Terraform, so you can authenticate to the registry directly through Terraform:
   ```
-  terraform login registry.example.com
-  terraform logout registry.example.com
+  terraform login registry.terralist.io
+  terraform logout registry.terralist.io
   ```
   It can also generate custom API keys for an authenticated user, which can be used in pipelines to upload and delete modules and in providers to fetch data.
 
@@ -55,10 +55,7 @@ This project is not meant to replace the public Terraform Registry. Its purpose 
 
 ## Documentation
 
-+ [Getting Started](./docs/GETTING-STARTED.md)
-+ [Configuration](./docs/CONFIGURATION.md)
-+ [Local Testing](./docs/LOCAL-TESTING.md)
-+ [API Endpoints](./docs/ENDPOINTS.md)
+Check the official documentation on [www.terralist.io](https://www.terralist.io/).
 
 ## Contributions
 
