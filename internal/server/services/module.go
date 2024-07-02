@@ -118,6 +118,9 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 
 		// Update the module location
 		m.Versions[0].Location = location
+	} else {
+		// Set module location for proxy resolver
+		m.Versions[0].Location = url
 	}
 
 	// Only add the new version if the module already exists
