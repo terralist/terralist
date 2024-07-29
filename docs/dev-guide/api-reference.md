@@ -228,7 +228,7 @@ Upload a new provider version.
 
 ``` shell
 curl -L -X POST \
-  -H "Authorization: Bearer <YOUR-TOKEN>" \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   http://localhost:5758/v1/api/providers/NAME/VERSION/upload
 ```
 
@@ -272,8 +272,8 @@ Remove a provider together with all its uploaded versions.
 ### Example Request
 
 ``` shell
-curl -L -X POST \
-  -H "Authorization: Bearer <YOUR-TOKEN>" \
+curl -L -X DELETE \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   http://localhost:5758/v1/api/providers/NAME/remove
 ```
 
@@ -317,8 +317,8 @@ Remove a specific provider version.
 ### Example Request
 
 ``` shell
-curl -L -X POST \
-  -H "Authorization: Bearer <YOUR-TOKEN>" \
+curl -L -X DELETE \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   http://localhost:5758/v1/api/providers/NAME/VERSION/remove
 ```
 
@@ -472,7 +472,7 @@ Upload a new module version.
 
 ``` shell
 curl -L -X POST \
-  -H "Authorization: Bearer <YOUR-TOKEN>" \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
 ```
 
@@ -515,8 +515,8 @@ Remove a module together with all its uploaded versions.
 ### Example Request
 
 ``` shell
-curl -L -X POST \
-  -H "Authorization: Bearer <YOUR-TOKEN>" \
+curl -L -X DELETE \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   http://localhost:5758/v1/api/modules/NAME/PROVIDER/remove
 ```
 
@@ -560,8 +560,8 @@ Remove a specific module version.
 ### Example Request
 
 ``` shell
-curl -L -X POST \
-  -H "Authorization: Bearer <YOUR-TOKEN>" \
+curl -L -X DELETE \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/remove
 ```
 
