@@ -76,6 +76,11 @@ const (
 	AzureContainerNameFlag = "azure-container-name"
 	AzureSASExpireFlag     = "azure-sas-expire"
 
+	GcsBucketNameFlag                 = "gcs-bucket-name"
+	GcsBucketPrefixFlag               = "gcs-bucket-prefix"
+	GcsSignExpireFlag                 = "gcs-sign-expire"
+	GcsServiceAccountCredFilePathFlag = "gcs-service-account-cred-file-path"
+
 	LocalStoreFlag = "local-store"
 
 	SessionStoreFlag = "session-store"
@@ -226,13 +231,13 @@ var flags = map[string]cli.Flag{
 
 	ModulesStorageResolverFlag: &cli.StringFlag{
 		Description:  "The modules storage resolver.",
-		Choices:      []string{"proxy", "local", "s3", "azure"},
+		Choices:      []string{"proxy", "local", "s3", "azure", "gcs"},
 		DefaultValue: "proxy",
 	},
 
 	ProvidersStorageResolverFlag: &cli.StringFlag{
 		Description:  "The providers storage resolver.",
-		Choices:      []string{"proxy", "local", "s3", "azure"},
+		Choices:      []string{"proxy", "local", "s3", "azure", "gcs"},
 		DefaultValue: "proxy",
 	},
 
@@ -278,7 +283,19 @@ var flags = map[string]cli.Flag{
 		Description:  "The number of minutes after which the Azure Shared Access Signature(SAS) should expire.",
 		DefaultValue: 15,
 	},
-
+	GcsBucketNameFlag: &cli.StringFlag{
+		Description: "The GCS bucket name.",
+	},
+	GcsBucketPrefixFlag: &cli.StringFlag{
+		Description: "The GCS bucket folder.",
+	},
+	GcsSignExpireFlag: &cli.IntFlag{
+		Description:  "The number of minutes after which the GCS Sign should expire.",
+		DefaultValue: 15,
+	},
+	GcsServiceAccountCredFilePathFlag: &cli.StringFlag{
+		Description: "The GCP Service Account key file path.",
+	},
 	SessionStoreFlag: &cli.StringFlag{
 		Description:  "The session store backend.",
 		Choices:      []string{"cookie"},

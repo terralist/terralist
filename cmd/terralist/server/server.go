@@ -25,6 +25,7 @@ import (
 	"terralist/pkg/storage"
 	"terralist/pkg/storage/azure"
 	storageFactory "terralist/pkg/storage/factory"
+	"terralist/pkg/storage/gcs"
 	"terralist/pkg/storage/local"
 	"terralist/pkg/storage/s3"
 
@@ -306,6 +307,14 @@ func (s *Command) run() error {
 				ContainerName:      flags[AzureContainerNameFlag].(*cli.StringFlag).Value,
 				SASExpire:          flags[AzureSASExpireFlag].(*cli.IntFlag).Value,
 				DefaultCredentials: false,
+			})
+		case "gcs":
+			resolvers[name], err = storageFactory.NewResolver(storage.GCS, &gcs.Config{
+				BucketName:                 flags[GcsBucketNameFlag].(*cli.StringFlag).Value,
+				BucketPrefix:               flags[GcsBucketPrefixFlag].(*cli.StringFlag).Value,
+				ServiceAccountCredFilePath: flags[GcsServiceAccountCredFilePathFlag].(*cli.StringFlag).Value,
+				LinkExpire:                 flags[GcsSignExpireFlag].(*cli.IntFlag).Value,
+				DefaultCredentials:         false,
 			})
 		}
 
