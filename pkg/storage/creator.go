@@ -5,6 +5,7 @@ const (
 	LOCAL
 	S3
 	AZURE
+	GCS
 )
 
 type Backend = int
