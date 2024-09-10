@@ -38,6 +38,9 @@ jobs:
       - name: Generate mocks
         run: task generate-mocks
 
+      - name: Build web application
+        run: task build-webapp
+
       - name: Run unit tests
         run: task run-tests
 

@@ -47,6 +47,16 @@ tasks:
                     -X 'main.Mode={{.MODE}}'" \
           ./cmd/terralist/main.go
       - echo "[>] Executable wrote to '{{ .BINARY_FILE_NAME }}'."
+  
+
+  build-webapp:
+    summary: "Install web dependencies"
+    silent: true
+    cmds:
+      - echo "[>] Installing web application dependencies."
+      - yarn --cwd ./web install
+      - echo "[>] Building web application."
+      - yarn --cwd ./web build
 
   generate-mocks:
     summary: "Generate interface mocks."
@@ -67,7 +77,8 @@ tasks:
     vars:
       WITH_SUMMARY: '{{eq .CLI_ARGS "summary"}}'
       ALL_PACKAGES:
-        sh: "go list ./..."
+        sh: >- 
+          go list ./...
       TEST_EXCLUSIONS: '{{list "mocks" "cmd" "models" | join "|"}}'
       TEST_PACKAGES:
         sh: >-
