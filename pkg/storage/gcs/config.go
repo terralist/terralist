@@ -34,9 +34,8 @@ func (c *Config) Validate() error {
 
 	if c.ServiceAccountCredFilePath != "" {
 		c.DefaultCredentials = false
-
 	} else {
-		c.DefaultCredentials = false
+		c.DefaultCredentials = true
 	}
 
 	if c.BucketPrefix != "" {

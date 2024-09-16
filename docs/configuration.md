@@ -708,7 +708,7 @@ The number of minutes after which the signed URLs should expire.
 | cli | `--gcs-sign-expire` |
 | env | `TERRALIST_GCS_SIGN_EXPIRE` |
 
-### `s3-access-key-id`
+### `gcs-service-account-cred-file-path`
 
 The GCP Service Account key path access key ID to access the GCS bucket. Leave empty for default credentials
 
