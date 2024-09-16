@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"sync/atomic"
 	"time"
 
@@ -54,9 +55,11 @@ type Config struct {
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
-	if config.RunningMode == "release" {
+	// Set Gin mode based on the configuration
+	switch config.RunningMode {
+	case "release":
 		gin.SetMode(gin.ReleaseMode)
-	} else if config.RunningMode == "debug" {
+	case "debug":
 		gin.SetMode(gin.DebugMode)
 	}
 
@@ -92,7 +95,10 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Prefix: "/v1",
 	})
 
-	jwtManager, _ := jwt.New(userConfig.TokenSigningSecret)
+	jwtManager, err := jwt.New(userConfig.TokenSigningSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWT manager: %v", err)
+	}
 
 	salt, _ := random.String(32)
 	exchangeKey, _ := random.String(32)
@@ -250,6 +256,7 @@ func (s *Server) Start() error {
 
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
 
 	go func() {
 		// Mark the service as available
@@ -279,21 +286,23 @@ func (s *Server) Start() error {
 // waitForDrain blocks the process until draining is complete
 func (s *Server) waitForDrain() {
 	// Mark the service as unavailable
-	s.Readiness.Store(true)
+	s.Readiness.Store(false)
 
 	drainComplete := make(chan bool, 1)
 
 	go func() {
-		// TODO: Make Drainer when necessary
+		// TODO: Implement actual draining logic here
 		drainComplete <- true
 	}()
 
 	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-drainComplete:
 			log.Info().Msg("All in-progress operations completed, shutting down.")
+			return
 		case <-ticker.C:
 			log.Info().Msg("Waiting for in-progress operations to complete...")
 		}
