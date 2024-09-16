@@ -671,6 +671,55 @@ The number of minutes after which the Azure Shared Access Signature(SAS) should 
 | cli | `--azure-sas-expire` |
 | env | `TERRALIST_AZURE_SAS_EXPIRE` |
 
+
+### `gcs-bucket-name`
+
+The GCS bucket name.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gcs-bucket-name` |
+| env | `TERRALIST_GCS_BUCKET_NAME` |
+
+### `gcs-bucket-prefix`
+
+A prefix to be added to the GCS bucket objects.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gcs-bucket-prefix` |
+| env | `TERRALIST_GCS_BUCKET_PREFIX` |
+
+### `gcs-sign-expire`
+
+The number of minutes after which the signed URLs should expire.
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `15` |
+| cli | `--gcs-sign-expire` |
+| env | `TERRALIST_GCS_SIGN_EXPIRE` |
+
+### `gcs-service-account-cred-file-path`
+
+The GCP Service Account key path access key ID to access the GCS bucket. Leave empty for default credentials
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gcs-service-account-cred-file-path` |
+| env | `TERRALIST_GCS_SERVICE_ACCOUNT_CRED_FILE_PATH` |
+
 ### `custom-company-name`
 
 A small NIT branding of Terralist. The name of the company set by this variable will appear on the login page.
