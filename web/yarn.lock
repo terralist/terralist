@@ -1224,10 +1224,10 @@ svelte-spa-router@^3.3.0:
   dependencies:
     regexparam "2.0.1"
 
-svelte-system-info@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/svelte-system-info/-/svelte-system-info-1.0.2.tgz#0dd2678f5564443bfc48268427d0d423d703c857"
-  integrity sha512-X6kspnmqRYQBhefk5tMcEH5hyI41halHB8+hFAlVOdnvci+PEbxpbgsq3YL+Lo+7NAhvCVV6G0gLt0sdi8s+1A==
+svelte-system-info@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/svelte-system-info/-/svelte-system-info-1.0.3.tgz#6b3bc79ad195222c41b286ab9f3ee9ba14a74aee"
+  integrity sha512-Hasj4Es72KU7C3iIW6Yzjaek8d5iVAMk+ybRq7pIu4gqv3MMYqrvW0ViknUrI1eDXBCkLlGxfi0i2MAxQAzN2g==
   dependencies:
     tslib "^2.6.2"
 
