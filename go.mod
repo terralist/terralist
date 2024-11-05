@@ -3,7 +3,7 @@ module terralist
 go 1.22
 
 require (
-	cloud.google.com/go/storage v1.45.0
+	cloud.google.com/go/storage v1.46.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.16.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.1
