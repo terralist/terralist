@@ -22,9 +22,6 @@ tasks:
       LATEST_TAG: '{{splitList "\n" .ALL_TAGS | last}}'
       TERRALIST_VERSION: "{{.LATEST_TAG}}-{{.BRANCH}}+{{.COMMIT_HASH}}"
     env:
-      CGO_ENABLED: 1
-      # Get rid of sqlite3 lib warnings
-      CGO_CFLAGS: "-g -O2 -Wno-return-stack-address"
       TERRALIST_VERSION: "{{.TERRALIST_VERSION}}"
     cmds:
       - echo "[>] Installing web application dependencies."
@@ -92,10 +89,6 @@ tasks:
           {{- end -}}
           echo "{{$pkgs | join " "}}"
       BUILD_TAGS: "mocks"
-    env:
-      CGO_ENABLED: 1
-      # Get rid of sqlite3 lib warnings
-      CGO_CFLAGS: "-g -O2 -Wno-return-stack-address"
     cmds:
       - >-
         {{- if eq .WITH_SUMMARY "true" -}}

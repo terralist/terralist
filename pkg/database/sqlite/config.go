@@ -10,8 +10,6 @@ func (c *Config) SetDefaults() {
 	if c.Path == "" {
 		c.Path = "storage.db"
 	}
-
-	return
 }
 
 func (c *Config) Validate() error {
