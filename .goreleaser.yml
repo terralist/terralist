@@ -1,8 +1,5 @@
 version: 2
 
-env:
-  - CGO_ENABLED=1
-
 builds:
   - binary: terralist
     main: ./cmd/terralist/
