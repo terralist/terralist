@@ -103,3 +103,10 @@ tasks:
         {{- else -}}
         go test -tags=mocks -count=1 {{.TEST_PACKAGES}}
         {{- end -}}
+
+  run-e2e-tests:
+    summary: "Run all E2E tests."
+    silent: true
+    cmds:
+      - rm -rf ./reports
+      - venom run --html-report --output-dir="./reports" --var-from-file ./e2e/variables.yaml ./e2e/suites

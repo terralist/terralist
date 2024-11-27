@@ -199,6 +199,9 @@ config.yaml
 mocks
 mocks/**
 
+# Venom reports
+reports/
+
 # Binaries
 terralist
 terralist.exe
