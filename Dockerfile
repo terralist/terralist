@@ -40,7 +40,7 @@ RUN go build -a -v -o terralist \
       -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
-FROM alpine:3.17
+FROM alpine:3.19
 
 RUN addgroup terralist && \
     adduser -S -G terralist terralist && \
@@ -50,8 +50,8 @@ RUN addgroup terralist && \
     chmod g=u /etc/passwd
 
 RUN apk add --no-cache \
-      git~=2.38 \
-      libcap~=2.66 \
+      git~=2.43 \
+      libcap~=2.69 \
       dumb-init~=1.2 \
       su-exec~=0.2
 
