@@ -57,7 +57,7 @@ jobs:
       if: (!contains(github.ref, '-pre.'))
       with:
         version: v2.4.8
-        args: release --rm-dist
+        args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         COMMIT_HASH: ${{ env.COMMIT_HASH }}
@@ -80,7 +80,7 @@ jobs:
       if: contains(github.ref, '-pre.')
       with:
         version: v2.4.8
-        args: release --rm-dist --release-notes=tmp-CHANGELOG.md
+        args: release --clean --release-notes=tmp-CHANGELOG.md
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GORELEASER_CURRENT_TAG: ${{ steps.changelog.outputs.RELEASE_TAG }}
