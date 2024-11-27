@@ -1,5 +1,4 @@
-env:
-  - CGO_ENABLED=1
+version: 2
 
 builds:
   - binary: terralist
@@ -11,7 +10,6 @@ builds:
     - linux_amd64
     - linux_arm
     - linux_arm64
-    - windows_386
     - windows_amd64
     ldflags:
       - -X main.Version={{.Env.RELEASE_VERSION}}
@@ -30,7 +28,7 @@ checksum:
   name_template: 'checksums.txt'
 
 changelog:
-  skip: true
+  disable: true
 
 release:
   github:
@@ -42,4 +40,4 @@ release:
   prerelease: auto
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"

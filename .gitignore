@@ -199,6 +199,9 @@ config.yaml
 mocks
 mocks/**
 
+# Venom reports
+reports/
+
 # Binaries
 terralist
 terralist.exe
@@ -208,6 +211,13 @@ terralist.exe
 .volumes/**
 
 # End of Terralist Development files
+
+### Terralist Web UI ###
+
+# Empty dist directory
+web/dist/.gitkeep
+
+# End of Terralist Web UI files
 
 ### Releaser ###
 
@@ -221,3 +231,5 @@ tmp-CHANGELOG.md
 
 ### Ngrok Config ###
 ngrok.yml
+
+# End of Ngrok Config

@@ -22,8 +22,6 @@ tasks:
       LATEST_TAG: '{{splitList "\n" .ALL_TAGS | last}}'
       TERRALIST_VERSION: "{{.LATEST_TAG}}-{{.BRANCH}}+{{.COMMIT_HASH}}"
     env:
-      # Get rid of sqlite3 lib warnings
-      CGO_CFLAGS: "-g -O2 -Wno-return-local-addr"
       TERRALIST_VERSION: "{{.TERRALIST_VERSION}}"
     cmds:
       - echo "[>] Installing web application dependencies."
@@ -91,9 +89,6 @@ tasks:
           {{- end -}}
           echo "{{$pkgs | join " "}}"
       BUILD_TAGS: "mocks"
-    env:
-      # Get rid of sqlite3 lib warnings
-      CGO_CFLAGS: "-g -O2 -Wno-return-stack-address"
     cmds:
       - >-
         {{- if eq .WITH_SUMMARY "true" -}}
@@ -101,3 +96,10 @@ tasks:
         {{- else -}}
         go test -tags=mocks -count=1 {{.TEST_PACKAGES}}
         {{- end -}}
+
+  run-e2e-tests:
+    summary: "Run all E2E tests."
+    silent: true
+    cmds:
+      - rm -rf ./reports
+      - venom run --html-report --output-dir="./reports" --var-from-file ./e2e/variables.yaml ./e2e/suites

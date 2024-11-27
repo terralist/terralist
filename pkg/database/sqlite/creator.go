@@ -1,12 +1,13 @@
 package sqlite
 
 import (
+	"net/url"
 	"sync"
 
 	"terralist/pkg/database"
 	"terralist/pkg/database/logger"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -22,7 +23,13 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 
 	cfg := config.(*Config)
 
-	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{
+	// See https://gitlab.com/cznic/sqlite/-/issues/47
+	dsn := cfg.Path
+	q := make(url.Values)
+	q.Set("_time_format", "sqlite")
+	dsn += "?" + q.Encode()
+
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: &logger.Logger{},
 	})
 
