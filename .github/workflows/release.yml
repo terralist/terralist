@@ -79,7 +79,7 @@ jobs:
       uses: goreleaser/goreleaser-action@v6
       if: contains(github.ref, '-pre.')
       with:
-        version: v0.183.0
+        version: v2.4.8
         args: release --rm-dist --release-notes=tmp-CHANGELOG.md
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
