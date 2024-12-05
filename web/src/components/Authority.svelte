@@ -14,7 +14,7 @@
   import { Keys, type Key as KeyT } from "@/api/keys";
   import { ApiKeys, type ApiKey as ApiKeyT } from "@/api/apiKeys";
 
-  import { URLValidation } from "@/lib/validation";
+  import {StringMinimumLengthValidation, URLValidation} from "@/lib/validation";
   import { useFlag, useToggle } from "@/lib/hooks";
 
   export let authority: AuthorityT;
@@ -80,8 +80,8 @@
     }
   };
 
-  const createApiKeySubmit = async () => {
-    let result = await ApiKeys.create(authority.id, "");
+  const createApiKeySubmit = async (entries: Map<string, any>) => {
+    let result = await ApiKeys.create(authority.id, "", entries.get("name"));
 
     if (result.status === 'OK') {
       authority.apiKeys = [...authority.apiKeys, result.data];
@@ -251,14 +251,22 @@
     ]}
   />
 
-  <ConfirmationModal 
+  <FormModal
     title={`Add a new API key to ${authority.name}`} 
     enabled={$createApiKeyModalEnabled}
     onClose={hideCreateApiKeyModal}
     onSubmit={createApiKeySubmit}
+    entries={[
+      {
+        id: "name",
+        name: "Name",
+        required: true,
+        type: "text",
+        validations: [StringMinimumLengthValidation(4)],
+      }
+    ]}
   >
-    Are you sure?
-  </ConfirmationModal>
+  </FormModal>
 
   {#if errorMessage}
     <ErrorModal bind:message={errorMessage} />

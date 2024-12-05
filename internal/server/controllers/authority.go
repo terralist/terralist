@@ -241,7 +241,7 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			apiKey, err := c.ApiKeyService.Grant(authorityId, 0)
+			apiKey, err := c.ApiKeyService.Grant(authorityId, body.Name, 0)
 			if err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
@@ -250,7 +250,8 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			ctx.JSON(http.StatusOK, gin.H{
-				"id": apiKey,
+				"id":   apiKey,
+				"name": body.Name,
 			})
 		},
 	)
