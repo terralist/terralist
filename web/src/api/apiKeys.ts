@@ -3,7 +3,6 @@ import { createClient, handleError, handleResponse } from "@/api/api.utils";
 
 interface ApiKey {
   id: string,
-  label: string,
   name: string,
 }
 
@@ -13,8 +12,8 @@ const client = createClient({
 });
 
 const actions = {
-  create: (authorityId: string, label: string, name: string) => client
-    .post<ApiKey>(`/${authorityId}/api-keys`, { label, name })
+  create: (authorityId: string, name: string) => client
+    .post<ApiKey>(`/${authorityId}/api-keys`, { name })
     .then(handleResponse<ApiKey>)
     .catch(handleError),
 
@@ -31,7 +30,7 @@ const actions = {
 };
 
 const ApiKeys = {
-  create: async (authorityId: string, label: string, name: string) => await actions.create(authorityId, label, name),
+  create: async (authorityId: string, name: string) => await actions.create(authorityId, name),
   delete: async (authorityId: string, id: string) => await actions.delete(authorityId, id),
 };
 

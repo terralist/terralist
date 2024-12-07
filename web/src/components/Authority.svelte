@@ -81,7 +81,7 @@
   };
 
   const createApiKeySubmit = async (entries: Map<string, any>) => {
-    let result = await ApiKeys.create(authority.id, "", entries.get("name"));
+    let result = await ApiKeys.create(authority.id, entries.get("name"));
 
     if (result.status === 'OK') {
       authority.apiKeys = [...authority.apiKeys, result.data];
