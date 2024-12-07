@@ -33,14 +33,15 @@ CREATE TABLE `authority_api_keys` (
   `updated_at` datetime DEFAULT NULL,
   `authority_id` varchar(256) DEFAULT NULL,
   `expiration` datetime DEFAULT NULL,
+  `name` varchar(256) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_authorities_api_keys` (`authority_id`),
   CONSTRAINT `fk_authorities_api_keys` FOREIGN KEY (`authority_id`) REFERENCES `authorities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT INTO `authority_api_keys` (`id`, `created_at`, `updated_at`, `authority_id`, `expiration`) VALUES
-('7684e467-4038-4b04-b03b-eec76521c7c2',	'2024-04-19 13:51:18',	'2024-04-19 13:51:18',	'04d7980b-9cdd-4cec-bc80-46db639e18b3',	NULL),
-('b2eeb8e8-f318-442c-8237-962cad073496',	'2024-04-19 13:49:25',	'2024-04-19 13:49:25',	'9a50dba6-7ab3-4ee6-8660-8f5901337883',	NULL);
+INSERT INTO `authority_api_keys` (`id`, `created_at`, `updated_at`, `authority_id`, `expiration`, `name`) VALUES
+('7684e467-4038-4b04-b03b-eec76521c7c2',	'2024-04-19 13:51:18',	'2024-04-19 13:51:18',	'04d7980b-9cdd-4cec-bc80-46db639e18b3',	NULL, 'key1'),
+('b2eeb8e8-f318-442c-8237-962cad073496',	'2024-04-19 13:49:25',	'2024-04-19 13:49:25',	'9a50dba6-7ab3-4ee6-8660-8f5901337883',	NULL, 'key2');
 
 DROP TABLE IF EXISTS `authority_keys`;
 CREATE TABLE `authority_keys` (

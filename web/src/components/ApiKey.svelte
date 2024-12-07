@@ -43,6 +43,7 @@
       <TransparentButton onClick={showApiKeyModal}>
         <Icon name="eye" />
       </TransparentButton>
+      {apiKey.name}
     </span>
     <span class="place-self-end">
       <TransparentButton onClick={showDeleteModal}>

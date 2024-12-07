@@ -109,16 +109,17 @@ func TestGrant(t *testing.T) {
 		Convey("Given a valid authority ID", func() {
 			authorityID, _ := uuid.NewRandom()
 			apiKeyID, _ := uuid.NewRandom()
+			name := "key11"
 
 			Convey("If no expiration is given", func() {
 				expireIn := 0
 
 				Convey("When the service is queried", func() {
 					mockApiKeyRepository.
-						On("Create", &authority.ApiKey{AuthorityID: authorityID}).
+						On("Create", &authority.ApiKey{AuthorityID: authorityID, Name: name}).
 						Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
 
-					apiKey, err := apiKeyService.Grant(authorityID, expireIn)
+					apiKey, err := apiKeyService.Grant(authorityID, name, expireIn)
 
 					Convey("Then a valid API key should be returned", func() {
 						So(err, ShouldBeNil)
@@ -143,7 +144,7 @@ func TestGrant(t *testing.T) {
 								On("Create", mock.AnythingOfType("*authority.ApiKey")).
 								Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
 
-							apiKey, err := apiKeyService.Grant(authorityID, expireIn)
+							apiKey, err := apiKeyService.Grant(authorityID, "key1", expireIn)
 
 							Convey("Then a valid API key should be returned", func() {
 								So(err, ShouldBeNil)
