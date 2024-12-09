@@ -12,6 +12,7 @@ type ApiKey struct {
 	entity.Entity
 	AuthorityID uuid.UUID
 	Expiration  *time.Time
+	Name        string
 }
 
 func (ApiKey) TableName() string {
@@ -21,6 +22,7 @@ func (ApiKey) TableName() string {
 type ApiKeyDTO struct {
 	ID         string `json:"id"`
 	Expiration string `json:"expiration"`
+	Name       string `json:"name"`
 }
 
 func (a ApiKey) ToDTO() ApiKeyDTO {
@@ -32,13 +34,14 @@ func (a ApiKey) ToDTO() ApiKeyDTO {
 	return ApiKeyDTO{
 		ID:         a.ID.String(),
 		Expiration: exp,
+		Name:       a.Name,
 	}
 }
 
-func (d ApiKeyDTO) ToApiKey() ApiKey {
+func (a ApiKeyDTO) ToApiKey() ApiKey {
 	var exp *time.Time
 	{
-		expiration, err := time.Parse("2006-01-02T15:04:05", d.Expiration)
+		expiration, err := time.Parse("2006-01-02T15:04:05", a.Expiration)
 		if err != nil {
 			exp = nil
 		} else {
@@ -48,8 +51,9 @@ func (d ApiKeyDTO) ToApiKey() ApiKey {
 
 	return ApiKey{
 		Entity: entity.Entity{
-			ID: uuid.MustParse(d.ID),
+			ID: uuid.MustParse(a.ID),
 		},
 		Expiration: exp,
+		Name:       a.Name,
 	}
 }

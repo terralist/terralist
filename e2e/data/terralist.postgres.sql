@@ -45,7 +45,8 @@ CREATE TABLE public.authority_api_keys (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     authority_id text,
-    expiration timestamp with time zone
+    expiration timestamp with time zone,
+    name text
 );
 
 
@@ -203,8 +204,8 @@ INSERT INTO public.authorities (id, created_at, updated_at, name, policy_url, ow
 -- Data for Name: authority_api_keys; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.authority_api_keys (id, created_at, updated_at, authority_id, expiration) VALUES ('b2eeb8e8-f318-442c-8237-962cad073496', '2024-04-19 13:49:25.257019+00', '2024-04-19 13:49:25.257019+00', '9a50dba6-7ab3-4ee6-8660-8f5901337883', NULL);
-INSERT INTO public.authority_api_keys (id, created_at, updated_at, authority_id, expiration) VALUES ('7684e467-4038-4b04-b03b-eec76521c7c2', '2024-04-19 13:51:18.950561+00', '2024-04-19 13:51:18.950561+00', '04d7980b-9cdd-4cec-bc80-46db639e18b3', NULL);
+INSERT INTO public.authority_api_keys (id, created_at, updated_at, authority_id, expiration, name) VALUES ('b2eeb8e8-f318-442c-8237-962cad073496', '2024-04-19 13:49:25.257019+00', '2024-04-19 13:49:25.257019+00', '9a50dba6-7ab3-4ee6-8660-8f5901337883', NULL, 'key1');
+INSERT INTO public.authority_api_keys (id, created_at, updated_at, authority_id, expiration, name) VALUES ('7684e467-4038-4b04-b03b-eec76521c7c2', '2024-04-19 13:51:18.950561+00', '2024-04-19 13:51:18.950561+00', '04d7980b-9cdd-4cec-bc80-46db639e18b3', NULL, 'key2');
 
 
 --
