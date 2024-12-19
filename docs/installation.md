@@ -45,7 +45,7 @@ To install Terralist on your machine, select below your operating system and you
 
         ``` bash
         curl -sL https://github.com/terralist/terralist/releases/latest/download/terralist_darwin_arm64.zip -o terralist_darwin_arm64.zip
-        unzip terralist_linux_arm64.zip
+        unzip terralist_darwin_arm64.zip
         ```
 
     <div style="font-size: 18px; font-weight: bold;">Usage</div>
