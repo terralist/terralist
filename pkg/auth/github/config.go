@@ -10,6 +10,7 @@ type Config struct {
 	ClientID     string
 	ClientSecret string
 	Organization string
+	Teams        string
 }
 
 func (c *Config) SetDefaults() {}

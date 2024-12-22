@@ -227,6 +227,7 @@ func (s *Command) run() error {
 			ClientID:     flags[GitHubClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret: flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
 			Organization: flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
+			Teams:        flags[GitHubTeamsFlag].(*cli.StringFlag).Value,
 		})
 	case "bitbucket":
 		provider, err = authFactory.NewProvider(auth.BITBUCKET, &bitbucket.Config{

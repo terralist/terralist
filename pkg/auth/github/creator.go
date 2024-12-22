@@ -18,5 +18,6 @@ func (t *Creator) New(config auth.Configurator) (auth.Provider, error) {
 		ClientID:     cfg.ClientID,
 		ClientSecret: cfg.ClientSecret,
 		Organization: cfg.Organization,
+		Teams:        cfg.Teams,
 	}, nil
 }

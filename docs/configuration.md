@@ -747,7 +747,9 @@ gh-client-secret: "${GITHUB_OAUTH_CLIENT_SECRET}"
 # gh-organization is optional, you can set it to restrict access to the registry
 # only to members of your GitHub organization
 gh-organization: "my-org"
-
+# gh-teams is optional, only users that are part of one of the teams will be able to access the registry
+# gh-organization is required for gh-teams to work
+gh-teams: "teamA,teamB"
 token-signing-secret: "supersecretstring"
 
 database-backend: "sqlite"
