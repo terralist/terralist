@@ -24,5 +24,9 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("missing required client secret")
 	}
 
+	if c.Teams != "" && c.Organization == "" {
+		return fmt.Errorf("missing organization when using teams")
+	}
+
 	return nil
 }

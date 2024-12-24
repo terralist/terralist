@@ -81,10 +81,6 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 	}
 
 	if p.Teams != "" {
-		if p.Organization == "" {
-			return fmt.Errorf("organization is required for teams")
-		}
-
 		if err := p.PerformCheckUserMemberOfTeams(t); err != nil {
 			return err
 		}

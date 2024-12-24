@@ -151,6 +151,18 @@ The GitHub organization to use for user validation.
 | cli | `--gh-organization` |
 | env | `TERRALIST_GH_ORGANIZATION` |
 
+### `gh-teams`
+
+The GitHub teams in CSV format to use for user validation. This requires `gh-organization` to be set.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gh-teams` |
+| env | `TERRALIST_GH_TEAMS` |
+
 ### `bb-client-id`
 
 The BitBucket OAuth Application client ID.
