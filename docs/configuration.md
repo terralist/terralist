@@ -153,7 +153,7 @@ The GitHub organization to use for user validation.
 
 ### `gh-teams`
 
-The GitHub teams in CSV format to use for user validation. This requires `gh-organization` to be set.
+The GitHub team slugs in CSV format to use for user validation. This requires `gh-organization` to be set.
 
 | Name | Value |
 | --- | --- |
@@ -761,7 +761,8 @@ gh-client-secret: "${GITHUB_OAUTH_CLIENT_SECRET}"
 gh-organization: "my-org"
 # gh-teams is optional, only users that are part of one of the teams will be able to access the registry
 # gh-organization is required for gh-teams to work
-gh-teams: "teamA,teamB"
+# you must use the slug version of the team
+gh-teams: "team-a,team-b"
 token-signing-secret: "supersecretstring"
 
 database-backend: "sqlite"

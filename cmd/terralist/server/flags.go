@@ -182,7 +182,7 @@ var flags = map[string]cli.Flag{
 		Description: "The GitHub organization to use for user validation.",
 	},
 	GitHubTeamsFlag: &cli.StringFlag{
-		Description: "The GitHub teams in CSV format to use for user validation.",
+		Description: "The GitHub team slugs in CSV format to use for user validation.",
 	},
 	BitBucketClientIDFlag: &cli.StringFlag{
 		Description: "The BitBucket OAuth Application client ID.",

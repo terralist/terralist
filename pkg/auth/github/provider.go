@@ -252,7 +252,7 @@ func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse) error {
 
 	for _, team := range userTeams {
 		for _, t := range teams {
-			if team.Name == t {
+			if team.Slug == t {
 				log.Debug().Msgf("user is member of team: %s", t)
 				return nil
 			}
