@@ -3,6 +3,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -15,10 +16,18 @@ type Provider struct {
 	ClientID     string
 	ClientSecret string
 	Organization string
+	Teams        string
 }
 
 type tokenResponse struct {
 	AccessToken string `json:"access_token"`
+}
+
+type Team struct {
+	Name       string
+	Id         int
+	Slug       string
+	Permission string
 }
 
 var (
@@ -67,6 +76,12 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 
 	if p.Organization != "" {
 		if err := p.PerformCheckUserMemberInOrganization(t); err != nil {
+			return err
+		}
+	}
+
+	if p.Teams != "" {
+		if err := p.PerformCheckUserMemberOfTeams(t); err != nil {
 			return err
 		}
 	}
@@ -205,4 +220,44 @@ func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
 	}
 
 	return nil
+}
+
+func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse) error {
+	teamsEndpoint := fmt.Sprintf("%s/orgs/%s/teams", apiEndpoint, p.Organization)
+
+	req, err := http.NewRequest(http.MethodGet, teamsEndpoint, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", t.AccessToken))
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return fmt.Errorf("unable to list teams of %s", p.Organization)
+	}
+
+	var userTeams []Team
+	if err := json.NewDecoder(res.Body).Decode(&userTeams); err != nil {
+		return fmt.Errorf("unable to parse teams of %s", p.Organization)
+	}
+
+	teams := strings.Split(p.Teams, ",")
+
+	for _, team := range userTeams {
+		for _, t := range teams {
+			if team.Slug == t {
+				log.Debug().Msgf("user is member of team: %s", t)
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("user is not a member of any of the teams: %s", p.Teams)
 }

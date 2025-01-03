@@ -38,6 +38,7 @@ const (
 	GitHubClientIDFlag     = "gh-client-id"
 	GitHubClientSecretFlag = "gh-client-secret"
 	GitHubOrganizationFlag = "gh-organization"
+	GitHubTeamsFlag        = "gh-teams"
 
 	// BitBucket OAuth Flags
 	BitBucketClientIDFlag     = "bb-client-id"
@@ -179,6 +180,9 @@ var flags = map[string]cli.Flag{
 	},
 	GitHubOrganizationFlag: &cli.StringFlag{
 		Description: "The GitHub organization to use for user validation.",
+	},
+	GitHubTeamsFlag: &cli.StringFlag{
+		Description: "The GitHub team slugs in CSV format to use for user validation.",
 	},
 	BitBucketClientIDFlag: &cli.StringFlag{
 		Description: "The BitBucket OAuth Application client ID.",

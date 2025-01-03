@@ -151,6 +151,18 @@ The GitHub organization to use for user validation.
 | cli | `--gh-organization` |
 | env | `TERRALIST_GH_ORGANIZATION` |
 
+### `gh-teams`
+
+The GitHub team slugs in CSV format to use for user validation. This requires `gh-organization` to be set.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gh-teams` |
+| env | `TERRALIST_GH_TEAMS` |
+
 ### `bb-client-id`
 
 The BitBucket OAuth Application client ID.
@@ -747,7 +759,10 @@ gh-client-secret: "${GITHUB_OAUTH_CLIENT_SECRET}"
 # gh-organization is optional, you can set it to restrict access to the registry
 # only to members of your GitHub organization
 gh-organization: "my-org"
-
+# gh-teams is optional, only users that are part of one of the teams will be able to access the registry
+# gh-organization is required for gh-teams to work
+# you must use the slug version of the team
+gh-teams: "team-a,team-b"
 token-signing-secret: "supersecretstring"
 
 database-backend: "sqlite"

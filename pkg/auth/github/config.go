@@ -10,6 +10,7 @@ type Config struct {
 	ClientID     string
 	ClientSecret string
 	Organization string
+	Teams        string
 }
 
 func (c *Config) SetDefaults() {}
@@ -21,6 +22,10 @@ func (c *Config) Validate() error {
 
 	if c.ClientSecret == "" {
 		return fmt.Errorf("missing required client secret")
+	}
+
+	if c.Teams != "" && c.Organization == "" {
+		return fmt.Errorf("missing organization when using teams")
 	}
 
 	return nil
