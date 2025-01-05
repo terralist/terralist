@@ -53,9 +53,7 @@ func (t *StringFlag) Set(value any) error {
 		}
 
 		if len(t.Choices) > 0 {
-			lv := strings.ToLower(v)
-
-			if !slice.Contains(t.Choices, lv) {
+			if !slice.Contains(t.Choices, v) {
 				options := strings.Join(t.Choices, ", ")
 				return fmt.Errorf("value (%v) must be one of the values: %s", value, options)
 			}
@@ -88,12 +86,10 @@ func (t *StringFlag) Validate() error {
 		return fmt.Errorf("required but not set")
 	}
 
-	lv := strings.ToLower(t.Value)
-
 	if len(t.Choices) > 0 {
-		if !slice.Contains(t.Choices, lv) {
+		if !slice.Contains(t.Choices, t.Value) {
 			options := strings.Join(t.Choices, ", ")
-			return fmt.Errorf("invalid value %v; must be one of: %s", lv, options)
+			return fmt.Errorf("invalid value %v; must be one of: %s", t.Value, options)
 		}
 	}
 
