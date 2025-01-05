@@ -657,7 +657,7 @@ The server-side encryption algorithm that was used when you store this object in
 | type | select |
 | choices | `none`, `AES256`, `aws:kms`, `aws:kms:dsse` |
 | required | no |
-| default | `none` |
+| default | `AES256` |
 | cli | `--s3-server-side-encryption` |
 | env | `TERRALIST_S3_SERVER_SIDE_ENCRYPTION` |
 

@@ -287,7 +287,7 @@ var flags = map[string]cli.Flag{
 	S3ServerSideEncryptionFlag: &cli.StringFlag{
 		Description:  "The server-side encryption algorithm that was used when you store this object in Amazon S3.",
 		Choices:      []string{"none", "AES256", "aws:kms", "aws:kms:dsse"},
-		DefaultValue: "none",
+		DefaultValue: "AES256",
 	},
 
 	AzureAccountNameFlag: &cli.StringFlag{
