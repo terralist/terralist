@@ -1,7 +1,6 @@
 package gcs
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -34,9 +33,10 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 
 	wc := r.Client.Bucket(r.BucketName).Object(key).NewWriter(ctx)
 
-	if _, err := io.Copy(wc, bytes.NewReader(in.Content)); err != nil {
+	if _, err := io.Copy(wc, in.Reader); err != nil {
 		return "", fmt.Errorf("could not upload archive: %v", err)
 	}
+
 	if err := wc.Close(); err != nil {
 		return "", fmt.Errorf("could not close the archive: %v", err)
 	}
@@ -45,12 +45,12 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 }
 
 func (r *Resolver) Find(key string) (string, error) {
-
 	opts := &gcs.SignedURLOptions{
 		Scheme:  gcs.SigningSchemeV4,
 		Method:  "GET",
 		Expires: time.Now().Add(time.Duration(r.LinkExpire) * time.Minute),
 	}
+
 	url, err := r.Client.Bucket(r.BucketName).SignedURL(key, opts)
 	if err != nil {
 		return "", fmt.Errorf("could not generate URL for %v: %v", key, err)
@@ -60,10 +60,10 @@ func (r *Resolver) Find(key string) (string, error) {
 }
 
 func (r *Resolver) Purge(key string) error {
-
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
 	defer cancel()
+
 	if err := r.Client.Bucket(r.BucketName).Object(key).Delete(ctx); err != nil {
 		return fmt.Errorf("could not purge object: %v", err)
 	}

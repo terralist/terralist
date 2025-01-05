@@ -377,11 +377,11 @@ func TestUploadProvider(t *testing.T) {
 								Convey("If the provider files can be downloaded", func() {
 									mockFetcher.
 										On("FetchFile", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-										Return(&file.InMemoryFile{}, nil)
+										Return(file.NewEmptyFile("test.txt"), nil)
 
 									mockFetcher.
 										On("FetchFileChecksum", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).
-										Return(&file.InMemoryFile{}, nil)
+										Return(file.NewEmptyFile("test-with-checksum.txt"), nil)
 
 									Convey("If the resolver cannot store the provider files", func() {
 										mockResolver.

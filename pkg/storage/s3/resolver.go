@@ -1,9 +1,7 @@
 package s3
 
 import (
-	"bytes"
 	"fmt"
-	"net/http"
 	"time"
 
 	"terralist/pkg/storage"
@@ -39,9 +37,9 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 		Bucket:               aws.String(r.BucketName),
 		Key:                  r.withPrefix(key),
 		ACL:                  aws.String("private"),
-		Body:                 bytes.NewReader(in.Content),
-		ContentLength:        aws.Int64(int64(len(in.Content))),
-		ContentType:          aws.String(http.DetectContentType(in.Content)),
+		Body:                 in.Reader,
+		ContentLength:        aws.Int64(in.Size),
+		ContentType:          aws.String(in.ContentType),
 		ContentDisposition:   aws.String("attachment"),
 		ServerSideEncryption: serverSideEncryption,
 	}); err != nil {

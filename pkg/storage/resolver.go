@@ -1,9 +1,17 @@
 package storage
 
+import "io"
+
 // StoreInput holds the inputs for the Store method
 type StoreInput struct {
-	// Content stores the data itself that will be stored
-	Content []byte
+	// Reader stores the reader that can be used to consume the data
+	Reader io.ReadSeeker
+
+	// Size represents the number of bytes of data that will be uploaded
+	Size int64
+
+	// ContentType stores the http-compliant content type value
+	ContentType string
 
 	// KeyPrefix stores any custom key prefix that will be
 	// applied to the resulted key
