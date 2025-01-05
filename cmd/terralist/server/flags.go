@@ -64,12 +64,15 @@ const (
 	ModulesAnonymousReadFlag   = "modules-anonymous-read"
 	ProvidersAnonymousReadFlag = "providers-anonymous-read"
 
-	S3BucketNameFlag      = "s3-bucket-name"
-	S3BucketRegionFlag    = "s3-bucket-region"
-	S3BucketPrefixFlag    = "s3-bucket-prefix"
-	S3AccessKeyIDFlag     = "s3-access-key-id"
-	S3SecretAccessKeyFlag = "s3-secret-access-key"
-	S3PresignExpireFlag   = "s3-presign-expire"
+	S3EndpointFlag             = "s3-endpoint"
+	S3BucketNameFlag           = "s3-bucket-name"
+	S3BucketRegionFlag         = "s3-bucket-region"
+	S3BucketPrefixFlag         = "s3-bucket-prefix"
+	S3AccessKeyIDFlag          = "s3-access-key-id"
+	S3SecretAccessKeyFlag      = "s3-secret-access-key"
+	S3PresignExpireFlag        = "s3-presign-expire"
+	S3ServerSideEncryptionFlag = "s3-server-side-encryption"
+	S3UsePathStyleFlag         = "s3-use-path-style"
 
 	AzureAccountNameFlag   = "azure-account-name"
 	AzureAccountKeyFlag    = "azure-account-key"
@@ -251,6 +254,9 @@ var flags = map[string]cli.Flag{
 		DefaultValue: false,
 	},
 
+	S3EndpointFlag: &cli.StringFlag{
+		Description: "The endpoint where the S3 SDK should connect.",
+	},
 	S3BucketNameFlag: &cli.StringFlag{
 		Description: "The S3 bucket name.",
 	},
@@ -270,6 +276,16 @@ var flags = map[string]cli.Flag{
 		Description:  "The number of minutes after which the presigned URLs should expire.",
 		DefaultValue: 15,
 	},
+	S3UsePathStyleFlag: &cli.BoolFlag{
+		Description:  "Set this to `true` to force the request to use path-style addressing.",
+		DefaultValue: false,
+	},
+	S3ServerSideEncryptionFlag: &cli.StringFlag{
+		Description:  "The server-side encryption algorithm that was used when you store this object in Amazon S3.",
+		Choices:      []string{"none", "AES256", "aws:kms", "aws:kms:dsse"},
+		DefaultValue: "AES256",
+	},
+
 	AzureAccountNameFlag: &cli.StringFlag{
 		Description: "The Azure account name.",
 	},

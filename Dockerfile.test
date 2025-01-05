@@ -39,4 +39,9 @@ RUN curl -sL https://github.com/ovh/venom/releases/download/v${VENOM_VERSION}/ve
 # Install task
 RUN npm install --global @go-task/cli
 
+# Install minio-client
+RUN curl -sL https://dl.min.io/client/mc/release/${TARGETOS}-${TARGETARCH}/mc -o mc \
+  && mv mc /usr/local/bin \
+  && chmod +x /usr/local/bin/mc
+
 ENTRYPOINT [ "/bin/bash" ]

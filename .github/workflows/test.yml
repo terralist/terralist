@@ -100,16 +100,24 @@ jobs:
           MYSQL_PASSWORD: 'terralist'
           MYSQL_DATABASE: 'terralist'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      minio:
+        image: public.ecr.aws/bitnami/minio:2024.12.18
+        ports:
+          - 9000:9000
+        env:
+          MINIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
+          MINIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
     env:
       TERRALIST_PORT: 5758
+
       TERRALIST_LOG_LEVEL: debug
+
       TERRALIST_OAUTH_PROVIDER: github
       TERRALIST_GH_CLIENT_ID: 1234567890abcdef0123
       TERRALIST_GH_CLIENT_SECRET: 1234567890abcdef1234567890abcdef01234567
       TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
-      TERRALIST_MODULES_STORAGE_RESOLVER: "proxy"
-      TERRALIST_PROVIDERS_STORAGE_RESOLVER: "proxy"
+
       TERRALIST_SESSION_STORE: "cookie"
       TERRALIST_COOKIE_SECRET: "someotherrandomvalue"
 
@@ -120,6 +128,16 @@ jobs:
       TERRALIST_MYSQL_USERNAME: terralist
       TERRALIST_MYSQL_PASSWORD: terralist
       TERRALIST_MYSQL_DATABASE: terralist
+
+      TERRALIST_MODULES_STORAGE_RESOLVER: "s3"
+      TERRALIST_PROVIDERS_STORAGE_RESOLVER: "s3"
+      TERRALIST_S3_ENDPOINT: "http://minio:9000"
+      TERRALIST_S3_BUCKET_NAME: "terralist"
+      TERRALIST_S3_BUCKET_REGION: "us-east-1"
+      TERRALIST_S3_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+      TERRALIST_S3_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      TERRALIST_S3_USE_PATH_STYLE: "true"
+      TERRALIST_S3_SERVER_SIDE_ENCRYPTION: "none"
 
     steps:
       - name: Download terralist binary
@@ -160,6 +178,11 @@ jobs:
             echo "Error: Unsupported backend for E2E testing: $TERRALIST_DATABASE_BACKEND"
             exit 1
           fi
+
+      - name: Configure MinIO
+        run: |
+          mc config host add minio $TERRALIST_S3_ENDPOINT $TERRALIST_S3_ACCESS_KEY_ID $TERRALIST_S3_SECRET_ACCESS_KEY
+          mc mb --ignore-existing minio/$TERRALIST_S3_BUCKET_NAME
 
       - name: Spin up Terralist server
         uses: miguelteixeiraa/action-run-in-background@v1

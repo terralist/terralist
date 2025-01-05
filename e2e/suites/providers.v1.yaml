@@ -16,10 +16,10 @@ testcases:
   - type: http
     method: GET
     url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/versions
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: List Providers Versions - Authenticated Not Found
   steps:
   - type: http
@@ -27,10 +27,10 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/versions
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 404
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: List Providers Versions - Authenticated OK
   steps:
   - type: http
@@ -38,10 +38,10 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.goodName}}/versions
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey versions
     - result.bodyjson.versions ShouldHaveLength 1
     - result.bodyjson.versions.versions0 ShouldContainKey platforms
@@ -52,10 +52,10 @@ testcases:
   - type: http
     method: GET
     url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/{{.badVersion}}/download/{{.system}}/{{.arch}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Download Provider Version - Authenticated Not Found Provider
   steps:
   - type: http
@@ -63,10 +63,10 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/{{.goodVersion}}/download/{{.system}}/{{.arch}}
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 404
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Download Provider Version - Authenticated Not Found Version
   steps:
   - type: http
@@ -74,10 +74,10 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.goodName}}/{{.badVersion}}/download/{{.system}}/{{.arch}}
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 404
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Download Provider Version
   steps:
   - type: http
@@ -85,10 +85,10 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.goodName}}/{{.goodVersion}}/download/{{.system}}/{{.arch}}
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey os
     - result.bodyjson.os ShouldEqual {{.system}}
     - result.bodyjson ShouldContainKey arch
@@ -106,10 +106,10 @@ testcases:
   - type: http
     method: POST
     url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Create Provider - Authenticated No Request Body
   steps:
   - type: http
@@ -117,10 +117,10 @@ testcases:
     url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 400
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Create Provider - Authenticated With Request Body
   steps:
   - type: http
@@ -137,17 +137,17 @@ testcases:
           {
             "os": "linux",
             "arch": "amd64",
-            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zipp",
+            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zip",
             "shasum": "e31ffcfd560132ffbff2f574928ba392e663202a750750ed39a8950031b75623"
           }
         ]
       }
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 409
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey errors
     - result.bodyjson.errors.errors0 ShouldEqual version {{.goodVersion}} already exists
 - name: Create/Delete Provider Version - Authenticated Upload New Version, Delete Version
@@ -169,15 +169,15 @@ testcases:
           {
             "os": "linux",
             "arch": "amd64",
-            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zipp",
+            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zip",
             "shasum": "e31ffcfd560132ffbff2f574928ba392e663202a750750ed39a8950031b75623"
           }
         ]
       }
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey errors
     - result.bodyjson.errors ShouldHaveLength 0
     vars:
@@ -189,12 +189,12 @@ testcases:
     url: {{.url}}/v1/api/providers/{{.goodName}}/{{.badVersion}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     skip:
     - create-provider.result ShouldNotEqual 200
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Create/Delete Provider - Authenticated Upload New Version, Delete Provider
   steps:
   - name: create-provider
@@ -214,15 +214,15 @@ testcases:
           {
             "os": "linux",
             "arch": "amd64",
-            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zipp",
+            "download_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_linux_amd64.zip",
             "shasum": "e31ffcfd560132ffbff2f574928ba392e663202a750750ed39a8950031b75623"
           }
         ]
       }
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey errors
     - result.bodyjson.errors ShouldHaveLength 0
     vars:
@@ -234,27 +234,27 @@ testcases:
     url: {{.url}}/v1/api/providers/{{.badName}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
-    timeout: 5
+    timeout: 60
     skip:
     - create-provider.result ShouldNotEqual 200
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Delete Provider Version - Unauthenticated
   steps:
   - type: http
     method: DELETE
     url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/remove
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Delete Provider - Unauthenticated
   steps:
   - type: http
     method: DELETE
     url: {{.url}}/v1/api/providers/{{.goodName}}/remove
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
