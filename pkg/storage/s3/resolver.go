@@ -22,11 +22,18 @@ type Resolver struct {
 	BucketPrefix string
 	LinkExpire   int
 
+	ServerSideEncryption string
+
 	Session *session.Session
 }
 
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
+
+	serverSideEncryption := aws.String(r.ServerSideEncryption)
+	if r.ServerSideEncryption == "none" {
+		serverSideEncryption = nil
+	}
 
 	if _, err := s3.New(r.Session).PutObject(&s3.PutObjectInput{
 		Bucket:               aws.String(r.BucketName),
@@ -36,7 +43,7 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 		ContentLength:        aws.Int64(int64(len(in.Content))),
 		ContentType:          aws.String(http.DetectContentType(in.Content)),
 		ContentDisposition:   aws.String("attachment"),
-		ServerSideEncryption: aws.String("AES256"),
+		ServerSideEncryption: serverSideEncryption,
 	}); err != nil {
 		return "", fmt.Errorf("could not upload archive: %v", err)
 	}
