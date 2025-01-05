@@ -34,6 +34,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/ssoroka/slice"
 )
 
 // Command is an abstraction for the server command
@@ -134,9 +135,13 @@ func (s *Command) run() error {
 		return err
 	}
 
+	configuredFlags := []string{}
+
 	// Set values from viper
 	for k, v := range raw {
 		if _, ok := flags[k]; ok {
+			configuredFlags = append(configuredFlags, k)
+
 			// If it's not set, set the default value
 			if !s.Viper.IsSet(k) {
 				_ = flags[k].Set(nil)
@@ -147,6 +152,13 @@ func (s *Command) run() error {
 			if err := flags[k].Set(v); err != nil {
 				return fmt.Errorf("could not unpack flags: %v", err)
 			}
+		}
+	}
+
+	// Set defaults for other flags
+	for k := range flags {
+		if !slice.Contains(configuredFlags, k) {
+			_ = flags[k].Set(nil)
 		}
 	}
 
