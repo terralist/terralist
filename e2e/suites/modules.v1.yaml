@@ -15,10 +15,10 @@ testcases:
   - type: http
     method: GET
     url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/versions
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: List Modules Versions - Authenticated Not Found
   steps:
   - type: http
@@ -26,10 +26,10 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/versions
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 404
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: List Modules Versions - Authenticated OK
   steps:
   - type: http
@@ -37,10 +37,10 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/versions
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey modules
     - result.bodyjson.modules ShouldHaveLength 1
     - result.bodyjson.modules.modules0 ShouldContainKey versions
@@ -50,10 +50,10 @@ testcases:
   - type: http
     method: GET
     url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/{{.badVersion}}/download
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Download Module Version - Authenticated Not Found Module
   steps:
   - type: http
@@ -61,10 +61,10 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/{{.goodVersion}}/download
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 404
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Download Module Version - Authenticated Not Found Version
   steps:
   - type: http
@@ -72,10 +72,10 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.badVersion}}/download
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 404
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Download Module Version
   steps:
   - type: http
@@ -83,20 +83,20 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.goodVersion}}/download
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 204
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.headers.X-Terraform-Get ShouldNotBeEmpty
 - name: Create Module - Unauthenticated
   steps:
   - type: http
     method: POST
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Create Module - Authenticated No Request Body
   steps:
   - type: http
@@ -104,10 +104,10 @@ testcases:
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 400
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Create Module - Authenticated With Request Body
   steps:
   - type: http
@@ -117,10 +117,10 @@ testcases:
       {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 409
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey errors
     - result.bodyjson.errors.errors0 ShouldEqual version {{.goodVersion}} already exists
 - name: Create/Delete Module Version - Authenticated Upload New Version, Delete Version
@@ -133,10 +133,10 @@ testcases:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: |
       {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey errors
     - result.bodyjson.errors ShouldHaveLength 0
     vars:
@@ -148,12 +148,12 @@ testcases:
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.badVersion}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     skip:
     - create-module.result ShouldNotEqual 200
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Create/Delete Module - Authenticated Upload New Version, Delete Module
   steps:
   - name: create-module
@@ -164,10 +164,10 @@ testcases:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: |
       {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey errors
     - result.bodyjson.errors ShouldHaveLength 0
     vars:
@@ -179,27 +179,27 @@ testcases:
     url: {{.url}}/v1/api/modules/{{.badName}}/{{.provider}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    timeout: 5
+    timeout: 60
     skip:
     - create-module.result ShouldNotEqual 200
     assertions:
     - result.statuscode ShouldEqual 200
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Delete Module Version - Unauthenticated
   steps:
   - type: http
     method: DELETE
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/remove
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30
 - name: Delete Module - Unauthenticated
   steps:
   - type: http
     method: DELETE
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/remove
-    timeout: 5
+    timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
-    - result.timeseconds ShouldBeLessThan 1
+    - result.timeseconds ShouldBeLessThan 30

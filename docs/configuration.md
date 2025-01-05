@@ -551,6 +551,18 @@ Allows anonymous read and download of providers.
 | cli | `--providers-anonymous-read` |
 | env | `TERRALIST_PROVIDERS_ANONYMOUS_READ` |
 
+### `s3-endpoint`
+
+The endpoint where the S3 SDK should connect. By default, Terralist will connect to the AWS S3 endpoint.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--s3-endpoint` |
+| env | `TERRALIST_S3_ENDPOINT` |
+
 ### `s3-bucket-name`
 
 The S3 bucket name.
@@ -622,6 +634,32 @@ The AWS secret access key to access the S3 bucket.
 | default | `n/a` |
 | cli | `--s3-secret-access-key` |
 | env | `TERRALIST_S3_SECRET_ACCESS_KEY` |
+
+### `s3-use-path-style`
+
+Set this to `true` to force the request to use path-style addressing (i.e. `http://s3.amazonaws.com/BUCKET/KEY`).
+By default, the S3 client will use virtual hosted bucket addressing when possible (i.e. `http://BUCKET.s3.amazonaws.com/KEY`).
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--s3-use-path-style` |
+| env | `TERRALIST_S3_USE_PATH_STYLE` |
+
+## `s3-server-side-encryption`
+
+The server-side encryption algorithm that was used when you store this object in Amazon S3.
+
+| Name | Value |
+| --- | --- |
+| type | select |
+| choices | `none`, `AES256`, `aws:kms`, `aws:kms:dsse` |
+| required | no |
+| default | `AES256` |
+| cli | `--s3-server-side-encryption` |
+| env | `TERRALIST_S3_SERVER_SIDE_ENCRYPTION` |
 
 ### `local-store`
 
