@@ -1,11 +1,10 @@
 package jwt
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
-
-	"terralist/pkg/auth"
 
 	_jwt "github.com/golang-jwt/jwt"
 )
@@ -17,19 +16,26 @@ var (
 	ErrTokenGeneration = errors.New("could not generate token")
 )
 
+type Serializer interface {
+	json.Marshaler
+	json.Unmarshaler
+}
+
+type Extractor = func(_jwt.Claims) Serializer
+
 // JWT handles the creation and extraction of a jwt
 type JWT interface {
-	// Build generates and sign a token for a given user
-	// The first parameter represents the user for which a token
+	// Build generates and sign a token for a given data object
+	// The first parameter represents the data for which a token
 	// should be granted
 	// The second parameter represents the number of seconds after
 	// which the token should expire
-	Build(auth.User, int) (string, error)
+	Build(Serializer, int) (string, error)
 
 	// Extract is the reverse method for Build, which extracts
-	// the user data from a given token
+	// the data from a given token
 	// If the token is expired, it will return an error
-	Extract(string) (*auth.User, error)
+	Extract(string) (Serializer, error)
 }
 
 // defaultJWT is the concrete implementation of JWT
@@ -43,13 +49,12 @@ func New(secret string) (JWT, error) {
 	}, nil
 }
 
-type tokenClaims struct {
+type TokenClaims struct {
 	_jwt.StandardClaims
-	auth.User
+	Serializer
 }
 
-func (th *defaultJWT) Build(user auth.User, expireIn int) (string, error) {
-	// Allow no expiration date
+func (th *defaultJWT) Build(data Serializer, expireIn int) (string, error) {
 	var exp int64
 	if expireIn <= 0 {
 		exp = 0
@@ -57,16 +62,17 @@ func (th *defaultJWT) Build(user auth.User, expireIn int) (string, error) {
 		exp = time.Now().Add(time.Duration(expireIn) * time.Second).Unix()
 	}
 
-	// Create a new token object, specifying signing method and the claims
-	// you would like it to contain.
-	token := _jwt.NewWithClaims(_jwt.SigningMethodHS256, &tokenClaims{
+	if data == nil {
+		data = &NoData{}
+	}
+
+	token := _jwt.NewWithClaims(_jwt.SigningMethodHS256, &TokenClaims{
 		_jwt.StandardClaims{
 			ExpiresAt: exp,
 		},
-		user,
+		data,
 	})
 
-	// Sign and get the complete encoded token as a string using the secret
 	tokenString, err := token.SignedString(th.tokenSigningSecret)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrTokenGeneration, err)
@@ -75,13 +81,8 @@ func (th *defaultJWT) Build(user auth.User, expireIn int) (string, error) {
 	return tokenString, nil
 }
 
-func (th *defaultJWT) Extract(t string) (*auth.User, error) {
-	// Parse takes the token string and a function for looking up the key. The latter is especially
-	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
-	// to the callback, providing flexibility.
-	token, err := _jwt.ParseWithClaims(t, &tokenClaims{}, func(token *_jwt.Token) (interface{}, error) {
-		// Don't forget to validate the alg is what you expect:
+func (th *defaultJWT) Extract(t string) (Serializer, error) {
+	token, err := _jwt.ParseWithClaims(t, &TokenClaims{}, func(token *_jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*_jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("%w: unexpected signing method: %v", ErrInvalidToken, token.Header["alg"])
 		}
@@ -105,10 +106,19 @@ func (th *defaultJWT) Extract(t string) (*auth.User, error) {
 		}
 	}
 
-	claims, _ := token.Claims.(*tokenClaims)
+	claims, _ := token.Claims.(*TokenClaims)
 
-	// Unmarshal user object
-	user := claims.User
+	data := claims.Serializer
 
-	return &user, nil
+	return data, nil
+}
+
+type NoData struct{}
+
+func (o NoData) MarshalJSON() ([]byte, error) {
+	return []byte("{}"), nil
+}
+
+func (o NoData) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &o)
 }

@@ -2,8 +2,6 @@ package server
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"terralist/pkg/auth/bitbucket"
 	"terralist/pkg/auth/gitlab"
@@ -158,16 +156,17 @@ func (s *Command) run() error {
 	}
 
 	userConfig := server.UserConfig{
-		LogLevel:               flags[LogLevelFlag].(*cli.StringFlag).Value,
-		Port:                   flags[PortFlag].(*cli.IntFlag).Value,
-		URL:                    flags[URLFlag].(*cli.StringFlag).Value,
-		CertFile:               flags[CertFileFlag].(*cli.StringFlag).Value,
-		KeyFile:                flags[KeyFileFlag].(*cli.StringFlag).Value,
-		TokenSigningSecret:     flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
-		OauthProvider:          flags[OAuthProviderFlag].(*cli.StringFlag).Value,
-		CustomCompanyName:      flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
-		ModulesAnonymousRead:   flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
-		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
+		LogLevel:                flags[LogLevelFlag].(*cli.StringFlag).Value,
+		Port:                    flags[PortFlag].(*cli.IntFlag).Value,
+		URL:                     flags[URLFlag].(*cli.StringFlag).Value,
+		CertFile:                flags[CertFileFlag].(*cli.StringFlag).Value,
+		KeyFile:                 flags[KeyFileFlag].(*cli.StringFlag).Value,
+		TokenSigningSecret:      flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
+		OauthProvider:           flags[OAuthProviderFlag].(*cli.StringFlag).Value,
+		CustomCompanyName:       flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
+		ModulesAnonymousRead:    flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
+		ProvidersAnonymousRead:  flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
+		LocalTokenSigningSecret: flags[LocalTokenSigningSecretFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {
@@ -272,25 +271,13 @@ func (s *Command) run() error {
 		case "proxy":
 			resolvers[name], err = nil, nil
 		case "local":
-			// Initialize home directory
-			homeDirClean := filepath.Clean(flags[LocalStoreFlag].(*cli.StringFlag).Value)
-			if strings.HasPrefix(homeDirClean, "~") {
-				userHomeDir, _ := os.UserHomeDir()
-				homeDirClean = fmt.Sprintf("%s%s", userHomeDir, homeDirClean[1:])
-			}
-
-			homeDir, erro := filepath.Abs(homeDirClean)
-			if erro != nil {
-				return fmt.Errorf("invalid value for home directory: %v", err)
-			}
-
-			// Make sure Home Directory exists
-			if erro := os.MkdirAll(homeDir, os.ModePerm); err != nil {
-				return fmt.Errorf("could not create the home directory: %v", erro)
-			}
-
 			resolvers[name], err = storageFactory.NewResolver(storage.LOCAL, &local.Config{
-				HomeDirectory: homeDir,
+				HomeDirectory:      flags[HomeFlag].(*cli.PathFlag).Value,
+				RegistryDirectory:  flags[LocalRegistryFlag].(*cli.PathFlag).Value,
+				BaseURL:            flags[URLFlag].(*cli.StringFlag).Value,
+				FilesEndpoint:      "/v1/files",
+				TokenSigningSecret: flags[LocalTokenSigningSecretFlag].(*cli.StringFlag).Value,
+				LinkExpire:         flags[LocalPresignExpireFlag].(*cli.IntFlag).Value,
 			})
 		case "s3":
 			resolvers[name], err = storageFactory.NewResolver(storage.S3, &s3.Config{
