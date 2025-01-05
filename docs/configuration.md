@@ -661,17 +661,42 @@ The server-side encryption algorithm that was used when you store this object in
 | cli | `--s3-server-side-encryption` |
 | env | `TERRALIST_S3_SERVER_SIDE_ENCRYPTION` |
 
-### `local-store`
+### `local-registry`
 
-The path to a directory in which Terralist can store files.
+The path to a directory in which Terralist can store registry files (modules and providers). If not given, it will be computed from `home` as `{home}/registry`. By default, it will be set to `~/.terralist.d/registry`.
 
 | Name | Value |
 | --- | --- |
 | type | string |
 | required | no |
-| default | `~/.terralist.d` |
-| cli | `--local-store` |
-| env | `TERRALIST_LOCAL_STORE` |
+| default | `~/.terralist.d/registry` |
+| cli | `--local-registry` |
+| env | `TERRALIST_LOCAL_REGISTRY` |
+
+### `local-token-signing-secret`
+
+The secret to use when generating presigned tokens.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--local-token-signing-secret` |
+| env | `TERRALIST_LOCAL_TOKEN_SIGNING_SECRET` |
+
+
+### `local-presign-expire`
+
+The number of minutes after which the presigned URLs should expire.
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `15` |
+| cli | `--local-presign-expire` |
+| env | `TERRALIST_LOCAL_PRESIGN_EXPIRE` |
 
 ### `azure-account-name`
 

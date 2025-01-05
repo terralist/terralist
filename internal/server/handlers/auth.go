@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
 	"terralist/internal/server/services"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
@@ -46,9 +47,15 @@ func (a *Authorization) hasAuthorizationHeader(c *gin.Context) (*auth.User, erro
 	var user *auth.User
 
 	if !strings.HasPrefix(bearerToken, "x-api-key:") {
-		user, err = a.JWT.Extract(bearerToken)
+		data, err := a.JWT.Extract(bearerToken)
 		if err != nil {
 			return nil, fmt.Errorf("Authorization: %w", ErrInvalidValue)
+		}
+
+		if u, ok := data.(auth.User); !ok {
+			return nil, fmt.Errorf("Authorization: %w", ErrInvalidValue)
+		} else {
+			user = &u
 		}
 	} else {
 		var apiKey string

@@ -226,6 +226,20 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ClearSessionRoute:     apiV1Group.Prefix() + loginController.ClearSessionRoute(),
 	})
 
+	localJWTManager, err := jwt.New(userConfig.LocalTokenSigningSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create local JWT manager: %v", err)
+	}
+
+	filesController := &controllers.DefaultFileServer{
+		ModulesResolver:   config.ModulesResolver,
+		ProvidersResolver: config.ProvidersResolver,
+
+		JWT: localJWTManager,
+	}
+
+	apiV1Group.Register(filesController)
+
 	return &Server{
 		Port:     userConfig.Port,
 		CertFile: userConfig.CertFile,

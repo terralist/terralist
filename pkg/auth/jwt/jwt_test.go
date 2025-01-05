@@ -50,13 +50,18 @@ func TestJWT_User(t *testing.T) {
 		t.Fatalf("build returned with error: %v", err)
 	}
 
-	u, err := j.Extract(token)
+	data, err := j.Extract(token)
 	if err != nil {
 		t.Fatalf("extract returned with error: %v", err)
 	}
 
-	if *u != user {
-		t.Fatalf("user mismatch, expected = %v, got = %v", user, *u)
+	u, ok := data.(auth.User)
+	if !ok {
+		t.Fatalf("token data was not of type auth.User, but %T", data)
+	}
+
+	if u != user {
+		t.Fatalf("user mismatch, expected = %v, got = %v", user, u)
 	}
 }
 

@@ -85,7 +85,9 @@ const (
 	GcsSignExpireFlag                 = "gcs-sign-expire"
 	GcsServiceAccountCredFilePathFlag = "gcs-service-account-cred-file-path"
 
-	LocalStoreFlag = "local-store"
+	LocalRegistryFlag           = "local-registry"
+	LocalTokenSigningSecretFlag = "local-token-signing-secret"
+	LocalPresignExpireFlag      = "local-presign-expire"
 
 	SessionStoreFlag = "session-store"
 
@@ -231,9 +233,15 @@ var flags = map[string]cli.Flag{
 		Required:    true,
 	},
 
-	LocalStoreFlag: &cli.StringFlag{
-		Description:  "The path to a directory in which Terralist can store files.",
-		DefaultValue: "~/.terralist.d",
+	LocalRegistryFlag: &cli.PathFlag{
+		Description: "The path to a directory in which Terralist can store files.",
+	},
+	LocalTokenSigningSecretFlag: &cli.StringFlag{
+		Description: "The secret to use when generating presigned tokens.",
+	},
+	LocalPresignExpireFlag: &cli.IntFlag{
+		Description:  "The number of minutes after which the presigned URLs should expire.",
+		DefaultValue: 15,
 	},
 
 	ModulesStorageResolverFlag: &cli.StringFlag{
