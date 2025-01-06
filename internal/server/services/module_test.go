@@ -292,7 +292,7 @@ func TestUploadModule(t *testing.T) {
 								Convey("If the module files can be downloaded", func() {
 									mockFetcher.
 										On("Fetch", dto.Version, url).
-										Return(&file.InMemoryFile{}, nil)
+										Return(file.NewEmptyFile("test.txt"), nil)
 
 									Convey("If the resolver fails to store the module files", func() {
 										mockResolver.

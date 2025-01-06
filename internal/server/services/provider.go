@@ -239,7 +239,7 @@ func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDT
 }
 
 // downloadFiles fetches all provider files
-func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]*file.InMemoryFile, error) {
+func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]file.File, error) {
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
 	// Download provider files
@@ -253,7 +253,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		return nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
 	}
 
-	files := map[string]*file.InMemoryFile{
+	files := map[string]file.File{
 		shaSumsKey:    shaSums,
 		shaSumsSigKey: shaSumsSig,
 	}
@@ -280,7 +280,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 // uploadFiles uploads all stored provider files
 func (s *DefaultProviderService) uploadFiles(
 	namespace, name, version string,
-	files map[string]*file.InMemoryFile,
+	files map[string]file.File,
 ) (map[string]string, error) {
 	keys := map[string]string{}
 
@@ -288,12 +288,14 @@ func (s *DefaultProviderService) uploadFiles(
 
 	for k, v := range files {
 		key, err := s.Resolver.Store(&storage.StoreInput{
-			Content:   v.Content,
-			KeyPrefix: prefix,
-			FileName:  v.Name,
+			Reader:      v,
+			Size:        v.Metadata().Size(),
+			ContentType: file.ContentType(v),
+			KeyPrefix:   prefix,
+			FileName:    v.Name(),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("could not upload %s: %v", v.Name, err)
+			return nil, fmt.Errorf("could not upload %s: %v", v.Name(), err)
 		}
 
 		keys[k] = key

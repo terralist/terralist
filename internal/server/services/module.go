@@ -100,17 +100,20 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 		if err != nil {
 			return err
 		}
+		defer archive.Close()
 
 		// Upload the module archive to the resolver datastore
 		location, err := s.Resolver.Store(&storage.StoreInput{
-			Content: archive.Content,
+			Reader:      archive,
+			Size:        archive.Metadata().Size(),
+			ContentType: file.ContentType(archive),
 			KeyPrefix: fmt.Sprintf(
 				"modules/%s/%s/%s",
 				a.Name,
 				m.Name,
 				m.Provider,
 			),
-			FileName: archive.Name,
+			FileName: archive.Name(),
 		})
 		if err != nil {
 			return fmt.Errorf("could store the new version: %v", err)

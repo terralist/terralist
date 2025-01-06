@@ -1,10 +1,8 @@
 package file
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/signal"
 	"path"
@@ -20,8 +18,8 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
-// fetch downloads a file/directory from a given URL and loads them into the memory
-func fetch(name string, url string, checksum string, kind int) (*InMemoryFile, error) {
+// fetch downloads a file/directory from a given URL and loads them
+func fetch(name string, url string, checksum string, kind int) (File, error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -117,8 +115,8 @@ func fetch(name string, url string, checksum string, kind int) (*InMemoryFile, e
 }
 
 // parseResult parses the download result and returns an
-// InMemoryFile
-func parseResult(name, src string, kind int) (*InMemoryFile, error) {
+// File
+func parseResult(name, src string, kind int) (File, error) {
 	if kind == file {
 		return readFile(name, src)
 	} else if kind == dir {
@@ -129,39 +127,15 @@ func parseResult(name, src string, kind int) (*InMemoryFile, error) {
 }
 
 // readFile reads a file from the disk and returns it
-// as an InMemoryFile
-func readFile(name, src string) (*InMemoryFile, error) {
-	// Open the file
-	f, err := os.Open(src)
-	if err != nil {
-		return nil, fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
-	}
-	defer f.Close()
-
-	// Fetch file headers
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("%w: cannot stat downloaded file: %v", ErrSystemFailure, err)
-	}
-
-	buffer := new(bytes.Buffer)
-
-	// Copy the file to the buffer
-	if _, err := io.Copy(buffer, f); err != nil {
-		return nil, err
-	}
-
-	return &InMemoryFile{
-		Name:     name,
-		FileInfo: fi,
-		Content:  buffer.Bytes(),
-	}, nil
+// as an File
+func readFile(name, src string) (File, error) {
+	return LoadFromDisk(name, src)
 }
 
 // archiveDir reads a directory from the disk, archives it
-// and returns the archive file as an InMemoryFile
-func archiveDir(name, src string) (*InMemoryFile, error) {
-	dirFiles := []*InMemoryFile{}
+// and returns the archive file
+func archiveDir(name, src string) (File, error) {
+	dirFiles := []File{}
 
 	// Walk recursively through the given directory
 	if err := filepath.Walk(src, func(fpath string, info os.FileInfo, err error) error {
@@ -184,11 +158,7 @@ func archiveDir(name, src string) (*InMemoryFile, error) {
 			return fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
 		}
 
-		dirFiles = append(dirFiles, &InMemoryFile{
-			Name:     relPath,
-			FileInfo: file.FileInfo,
-			Content:  file.Content,
-		})
+		dirFiles = append(dirFiles, file)
 
 		return nil
 	}); err != nil {
