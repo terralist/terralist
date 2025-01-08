@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/file"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,6 +33,7 @@ type DefaultModuleController struct {
 	ModuleService services.ModuleService
 	Authorization *handlers.Authorization
 	AnonymousRead bool
+	HomeDir       string
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -135,6 +138,86 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			if err := c.ModuleService.Upload(&dto, body.DownloadUrl); err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
+			})
+		},
+	)
+
+	// Upload a new module version (with files)
+	api.POST(
+		"/:name/:provider/:version/upload-files",
+		handlers.RequireAuthority(),
+		func(ctx *gin.Context) {
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"invalid authority"},
+				})
+				return
+			}
+
+			form, err := ctx.MultipartForm()
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			moduleFiles := form.File["module"]
+
+			if len(moduleFiles) != 1 {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"expecting exactly one archive file containing the module"},
+				})
+				return
+			}
+
+			// Create a temp file
+			onDiskFile, err := file.SaveToDisk(file.NewFromMultipartFileHeader(moduleFiles[0]), c.HomeDir)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{"cannot allocate a new file", err.Error()},
+				})
+				return
+			}
+
+			defer func() {
+				onDiskFile.Close()
+				onDiskFile.Remove()
+			}()
+
+			// Write form content to the temp file
+			if err := ctx.SaveUploadedFile(moduleFiles[0], onDiskFile.Path()); err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{"cannot save content to the local disk", err.Error()},
+				})
+				return
+			}
+
+			dto := module.CreateDTO{
+				AuthorityID: authorityID,
+				Name:        name,
+				Provider:    provider,
+				VersionDTO: module.VersionDTO{
+					Version: version,
+				},
+			}
+
+			// Pass-in local-file URI for go-getter
+			uri := fmt.Sprintf("file://%v", onDiskFile.Path())
+			if err := c.ModuleService.Upload(&dto, uri); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})

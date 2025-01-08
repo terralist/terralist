@@ -4,6 +4,7 @@ type UserConfig struct {
 	LogLevel               string `mapstructure:"log-level"`
 	Port                   int    `mapstructure:"port"`
 	URL                    string `mapstructure:"url"`
+	Home                   string `mapstructure:"home"`
 	CertFile               string `mapstructure:"cert-file"`
 	KeyFile                string `mapstructure:"key-file"`
 	TokenSigningSecret     string `mapstructure:"token-signing-secret"`

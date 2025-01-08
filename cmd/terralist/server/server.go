@@ -180,6 +180,7 @@ func (s *Command) run() error {
 		CustomCompanyName:      flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
 		ModulesAnonymousRead:   flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
 		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
+		Home:                   flags[HomeFlag].(*cli.PathFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {

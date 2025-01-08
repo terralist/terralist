@@ -234,11 +234,13 @@ curl -L -X POST \
 
 !!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
-### Example Response
-
 === "Status 200"
 
-    TODO
+    ``` json
+    {
+      "errors": []
+    }
+    ```
 
 === "Status 401"
 
@@ -251,12 +253,12 @@ curl -L -X POST \
     }
     ```
 
-=== "Status 404"
+=== "Status 4xx/5xx"
 
     ``` json
     {
       "errors": [
-        "not found"
+        "...",
       ]
     }
     ```
@@ -283,7 +285,11 @@ curl -L -X DELETE \
 
 === "Status 200"
 
-    TODO
+    ``` json
+    {
+      "errors": []
+    }
+    ```
 
 === "Status 401"
 
@@ -296,12 +302,12 @@ curl -L -X DELETE \
     }
     ```
 
-=== "Status 404"
+=== "Status 4xx/5xx"
 
     ``` json
     {
       "errors": [
-        "not found"
+        "...",
       ]
     }
     ```
@@ -328,7 +334,11 @@ curl -L -X DELETE \
 
 === "Status 200"
 
-    TODO
+    ``` json
+    {
+      "errors": []
+    }
+    ```
 
 === "Status 401"
 
@@ -341,12 +351,12 @@ curl -L -X DELETE \
     }
     ```
 
-=== "Status 404"
+=== "Status 4xx/5xx"
 
     ``` json
     {
       "errors": [
-        "not found"
+        "...",
       ]
     }
     ```
@@ -482,7 +492,11 @@ curl -L -X POST \
 
 === "Status 200"
 
-    TODO
+    ``` json
+    {
+      "errors": []
+    }
+    ```
 
 === "Status 401"
 
@@ -495,15 +509,66 @@ curl -L -X POST \
     }
     ```
 
-=== "Status 404"
+=== "Status 4xx/5xx"
 
     ``` json
     {
       "errors": [
-        "not found"
+        "...",
       ]
     }
     ```
+
+## Upload a module version (with local files)
+
+```
+POST /v1/api/modules/:name/:provider/:version/upload-files
+```
+
+Upload a new module version (with local files).
+
+### Example Request
+
+``` shell
+curl -L -X POST \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -F "module=@/path/to/your-module.zip"
+  http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload-files
+```
+
+!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    {
+      "errors": []
+    }
+    ```
+
+=== "Status 401"
+
+    ``` json
+    {
+      "errors": [
+        "Authorization: missing",
+        "X-API-Key: missing"
+      ]
+    }
+    ```
+
+=== "Status 4xx/5xx"
+
+    ``` json
+    {
+      "errors": [
+        "...",
+      ]
+    }
+    ```
+
 ## Remove a module
 
 ```
@@ -522,11 +587,13 @@ curl -L -X DELETE \
 
 !!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
-### Example Response
-
 === "Status 200"
 
-    TODO
+    ``` json
+    {
+      "errors": []
+    }
+    ```
 
 === "Status 401"
 
@@ -539,12 +606,12 @@ curl -L -X DELETE \
     }
     ```
 
-=== "Status 404"
+=== "Status 4xx/5xx"
 
     ``` json
     {
       "errors": [
-        "not found"
+        "...",
       ]
     }
     ```
@@ -571,7 +638,11 @@ curl -L -X DELETE \
 
 === "Status 200"
 
-    TODO
+    ``` json
+    {
+      "errors": []
+    }
+    ```
 
 === "Status 401"
 
@@ -584,12 +655,12 @@ curl -L -X DELETE \
     }
     ```
 
-=== "Status 404"
+=== "Status 4xx/5xx"
 
     ``` json
     {
       "errors": [
-        "not found"
+        "...",
       ]
     }
     ```
