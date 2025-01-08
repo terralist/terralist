@@ -20,7 +20,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	google.golang.org/api v0.214.0
 	gorm.io/driver/mysql v1.5.7
-	gorm.io/driver/postgres v1.5.9
+	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
 )
 
