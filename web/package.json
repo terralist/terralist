@@ -17,7 +17,7 @@
     "postcss": "^8.4.49",
     "semver-compare": "^1.0.0",
     "svelte": "^3.59.2",
-    "svelte-check": "^2.10.0",
+    "svelte-check": "^3.8.6",
     "svelte-spa-router": "^3.3.0",
     "svelte-system-info": "^1.0.3",
     "svelte-use-click-outside": "^1.0.0",
