@@ -180,7 +180,7 @@ func TestUploadModule(t *testing.T) {
 				dto.Version = "100%-not-sem-ver-valid"
 
 				Convey("When the service is queried", func() {
-					err := moduleService.Upload(&dto, url)
+					err := moduleService.Upload(&dto, url, nil)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
@@ -197,7 +197,7 @@ func TestUploadModule(t *testing.T) {
 						Return(nil, errors.New(""))
 
 					Convey("When the service is queried", func() {
-						err := moduleService.Upload(&dto, url)
+						err := moduleService.Upload(&dto, url, nil)
 
 						Convey("An error should be returned", func() {
 							So(err, ShouldNotBeNil)
@@ -222,7 +222,7 @@ func TestUploadModule(t *testing.T) {
 							}, nil)
 
 						Convey("When the service is queried", func() {
-							err := moduleService.Upload(&dto, url)
+							err := moduleService.Upload(&dto, url, nil)
 
 							Convey("An error should be returned", func() {
 								So(err, ShouldNotBeNil)
@@ -264,7 +264,7 @@ func TestUploadModule(t *testing.T) {
 									Return(&module.Module{}, nil)
 
 								Convey("When the service is queried", func() {
-									err := moduleService.Upload(&dto, url)
+									err := moduleService.Upload(&dto, url, nil)
 
 									Convey("No error should be returned", func() {
 										So(err, ShouldBeNil)
@@ -281,7 +281,7 @@ func TestUploadModule(t *testing.T) {
 										Return(nil, errors.New(""))
 
 									Convey("When the service is queried", func() {
-										err := moduleService.Upload(&dto, url)
+										err := moduleService.Upload(&dto, url, nil)
 
 										Convey("An error should be returned", func() {
 											So(err, ShouldNotBeNil)
@@ -300,7 +300,7 @@ func TestUploadModule(t *testing.T) {
 											Return("", errors.New(""))
 
 										Convey("When the service is queried", func() {
-											err := moduleService.Upload(&dto, url)
+											err := moduleService.Upload(&dto, url, nil)
 
 											Convey("An error should be returned", func() {
 												So(err, ShouldNotBeNil)
@@ -320,7 +320,7 @@ func TestUploadModule(t *testing.T) {
 											Return(&module.Module{}, nil)
 
 										Convey("When the service is queried", func() {
-											err := moduleService.Upload(&dto, url)
+											err := moduleService.Upload(&dto, url, nil)
 
 											Convey("No error should be returned", func() {
 												So(err, ShouldBeNil)

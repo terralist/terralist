@@ -224,11 +224,33 @@ POST /v1/api/providers/:name/:version/upload
 
 Upload a new provider version.
 
+If the URLs from which the provider files should be downloaded are of types `http` or `https`, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.
+
 ### Example Request
 
 ``` shell
 curl -L -X POST \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -d '{
+    "protocols": ["5.0"],
+    "headers": {
+      "Accept": "application/octet-stream",
+      "Authorization:": "Bearer {TOKEN}",
+      "X-GitHub-Api-Version": "2022-11-28"
+    },
+    "shasums": {
+      "url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{SHA256SUMS-ASSET-ID}",
+      "signature_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{SHA256SUMS-SIG-ASSET-ID}",
+    },
+    "platforms": [
+      {
+        "os": "linux",
+        "arch": "amd64",
+        "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{PROVIDER-LINUX-AMD64-ASSET-ID}",
+        "shasum": "{SHASUM}"
+      }
+    ]
+  }' \
   http://localhost:5758/v1/api/providers/NAME/VERSION/upload
 ```
 
@@ -478,11 +500,21 @@ POST /v1/api/modules/:name/:provider/:version/upload
 
 Upload a new module version.
 
+If the URL from which the module files should be downloaded is of types `http` or `https`, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.
+
 ### Example Request
 
 ``` shell
 curl -L -X POST \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -d '{
+    "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{ASSET-ID}",
+    "headers": {
+        "Accept": "application/octet-stream",
+        "Authorization:": "Bearer {TOKEN}",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+  }' \
   http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
 ```
 

@@ -85,7 +85,8 @@ type CreateDTO struct {
 }
 
 type CreateFromURLDTO struct {
-	DownloadUrl string `json:"download_url"`
+	DownloadUrl string            `json:"download_url"`
+	Headers     map[string]string `json:"headers,omitempty"`
 }
 
 func (d CreateDTO) ToModule() Module {

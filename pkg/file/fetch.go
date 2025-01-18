@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -18,8 +19,28 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
+// generateGetters returns the map of getters
+// Modified version of https://github.com/hashicorp/go-getter/blob/f7836fb97529673f24dac0aaa140762ee05c847f/get.go#L65
+// to add support for custom http headers
+func generateGetters(header http.Header) map[string]getter.Getter {
+	httpGetter := &getter.HttpGetter{
+		Netrc:  true,
+		Header: header,
+	}
+
+	return map[string]getter.Getter{
+		"file":  new(getter.FileGetter),
+		"git":   new(getter.GitGetter),
+		"gcs":   new(getter.GCSGetter),
+		"hg":    new(getter.HgGetter),
+		"s3":    new(getter.S3Getter),
+		"http":  httpGetter,
+		"https": httpGetter,
+	}
+}
+
 // fetch downloads a file/directory from a given URL and loads them
-func fetch(name string, url string, checksum string, kind int) (File, error) {
+func fetch(name string, url string, checksum string, kind int, header http.Header) (File, error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -50,10 +71,11 @@ func fetch(name string, url string, checksum string, kind int) (File, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &getter.Client{
-		Ctx: ctx,
-		Src: u.String(),
-		Dst: dst,
-		Pwd: tempDir,
+		Ctx:     ctx,
+		Src:     u.String(),
+		Dst:     dst,
+		Pwd:     tempDir,
+		Getters: generateGetters(header),
 	}
 
 	if kind == file {
