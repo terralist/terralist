@@ -277,7 +277,7 @@ func TestUploadModule(t *testing.T) {
 
 								Convey("If the module files cannot be downloaded", func() {
 									mockFetcher.
-										On("Fetch", dto.Version, url).
+										On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
 										Return(nil, errors.New(""))
 
 									Convey("When the service is queried", func() {
@@ -291,7 +291,7 @@ func TestUploadModule(t *testing.T) {
 
 								Convey("If the module files can be downloaded", func() {
 									mockFetcher.
-										On("Fetch", dto.Version, url).
+										On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
 										Return(file.NewEmptyFile("test.txt"), nil)
 
 									Convey("If the resolver fails to store the module files", func() {
