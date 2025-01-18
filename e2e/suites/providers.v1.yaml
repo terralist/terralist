@@ -161,6 +161,10 @@ testcases:
     body: >-
       {
         "protocols": ["5.0"],
+        "headers": {
+          "Accept": "*/*",
+          "User-Agent": "Terralist/1.0 e2erun"
+        },
         "shasums": {
           "url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS",
           "signature_url": "https://releases.hashicorp.com/terraform-provider-aws/5.47.0/terraform-provider-aws_5.47.0_SHA256SUMS.72D7468F.sig"

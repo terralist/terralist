@@ -113,8 +113,10 @@ testcases:
   - type: http
     method: POST
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
-    body: |
-      {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
+    body: >-
+      {
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"
+      }
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -131,8 +133,14 @@ testcases:
     url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.badVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    body: |
-      {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
+    body: >-
+      {
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip",
+        "headers": {
+          "Accept": "*/*",
+          "User-Agent": "Terralist/1.0 e2erun"
+        }
+      }
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
@@ -162,8 +170,10 @@ testcases:
     url: {{.url}}/v1/api/modules/{{.badName}}/{{.provider}}/{{.badVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
-    body: |
-      {"download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"}
+    body: >-
+      {
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"
+      }
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 200
