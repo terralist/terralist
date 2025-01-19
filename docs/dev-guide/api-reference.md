@@ -504,19 +504,38 @@ If the URL from which the module files should be downloaded is of types `http` o
 
 ### Example Request
 
-``` shell
-curl -L -X POST \
-  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  -d '{
-    "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{ASSET-ID}",
-    "headers": {
-        "Accept": "application/octet-stream",
-        "Authorization:": "Bearer {TOKEN}",
-        "X-GitHub-Api-Version": "2022-11-28"
-    }
-  }' \
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
-```
+=== "GitHub API"
+
+    ``` shell
+    curl -L -X POST \
+      -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+      -d '{
+        "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{ASSET-ID}",
+        "headers": {
+            "Accept": "application/octet-stream",
+            "Authorization:": "Bearer {TOKEN}",
+            "X-GitHub-Api-Version": "2022-11-28"
+        }
+      }' \
+      http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
+    ```
+
+=== "GitHub HTTP"
+
+    ``` shell
+    curl -L -X POST \
+      -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+      -d '{
+        "download_url": "https://github.com/{OWNER}/{REPO}/archive/refs/tags/{RELEASE-TAG-NAME}.zip",
+        "headers": {
+            "Accept": "application/octet-stream",
+            "Authorization:": "Basic {YOUR-GITHUB-BASE64ENC-USERNAME-TOKEN}"
+        }
+      }' \
+      http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
+    ```
+
+    !!! note "To obtain the basic auth token you can base64-encode the following string: `{your-github-username}:{your-github-pat-with-read-access-to-the-repository}` "
 
 !!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
