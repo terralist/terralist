@@ -535,7 +535,7 @@ If the URL from which the module files should be downloaded is of types `http` o
       http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
     ```
 
-    !!! note "To obtain the basic auth token you can base64-encode the following string: `{your-github-username}:{your-github-pat-with-read-access-to-the-repository}` "
+    !!! note "To obtain the basic auth token you can base64-encode the following string: `{your-github-username}:{your-github-pat-with-read-access-to-the-repository}`."
 
 !!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
