@@ -53,7 +53,7 @@ jobs:
 
     - name: Compute versions
       id: versions
-      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && startsWith(github.ref, 'refs/tags/') }}
+      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) }}
       env:
         HAS_REF: ${{ startsWith(github.ref, 'refs/tags/') && 'true' || 'false' }}
         IS_PRERELEASE: ${{ contains(github.ref, '-pre.') && 'true' || 'false' }}
