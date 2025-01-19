@@ -137,7 +137,9 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			if err := c.ModuleService.Upload(&dto, body.DownloadUrl); err != nil {
+			header := file.CreateHeader(body.Headers)
+
+			if err := c.ModuleService.Upload(&dto, body.DownloadUrl, header); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})
@@ -217,7 +219,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			// Pass-in local-file URI for go-getter
 			uri := fmt.Sprintf("file://%v", onDiskFile.Path())
-			if err := c.ModuleService.Upload(&dto, uri); err != nil {
+			if err := c.ModuleService.Upload(&dto, uri, nil); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})

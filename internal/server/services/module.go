@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"net/http"
 
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
@@ -24,7 +25,7 @@ type ModuleService interface {
 
 	// Upload loads a new module version to the system
 	// If the module does not exist, it will be created
-	Upload(dto *module.CreateDTO, url string) error
+	Upload(dto *module.CreateDTO, url string, header http.Header) error
 
 	// Delete removes a module with all its data from the system
 	Delete(authorityID uuid.UUID, name string, provider string) error
@@ -71,7 +72,7 @@ func (s *DefaultModuleService) GetVersion(namespace, name, provider, version str
 	return location, nil
 }
 
-func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
+func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header http.Header) error {
 	// Validate version
 	if semVer := version.Version(d.Version); !semVer.Valid() {
 		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
@@ -96,7 +97,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string) error {
 
 	if s.Resolver != nil {
 		// Download module files
-		archive, err := s.Fetcher.Fetch(d.Version, url)
+		archive, err := s.Fetcher.Fetch(d.Version, url, header)
 		if err != nil {
 			return err
 		}
