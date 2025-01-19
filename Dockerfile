@@ -1,4 +1,4 @@
-FROM node:18-alpine3.19 AS frontend
+FROM node:18-alpine3.21 AS frontend
 
 WORKDIR /home/node/terralist
 
@@ -11,7 +11,7 @@ ENV TERRALIST_VERSION=${VERSION}
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.22-alpine3.19 AS backend
+FROM golang:1.22-alpine3.21 AS backend
 
 WORKDIR /go/src/terralist
 
@@ -40,7 +40,7 @@ RUN go build -a -v -o terralist \
       -X 'main.Mode=release'" \
     ./cmd/terralist/main.go
 
-FROM alpine:3.19
+FROM alpine:3.21
 
 RUN addgroup terralist && \
     adduser -S -G terralist terralist && \
