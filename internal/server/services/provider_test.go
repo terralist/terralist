@@ -362,7 +362,12 @@ func TestUploadProvider(t *testing.T) {
 
 								Convey("If the provider files cannot be downloaded", func() {
 									mockFetcher.
-										On("FetchFile", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+										On(
+											"FetchFile",
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("http.Header"),
+										).
 										Return(nil, errors.New(""))
 
 									Convey("When the service is queried", func() {
@@ -376,11 +381,22 @@ func TestUploadProvider(t *testing.T) {
 
 								Convey("If the provider files can be downloaded", func() {
 									mockFetcher.
-										On("FetchFile", mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+										On(
+											"FetchFile",
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("http.Header"),
+										).
 										Return(file.NewEmptyFile("test.txt"), nil)
 
 									mockFetcher.
-										On("FetchFileChecksum", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+										On(
+											"FetchFileChecksum",
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("http.Header"),
+										).
 										Return(file.NewEmptyFile("test-with-checksum.txt"), nil)
 
 									Convey("If the resolver cannot store the provider files", func() {

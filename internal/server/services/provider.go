@@ -242,13 +242,15 @@ func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDT
 func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]file.File, error) {
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
+	headers := file.CreateHeader(d.Headers)
+
 	// Download provider files
-	shaSums, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL)
+	shaSums, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch shaSums file: %v", err)
 	}
 
-	shaSumsSig, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL)
+	shaSumsSig, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
 	}
@@ -262,11 +264,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		p := platform.ToPlatform()
 		osArch := p.String()
 
-		binary, err := s.Fetcher.FetchFileChecksum(
-			fmt.Sprintf("%s_%s.zip", prefix, osArch),
-			p.Location,
-			p.ShaSum,
-		)
+		binary, err := s.Fetcher.FetchFileChecksum(fmt.Sprintf("%s_%s.zip", prefix, osArch), p.Location, p.ShaSum, headers)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch %s file: %v", osArch, err)
 		}

@@ -65,6 +65,7 @@ type CreateProviderDTO struct {
 	ShaSums     CreateProviderShaSumsDTO `json:"shasums"`
 	Protocols   []string                 `json:"protocols"`
 	Platforms   []CreatePlatformDTO      `json:"platforms"`
+	Headers     map[string]string        `json:"headers,omitempty"`
 }
 
 func (d CreateProviderDTO) ToProvider() Provider {
