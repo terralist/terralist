@@ -29,11 +29,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
-
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
       with:
@@ -56,48 +51,47 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build and push development image
-      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && !startsWith(github.ref, 'refs/tags/') }}
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        platforms: linux/arm64,linux/amd64
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ghcr.io/${{ github.repository_owner }}/terralist:dev
-        build-args: |
-          VERSION=dev
-          COMMIT_HASH=${{ env.COMMIT_HASH }}
-          BUILD_TIMESTAMP=${{ env.BUILD_TIMESTAMP }}
+    - name: Compute versions
+      id: versions
+      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) }}
+      env:
+        HAS_REF: ${{ startsWith(github.ref, 'refs/tags/') && 'true' || 'false' }}
+        IS_PRERELEASE: ${{ contains(github.ref, '-pre.') && 'true' || 'false' }}
+        REPO_SLUG: ${{ format('{0}/terralist', github.repository_owner) }}
+      run: |
+        version="dev"
+        if [ "$HAS_REF" = "true" ]; then
+          version="${GITHUB_REF#refs/*/}"
+        fi
 
-    - name: Set release version
-      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && startsWith(github.ref, 'refs/tags/') }}
-      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+        echo "RELEASE_VERSION=${version}" >> $GITHUB_ENV
 
-    - name: Build and push pre-release image
-      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && startsWith(github.ref, 'refs/tags/') && contains(github.ref, '-pre.') }}
+        if [ "$version" = "dev" ]; then
+          echo "result=ghcr.io/$REPO_SLUG:dev" >> $GITHUB_OUTPUT
+        else
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+
+          echo "ghcr.io/$REPO_SLUG:$RELEASE_VERSION" >> $GITHUB_OUTPUT
+
+          if [ "${IS_PRERELEASE}" = "true" ]; then
+            echo "ghcr.io/$REPO_SLUG:pre-latest" >> $GITHUB_OUTPUT
+          else
+            echo "ghcr.io/$REPO_SLUG:latest" >> $GITHUB_OUTPUT
+          fi
+
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Build and push
+      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) }}
       uses: docker/build-push-action@v6
       with:
         context: .
         platforms: linux/arm64,linux/amd64
         push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          ghcr.io/${{ github.repository_owner }}/terralist:${{ env.RELEASE_VERSION }}
-          ghcr.io/${{ github.repository_owner }}/terralist:pre-latest
-        build-args: |
-          VERSION=${{ env.RELEASE_VERSION }}
-          COMMIT_HASH=${{ env.COMMIT_HASH }}
-          BUILD_TIMESTAMP=${{ env.BUILD_TIMESTAMP }}
-      
-    - name: Build and push stable release image
-      if: ${{ contains(fromJson('["push", "pull_request", "workflow_dispatch"]'), github.event_name) && startsWith(github.ref, 'refs/tags/') && (!contains(github.ref, '-pre.')) }}
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        platforms: linux/arm64,linux/amd64
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          ghcr.io/${{ github.repository_owner }}/terralist:${{ env.RELEASE_VERSION }}
-          ghcr.io/${{ github.repository_owner }}/terralist:latest
+        tags: ${{ steps.versions.outputs.result }}
+        cache-to: type=gha,mode=max,ignore-error=true
+        cache-from: type=gha
         build-args: |
           VERSION=${{ env.RELEASE_VERSION }}
           COMMIT_HASH=${{ env.COMMIT_HASH }}
