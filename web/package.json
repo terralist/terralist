@@ -13,7 +13,7 @@
     "@sveltejs/vite-plugin-svelte": "^2.5.3",
     "@tsconfig/svelte": "^5.0.4",
     "autoprefixer": "^10.4.20",
-    "axios": "^1.7.7",
+    "axios": "^1.7.9",
     "postcss": "^8.4.49",
     "semver-compare": "^1.0.0",
     "svelte": "^3.59.2",
