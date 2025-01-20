@@ -14,7 +14,7 @@
     "@tsconfig/svelte": "^5.0.4",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.7",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.1",
     "semver-compare": "^1.0.0",
     "svelte": "^3.59.2",
     "svelte-check": "^3.8.6",
