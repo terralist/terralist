@@ -10,6 +10,7 @@
   version="1.1"
   id="terralist-logo"
 >
+  <!-- svelte-ignore illegal-attribute-character -->
   <sodipodi:namedview
     id="namedview5501"
     pagecolor="#ffffff"

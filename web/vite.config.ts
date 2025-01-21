@@ -9,9 +9,9 @@ export default defineConfig({
       preprocess: [vitePreprocess()],
       onwarn: (warning, handler) => {
           if (warning.code.startsWith('a11y-')) {
-              return; // silence a11y warnings
+            return; // silence a11y warnings
           }
-          handler(warning);
+          handler?.(warning);
       },
     }),
   ],
