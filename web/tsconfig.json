@@ -20,6 +20,9 @@
     "paths": {
       "@/*": ["./src/*"],
     },
+    "types": [
+      "node",
+    ]
   },
   "include": [
     "vite.config.ts",
