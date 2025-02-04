@@ -235,7 +235,7 @@ curl -L -X POST \
     "protocols": ["5.0"],
     "headers": {
       "Accept": "application/octet-stream",
-      "Authorization:": "Bearer {TOKEN}",
+      "Authorization": "Bearer {TOKEN}",
       "X-GitHub-Api-Version": "2022-11-28"
     },
     "shasums": {
@@ -513,7 +513,7 @@ If the URL from which the module files should be downloaded is of types `http` o
         "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{ASSET-ID}",
         "headers": {
             "Accept": "application/octet-stream",
-            "Authorization:": "Bearer {TOKEN}",
+            "Authorization": "Bearer {TOKEN}",
             "X-GitHub-Api-Version": "2022-11-28"
         }
       }' \
@@ -529,7 +529,7 @@ If the URL from which the module files should be downloaded is of types `http` o
         "download_url": "https://github.com/{OWNER}/{REPO}/archive/refs/tags/{RELEASE-TAG-NAME}.zip",
         "headers": {
             "Accept": "application/octet-stream",
-            "Authorization:": "Basic {YOUR-GITHUB-BASE64ENC-USERNAME-TOKEN}"
+            "Authorization": "Basic {YOUR-GITHUB-BASE64ENC-USERNAME-TOKEN}"
         }
       }' \
       http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
