@@ -254,6 +254,7 @@ func (s *Command) run() error {
 			ClientSecret:               flags[GitLabClientSecretFlag].(*cli.StringFlag).Value,
 			GitlabHostWithOptionalPort: flags[GitLabHostFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
+			Groups:                     flags[GitLabGroupsFlag].(*cli.StringFlag).Value,
 		})
 	case "oidc":
 		provider, err = authFactory.NewProvider(auth.OIDC, &oidc.Config{

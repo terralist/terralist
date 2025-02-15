@@ -248,6 +248,19 @@ The (self hosted) GitLab host to use. E.g. gitlab.mycompany.com:8443
 | cli | `--gl-host` |
 | env | `TERRALIST_GL_HOST` |
 
+### `gl-groups`
+
+The GitLab groups names the user must be member of. It must be comma separated with no spaces.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gl-groups` |
+| env | `TERRALIST_GL_GROUPS` |
+
+
 ### `oi-client-id`
 
 The OpenID Connect client ID.
