@@ -61,8 +61,17 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 	if err != nil {
 		return err
 	}
-	user.Name = userdata["name"].(string)
-	user.Email = userdata["email"].(string)
+	if name, ok := userdata["name"].(string); ok {
+		user.Name = name
+	} else {
+		return fmt.Errorf("name not found in user data")
+	}
+
+	if email, ok := userdata["email"].(string); ok {
+		user.Email = email
+	} else {
+		return fmt.Errorf("email not found in user data")
+	}
 
 	// Check if the user is a member of the required groups from GitLab
 	if p.Groups != "" {
