@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"terralist/pkg/auth"
@@ -20,6 +21,8 @@ func (t *Creator) New(config auth.Configurator) (auth.Provider, error) {
 		ClientSecret:       cfg.ClientSecret,
 		GitLabOAuthBaseURL: fmt.Sprintf("https://%s/oauth", cfg.GitlabHostWithOptionalPort),
 		RedirectURL:        strings.TrimSuffix(cfg.TerralistSchemeHostAndPort, "/") + "/v1/api/auth/redirect",
-		Groups:             cfg.Groups,
+		Groups: slices.DeleteFunc(strings.Split(cfg.Groups, ","), func(e string) bool {
+			return e == ""
+		}),
 	}, nil
 }

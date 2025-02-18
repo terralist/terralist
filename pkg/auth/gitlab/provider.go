@@ -24,7 +24,7 @@ type Provider struct {
 	GitLabOAuthBaseURL string
 
 	//Groups is a list of groups the user must be a member of
-	Groups string
+	Groups []string
 }
 
 type tokenResponse struct {
@@ -74,10 +74,9 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 	}
 
 	// Check if the user is a member of the required groups from GitLab
-	if p.Groups != "" {
-		requiredGroups := strings.Split(p.Groups, ",")
+	if len(p.Groups) > 0 {
 		userGroups := userdata["groups"].([]interface{})
-		for _, group := range requiredGroups {
+		for _, group := range p.Groups {
 			for _, userGroup := range userGroups {
 				if group == userGroup.(string) {
 					return nil
