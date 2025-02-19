@@ -22,6 +22,9 @@ type Provider struct {
 
 	//GitLabOAuthBaseURL contains the hostname and an optional port
 	GitLabOAuthBaseURL string
+
+	//Groups is a list of groups the user must be a member of
+	Groups []string
 }
 
 type tokenResponse struct {
@@ -54,11 +57,33 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 	if err := p.PerformAccessTokenRequest(code, &t); err != nil {
 		return err
 	}
-
-	var err error
-	user.Name, user.Email, err = p.PerformUserProfileRequest(t)
+	userdata, err := p.PerformUserProfileRequest(t)
 	if err != nil {
 		return err
+	}
+	if name, ok := userdata["name"].(string); ok {
+		user.Name = name
+	} else {
+		return fmt.Errorf("name not found in user data")
+	}
+
+	if email, ok := userdata["email"].(string); ok {
+		user.Email = email
+	} else {
+		return fmt.Errorf("email not found in user data")
+	}
+
+	// Check if the user is a member of the required groups from GitLab
+	if len(p.Groups) > 0 {
+		userGroups := userdata["groups"].([]interface{})
+		for _, group := range p.Groups {
+			for _, userGroup := range userGroups {
+				if group == userGroup.(string) {
+					return nil
+				}
+			}
+		}
+		return fmt.Errorf("user is not a member of the required groups")
 	}
 
 	return nil
@@ -97,12 +122,12 @@ func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) erro
 	return nil
 }
 
-func (p *Provider) PerformUserProfileRequest(t tokenResponse) (string, string, error) {
+func (p *Provider) PerformUserProfileRequest(t tokenResponse) (map[string]interface{}, error) {
 	userEndpoint := fmt.Sprintf("%s/userinfo", p.GitLabOAuthBaseURL)
 
 	req, err := http.NewRequest(http.MethodGet, userEndpoint, nil)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -110,18 +135,18 @@ func (p *Provider) PerformUserProfileRequest(t tokenResponse) (string, string, e
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return "", "", fmt.Errorf("Gitlab responded with status %d", res.StatusCode)
+		return nil, fmt.Errorf("Gitlab responded with status %d", res.StatusCode)
 	}
 
 	var data map[string]interface{}
 	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return data["name"].(string), data["email"].(string), nil
+	return data, nil
 }

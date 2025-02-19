@@ -11,6 +11,7 @@ type Config struct {
 	ClientSecret               string
 	TerralistSchemeHostAndPort string
 	GitlabHostWithOptionalPort string
+	Groups                     string
 }
 
 func (c *Config) SetDefaults() {}

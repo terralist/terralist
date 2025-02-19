@@ -51,6 +51,7 @@ const (
 	GitLabClientIDFlag     = "gl-client-id"
 	GitLabClientSecretFlag = "gl-client-secret"
 	GitLabHostFlag         = "gl-host"
+	GitLabGroupsFlag       = "gl-groups"
 
 	OidcClientIDFlag     = "oi-client-id"
 	OidcClientSecretFlag = "oi-client-secret"
@@ -213,6 +214,10 @@ var flags = map[string]cli.Flag{
 	GitLabHostFlag: &cli.StringFlag{
 		Description:  "The GitLab host to use.",
 		DefaultValue: "gitlab.com",
+	},
+	GitLabGroupsFlag: &cli.StringFlag{
+		Description:  "The GitLab groups the user must be member. Comma separated.",
+		DefaultValue: "",
 	},
 	OidcClientIDFlag: &cli.StringFlag{
 		Description: "The OIDC Application client ID.",
