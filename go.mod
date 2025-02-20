@@ -1,7 +1,6 @@
 module terralist
 
 go 1.23
-
 require (
 	cloud.google.com/go/storage v1.50.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
@@ -18,7 +17,7 @@ require (
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0
-	google.golang.org/api v0.221.0
+	google.golang.org/api v0.222.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
@@ -110,7 +109,7 @@ require (
 	golang.org/x/time v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250207221924-e9438ea467c6 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.22.5 // indirect
