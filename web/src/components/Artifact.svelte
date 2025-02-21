@@ -3,7 +3,7 @@
 
   import config from "@/config";
   import { indent } from "@/lib/utils";
-  import { useQuery } from '@/lib/hooks';
+  import { useFlag, useQuery } from '@/lib/hooks';
 
   import Icon from "./Icon.svelte";
   import Dropdown from "./Dropdown.svelte";
@@ -12,12 +12,17 @@
 
   import { Artifacts, type ArtifactVersion } from '@/api/artifacts';
   import { computeArtifactUrl } from '@/lib/artifact';
+  import TransparentButton from '@/components/TransparentButton.svelte';
+  import ConfirmationModal from '@/components/ConfirmationModal.svelte';
+  import ErrorModal from '@/components/ErrorModal.svelte';
 
   export let type: "module" | "provider";
   export let namespace: string;
   export let name: string;
   export let provider: string = "";
   export let version: string = "";
+
+  const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 
   const moduleTemplate = `
     module "${name}" {
@@ -46,7 +51,7 @@
     n: 4,
     reverse: true,
   });
-  
+
   const onOptionSelect = (option: string) => {
     const url = computeArtifactUrl({
       id: null,
@@ -79,6 +84,24 @@
       label = `${version} (latest)`
     }
   });
+
+  let deleteErrorMessage: string = ""
+
+  const onDelete = async() => {
+    let result = await Artifacts.delete(namespace, name, provider, version);
+    if (result.status === 'OK') {
+      let updatedVersions = await Artifacts.getAllVersionsForOne(namespace, name, provider);
+
+      if (updatedVersions.data && updatedVersions.data.length > 0) {
+        const lastVersion = updatedVersions.data[updatedVersions.data.length - 1];
+        onOptionSelect(lastVersion)
+      } else {
+        push("/");
+      }
+    } else {
+      deleteErrorMessage = result.message!;
+    }
+  };
 </script>
 
 
@@ -94,7 +117,7 @@
       <div class="flex flex-col lg:flex-row justify-between items-start gap-8 lg:items-center">
         <div class="flex justify-start items-center gap-10 mb-4">
           <div class="flex flex-col justify-center items-center dark:text-white">
-            <Icon 
+            <Icon
               name={type === 'provider' ? 'cloud' : 'tools'}
               width="8rem"
               height="8rem"
@@ -112,6 +135,9 @@
             </h3>
           </div>
         </div>
+        <TransparentButton onClick={showDeleteModal}>
+          <Icon name="trash" />
+        </TransparentButton>
         <div class="w-full lg:w-auto">
           <Dropdown label={label} options={$versions} onSelect={onOptionSelect} />
         </div>
@@ -126,3 +152,16 @@
     </section>
   {/if}
 </main>
+
+<ConfirmationModal
+  title={`Remove artifact ${[namespace, name, provider, version].filter(e => e).join("/")}`}
+  enabled={$deleteModalEnabled}
+  onClose={hideDeleteModal}
+  onSubmit={onDelete}
+>
+  Are you sure?
+</ConfirmationModal>
+
+{#if deleteErrorMessage}
+  <ErrorModal bind:message={deleteErrorMessage} />
+{/if}
