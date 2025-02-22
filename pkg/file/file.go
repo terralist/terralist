@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -20,6 +21,7 @@ type File interface {
 	io.Reader
 	io.Seeker
 	io.Closer
+	fs.File
 
 	// Name returns the name of the file.
 	Name() string
@@ -33,6 +35,13 @@ type InMemoryFile struct {
 	name     string
 	fileInfo fs.FileInfo
 	content  []byte
+	reader   *bytes.Reader
+}
+
+func (f *InMemoryFile) ensureReader() {
+	if f.reader == nil {
+		f.reader = bytes.NewReader(f.content)
+	}
 }
 
 func (f *InMemoryFile) Name() string {
@@ -44,15 +53,23 @@ func (f *InMemoryFile) Metadata() fs.FileInfo {
 }
 
 func (f *InMemoryFile) Read(p []byte) (n int, err error) {
-	return bytes.NewReader(f.content).Read(p)
+	f.ensureReader()
+
+	return f.reader.Read(p)
 }
 
 func (f *InMemoryFile) Seek(offset int64, whence int) (int64, error) {
-	return bytes.NewReader(f.content).Seek(offset, whence)
+	f.ensureReader()
+
+	return f.reader.Seek(offset, whence)
 }
 
 func (f *InMemoryFile) Close() error {
 	return nil
+}
+
+func (f *InMemoryFile) Stat() (fs.FileInfo, error) {
+	return f.Metadata(), nil
 }
 
 // StreamingFile holds a streaming file.
@@ -80,6 +97,46 @@ func (f *StreamingFile) Seek(offset int64, whence int) (int64, error) {
 
 func (f *StreamingFile) Close() error {
 	return f.reader.Close()
+}
+
+func (f *StreamingFile) Stat() (fs.FileInfo, error) {
+	return f.Metadata(), nil
+}
+
+// ArchiveFile holds an archive.
+// It's a wrapper over the StreamingFile which represents the archive itself
+// but it also contains an FS with all the archive files.
+type ArchiveFile struct {
+	archive *StreamingFile
+	fs      *FS
+}
+
+func (f *ArchiveFile) Name() string {
+	return f.archive.Name()
+}
+
+func (f *ArchiveFile) Metadata() fs.FileInfo {
+	return f.archive.Metadata()
+}
+
+func (f *ArchiveFile) Read(p []byte) (n int, err error) {
+	return f.archive.Read(p)
+}
+
+func (f *ArchiveFile) Seek(offset int64, whence int) (int64, error) {
+	return f.archive.Seek(offset, whence)
+}
+
+func (f *ArchiveFile) Close() error {
+	return f.archive.Close()
+}
+
+func (f *ArchiveFile) Stat() (fs.FileInfo, error) {
+	return f.Metadata(), nil
+}
+
+func (f *ArchiveFile) FS() *FS {
+	return f.fs
 }
 
 // OnDiskFile is a File wrapper which is also stored on disk.
@@ -117,6 +174,10 @@ func (f *OnDiskFile) Seek(offset int64, whence int) (int64, error) {
 
 func (f *OnDiskFile) Close() error {
 	return nil
+}
+
+func (f *OnDiskFile) Stat() (fs.FileInfo, error) {
+	return f.Metadata(), nil
 }
 
 func (f *OnDiskFile) ToStreamingFile() (*StreamingFile, error) {
@@ -229,4 +290,36 @@ func NewEmptyFile(name string) File {
 		},
 		content: []byte{},
 	}
+}
+
+// NewInMemoryFile returns a file stored in memory
+func NewInMemoryFile(name string, content []byte) File {
+	return &InMemoryFile{
+		name: name,
+		fileInfo: &BufferFileInfo{
+			name:    name,
+			size:    int64(len(content)),
+			mode:    0644,
+			modTime: time.Now(),
+		},
+		content: content,
+	}
+}
+
+// FileInfoToDirEntry returns the file info relative
+// to the given dir
+func FileInfoToDirEntry(f File, dir string) (fs.DirEntry, error) {
+	fi := f.Metadata()
+
+	relativePath, err := filepath.Rel(dir, fi.Name())
+	if err != nil {
+		return nil, err
+	}
+
+	return fs.FileInfoToDirEntry(&BufferFileInfo{
+		name:    relativePath,
+		size:    fi.Size(),
+		mode:    fi.Mode(),
+		modTime: fi.ModTime(),
+	}), nil
 }
