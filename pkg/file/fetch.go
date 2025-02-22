@@ -45,7 +45,21 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
 	}
-	defer os.RemoveAll(tempDir)
+	// TODO: We need to keep the temp dir to read the files and automatically generate the module
+	// documentation. This is not great, as over time we risk accumulating a lot of garbage.
+	// However, we ask the OS to give us a temp directory, which means the OS would handle
+	// its garbage collection. Unfortunately, this is not ideal, as for some OSes, the
+	// garbage collection of the tmp dir differs, some uses crons, some only does it on reboot,
+	// some never do it.
+	// Terralist runs as a server, so a reboot to clean the disk space is not a solution.
+	// Officially, Terralist is bundled on an Alpine distribution, and, in Alpine, by default
+	// the tmp directory is never cleaned.
+	// We can patch this by manually setting a cron to do it (also enable clean-up on boot might
+	// help), but definitely, that is not a fix. If Terralist is bundled in another OS, the entire
+	// process have to be handled by the user.
+	// We should implement an asynchronous worker that automatically cleans those files for
+	// Terralist, once in a while, so we get the same behavior on any OS we run.
+	// defer os.RemoveAll(tempDir)
 
 	dst := tempDir
 	if kind == file {

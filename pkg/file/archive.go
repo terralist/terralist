@@ -80,7 +80,7 @@ func NewBufferReadSeekCloser(buffer *bytes.Buffer) io.ReadSeekCloser {
 }
 
 // Archive archives a slice of Files and returns the
-// archive as a StreamingFile.
+// archive as an ArchiveFile.
 func Archive(name string, files []File) (File, error) {
 	buffer := new(bytes.Buffer)
 
@@ -113,9 +113,17 @@ func Archive(name string, files []File) (File, error) {
 		return nil, fmt.Errorf("%w: %v", ErrArchiveFailure, err)
 	}
 
-	return &StreamingFile{
-		name:     name,
-		fileInfo: NewBufferFileInfo(buffer, name),
-		reader:   NewBufferReadSeekCloser(buffer),
+	fs, err := NewFS(files)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ArchiveFile{
+		archive: &StreamingFile{
+			name:     name,
+			fileInfo: NewBufferFileInfo(buffer, name),
+			reader:   NewBufferReadSeekCloser(buffer),
+		},
+		fs: fs,
 	}, nil
 }
