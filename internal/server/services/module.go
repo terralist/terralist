@@ -108,14 +108,33 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		}
 	}
 
-	if s.Resolver != nil {
-		// Download module files
-		archive, err := s.Fetcher.Fetch(d.Version, url, header)
-		if err != nil {
-			return err
-		}
-		defer archive.Close()
+	// Download module files
+	archive, err := s.Fetcher.Fetch(d.Version, url, header)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
 
+	var mdDocs string = ""
+	if archiveFile, ok := archive.(*file.ArchiveFile); ok {
+		markdown, err := docs.GetModuleDocumentation(archiveFile.FS(), "")
+		if err != nil {
+			log.Warn().
+				Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
+				Err(err).
+				Msg("failed to generate module markdown documentation")
+		}
+
+		mdDocs = markdown
+	} else {
+		log.Warn().
+			Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
+			Msg("module is not archive, cannot be parsed to extract documentation")
+	}
+
+	m.Versions[0].Documentation = mdDocs
+
+	if s.Resolver != nil {
 		// Upload the module archive to the resolver datastore
 		location, err := s.Resolver.Store(&storage.StoreInput{
 			Reader:      archive,
