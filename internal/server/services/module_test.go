@@ -96,7 +96,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 					moduleService.Resolver = nil
 
 					Convey("When the service is queried", func() {
-						url, err := moduleService.GetVersion(namespace, name, provider, version)
+						url, err := moduleService.GetVersionURL(namespace, name, provider, version)
 
 						Convey("A download URL should be returned", func() {
 							So(url, ShouldNotBeNil)
@@ -114,7 +114,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 						Return(location, nil)
 
 					Convey("When the service is queried", func() {
-						url, err := moduleService.GetVersion(namespace, name, provider, version)
+						url, err := moduleService.GetVersionURL(namespace, name, provider, version)
 
 						Convey("A download URL should be returned", func() {
 							So(url, ShouldNotBeNil)
@@ -130,7 +130,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 						Return("", errors.New(""))
 
 					Convey("When the service is queried", func() {
-						url, err := moduleService.GetVersion(namespace, name, provider, version)
+						url, err := moduleService.GetVersionURL(namespace, name, provider, version)
 
 						Convey("An error should be returned", func() {
 							So(url, ShouldBeNil)
@@ -146,7 +146,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					url, err := moduleService.GetVersion(namespace, name, provider, version)
+					url, err := moduleService.GetVersionURL(namespace, name, provider, version)
 
 					Convey("An error should be returned", func() {
 						So(url, ShouldBeNil)

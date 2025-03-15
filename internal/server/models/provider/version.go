@@ -3,6 +3,7 @@ package provider
 import (
 	"strings"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -33,6 +34,12 @@ func (v Version) ToVersionListVersionDTO() VersionListVersionDTO {
 		Version:   v.Version,
 		Protocols: strings.Split(v.Protocols, ","),
 		Platforms: platforms,
+	}
+}
+
+func (v Version) ToArtifactVersion() artifact.Version {
+	return artifact.Version{
+		Tag: v.Version,
 	}
 }
 
