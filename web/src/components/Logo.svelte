@@ -226,6 +226,7 @@
   </g>
   <metadata id="terralist-logo-metadata">
     <rdf:RDF>
+      <!-- svelte-ignore illegal-attribute-character -->
       <cc:Work rdf:about="">
         <dc:title>terralist/logo</dc:title>
       </cc:Work>

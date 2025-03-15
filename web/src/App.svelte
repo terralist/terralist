@@ -3,14 +3,14 @@
     push,
     replace,
     type ConditionsFailedEvent,
-    type RouteLoadingEvent,
-  } from "svelte-spa-router";
+    type RouteLoadingEvent
+  } from 'svelte-spa-router';
 
-  import routes from "./routes";
+  import routes, { isUserData } from './routes';
 
-  let title: string = "Terralist";
+  let title: string = 'Terralist';
 
-  let currentRoute: string = undefined;
+  let currentRoute: string | undefined;
 
   const onRouteLoading = (e: RouteLoadingEvent) => {
     if (e?.detail?.location === currentRoute) {
@@ -25,8 +25,12 @@
   };
 
   const onRouteFailure = (e: ConditionsFailedEvent) => {
-    if (e.detail?.userData) {
-      replace(e.detail.userData["onFailureRedirectTo"]);
+    if (
+      e.detail?.userData &&
+      isUserData(e.detail.userData) &&
+      e.detail.userData.onFailureRedirectTo
+    ) {
+      replace(e.detail.userData.onFailureRedirectTo);
     }
   };
 </script>
@@ -39,8 +43,7 @@
   <Router
     {routes}
     on:routeLoading={onRouteLoading}
-    on:conditionsFailed={onRouteFailure}
-  />
+    on:conditionsFailed={onRouteFailure} />
   <!-- <Header /> -->
   <!-- <Dashboard /> -->
 </main>

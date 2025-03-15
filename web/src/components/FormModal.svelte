@@ -42,12 +42,12 @@
       entry.value = entriesRefs[index].value;
 
       let result = validateEntry(entry);
-      
+
       if (!result.passed) {
         entriesRefs[index].highlight("error");
         entriesErrors[index] = result.message;
       } else {
-        if (entry.value.length > 0) {
+        if ((entry.value?.length ?? 0) > 0) {
           entriesRefs[index].highlight("success");
         }
 

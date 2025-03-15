@@ -3,10 +3,18 @@ import { createClient, handleResponse, handleError } from "@/api/api.utils";
 import type { Key } from "@/api/keys";
 import type { ApiKey } from "@/api/apiKeys";
 
-interface Authority {
-  id?: string,
+type Authority = {
+  id: string,
   name: string,
   policyUrl: string,
+  keys: Key[],
+  apiKeys: ApiKey[]
+}
+
+type UpdateAuthority = {
+  id: string,
+  name?: string,
+  policyUrl?: string,
   keys?: Key[],
   apiKeys?: ApiKey[]
 };
@@ -32,7 +40,7 @@ const actions = {
     .then(handleResponse<Authority>)
     .catch(handleError),
 
-  update: (authority: Authority) => {
+  update: (authority: UpdateAuthority) => {
       if (!authority.id) {
         return Promise.reject(handleError(new AxiosError(AxiosError.ERR_BAD_REQUEST, "400")))
       }
@@ -65,6 +73,7 @@ const Authorities = {
 
 export {
   type Authority,
+  type UpdateAuthority,
   type Key,
   type ApiKey,
   Authorities,

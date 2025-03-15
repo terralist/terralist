@@ -21,7 +21,7 @@
     ($open ? resetOpen : setOpen)();
   };
 
-  let currentTheme: Theme = undefined;
+  let currentTheme: Theme | undefined;
   let themeUnsubscriber: Unsubscriber;
 
   onMount(() => {

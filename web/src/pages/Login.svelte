@@ -5,19 +5,21 @@
   import Button from '@/components/Button.svelte';
   import Logo from "@/components/Logo.svelte";
 
-  let providers: string[] = config.runtime.TERRALIST_OAUTH_PROVIDERS.sort();
+  let providers: string[] = config.runtime.TERRALIST_OAUTH_PROVIDERS?.sort() ?? [];
 
-  let formRef: { [provider: string]: HTMLFormElement } = Object.fromEntries(providers.map(p => [p, null]));
+  let formRef: { [provider: string]: HTMLFormElement | null } = Object.fromEntries(providers.map(p => [p, null]));
 
   const hostUrl: string = config.runtime.TERRALIST_HOST_URL;
   const authorizationEndpoint: string = config.runtime.TERRALIST_AUTHORIZATION_ENDPOINT;
 
-  const providersDisplayName = {
-    "bitbucket": "BitBucket",
-    "github": "GitHub",
-    "gitlab": "GitLab",
-    "google": "Google",
-    "oidc": "OIDC",
+  const providersDisplayName: {
+    [provider: string]: string
+  } = {
+    bitbucket: "BitBucket",
+    github: "GitHub",
+    gitlab: "GitLab",
+    google: "Google",
+    oidc: "OIDC",
   };
 
   let loginDisabled: boolean = false;
@@ -25,7 +27,7 @@
   const onLogin = async (provider: string) => {
     if (!loginDisabled) {
       loginDisabled = true;
-      formRef[provider].submit();
+      formRef[provider]?.submit();
     }
   };
 </script>

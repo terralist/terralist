@@ -23,6 +23,7 @@ const validateEntry = (entry: FormEntry): ValidationResult => {
   if (!entry.required && !entry.value) {
     return {
       passed: true,
+      message: '',
     } satisfies ValidationResult;
   }
 
@@ -40,7 +41,8 @@ const validateEntry = (entry: FormEntry): ValidationResult => {
   }
 
   return {
-    passed: true
+    passed: true,
+    message: '',
   } satisfies ValidationResult;
 };
 

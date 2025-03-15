@@ -1,9 +1,9 @@
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { createClient, handleError, handleResponse } from "@/api/api.utils";
 
-interface ApiKey {
-  id: string,
-  name: string,
+type ApiKey = {
+  id: string;
+  name: string;
 }
 
 const client = createClient({

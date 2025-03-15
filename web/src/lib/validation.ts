@@ -1,13 +1,13 @@
 type ValidationResult = {
-  passed: boolean,
-  message?: string,
+  passed: boolean;
+  message: string;
 };
 
 type Validation<T> = (value: T) => ValidationResult;
 
 const StringMinimumLengthValidation = (min: number, exclusive: boolean = false): Validation<string> => {
   const errorMessage = `Minimum length should be ${exclusive ? "greater" : "greater or equal"} than ${min}.`
-  
+
   return (value: string): ValidationResult => {
     if (exclusive) {
       return {

@@ -3,21 +3,32 @@ import { decodeError, type ErrorCode } from "./api.errors";
 import { transformKeys, snakeToCamel, camelToSnake } from "@/lib/conversions";
 import axios from "axios";
 
-interface Result<T> {
-  status: 'OK' | 'ERROR',
-  message?: string,
-  data?: T,
-  errors?: string[],
+type ResultOK<T> = {
+  status: 'OK',
+  message: string,
+  data: T,
+  errors: [],
 };
 
-const withSuccess = <T>(data: T): Result<T> => {
+type ResultError = {
+  status: 'ERROR',
+  data?: never,
+  message: string,
+  errors: string[],
+};
+
+type Result<T> = ResultOK<T> | ResultError;
+
+const withSuccess = <T>(data: T): ResultOK<T> => {
   return {
     status: 'OK',
     data: data,
-  } satisfies Result<T>;
+    message: '',
+    errors: [],
+  };
 };
 
-const withError = (errorCode: ErrorCode = undefined, data?: any): Result<undefined> => {
+const withError = <T>(errorCode?: ErrorCode, data?: any): ResultError => {
   let errors: string[] = [];
   if (typeof data === 'object' && data.errors) {
     errors = data.errors;
@@ -29,9 +40,9 @@ const withError = (errorCode: ErrorCode = undefined, data?: any): Result<undefin
 
   return {
     status: 'ERROR',
-    message: decodeError(errorCode),
+    message: decodeError(errorCode ?? 500),
     errors: errors,
-  } satisfies Result<undefined>;
+  };
 };
 
 const handleResponse = <T>(response: AxiosResponse<T>): Result<T> => {
@@ -42,7 +53,7 @@ const handleResponse = <T>(response: AxiosResponse<T>): Result<T> => {
   return withError(response.status, response.data);
 }
 
-const handleError = (error: AxiosError): Result<undefined> => {
+const handleError = (error: AxiosError): ResultError => {
   if (error.response) {
     return withError(error.response?.status, error.response?.data);
   }
@@ -81,6 +92,8 @@ const createClient = (config?: CreateAxiosDefaults<any>): AxiosInstance => {
 
 export {
   type Result,
+  type ResultOK,
+  type ResultError,
   handleResponse,
   handleError,
   createClient,

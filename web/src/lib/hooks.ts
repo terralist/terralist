@@ -1,4 +1,4 @@
-import { writable, type Readable, type Writable } from "svelte/store";
+import { readable, writable, type Readable, type Writable } from "svelte/store";
 import { onMount } from "svelte";
 import type { Result } from "@/api/api.utils";
 
@@ -43,37 +43,44 @@ const useToggle: (
   return [toggle, flip];
 }
 
-interface QueryResult<T> {
-  data?: Readable<T>,
-  isLoading: Readable<boolean>,
-  error?: Readable<string>,
-};
+type QueryLoading = {
+  data?: never;
+  isLoading: true;
+  error?: never;
+}
+
+type QueryOK<T> = {
+  data: T;
+  isLoading: false;
+  error?: never;
+}
+
+type QueryError = {
+  data?: never;
+  isLoading: false;
+  error: string;
+}
+
+type QueryResult<T> = QueryLoading | QueryOK<T> | QueryError;
 
 const useQuery: <T>(
-  query: (...args: any[]) => Promise<Result<T> | Result<undefined>>,
+  query: (...args: any[]) => Promise<Result<T>>,
   ...args: any[]
-) => QueryResult<T> = <T>(query: (...args: any[]) => Promise<Result<T> | Result<undefined>>, ...args: any[]) => {
-  let data: Writable<T> = writable(null);
-  let isLoading: Writable<boolean> = writable(true);
-  let error: Writable<string> = writable(null);
+) => Readable<QueryResult<T>> = <T>(query: (...args: any[]) => Promise<Result<T>>, ...args: any[]) => {
+  let result: Writable<QueryResult<T>> = writable({ isLoading: true } as QueryLoading);
 
   onMount(async () => {
     const { data: content, status, message } = await query(...args);
-    
-    if (status === "OK") {
-      data.set(content);
-    } else {
-      error.set(message);
+
+    if (status == "ERROR") {
+      result.set({ isLoading: false, error: message } as QueryError);
+      return;
     }
 
-    isLoading.set(false);
+    result.set({ data: content, isLoading: false } as QueryOK<T>);
   });
 
-  return {
-    data: data,
-    isLoading: isLoading,
-    error: error,
-  };
+  return result;
 };
 
 export {

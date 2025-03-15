@@ -1,19 +1,19 @@
 import { Auth } from "@/api/auth";
 
-interface Session {
-  [k: string]: string,
+type Session = {
+  [k: string]: string;
 }
 
-interface UserSession {
-  userName: string,
-  userEmail: string,
+type UserSession = {
+  userName: string;
+  userEmail: string;
 }
 
-const sessionKeys = {
+const sessionKeys: Session = {
   userName: "user.name",
   userEmail: "user.email",
   expireAt: "expire_at",
-} satisfies Session;
+};
 
 
 const actions = {
@@ -22,6 +22,7 @@ const actions = {
       Object
         .entries(sessionKeys)
         .map(([key, value]) => [key, sessionStorage.getItem(`_auth.session.${value}`)])
+        .filter(([_, value]) => value != null)
     )
   },
 
@@ -60,7 +61,7 @@ const isAvailable = (): boolean => {
 const UserStore = {
   isAvailable: () => isAvailable(),
 
-  get: (): UserSession => {
+  get: (): UserSession | null => {
     if (!isAvailable()) {
       return null;
     }
@@ -76,7 +77,7 @@ const UserStore = {
   refresh: async () => {
     const { data, status } = await Auth.getSession();
 
-    if (status === 'OK') {
+    if (status == 'OK') {
       const SESSION_EXPIRE_AFTER_MINUTES: number = 1;
 
       const expireAt = new Date();

@@ -230,10 +230,11 @@
           </g>`
     }
   ];
-  
+
   let icon = icons.find((e) => e.name === name);
 </script>
 
+{#if icon}
 <svg
   class="fill-slate-600 dark:fill-slate-200 {$$props.class}"
   {width}
@@ -241,3 +242,4 @@
   viewBox="0 0 {icon.box} {icon.box}">
   {@html icon.svg}
 </svg>
+{/if}

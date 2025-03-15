@@ -1,11 +1,11 @@
 import { AxiosError } from "axios";
 import { createClient, handleResponse, handleError } from "@/api/api.utils";
 
-interface Key {
-  id?: string,
-  keyId: string,
-  asciiArmor?: string,
-  trustSignature?: string,
+type Key = {
+  id: string;
+  keyId: string;
+  asciiArmor: string;
+  trustSignature: string;
 }
 
 const client = createClient({

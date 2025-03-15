@@ -46,7 +46,7 @@
 
   const update = (entries: Map<string, any>) => {
     onUpdate(
-      authority.id, 
+      authority.id,
       {...authority, policyUrl: entries.get("policyUrl")}
     );
   };
@@ -71,7 +71,13 @@
   };
 
   const onKeyDelete = async (id: string) => {
-    let result = await Keys.delete(authority.id, authority.keys.find((k: KeyT) => k.id === id).id);
+    const key = authority.keys.find((k: KeyT) => k.id === id);
+    if (!key) {
+      errorMessage = `Could not select key with ID: ${id}.`
+      return;
+    }
+
+    let result = await Keys.delete(authority.id, key.id);
 
     if (result.status === 'OK') {
       authority.keys = [...authority.keys.filter((k: KeyT) => k.id !== id)];
@@ -91,7 +97,13 @@
   };
 
   const onApiKeyDelete = async (id: string) => {
-    let result = await ApiKeys.delete(authority.id, authority.apiKeys.find((ak: ApiKeyT) => ak.id === id).id);
+    const apiKey = authority.apiKeys.find((ak: ApiKeyT) => ak.id === id);
+    if (!apiKey) {
+      errorMessage = `Could not select API key with ID: ${id}.`
+      return;
+    }
+
+    let result = await ApiKeys.delete(authority.id, apiKey.id);
 
     if (result.status === 'OK') {
       authority.apiKeys = [...authority.apiKeys.filter((ak: ApiKeyT) => ak.id !== id)];

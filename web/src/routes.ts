@@ -1,12 +1,37 @@
-import type { RouteDetail, RoutePrecondition } from "svelte-spa-router";
-import { wrap } from "svelte-spa-router/wrap";
+import type { RouteDetail, RoutePrecondition } from 'svelte-spa-router';
+import { wrap } from 'svelte-spa-router/wrap';
 
-import config from "@/config";
+import config from '@/config';
 
-import Login from "@/pages/Login.svelte";
-import Loading from "@/pages/Loading.svelte";
+import Login from '@/pages/Login.svelte';
+import Loading from '@/pages/Loading.svelte';
 
-import { UserStore } from "@/lib/auth";
+import { UserStore } from '@/lib/auth';
+
+type UserDataBase = {
+  __isUserData: true;
+};
+
+type UserData = {
+  onFailureRedirectTo: string;
+};
+
+type UserDataWrapper = UserDataBase & UserData;
+
+function newUserData(data: UserData): UserDataWrapper {
+  return {
+    __isUserData: true,
+    ...data
+  } as UserDataWrapper;
+}
+
+function isUserData(arg: unknown): arg is UserData {
+  return (
+    (arg as UserDataBase)?.__isUserData != undefined &&
+    typeof (arg as UserDataBase).__isUserData == 'boolean' &&
+    (arg as UserDataBase).__isUserData == true
+  );
+}
 
 const baseConditions: RoutePrecondition[] = [
   async (_: RouteDetail) => {
@@ -16,7 +41,7 @@ const baseConditions: RoutePrecondition[] = [
   async (_: RouteDetail) => {
     await UserStore.refresh();
     return true;
-  },
+  }
 ];
 
 const isAuthenticatedCondition = (shouldBe: boolean = true) => {
@@ -37,60 +62,65 @@ const processLogOut = () => {
 };
 
 const routes = {
-  "/": wrap({
-    asyncComponent: () => import("@/pages/Dashboard.svelte"),
+  '/': wrap({
+    asyncComponent: () => import('@/pages/Dashboard.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
-    userData: {
-      onFailureRedirectTo: "/login",
-    },
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
   }),
-  "/login": wrap({
+  '/login': wrap({
     component: Login,
     conditions: baseConditions.concat([isAuthenticatedCondition(false)]),
-    userData: {
-      onFailureRedirectTo: "/",
-    },
+    userData: newUserData({
+      onFailureRedirectTo: '/'
+    })
   }),
-  "/logout": wrap({
+  '/logout': wrap({
     component: Loading,
-    conditions: baseConditions.concat([isAuthenticatedCondition(), processLogOut()]),
-    userData: {
-      onFailureRedirectTo: "/login",
-    },
+    conditions: baseConditions.concat([
+      isAuthenticatedCondition(),
+      processLogOut()
+    ]),
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
   }),
-  "/settings": wrap({
-    asyncComponent: () => import("@/pages/Settings.svelte"),
+  '/settings': wrap({
+    asyncComponent: () => import('@/pages/Settings.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
-    userData: {
-      onFailureRedirectTo: "/login",
-    },
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
   }),
-  "/modules/:namespace/:name/:provider/:version?": wrap({
-    asyncComponent: () => import("@/pages/Artifact.svelte"),
+  '/modules/:namespace/:name/:provider/:version?': wrap({
+    asyncComponent: () => import('@/pages/Artifact.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
-    userData: {
-      onFailureRedirectTo: "/login",
-    },
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
   }),
-  "/providers/:namespace/:name/:version?": wrap({
-    asyncComponent: () => import("@/pages/Artifact.svelte"),
+  '/providers/:namespace/:name/:version?': wrap({
+    asyncComponent: () => import('@/pages/Artifact.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
-    userData: {
-      onFailureRedirectTo: "/login",
-    },
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
   }),
-  "*": wrap({
-    asyncComponent: () => import("@/pages/Error404.svelte"),
+  '*': wrap({
+    asyncComponent: () => import('@/pages/Error404.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
-    userData: {
-      onFailureRedirectTo: "/login",
-    },
-  }),
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
+  })
 };
+
+export { type UserData, isUserData };
 
 export default routes;

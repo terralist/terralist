@@ -1,4 +1,4 @@
-import { createClient, handleResponse, handleError, type Result } from "@/api/api.utils";
+import { createClient, handleResponse, handleError, type Result, type ResultOK } from '@/api/api.utils'
 
 import cmp from 'semver-compare';
 
@@ -11,7 +11,7 @@ interface Artifact {
   name: string,
   provider?: string,
   type: "provider" | "module",
-  versions?: ArtifactVersion[],
+  versions: ArtifactVersion[],
   createdAt: Date,
   updatedAt: Date,
 };
@@ -29,26 +29,30 @@ const client = createClient({
   timeout: 120000,
 });
 
-const setDateAttributes = (r: Result<Artifact[]> | Result<Artifact>): Result<Artifact[]> | Result<Artifact> => {
+const setDateAttributes = <T extends (Artifact | Artifact[])>(r: Result<T>): Result<T> => {
   const {data, ...rest} = r;
+
+  if (!data) {
+    return r;
+  }
 
   if (Array.isArray(data)) {
     return {
       data: data.map(createDateAttributes),
       ...rest
-    } as Result<Artifact[]>;
+    } as Result<T>;
   }
 
   return {
     data: createDateAttributes(data),
     ...rest
-  } as Result<Artifact>;
+  } as Result<T>;
 };
 
 const sortArtifactsVersions = (r: Result<Artifact[]>): Result<Artifact[]> => {
   const {data: artifacts, ...rest} = r;
 
-  const result = artifacts.map(
+  const result = artifacts?.map(
     a => {
       return {
         ...a,
@@ -64,6 +68,10 @@ const sortArtifactsVersions = (r: Result<Artifact[]>): Result<Artifact[]> => {
 };
 
 const sortVersions = (r: Result<ArtifactVersion[]>): Result<ArtifactVersion[]> => {
+  if (r.status == 'ERROR') {
+    return r;
+  }
+
   const {data: versions, ...rest} = r;
 
   return {

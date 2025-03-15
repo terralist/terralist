@@ -13,6 +13,7 @@
   class="bg-transparent p-2 flex items-center lg:block fill-slate-200 lg:fill-slate-900 {$$props.class}"
   on:click={onClick}
 >
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <span
     on:mouseover={() => {show = true}}
     on:mouseout={() => {show = false}}
