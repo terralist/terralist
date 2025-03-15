@@ -5,6 +5,11 @@ const (
 	TypeProvider = "provider"
 )
 
+type Version struct {
+	Tag           string `json:"tag"`
+	Documentation string `json:"documentation"`
+}
+
 type Artifact struct {
 	ID        string   `json:"id"`
 	FullName  string   `json:"full_name"`

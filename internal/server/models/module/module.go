@@ -78,7 +78,7 @@ type ModuleDTO struct {
 }
 
 type CreateDTO struct {
-	VersionDTO
+	VersionCreateDTO
 	AuthorityID uuid.UUID
 	Name        string `json:"name"`
 	Provider    string `json:"provider"`

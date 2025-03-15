@@ -1,6 +1,7 @@
 package module
 
 import (
+	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -8,17 +9,25 @@ import (
 
 type Version struct {
 	entity.Entity
-	ModuleID     uuid.UUID
-	Module       Module
-	Version      string       `gorm:"not null"`
-	Location     string       `gorm:"not null"`
-	Providers    []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Dependencies []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Submodules   []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	ModuleID      uuid.UUID
+	Module        Module
+	Version       string       `gorm:"not null"`
+	Location      string       `gorm:"not null"`
+	Documentation string       `gorm:"not null"`
+	Providers     []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Dependencies  []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Submodules    []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Version) TableName() string {
 	return "module_versions"
+}
+
+func (v Version) ToDTO() VersionDTO {
+	return VersionDTO{
+		Version:       v.Version,
+		Documentation: v.Documentation,
+	}
 }
 
 type RootDTO struct {
@@ -27,6 +36,18 @@ type RootDTO struct {
 }
 
 type VersionDTO struct {
+	Version       string `json:"version"`
+	Documentation string `json:"documentation"`
+}
+
+func (v VersionDTO) ToArtifactVersion() artifact.Version {
+	return artifact.Version{
+		Tag:           v.Version,
+		Documentation: string(v.Documentation),
+	}
+}
+
+type VersionCreateDTO struct {
 	Version    string         `json:"version"`
 	Root       RootDTO        `json:"root,omitempty"`
 	Submodules []SubmoduleDTO `json:"submodules,omitempty"`
