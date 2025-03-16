@@ -1,8 +1,38 @@
 {
+  // Backend
   "gopls": {
     "buildFlags": [
       "-tags=mocks",
     ]
   },
-  "go.testTags": "mocks"
+  "go.testTags": "mocks",
+
+  // Frontend
+  "eslint.enable": true,
+  "eslint.options": {
+    "configPath": "./web/eslint.config.mjs",
+  },
+  "eslint.workingDirectories": [ "./web", ],
+  "eslint.format.enable": true,
+  "eslint.useFlatConfig": true,
+  "prettier.documentSelectors": ["./web/**/*"],
+  "prettier.useEditorConfig": false,
+  "prettier.useTabs": false,
+  "prettier.configPath": "./web/.prettierrc",
+  "svelte.enable-ts-plugin": true,
+  "[javascript]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[svelte]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": false,
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
 }
