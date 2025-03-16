@@ -89,7 +89,7 @@
   {:else if !versions.includes(version)}
     <FullPageError
       code={404}
-      message={'This artifact version does not currently exist on the server.'} />
+      message="This artifact version does not currently exist on the server." />
   {:else}
     <section class="mt-20 lg:mx-20 flex flex-col gap-8">
       <div

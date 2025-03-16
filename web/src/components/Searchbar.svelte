@@ -16,7 +16,7 @@
 
   let query: string = '';
 
-  let searchbar: any;
+  let searchbar: Input | null = null;
   let searchEntries: (HTMLAnchorElement | null)[] = Array.from(
     { length: 10 },
     () => null
@@ -31,7 +31,7 @@
   const useMetaKey = ['macOS', 'iPadOS', 'iOS'].includes(Device.OSName);
 
   const filterArtifacts = () => {
-    const sanitizer: (s: String | undefined) => string = s =>
+    const sanitizer: (s: string | undefined) => string = s =>
       s ? s.toLowerCase().replace(/\s+/g, '') : '';
 
     filteredArtifacts = artifacts
@@ -43,7 +43,7 @@
 
   const triggerSearchbar = () => {
     filterArtifacts();
-    searchbar.focus();
+    searchbar?.focus();
     open = true;
   };
 
@@ -70,32 +70,32 @@
 
   const escapeSearchbar = () => {
     open = false;
-    searchbar.blur();
+    searchbar?.blur();
   };
 </script>
 
 {#if open}
   <KeyboardAction
-    trigger={'ArrowUp'}
+    trigger="ArrowUp"
     action={moveSelectorUp}
     preventDefault={true} />
   <KeyboardAction
-    trigger={'ArrowDown'}
+    trigger="ArrowDown"
     action={moveSelectorDown}
     preventDefault={true} />
-  <KeyboardAction trigger={'Enter'} action={openEntry} preventDefault={true} />
+  <KeyboardAction trigger="Enter" action={openEntry} preventDefault={true} />
   <KeyboardAction
-    trigger={'Escape'}
+    trigger="Escape"
     action={escapeSearchbar}
     preventDefault={true} />
 {:else if useMetaKey}
   <KeyboardAction
-    trigger={'Meta+/'}
+    trigger="Meta+/"
     action={triggerSearchbar}
     preventDefault={true} />
 {:else}
   <KeyboardAction
-    trigger={'Control+/'}
+    trigger="Control+/"
     action={triggerSearchbar}
     preventDefault={true} />
 {/if}
@@ -129,49 +129,47 @@
           <div class="py-1 px-5">0 results found.</div>
         {/if}
 
-        {#each filteredArtifacts as artifact, index}
-          {#key artifact.id}
-            <a
-              on:click={escapeSearchbar}
-              href={computeArtifactUrl(artifact)}
-              bind:this={searchEntries[index]}
-              use:link
-              tabindex={index}
-              class="
-                relative
-                cursor-pointer
-                hover:bg-teal-700
-                hover:text-white
-                hover:fill-white
-                focus:bg-teal-700
-                focus:text-white
-                focus:fill-white
-                select-none
-                py-1
-                px-2
-                flex
-                flex-row
-                justify-between
-              ">
-              <span class="block truncate hover:underline focus:underline">
-                {artifact.fullName}
-              </span>
-              {#if artifact.type === 'provider'}
-                <div
-                  class="absolute top-1 right-2 flex justify-between gap-1 items-center fill-inherit">
-                  <span class="text-xs">(provider)</span>
-                  <Icon name="cloud" class="fill-inherit" />
-                </div>
-              {/if}
-              {#if artifact.type === 'module'}
-                <div
-                  class="absolute top-1 right-2 flex justify-between gap-1 items-center fill-inherit">
-                  <span class="text-xs">(module)</span>
-                  <Icon name="tools" class="fill-inherit" />
-                </div>
-              {/if}
-            </a>
-          {/key}
+        {#each filteredArtifacts as artifact, index (artifact.id)}
+          <a
+            on:click={escapeSearchbar}
+            href={computeArtifactUrl(artifact)}
+            bind:this={searchEntries[index]}
+            use:link
+            tabindex={index}
+            class="
+              relative
+              cursor-pointer
+              hover:bg-teal-700
+              hover:text-white
+              hover:fill-white
+              focus:bg-teal-700
+              focus:text-white
+              focus:fill-white
+              select-none
+              py-1
+              px-2
+              flex
+              flex-row
+              justify-between
+            ">
+            <span class="block truncate hover:underline focus:underline">
+              {artifact.fullName}
+            </span>
+            {#if artifact.type === 'provider'}
+              <div
+                class="absolute top-1 right-2 flex justify-between gap-1 items-center fill-inherit">
+                <span class="text-xs">(provider)</span>
+                <Icon name="cloud" class="fill-inherit" />
+              </div>
+            {/if}
+            {#if artifact.type === 'module'}
+              <div
+                class="absolute top-1 right-2 flex justify-between gap-1 items-center fill-inherit">
+                <span class="text-xs">(module)</span>
+                <Icon name="tools" class="fill-inherit" />
+              </div>
+            {/if}
+          </a>
         {/each}
       </div>
     {/if}

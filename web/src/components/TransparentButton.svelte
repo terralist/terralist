@@ -26,6 +26,6 @@
     disabled:hover:dark:bg-transparent
     {$$props.class}
   "
-  disabled={disabled}>
+  {disabled}>
   <slot></slot>
 </button>

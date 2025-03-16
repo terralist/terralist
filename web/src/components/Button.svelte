@@ -29,7 +29,6 @@
     {$$props.class}
   "
   on:click={onClick}
-  {disabled}
->
+  {disabled}>
   <slot></slot>
 </button>

@@ -166,10 +166,8 @@
     {#if pageCount > 0}
       <div
         class="mt-4 flex flex-col justify-center items-center sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {#each filteredArtifacts as artifact}
-          {#key artifact.id}
-            <ArtifactCard {artifact} />
-          {/key}
+        {#each filteredArtifacts as artifact (artifact.id)}
+          <ArtifactCard {artifact} />
         {/each}
       </div>
     {/if}
@@ -186,7 +184,7 @@
           <Icon name="arrow-left" width="1.25rem" height="1.25rem" />
         </button>
 
-        {#each pages as page}
+        {#each pages as page (page)}
           <button
             class="grid place-items-center w-8 h-8 p-0 border-0 rounded cursor-pointer bg-slate-200 text-zinc-800 dark:bg-slate-800 dark:text-slate-200 {currentPage ===
             page

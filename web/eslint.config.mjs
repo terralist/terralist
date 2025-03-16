@@ -6,8 +6,10 @@ import eslint from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import prettierRecommended from 'eslint-plugin-prettier/recommended'
 import tsparser from '@typescript-eslint/parser'
+import svelteParser from 'svelte-eslint-parser'
 import stylisticTs from '@stylistic/eslint-plugin-ts'
 import svelte from 'eslint-plugin-svelte'
+import globals from 'globals'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,12 +26,26 @@ export default defineConfig([
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,
+  svelte.configs['flat/recommended'],
   prettierRecommended,
-  svelte.configs.recommended,
+  svelte.configs['flat/prettier'],
   {
-    files: ['**/*.svelte'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      parser: svelteParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.svelte'],
+      },
+      globals: {
+        ...globals.browser,
+      }
+    },
   },
   {
+    ignores: ['**/*.svelte'],
+    files: ['**/*.ts'],
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',

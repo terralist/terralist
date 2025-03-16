@@ -22,16 +22,23 @@
 
   const [createModalEnabled, showCreateModal, hideCreateModal] = useFlag(false);
 
-  const onAuthorityCreateSubmit = async (entries: Map<string, any>) => {
-    let result = await Authorities.create(
-      entries.get('name'),
-      entries.get('policyUrl')
-    );
+  const onAuthorityCreateSubmit = async (
+    entries: Map<string, string | string[] | undefined>
+  ) => {
+    const nameValue = entries.get('name');
+    const name = Array.isArray(nameValue) ? nameValue.at(0) : nameValue;
+
+    const policyUrlValue = entries.get('policyUrl');
+    const policyUrl = Array.isArray(policyUrlValue)
+      ? policyUrlValue.at(0)
+      : policyUrlValue;
+
+    let result = await Authorities.create(name ?? '', policyUrl ?? '');
 
     if (result.status === 'OK') {
-      $authorities = [...($authorities ?? []), result.data];
+      authorities.set([...($authorities ?? []), result.data]);
     } else {
-      $errorMessage = result.message;
+      errorMessage.set(result.message);
     }
   };
 
@@ -39,33 +46,33 @@
     let result = await Authorities.update(authority);
 
     if (result.status === 'OK') {
-      $authorities = [
+      authorities.set([
         ...($authorities?.map(a => (a.id == authority.id ? authority : a)) ??
           [])
-      ];
+      ]);
     } else {
-      $errorMessage = result.message;
+      errorMessage.set(result.message);
     }
   };
 
   const onAuthorityDeleteSubmit = async (id: string) => {
     if (!$authorities) {
-      $errorMessage = `No authorities fetched. Don't know what to delete.`;
+      errorMessage.set(`No authorities fetched. Don't know what to delete.`);
       return;
     }
 
     const authority = $authorities.find((a: AuthorityT) => a.id === id);
     if (!authority) {
-      $errorMessage = `Could not select authority with ID: ${id}`;
+      errorMessage.set(`Could not select authority with ID: ${id}`);
       return;
     }
 
     let result = await Authorities.delete(authority.id);
 
     if (result.status === 'OK') {
-      $authorities = [...$authorities.filter(a => a.id !== id)];
+      authorities.set([...$authorities.filter(a => a.id !== id)]);
     } else {
-      $errorMessage = result.message;
+      errorMessage.set(result.message);
     }
   };
 </script>
@@ -83,13 +90,11 @@
         <span> API Keys </span>
         <span class="place-self-end"> Actions </span>
       </div>
-      {#each $authorities as authority}
-        {#key authority.id}
-          <Authority
-            {authority}
-            onUpdate={onAuthorityUpdateSubmit}
-            onDelete={onAuthorityDeleteSubmit} />
-        {/key}
+      {#each $authorities as authority (authority.id)}
+        <Authority
+          {authority}
+          onUpdate={onAuthorityUpdateSubmit}
+          onDelete={onAuthorityDeleteSubmit} />
       {/each}
     {/if}
     <div
@@ -106,11 +111,11 @@
   </section>
 
   {#if $errorMessage}
-    <ErrorModal bind:message={$errorMessage} />
+    <ErrorModal message={$errorMessage} />
   {/if}
 
   <FormModal
-    title={'New authority'}
+    title="New authority"
     enabled={$createModalEnabled}
     onClose={hideCreateModal}
     onSubmit={onAuthorityCreateSubmit}
