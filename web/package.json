@@ -9,8 +9,10 @@
     "preview": "vite preview",
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
-    "lint": "svelte-check --tsconfig ./tsconfig.json && npx eslint . -c eslint.config.mjs",
-    "all": "yarn run format:write && yarn run lint && yarn run build"
+    "lint:fix": "npx eslint . -c eslint.config.mjs --fix",
+    "lint:check": "npx eslint . -c eslint.config.mjs",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "all": "yarn run format:check && yarn run check && yarn run lint:check && yarn run build"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.7",
