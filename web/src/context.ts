@@ -4,6 +4,9 @@ import { defaultIfNull } from './lib/utils';
 
 type Theme = 'light' | 'dark';
 
+function isTheme(arg: unknown): arg is Theme {
+  return typeof arg == 'string' && ['light', 'darg'].includes(arg);
+}
 class Context {
   theme: Writable<Theme>;
 
@@ -12,6 +15,11 @@ class Context {
       localStorage.getItem('preferred.theme.style'),
       'light'
     );
+
+    if (!isTheme(persistedTheme)) {
+      throw new Error(`Unsupported theme: ${persistedTheme}`);
+    }
+
     this.theme = writable(persistedTheme);
     this.setTheme(persistedTheme);
   }
