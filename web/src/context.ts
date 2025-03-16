@@ -8,7 +8,7 @@ class Context {
   theme: Writable<Theme>;
 
   constructor() {
-    let persistedTheme = defaultIfNull(
+    const persistedTheme = defaultIfNull(
       localStorage.getItem('preferred.theme.style'),
       'light'
     );
@@ -16,7 +16,7 @@ class Context {
     this.setTheme(persistedTheme);
   }
 
-  setTheme(theme: Theme) {
+  setTheme(theme: Theme): void {
     this.theme.set(theme);
 
     localStorage.setItem('preferred.theme.style', theme);

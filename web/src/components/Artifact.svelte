@@ -11,7 +11,7 @@
   import LoadingScreen from './LoadingScreen.svelte';
 
   import { Artifacts, type ArtifactVersion } from '@/api/artifacts';
-  import { computeArtifactUrl } from '@/lib/artifact';
+  import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
 
   export let type: 'module' | 'provider';
   export let namespace: string;
@@ -49,12 +49,12 @@
 
   const onOptionSelect = (option: string) => {
     const url = computeArtifactUrl({
+      type: type,
       namespace: namespace,
       name: name,
-      provider: provider,
-      version: option,
-      type: type
-    });
+      provider: type == 'module' ? provider : undefined,
+      version: option
+    } as LocatableArtifact);
     push(url);
   };
 

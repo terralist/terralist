@@ -44,6 +44,4 @@
     {routes}
     on:routeLoading={onRouteLoading}
     on:conditionsFailed={onRouteFailure} />
-  <!-- <Header /> -->
-  <!-- <Dashboard /> -->
 </main>

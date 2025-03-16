@@ -1,40 +1,42 @@
-import { Auth } from "@/api/auth";
+import { Auth } from '@/api/auth';
 
 type Session = {
   [k: string]: string;
-}
+};
 
 type UserSession = {
   userName: string;
   userEmail: string;
-}
-
-const sessionKeys: Session = {
-  userName: "user.name",
-  userEmail: "user.email",
-  expireAt: "expire_at",
 };
 
+const sessionKeys: Session = {
+  userName: 'user.name',
+  userEmail: 'user.email',
+  expireAt: 'expire_at'
+};
 
 const actions = {
   download: (): Session => {
     return Object.fromEntries(
-      Object
-        .entries(sessionKeys)
-        .map(([key, value]) => [key, sessionStorage.getItem(`_auth.session.${value}`)])
-        .filter(([_, value]) => value != null)
-    )
+      Object.entries(sessionKeys)
+        .map(([key, value]) => [
+          key,
+          sessionStorage.getItem(`_auth.session.${value}`)
+        ])
+        .filter(([, value]) => value != null)
+    );
   },
 
   upload: (session: Session) => {
-    Object.entries(session)
-      .forEach(([key, value]) => sessionStorage.setItem(`_auth.session.${sessionKeys[key]}`, value));
+    Object.entries(session).forEach(([key, value]) =>
+      sessionStorage.setItem(`_auth.session.${sessionKeys[key]}`, value)
+    );
   },
 
   reset: () => {
-    Object
-      .values(sessionKeys)
-      .forEach(value => sessionStorage.removeItem(`_auth.session.${value}`))
+    Object.values(sessionKeys).forEach(value =>
+      sessionStorage.removeItem(`_auth.session.${value}`)
+    );
   }
 };
 
@@ -70,7 +72,7 @@ const UserStore = {
 
     return {
       userName: session.userName,
-      userEmail: session.userEmail,
+      userEmail: session.userEmail
     } satisfies UserSession;
   },
 
@@ -78,15 +80,17 @@ const UserStore = {
     const { data, status } = await Auth.getSession();
 
     if (status == 'OK') {
-      const SESSION_EXPIRE_AFTER_MINUTES: number = 1;
+      const SESSION_EXPIRE_AFTER_MINUTES = 1;
 
       const expireAt = new Date();
-      expireAt.setTime(new Date().getTime() + (SESSION_EXPIRE_AFTER_MINUTES * 60 * 1000));
+      expireAt.setTime(
+        new Date().getTime() + SESSION_EXPIRE_AFTER_MINUTES * 60 * 1000
+      );
 
       const session = {
         expireAt: expireAt.toISOString(),
         userName: data.name,
-        userEmail: data.email,
+        userEmail: data.email
       };
 
       actions.upload(session);
@@ -102,6 +106,4 @@ const UserStore = {
   }
 };
 
-export {
-  UserStore
-};
+export { UserStore };

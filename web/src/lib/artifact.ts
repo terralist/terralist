@@ -1,12 +1,24 @@
-import type { Artifact } from "@/api/artifacts";
+import type { Artifact } from '@/api/artifacts';
 
-type LocatableArtifact = {
+type LocatableArtifactBase = {
   type: 'module' | 'provider';
   namespace: string;
   name: string;
-  provider?: string;
+  provider?: string | never;
   version: string;
-}
+};
+
+type LocatableProvider = LocatableArtifactBase & {
+  type: 'provider';
+  provider?: never;
+};
+
+type LocatableModule = LocatableArtifactBase & {
+  type: 'module';
+  provider: string;
+};
+
+type LocatableArtifact = LocatableProvider | LocatableModule;
 
 function isArtifact(arg: unknown): arg is Artifact {
   return (
@@ -15,7 +27,7 @@ function isArtifact(arg: unknown): arg is Artifact {
   );
 }
 
-const computeArtifactUrl = (artifact: LocatableArtifact | Artifact) => {
+const computeArtifactUrl = (artifact: LocatableArtifact | Artifact): string => {
   if (isArtifact(artifact)) {
     const { type, namespace, name, provider, versions } = artifact;
 
@@ -24,7 +36,7 @@ const computeArtifactUrl = (artifact: LocatableArtifact | Artifact) => {
       namespace,
       name,
       provider,
-      version: versions[0],
+      version: versions[0]
     } as LocatableArtifact;
   }
 
@@ -33,19 +45,17 @@ const computeArtifactUrl = (artifact: LocatableArtifact | Artifact) => {
   }
 
   const slug = [artifact.namespace, artifact.name]
-      .concat(artifact.type == 'module' ? [artifact.provider!] : [])
-      .concat(artifact.version)
-      .join("/")
-      .toLowerCase();
+    .concat(artifact.type == 'module' ? [artifact.provider] : [])
+    .concat(artifact.version)
+    .join('/')
+    .toLowerCase();
 
   const category = {
-    "module": "modules",
-    "provider": "providers",
+    module: 'modules',
+    provider: 'providers'
   }[artifact.type];
 
   return `/${category}/${slug}`;
 };
 
-export {
-  computeArtifactUrl
-};
+export { type LocatableArtifact, computeArtifactUrl };

@@ -1,4 +1,4 @@
-import type { RouteDetail, RoutePrecondition } from 'svelte-spa-router';
+import type { RoutePrecondition } from 'svelte-spa-router';
 import { wrap } from 'svelte-spa-router/wrap';
 
 import config from '@/config';
@@ -34,18 +34,18 @@ function isUserData(arg: unknown): arg is UserData {
 }
 
 const baseConditions: RoutePrecondition[] = [
-  async (_: RouteDetail) => {
+  async () => {
     await config.refresh();
     return true;
   },
-  async (_: RouteDetail) => {
+  async () => {
     await UserStore.refresh();
     return true;
   }
 ];
 
-const isAuthenticatedCondition = (shouldBe: boolean = true) => {
-  return async (_: RouteDetail) => {
+const isAuthenticatedCondition = (shouldBe = true) => {
+  return async () => {
     return UserStore.isAvailable() == shouldBe;
   };
 };
@@ -63,7 +63,7 @@ const processLogOut = () => {
 
 const routes = {
   '/': wrap({
-    asyncComponent: () => import('@/pages/Dashboard.svelte'),
+    asyncComponent: async () => import('@/pages/Dashboard.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
     userData: newUserData({
@@ -88,7 +88,7 @@ const routes = {
     })
   }),
   '/settings': wrap({
-    asyncComponent: () => import('@/pages/Settings.svelte'),
+    asyncComponent: async () => import('@/pages/Settings.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
     userData: newUserData({
@@ -96,7 +96,7 @@ const routes = {
     })
   }),
   '/modules/:namespace/:name/:provider/:version?': wrap({
-    asyncComponent: () => import('@/pages/Artifact.svelte'),
+    asyncComponent: async () => import('@/pages/Artifact.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
     userData: newUserData({
@@ -104,7 +104,7 @@ const routes = {
     })
   }),
   '/providers/:namespace/:name/:version?': wrap({
-    asyncComponent: () => import('@/pages/Artifact.svelte'),
+    asyncComponent: async () => import('@/pages/Artifact.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
     userData: newUserData({
@@ -112,7 +112,7 @@ const routes = {
     })
   }),
   '*': wrap({
-    asyncComponent: () => import('@/pages/Error404.svelte'),
+    asyncComponent: async () => import('@/pages/Error404.svelte'),
     loadingComponent: Loading,
     conditions: baseConditions.concat([isAuthenticatedCondition()]),
     userData: newUserData({

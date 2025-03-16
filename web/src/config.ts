@@ -33,8 +33,8 @@ class Configuration {
     };
   }
 
-  async refresh() {
-    let cache = sessionStorage.getItem('runtime');
+  async refresh(): Promise<void> {
+    const cache = sessionStorage.getItem('runtime');
     if (cache) {
       this.runtime = JSON.parse(cache);
       return;
@@ -42,10 +42,10 @@ class Configuration {
 
     this.runtime = DEFAULT_RUNTIME_VARIABLES;
 
-    let resp = await fetch('/internal/runtime.json');
+    const resp = await fetch('/internal/runtime.json');
 
     if (resp.ok && resp.status === 200) {
-      let data = await resp.json();
+      const data = await resp.json();
 
       this.runtime.TERRALIST_HOST_URL = data['host'];
       this.runtime.TERRALIST_CANONICAL_DOMAIN = data['domain'];

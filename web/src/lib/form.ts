@@ -1,53 +1,50 @@
-import type { Validation, ValidationResult } from "./validation";
+import type { Validation, ValidationResult } from './validation';
 
 type InputType = 'email' | 'text' | 'textarea' | 'password' | 'number';
 
 type FormEntry = {
-  id: string,
-  name: string,
-  value?: string,
-  type: InputType,
-  required?: boolean,
-  disabled?: boolean,
-  validations?: Validation<any>[],
+  id: string;
+  name: string;
+  value?: string;
+  type: InputType;
+  required?: boolean;
+  disabled?: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  validations?: Validation<any>[];
 };
 
 const validateEntry = (entry: FormEntry): ValidationResult => {
   if (entry.required && !entry.value) {
     return {
       passed: false,
-      message: "This field is required.",
+      message: 'This field is required.'
     } satisfies ValidationResult;
   }
 
   if (!entry.required && !entry.value) {
     return {
       passed: true,
-      message: '',
+      message: ''
     } satisfies ValidationResult;
   }
 
   if (entry.validations) {
-    for (let validation of entry.validations) {
-      let result = validation(entry.value);
+    for (const validation of entry.validations) {
+      const result = validation(entry.value);
 
       if (!result.passed) {
         return {
           passed: false,
           message: result.message
-        } satisfies ValidationResult
+        } satisfies ValidationResult;
       }
     }
   }
 
   return {
     passed: true,
-    message: '',
+    message: ''
   } satisfies ValidationResult;
 };
 
-export {
-  type InputType,
-  type FormEntry,
-  validateEntry,
-};
+export { type InputType, type FormEntry, validateEntry };

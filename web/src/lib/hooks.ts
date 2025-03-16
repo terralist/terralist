@@ -1,24 +1,24 @@
-import { readable, writable, type Readable, type Writable } from "svelte/store";
-import { onMount } from "svelte";
-import type { Result } from "@/api/api.utils";
+import { writable, type Readable, type Writable } from 'svelte/store';
+import { onMount } from 'svelte';
+import type { Result } from '@/api/api.utils';
 
 const useFlag: (
   value: boolean,
   onSet?: () => void,
-  onReset?: () => void,
+  onReset?: () => void
 ) => [Writable<boolean>, () => void, () => void] = (
   value = false,
   onSet?,
-  onReset?,
+  onReset?
 ) => {
-  let flag = writable(value);
+  const flag = writable(value);
 
-  const enableFlag = () => {
+  const enableFlag = (): void => {
     onSet?.();
     flag.set(true);
   };
 
-  const disableFlag = () => {
+  const disableFlag = (): void => {
     onReset?.();
     flag.set(false);
   };
@@ -29,50 +29,58 @@ const useFlag: (
 const useToggle: (
   value: boolean,
   onSet?: () => void,
-  onReset?: () => void,
+  onReset?: () => void
 ) => [Writable<boolean>, () => void] = (value = false, onSet?, onReset?) => {
   let t: boolean = value;
 
   const [toggle, set, reset] = useFlag(t, onSet, onReset);
 
-  const flip = () => {
+  const flip = (): void => {
     t = !t;
     (t ? set : reset)();
   };
 
   return [toggle, flip];
-}
+};
 
 type QueryLoading = {
   data?: never;
   isLoading: true;
   error?: never;
-}
+};
 
 type QueryOK<T> = {
   data: T;
   isLoading: false;
   error?: never;
-}
+};
 
 type QueryError = {
   data?: never;
   isLoading: false;
   error: string;
-}
+};
 
 type QueryResult<T> = QueryLoading | QueryOK<T> | QueryError;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type QueryFn<T> = (...args: any[]) => Promise<Result<T>>;
+
 const useQuery: <T>(
-  query: (...args: any[]) => Promise<Result<T>>,
-  ...args: any[]
-) => Readable<QueryResult<T>> = <T>(query: (...args: any[]) => Promise<Result<T>>, ...args: any[]) => {
-  let result: Writable<QueryResult<T>> = writable({ isLoading: true } as QueryLoading);
+  query: QueryFn<T>,
+  ...args: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+) => Readable<QueryResult<T>> = <T>(
+  query: QueryFn<T>,
+  ...args: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
+) => {
+  const result: Writable<QueryResult<T>> = writable({
+    isLoading: true
+  } as QueryLoading);
 
   onMount(async () => {
     const { data: content, status, message } = await query(...args);
 
-    if (status == "ERROR") {
+    if (status == 'ERROR') {
       result.set({ isLoading: false, error: message } as QueryError);
       return;
     }
@@ -83,8 +91,4 @@ const useQuery: <T>(
   return result;
 };
 
-export {
-  useFlag,
-  useToggle,
-  useQuery,
-};
+export { useFlag, useToggle, useQuery };
