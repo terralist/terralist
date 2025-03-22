@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// PathFlag holds data for the flags with path values
+// PathFlag holds data for the flags with path values.
 type PathFlag struct {
 	Description  string
 	DefaultValue string

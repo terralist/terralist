@@ -12,9 +12,9 @@ import (
 )
 
 // The S3 resolver will download files from the given URL then
-// uploads them to an S3 bucket, generating a public download URL
+// uploads them to an S3 bucket, generating a public download URL.
 
-// Resolver is the concrete implementation of storage.Resolver
+// Resolver is the concrete implementation of storage.Resolver.
 type Resolver struct {
 	BucketName   string
 	BucketPrefix string

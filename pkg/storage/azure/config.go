@@ -6,7 +6,7 @@ import (
 )
 
 // Config implements storage.Configurator interface and
-// handles the configuration parameters of the Azure resolver
+// handles the configuration parameters of the Azure resolver.
 type Config struct {
 	AccountName        string
 	AccountKey         string
@@ -16,7 +16,7 @@ type Config struct {
 }
 
 func (c *Config) SetDefaults() {
-	// Set any default values for your configuration here
+	// Set any default values for your configuration here.
 }
 
 func (c *Config) Validate() error {

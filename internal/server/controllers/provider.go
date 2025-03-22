@@ -17,16 +17,16 @@ const (
 	providersDefaultApiBase   = "/api/providers"
 )
 
-// ProviderController registers the routes that handles the modules
+// ProviderController registers the routes that handles the modules.
 type ProviderController interface {
 	api.RestController
 
 	// TerraformApi returns the endpoint where Terraform can query
-	// providers
+	// providers.
 	TerraformApi() string
 }
 
-// DefaultProviderController is a concrete implementation of ProviderController
+// DefaultProviderController is a concrete implementation of ProviderController.
 type DefaultProviderController struct {
 	ProviderService services.ProviderService
 	Authorization   *handlers.Authorization

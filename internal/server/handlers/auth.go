@@ -93,7 +93,10 @@ func (a *Authorization) hasActiveSession(c *gin.Context) (*auth.User, error) {
 	authUser, ok := user.(*auth.User)
 	if !ok {
 		sess.Set("user", nil)
-		a.Store.Save(c.Request, c.Writer, sess)
+		if err := a.Store.Save(c.Request, c.Writer, sess); err != nil {
+			return nil, fmt.Errorf("while trying to session: %w, could not save existing session: %v", ErrInvalidValue, err)
+		}
+
 		return nil, fmt.Errorf("session: %w", ErrInvalidValue)
 	}
 

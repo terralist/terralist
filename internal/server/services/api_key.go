@@ -16,10 +16,10 @@ var (
 	ErrInvalidKey    = errors.New("invalid key")
 )
 
-// ApiKeyService describes a service that can interact with the API keys database
+// ApiKeyService describes a service that can interact with the API keys database.
 type ApiKeyService interface {
 	// GetUserDetails checks if a given key is granted and returns the owner of
-	// the key; if the key is invalid, it will return an error
+	// the key; if the key is invalid, it will return an error.
 	GetUserDetails(key string) (*auth.User, error)
 
 	// Grant allocates a new key; It takes an input argument which can control the
@@ -27,11 +27,11 @@ type ApiKeyService interface {
 	// to 0.
 	Grant(authorityID uuid.UUID, name string, expireIn int) (string, error)
 
-	// Revoke removes a key from the database
+	// Revoke removes a key from the database.
 	Revoke(key string) error
 }
 
-// DefaultApiKeyService is a concrete implementation of ApiKeyService
+// DefaultApiKeyService is a concrete implementation of ApiKeyService.
 type DefaultApiKeyService struct {
 	AuthorityService AuthorityService
 	ApiKeyRepository repositories.ApiKeyRepository

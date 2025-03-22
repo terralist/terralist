@@ -3,15 +3,16 @@ package github
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+
 	"terralist/pkg/auth"
 )
 
-// Provider is the concrete implementation of oauth.Engine
+// Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
 	ClientID     string
 	ClientSecret string
@@ -186,8 +187,11 @@ func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
 
 	var verifiedEmail string = ""
 	for _, e := range data {
-		if verifiedEmail == "" && e["primary"].(bool) {
-			verifiedEmail = e["email"].(string)
+		if isPrimary, ok := e["primary"].(bool); ok && isPrimary {
+			if email, ok := e["email"].(string); ok {
+				verifiedEmail = email
+				break
+			}
 		}
 	}
 

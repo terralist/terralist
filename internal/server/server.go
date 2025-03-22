@@ -23,11 +23,11 @@ import (
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/mazen160/go-random"
+	random "github.com/mazen160/go-random"
 	"github.com/rs/zerolog/log"
 )
 
-// Server represents the Terralist server
+// Server represents the Terralist server.
 type Server struct {
 	Port     int
 	CertFile string
@@ -43,7 +43,7 @@ type Server struct {
 	Readiness *atomic.Bool
 }
 
-// Config holds the server configuration that isn't configurable by the user
+// Config holds the server configuration that isn't configurable by the user.
 type Config struct {
 	RunningMode string
 
@@ -243,7 +243,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}, nil
 }
 
-// Start initializes the routes and starts serving
+// Start initializes the routes and starts serving.
 func (s *Server) Start() error {
 	useTLS := s.CertFile != "" && s.KeyFile != ""
 
@@ -285,7 +285,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// waitForDrain blocks the process until draining is complete
+// waitForDrain blocks the process until draining is complete.
 func (s *Server) waitForDrain() {
 	// Mark the service as unavailable
 	s.Readiness.Store(false)

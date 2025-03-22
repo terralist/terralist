@@ -17,22 +17,22 @@ var (
 	ErrTokenGeneration = errors.New("could not generate token")
 )
 
-// JWT handles the creation and extraction of a jwt
+// JWT handles the creation and extraction of a jwt.
 type JWT interface {
-	// Build generates and sign a token for a given user
+	// Build generates and sign a token for a given user.
 	// The first parameter represents the user for which a token
-	// should be granted
+	// should be granted.
 	// The second parameter represents the number of seconds after
-	// which the token should expire
+	// which the token should expire.
 	Build(auth.User, int) (string, error)
 
 	// Extract is the reverse method for Build, which extracts
-	// the user data from a given token
-	// If the token is expired, it will return an error
+	// the user data from a given token.
+	// If the token is expired, it will return an error.
 	Extract(string) (*auth.User, error)
 }
 
-// defaultJWT is the concrete implementation of JWT
+// defaultJWT is the concrete implementation of JWT.
 type defaultJWT struct {
 	tokenSigningSecret []byte
 }

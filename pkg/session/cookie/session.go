@@ -3,7 +3,7 @@ package cookie
 import "github.com/gorilla/sessions"
 
 // Session is a concrete implementation of session.Session
-// and is a wrapper over gorilla's session
+// and is a wrapper over gorilla's session.
 type Session struct {
 	session *sessions.Session
 }

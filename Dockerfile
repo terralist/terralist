@@ -11,7 +11,7 @@ ENV TERRALIST_VERSION=${VERSION}
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.23-alpine3.21 AS backend
+FROM golang:1.24-alpine3.21 AS backend
 
 WORKDIR /go/src/terralist
 

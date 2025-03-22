@@ -9,7 +9,7 @@ import (
 	"terralist/pkg/auth"
 )
 
-// Provider is the concrete implementation of oauth.Engine
+// Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
 	ClientID     string
 	ClientSecret string
@@ -76,8 +76,8 @@ func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) erro
 	)
 
 	reqBody := url.Values{
-		"grant_type": {"authorization_code"},
-		"code":       {code},
+		"grant_type": []string{"authorization_code"},
+		"code":       []string{code},
 	}
 	req, err := http.NewRequest(http.MethodPost, accessTokenUrl, strings.NewReader(reqBody.Encode()))
 	if err != nil {
@@ -127,7 +127,11 @@ func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
 		return "", err
 	}
 
-	return data["username"].(string), nil
+	if username, ok := data["username"].(string); ok {
+		return username, nil
+	}
+
+	return "", fmt.Errorf("BitBucket returned an invalid object, without the required 'username' field")
 }
 
 func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
@@ -200,7 +204,7 @@ func (p *Provider) PerformCheckUserMemberInWorkspace(t tokenResponse) error {
 	}
 
 	var data struct {
-		Values []map[string]interface{}
+		Values []map[string]any
 	}
 	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
 		return err
@@ -208,13 +212,21 @@ func (p *Provider) PerformCheckUserMemberInWorkspace(t tokenResponse) error {
 
 	var isMember bool
 	for _, e := range data.Values {
-		workspace, ok := e["workspace"].(map[string]interface{})
+		workspace, ok := e["workspace"].(map[string]any)
 		if !ok {
 			continue
 		}
 
-		slug, _ := workspace["slug"]
-		wsName, _ := workspace["name"]
+		slug, ok := workspace["slug"].(string)
+		if !ok {
+			continue
+		}
+
+		wsName, _ := workspace["name"].(string)
+		if !ok {
+			continue
+		}
+
 		if slug == p.Workspace || wsName == p.Workspace {
 			isMember = true
 			break

@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { link } from "svelte-spa-router";
-  
-  import Icon from "./Icon.svelte";
+  import { link } from 'svelte-spa-router';
 
-  import type { Artifact } from "@/api/artifacts";
-  import { timeSince } from "@/lib/utils";
+  import Icon from './Icon.svelte';
+
+  import type { Artifact } from '@/api/artifacts';
+  import { timeSince } from '@/lib/utils';
   import { computeArtifactUrl } from '@/lib/artifact';
 
   export let artifact: Artifact;
@@ -12,12 +12,15 @@
   const url = computeArtifactUrl(artifact);
 </script>
 
-<section class="p-6 w-full bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
+<section
+  class="p-6 w-full bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700">
   <div class="flex justify-between items-center mb-4">
     <div class="flex flex-col justify-center items-start">
       <a href={url} use:link>
-        <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white break-words">
-          {artifact.name + (artifact.type === 'module' ? ` (${artifact.provider})` : '')}
+        <h2
+          class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white break-words">
+          {artifact.name +
+            (artifact.type === 'module' ? ` (${artifact.provider})` : '')}
         </h2>
       </a>
       <h3 class="text-zinc-800 dark:text-zinc-100">
@@ -25,17 +28,17 @@
       </h3>
     </div>
     <div class="flex flex-col justify-center items-center dark:text-white">
-      <Icon 
+      <Icon
         name={artifact.type === 'provider' ? 'cloud' : 'tools'}
         width="1.5rem"
-        height="1.5rem"
-      />
+        height="1.5rem" />
       <span class="text-xs text-zinc-800 dark:text-white">
         {`(${artifact.type})`}
       </span>
     </div>
   </div>
-  <div class="grid grid-cols-2 gap-4 mb-3 font-normal text-gray-700 dark:text-gray-400 text-sm">
+  <div
+    class="grid grid-cols-2 gap-4 mb-3 font-normal text-gray-700 dark:text-gray-400 text-sm">
     <p class="place-self-start">Version:</p>
     <p class="place-self-end">{artifact.versions[0]}</p>
     <p class="place-self-start">Updated:</p>
@@ -68,8 +71,7 @@
       {$$props.class}
     "
     href={url}
-    use:link
-  >
+    use:link>
     View documentation
     <Icon name="arrow-forward" class="ml-2 -mr-1" />
   </a>

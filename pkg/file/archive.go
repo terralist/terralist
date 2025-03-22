@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// BufferFileInfo implements fs.FileInfo for a bytes.Buffer
+// BufferFileInfo implements fs.FileInfo for a bytes.Buffer.
 type BufferFileInfo struct {
 	name    string
 	size    int64
@@ -18,7 +18,7 @@ type BufferFileInfo struct {
 	modTime time.Time
 }
 
-// Implement the FileInfo interface
+// Implement the FileInfo interface.
 func (fi *BufferFileInfo) Name() string {
 	return fi.name
 }
@@ -43,7 +43,7 @@ func (fi *BufferFileInfo) Sys() interface{} {
 	return nil
 }
 
-// NewBufferFileInfo creates a FileInfo for a given bytes.Buffer
+// NewBufferFileInfo creates a FileInfo for a given bytes.Buffer.
 func NewBufferFileInfo(buffer *bytes.Buffer, name string) fs.FileInfo {
 	return &BufferFileInfo{
 		name:    name,
@@ -53,7 +53,7 @@ func NewBufferFileInfo(buffer *bytes.Buffer, name string) fs.FileInfo {
 	}
 }
 
-// BufferReadSeekCloser wraps a bytes.Buffer and implements io.ReadSeekCloser
+// BufferReadSeekCloser wraps a bytes.Buffer and implements io.ReadSeekCloser.
 type BufferReadSeekCloser struct {
 	buf *bytes.Reader
 }
@@ -71,8 +71,8 @@ func (b *BufferReadSeekCloser) Close() error {
 	return nil
 }
 
-// NewBufferReadSeekCloser is a constructor that takes a bytes.Buffer
-// and returns a ReadSeekCloser implementation
+// NewBufferReadSeekCloser is a constructor that takes a bytes.Buffer.
+// and returns a ReadSeekCloser implementation.
 func NewBufferReadSeekCloser(buffer *bytes.Buffer) io.ReadSeekCloser {
 	return &BufferReadSeekCloser{
 		buf: bytes.NewReader(buffer.Bytes()),
@@ -80,7 +80,7 @@ func NewBufferReadSeekCloser(buffer *bytes.Buffer) io.ReadSeekCloser {
 }
 
 // Archive archives a slice of Files and returns the
-// archive as a StreamingFile
+// archive as a StreamingFile.
 func Archive(name string, files []File) (File, error) {
 	buffer := new(bytes.Buffer)
 

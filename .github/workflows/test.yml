@@ -27,7 +27,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24'
           cache-dependency-path: |
             go.sum
 
@@ -42,6 +42,17 @@ jobs:
 
       - name: Build web application
         run: task build-webapp
+
+      - name: Run backend linters
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Run frontend linters
+        run: |
+          yarn --cwd ./web run format:check
+          yarn --cwd ./web run check
+          yarn --cwd ./web run lint:check
 
       - name: Run unit tests
         run: task run-tests

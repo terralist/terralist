@@ -47,14 +47,14 @@ func (p Provider) GetVersion(v string) *Version {
 
 func (p Provider) ToArtifact() artifact.Artifact {
 	return artifact.Artifact{
-		ID:   p.ID.String(),
+		ID:   p.Entity.ID.String(),
 		Name: p.Name,
 		Type: artifact.TypeProvider,
 		Versions: slice.Map[Version, string](p.Versions, func(v Version) string {
 			return v.Version
 		}),
-		CreatedAt: p.CreatedAt.Format("2006-01-02T15:04:05"),
-		UpdatedAt: p.UpdatedAt.Format("2006-01-02T15:04:05"),
+		CreatedAt: p.Entity.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt: p.Entity.UpdatedAt.Format("2006-01-02T15:04:05"),
 	}
 }
 

@@ -13,25 +13,25 @@ import (
 	"gorm.io/gorm"
 )
 
-// ModuleRepository describes a service that can interact with the modules database
+// ModuleRepository describes a service that can interact with the modules database.
 type ModuleRepository interface {
-	// Find searches for a specific module
+	// Find searches for a specific module.
 	Find(namespace, name, provider string) (*module.Module, error)
 
-	// FindVersionLocation searches for a specific module version location
+	// FindVersionLocation searches for a specific module version location.
 	FindVersionLocation(namespace, name, provider, version string) (*string, error)
 
-	// Upsert either updates or creates a new (if it does not already exist) module
+	// Upsert either updates or creates a new (if it does not already exist) module.
 	Upsert(n module.Module) (*module.Module, error)
 
-	// Delete removes a module with all its data (versions)
+	// Delete removes a module with all its data (versions).
 	Delete(*module.Module) error
 
-	// DeleteVersion removes a version from a module
+	// DeleteVersion removes a version from a module.
 	DeleteVersion(*module.Version) error
 }
 
-// DefaultModuleRepository is a concrete implementation of ModuleRepository
+// DefaultModuleRepository is a concrete implementation of ModuleRepository.
 type DefaultModuleRepository struct {
 	Database database.Engine
 }

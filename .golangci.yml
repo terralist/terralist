@@ -1,0 +1,29 @@
+issues:
+  max-same-issues: 0
+
+linters:
+  disable-all: true
+  enable:
+    - durationcheck
+    - errcheck
+    - copyloopvar
+    - forcetypeassert
+    - godot
+    - gofmt
+    - gosimple
+    - ineffassign
+    - makezero
+    - misspell
+    - nilerr
+    - predeclared
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - govet
+
+run:
+  timeout: "10m"
+  go: "1.24"
+  issues-exit-code: 1
+  allow-parallel-runners: true

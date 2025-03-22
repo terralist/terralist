@@ -4,7 +4,7 @@ import "fmt"
 
 // Config implements session.Configurator interface
 // and handles the configuration parameters of the
-// cookie session implementation
+// cookie session implementation.
 type Config struct {
 	Name   string
 	Secret string

@@ -11,7 +11,7 @@ var (
 )
 
 // Config implements storage.Configurator interface and
-// handles the configuration parameters of the s3 resolver
+// handles the configuration parameters of the s3 resolver.
 type Config struct {
 	Endpoint string
 

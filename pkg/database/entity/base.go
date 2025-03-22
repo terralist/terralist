@@ -24,8 +24,8 @@ func (e *Entity) BeforeCreate(*database.DB) error {
 	return nil
 }
 
-// Empty checks if an entity is empty
-// It assumes that an empty entity holds the zero-value ID
+// Empty checks if an entity is empty.
+// It assumes that an empty entity holds the zero-value ID.
 func (e Entity) Empty() bool {
 	return e.ID == uuid.MustParse("00000000-0000-0000-0000-000000000000")
 }

@@ -17,13 +17,13 @@ const (
 	authorityApiBase = "/api/authorities"
 )
 
-// AuthorityController registers the endpoints to control authorities
+// AuthorityController registers the endpoints to control authorities.
 type AuthorityController interface {
 	api.RestController
 }
 
 // DefaultAuthorityController is a concrete implementation of
-// AuthorityController
+// AuthorityController.
 type DefaultAuthorityController struct {
 	AuthorityService services.AuthorityService
 	ApiKeyService    services.ApiKeyService

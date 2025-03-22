@@ -8,7 +8,7 @@ const (
 
 type Backend = int
 
-// Creator creates the database
+// Creator creates the database.
 type Creator interface {
 	New(config Configurator) (Engine, error)
 }

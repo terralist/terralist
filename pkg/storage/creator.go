@@ -10,7 +10,7 @@ const (
 
 type Backend = int
 
-// Creator creates the resolver
+// Creator creates the resolver.
 type Creator interface {
 	New(config Configurator) (Resolver, error)
 }

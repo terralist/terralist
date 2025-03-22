@@ -36,18 +36,15 @@ const (
 
 	OAuthProviderFlag = "oauth-provider"
 
-	// GitHub OAuth Flags
 	GitHubClientIDFlag     = "gh-client-id"
 	GitHubClientSecretFlag = "gh-client-secret"
 	GitHubOrganizationFlag = "gh-organization"
 	GitHubTeamsFlag        = "gh-teams"
 
-	// BitBucket OAuth Flags
 	BitBucketClientIDFlag     = "bb-client-id"
 	BitBucketClientSecretFlag = "bb-client-secret"
 	BitBucketWorkspaceFlag    = "bb-workspace"
 
-	// GitLab OAuth Flags
 	GitLabClientIDFlag     = "gl-client-id"
 	GitLabClientSecretFlag = "gl-client-secret"
 	GitLabHostFlag         = "gl-host"

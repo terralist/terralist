@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/go-getter"
+	getter "github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )
 
@@ -19,9 +19,9 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
-// generateGetters returns the map of getters
+// generateGetters returns the map of getters.
 // Modified version of https://github.com/hashicorp/go-getter/blob/f7836fb97529673f24dac0aaa140762ee05c847f/get.go#L65
-// to add support for custom http headers
+// to add support for custom http headers.
 func generateGetters(header http.Header) map[string]getter.Getter {
 	httpGetter := &getter.HttpGetter{
 		Netrc:  true,
@@ -39,7 +39,7 @@ func generateGetters(header http.Header) map[string]getter.Getter {
 	}
 }
 
-// fetch downloads a file/directory from a given URL and loads them
+// fetch downloads a file/directory from a given URL and loads them.
 func fetch(name string, url string, checksum string, kind int, header http.Header) (File, error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
@@ -82,7 +82,7 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		client.Mode = getter.ClientModeFile
 	} else if kind == dir {
 		client.Mode = getter.ClientModeDir
-	} else if kind == any {
+	} else if kind == unknown {
 		client.Mode = getter.ClientModeAny
 	}
 
@@ -137,7 +137,7 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 }
 
 // parseResult parses the download result and returns an
-// File
+// File.
 func parseResult(name, src string, kind int) (File, error) {
 	if kind == file {
 		return readFile(name, src)
@@ -149,13 +149,13 @@ func parseResult(name, src string, kind int) (File, error) {
 }
 
 // readFile reads a file from the disk and returns it
-// as an File
+// as an File.
 func readFile(name, src string) (File, error) {
 	return LoadFromDisk(name, src)
 }
 
 // archiveDir reads a directory from the disk, archives it
-// and returns the archive file
+// and returns the archive file.
 func archiveDir(name, src string) (File, error) {
 	dirFiles := []File{}
 

@@ -45,15 +45,15 @@ func (m Module) ToListResponseDTO() ListResponseDTO {
 
 func (m Module) ToArtifact() artifact.Artifact {
 	return artifact.Artifact{
-		ID:       m.ID.String(),
+		ID:       m.Entity.ID.String(),
 		Name:     m.Name,
 		Provider: m.Provider,
 		Type:     artifact.TypeModule,
 		Versions: slice.Map[Version, string](m.Versions, func(v Version) string {
 			return v.Version
 		}),
-		CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05"),
-		UpdatedAt: m.UpdatedAt.Format("2006-01-02T15:04:05"),
+		CreatedAt: m.Entity.CreatedAt.Format("2006-01-02T15:04:05"),
+		UpdatedAt: m.Entity.UpdatedAt.Format("2006-01-02T15:04:05"),
 	}
 }
 
