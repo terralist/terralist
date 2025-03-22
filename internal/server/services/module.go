@@ -6,6 +6,7 @@ import (
 
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/docs"
 	"terralist/pkg/file"
 	"terralist/pkg/storage"
 	"terralist/pkg/version"
