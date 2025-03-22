@@ -1,7 +1,5 @@
 issues:
   max-same-issues: 0
-  exclude-dirs:
-    - mocks
 
 linters:
   disable-all: true
@@ -23,3 +21,9 @@ linters:
     - unparam
     - unused
     - govet
+
+run:
+  timeout: "10m"
+  go: "1.24"
+  issues-exit-code: 1
+  allow-parallel-runners: true
