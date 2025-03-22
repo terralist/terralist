@@ -5,7 +5,7 @@ import { defaultIfNull } from './lib/utils';
 type Theme = 'light' | 'dark';
 
 function isTheme(arg: unknown): arg is Theme {
-  return typeof arg == 'string' && ['light', 'darg'].includes(arg);
+  return typeof arg == 'string' && ['light', 'dark'].includes(arg);
 }
 class Context {
   theme: Writable<Theme>;
