@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// BoolFlag holds data for the flags with boolean values
+// BoolFlag holds data for the flags with boolean values.
 type BoolFlag struct {
 	Description  string
 	DefaultValue bool

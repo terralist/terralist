@@ -7,23 +7,27 @@ import (
 	"net/url"
 	"strings"
 	"terralist/pkg/auth"
+
+	"slices"
+
+	"github.com/rs/zerolog/log"
 )
 
-// Provider is the concrete implementation of oauth.Engine
+// Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
-	//ClientID for the provider
+	// ClientID for the provider.
 	ClientID string
 
-	//Client secret for the provider
+	// Client secret for the provider.
 	ClientSecret string
 
-	//RedirectURL must be exactly the same as configured in Gitlab
+	// RedirectURL must be exactly the same as configured in Gitlab.
 	RedirectURL string
 
-	//GitLabOAuthBaseURL contains the hostname and an optional port
+	// GitLabOAuthBaseURL contains the hostname and an optional port.
 	GitLabOAuthBaseURL string
 
-	//Groups is a list of groups the user must be a member of
+	// Groups is a list of groups the user must be a member of.
 	Groups []string
 }
 
@@ -73,20 +77,27 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 		return fmt.Errorf("email not found in user data")
 	}
 
-	// Check if the user is a member of the required groups from GitLab
-	if len(p.Groups) > 0 {
-		userGroups := userdata["groups"].([]interface{})
-		for _, group := range p.Groups {
-			for _, userGroup := range userGroups {
-				if group == userGroup.(string) {
-					return nil
-				}
-			}
-		}
-		return fmt.Errorf("user is not a member of the required groups")
+	if len(p.Groups) == 0 {
+		return nil
 	}
 
-	return nil
+	// Check if the user is a member of the required groups from GitLab
+	userGroups, ok := userdata["groups"].([]string)
+	if !ok {
+		log.Error().
+			Any("userdata", userdata).
+			Msg("expected user groups to be a slice of string, but it wasn't")
+
+		return fmt.Errorf("user data has no groups, cannot check user membership")
+	}
+
+	for _, group := range p.Groups {
+		if slices.Contains(userGroups, group) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("user is not a member of the required groups")
 }
 
 func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) error {

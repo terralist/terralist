@@ -37,7 +37,7 @@ import (
 	"github.com/ssoroka/slice"
 )
 
-// Command is an abstraction for the server command
+// Command is an abstraction for the server command.
 type Command struct {
 	ServerCreator Creator
 	Viper         *viper.Viper
@@ -47,20 +47,20 @@ type Command struct {
 	SilenceOutput bool
 }
 
-// Creator creates the server
+// Creator creates the server.
 type Creator interface {
 	NewServer(userConfig server.UserConfig, config server.Config) (Starter, error)
 }
 
-// DefaultCreator is the concrete implementation of Creator
+// DefaultCreator is the concrete implementation of Creator.
 type DefaultCreator struct{}
 
-// Starter starts the server
+// Starter starts the server.
 type Starter interface {
 	Start() error
 }
 
-// NewServer returns the real server object
+// NewServer returns the real server object.
 func (d *DefaultCreator) NewServer(userConfig server.UserConfig, config server.Config) (Starter, error) {
 	return server.NewServer(userConfig, config)
 }
@@ -169,7 +169,7 @@ func (s *Command) run() error {
 		}
 	}
 
-	userConfig := server.UserConfig{
+	userConfig := server.UserConfig{ //nolint:forcetypeassert
 		LogLevel:               flags[LogLevelFlag].(*cli.StringFlag).Value,
 		Port:                   flags[PortFlag].(*cli.IntFlag).Value,
 		URL:                    flags[URLFlag].(*cli.StringFlag).Value,
@@ -203,13 +203,13 @@ func (s *Command) run() error {
 	// Initialize database
 	var db database.Engine
 	var err error
-	switch flags[DatabaseBackendFlag].(*cli.StringFlag).Value {
+	switch flags[DatabaseBackendFlag].(*cli.StringFlag).Value { //nolint:forcetypeassert
 	case "sqlite":
-		db, err = dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{
+		db, err = dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{ //nolint:forcetypeassert
 			Path: flags[SQLitePathFlag].(*cli.StringFlag).Value,
 		})
 	case "postgresql":
-		db, err = dbFactory.NewDatabase(database.POSTGRESQL, &postgresql.Config{
+		db, err = dbFactory.NewDatabase(database.POSTGRESQL, &postgresql.Config{ //nolint:forcetypeassert
 			URL:      flags[PostgreSQLURLFlag].(*cli.StringFlag).Value,
 			Username: flags[PostgreSQLUsernameFlag].(*cli.StringFlag).Value,
 			Password: flags[PostgreSQLPasswordFlag].(*cli.StringFlag).Value,
@@ -218,7 +218,7 @@ func (s *Command) run() error {
 			Name:     flags[PostgreSQLDatabaseFlag].(*cli.StringFlag).Value,
 		})
 	case "mysql":
-		db, err = dbFactory.NewDatabase(database.MYSQL, &mysql.Config{
+		db, err = dbFactory.NewDatabase(database.MYSQL, &mysql.Config{ //nolint:forcetypeassert
 			URL:      flags[MySQLURLFlag].(*cli.StringFlag).Value,
 			Username: flags[MySQLUsernameFlag].(*cli.StringFlag).Value,
 			Password: flags[MySQLPasswordFlag].(*cli.StringFlag).Value,
@@ -234,22 +234,22 @@ func (s *Command) run() error {
 	// Initialize Auth provider
 	var provider auth.Provider
 
-	switch flags[OAuthProviderFlag].(*cli.StringFlag).Value {
+	switch flags[OAuthProviderFlag].(*cli.StringFlag).Value { //nolint:forcetypeassert
 	case "github":
-		provider, err = authFactory.NewProvider(auth.GITHUB, &github.Config{
+		provider, err = authFactory.NewProvider(auth.GITHUB, &github.Config{ //nolint:forcetypeassert
 			ClientID:     flags[GitHubClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret: flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
 			Organization: flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
 			Teams:        flags[GitHubTeamsFlag].(*cli.StringFlag).Value,
 		})
 	case "bitbucket":
-		provider, err = authFactory.NewProvider(auth.BITBUCKET, &bitbucket.Config{
+		provider, err = authFactory.NewProvider(auth.BITBUCKET, &bitbucket.Config{ //nolint:forcetypeassert
 			ClientID:     flags[BitBucketClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret: flags[BitBucketClientSecretFlag].(*cli.StringFlag).Value,
 			Workspace:    flags[BitBucketWorkspaceFlag].(*cli.StringFlag).Value,
 		})
 	case "gitlab":
-		provider, err = authFactory.NewProvider(auth.GITLAB, &gitlab.Config{
+		provider, err = authFactory.NewProvider(auth.GITLAB, &gitlab.Config{ //nolint:forcetypeassert
 			ClientID:                   flags[GitLabClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret:               flags[GitLabClientSecretFlag].(*cli.StringFlag).Value,
 			GitlabHostWithOptionalPort: flags[GitLabHostFlag].(*cli.StringFlag).Value,
@@ -257,7 +257,7 @@ func (s *Command) run() error {
 			Groups:                     flags[GitLabGroupsFlag].(*cli.StringFlag).Value,
 		})
 	case "oidc":
-		provider, err = authFactory.NewProvider(auth.OIDC, &oidc.Config{
+		provider, err = authFactory.NewProvider(auth.OIDC, &oidc.Config{ //nolint:forcetypeassert
 			ClientID:                   flags[OidcClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret:               flags[OidcClientSecretFlag].(*cli.StringFlag).Value,
 			AuthorizeUrl:               flags[OidcAuthorizeUrlFlag].(*cli.StringFlag).Value,
@@ -282,11 +282,12 @@ func (s *Command) run() error {
 	}
 
 	for name, key := range resolversFlags {
-		switch flags[key].(*cli.StringFlag).Value {
+		switch flags[key].(*cli.StringFlag).Value { //nolint:forcetypeassert
 		case "proxy":
 			resolvers[name], err = nil, nil
 		case "local":
 			// Initialize home directory
+			//nolint:forcetypeassert
 			homeDirClean := filepath.Clean(flags[LocalStoreFlag].(*cli.StringFlag).Value)
 			if strings.HasPrefix(homeDirClean, "~") {
 				userHomeDir, _ := os.UserHomeDir()
@@ -307,7 +308,7 @@ func (s *Command) run() error {
 				HomeDirectory: homeDir,
 			})
 		case "s3":
-			resolvers[name], err = storageFactory.NewResolver(storage.S3, &s3.Config{
+			resolvers[name], err = storageFactory.NewResolver(storage.S3, &s3.Config{ //nolint:forcetypeassert
 				Endpoint:             flags[S3EndpointFlag].(*cli.StringFlag).Value,
 				BucketName:           flags[S3BucketNameFlag].(*cli.StringFlag).Value,
 				BucketRegion:         flags[S3BucketRegionFlag].(*cli.StringFlag).Value,
@@ -319,7 +320,7 @@ func (s *Command) run() error {
 				ServerSideEncryption: flags[S3ServerSideEncryptionFlag].(*cli.StringFlag).Value,
 			})
 		case "azure":
-			resolvers[name], err = storageFactory.NewResolver(storage.AZURE, &azure.Config{
+			resolvers[name], err = storageFactory.NewResolver(storage.AZURE, &azure.Config{ //nolint:forcetypeassert
 				AccountName:        flags[AzureAccountNameFlag].(*cli.StringFlag).Value,
 				AccountKey:         flags[AzureAccountKeyFlag].(*cli.StringFlag).Value,
 				ContainerName:      flags[AzureContainerNameFlag].(*cli.StringFlag).Value,
@@ -327,7 +328,7 @@ func (s *Command) run() error {
 				DefaultCredentials: false,
 			})
 		case "gcs":
-			resolvers[name], err = storageFactory.NewResolver(storage.GCS, &gcs.Config{
+			resolvers[name], err = storageFactory.NewResolver(storage.GCS, &gcs.Config{ //nolint:forcetypeassert
 				BucketName:                 flags[GcsBucketNameFlag].(*cli.StringFlag).Value,
 				BucketPrefix:               flags[GcsBucketPrefixFlag].(*cli.StringFlag).Value,
 				ServiceAccountCredFilePath: flags[GcsServiceAccountCredFilePathFlag].(*cli.StringFlag).Value,
@@ -343,9 +344,9 @@ func (s *Command) run() error {
 
 	// Initialize session store
 	var store session.Store
-	switch flags[SessionStoreFlag].(*cli.StringFlag).Value {
+	switch flags[SessionStoreFlag].(*cli.StringFlag).Value { //nolint:forcetypeassert
 	case "cookie":
-		store, err = sessionFactory.NewStore(session.COOKIE, &cookie.Config{
+		store, err = sessionFactory.NewStore(session.COOKIE, &cookie.Config{ //nolint:forcetypeassert
 			Secret: flags[CookieSecretFlag].(*cli.StringFlag).Value,
 		})
 	}
@@ -369,7 +370,7 @@ func (s *Command) run() error {
 	return srv.Start()
 }
 
-// withErrPrint prints out any cmd errors to stderr
+// withErrPrint prints out any cmd errors to stderr.
 func (s *Command) withErrPrint(f func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := f(cmd, args)
@@ -380,7 +381,7 @@ func (s *Command) withErrPrint(f func(*cobra.Command, []string) error) func(*cob
 	}
 }
 
-// printErr prints err to stderr using a red terminal color
+// printErr prints err to stderr using a red terminal color.
 func (s *Command) printErr(err error) {
 	log.Error().AnErr("error", err).Send()
 }

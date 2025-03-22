@@ -12,13 +12,13 @@ var (
 )
 
 // ServiceDiscoveryController registers the endpoints described by the
-// service discovery protocol
+// service discovery protocol.
 type ServiceDiscoveryController interface {
 	api.RestController
 }
 
 // DefaultServiceDiscoveryController is a concrete implementation of
-// ServiceDiscoveryController
+// ServiceDiscoveryController.
 type DefaultServiceDiscoveryController struct {
 	AuthorizationEndpoint string
 	TokenEndpoint         string

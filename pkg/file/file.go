@@ -11,22 +11,24 @@ import (
 	"os"
 	"path"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
-// File abstracts a type of file
+// File abstracts a type of file.
 type File interface {
 	io.Reader
 	io.Seeker
 	io.Closer
 
-	// Name returns the name of the file
+	// Name returns the name of the file.
 	Name() string
 
-	// Metadata returns info headers for the files
+	// Metadata returns info headers for the files.
 	Metadata() fs.FileInfo
 }
 
-// InMemoryFile holds a file in-memory
+// InMemoryFile holds a file in-memory.
 type InMemoryFile struct {
 	name     string
 	fileInfo fs.FileInfo
@@ -53,7 +55,7 @@ func (f *InMemoryFile) Close() error {
 	return nil
 }
 
-// StreamingFile holds a streaming file
+// StreamingFile holds a streaming file.
 type StreamingFile struct {
 	name     string
 	fileInfo fs.FileInfo
@@ -80,7 +82,7 @@ func (f *StreamingFile) Close() error {
 	return f.reader.Close()
 }
 
-// OnDiskFile is a File wrapper which is also stored on disk
+// OnDiskFile is a File wrapper which is also stored on disk.
 type OnDiskFile struct {
 	name string
 	path string
@@ -100,9 +102,13 @@ func (f *OnDiskFile) Metadata() fs.FileInfo {
 }
 
 func (f *OnDiskFile) Read(p []byte) (int, error) {
-	var err error
-	p, err = os.ReadFile(f.path)
-	return len(p), err
+	file, err := os.Open(f.path)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	return file.Read(p)
 }
 
 func (f *OnDiskFile) Seek(offset int64, whence int) (int64, error) {
@@ -126,17 +132,17 @@ func (f *OnDiskFile) ToStreamingFile() (*StreamingFile, error) {
 	}, nil
 }
 
-// Path returns the path to the file on the disk
+// Path returns the path to the file on the disk.
 func (f *OnDiskFile) Path() string {
 	return f.path
 }
 
-// Remove removes the file from the disk
+// Remove removes the file from the disk.
 func (f *OnDiskFile) Remove() error {
 	return os.Remove(f.path)
 }
 
-// ContentType returns the http-compliant content-type of a File
+// ContentType returns the http-compliant content-type of a File.
 func ContentType(f File) string {
 	data, err := bufio.NewReader(f).Peek(512)
 	if err != nil {
@@ -144,12 +150,17 @@ func ContentType(f File) string {
 	}
 
 	// Rewind the reader
-	f.Seek(0, io.SeekStart)
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		log.Error().
+			Err(err).
+			Str("name", f.Name()).
+			Msg("could not rewind the file")
+	}
 
 	return http.DetectContentType(data)
 }
 
-// SaveToTemp writes a file to the disk, in a temp file
+// SaveToTemp writes a file to the disk, in a temp file.
 func SaveToTemp(f File) (*OnDiskFile, error) {
 	file, err := os.CreateTemp("", "terralist.tmp.*")
 	if err != nil {
@@ -167,7 +178,7 @@ func SaveToTemp(f File) (*OnDiskFile, error) {
 	}, nil
 }
 
-// SaveToDisk writes a file to the disk, in a given destination
+// SaveToDisk writes a file to the disk, in a given destination.
 func SaveToDisk(f File, dst string) (*OnDiskFile, error) {
 	filePath := path.Join(dst, f.Name())
 	file, err := os.Create(filePath)
@@ -186,13 +197,13 @@ func SaveToDisk(f File, dst string) (*OnDiskFile, error) {
 	}, nil
 }
 
-// LoadFromDisk loads a file from the disk
+// LoadFromDisk loads a file from the disk.
 func LoadFromDisk(name string, src string) (File, error) {
 	file := &OnDiskFile{name: name, path: src}
 	return file.ToStreamingFile()
 }
 
-// NewFromMultipartFileHeader returns an empty file using metadata from a multipart.FileHeader
+// NewFromMultipartFileHeader returns an empty file using metadata from a multipart.FileHeader.
 func NewFromMultipartFileHeader(h *multipart.FileHeader) File {
 	return &InMemoryFile{
 		name: h.Filename,
@@ -206,7 +217,7 @@ func NewFromMultipartFileHeader(h *multipart.FileHeader) File {
 	}
 }
 
-// NewEmptyFile returns an empty file
+// NewEmptyFile returns an empty file.
 func NewEmptyFile(name string) File {
 	return &InMemoryFile{
 		name: name,

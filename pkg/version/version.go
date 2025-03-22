@@ -10,32 +10,32 @@ var (
 )
 
 // Version is a wrapper over the string primitive used to extract
-// parts from a semantic version
+// parts from a semantic version.
 type Version string
 
 // Valid returns true if a version respect the semantic versioning
-// standard
+// standard.
 func (v Version) Valid() bool {
 	return versionRegEx.Match([]byte(v))
 }
 
-// Major returns the first part of a semantic version
+// Major returns the first part of a semantic version.
 func (v Version) Major() string {
 	return *v.part(0)
 }
 
-// Minor returns the second part of a semantic version
+// Minor returns the second part of a semantic version.
 func (v Version) Minor() string {
 	return *v.part(1)
 }
 
-// Patch returns the third part of a semantic version
+// Patch returns the third part of a semantic version.
 func (v Version) Patch() string {
 	return *v.part(2)
 }
 
-// PreRelease returns the fourth part of a semantic version
-// If missing, the string will be empty
+// PreRelease returns the fourth part of a semantic version.
+// If missing, the string will be empty.
 func (v Version) PreRelease() string {
 	p := v.part(3)
 	if p == nil {
@@ -45,8 +45,8 @@ func (v Version) PreRelease() string {
 	return *p
 }
 
-// BuildMetadata returns the fifth part of a semantic version
-// If missing, the string will be empty
+// BuildMetadata returns the fifth part of a semantic version.
+// If missing, the string will be empty.
 func (v Version) BuildMetadata() string {
 	p := v.part(4)
 	if p == nil {

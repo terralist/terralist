@@ -1,7 +1,7 @@
 package sqlite
 
 // Config implements database.Configurator interface and
-// handles the default configuration parameters of the sqlite database
+// handles the default configuration parameters of the sqlite database.
 type Config struct {
 	Path string
 }

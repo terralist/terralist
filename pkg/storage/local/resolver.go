@@ -7,9 +7,9 @@ import (
 )
 
 // The local resolver will download files to a given path on the disk
-// and will generate a public URL from which they can be downloaded
+// and will generate a public URL from which they can be downloaded.
 
-// Resolver is the concrete implementation of storage.Resolver
+// Resolver is the concrete implementation of storage.Resolver.
 type Resolver struct {
 	RegistryDir string
 }

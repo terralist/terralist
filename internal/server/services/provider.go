@@ -18,28 +18,28 @@ const (
 	shaSumsSigKey = "shaSumsSig"
 )
 
-// ProviderService describes a service that holds the business logic for providers registry
+// ProviderService describes a service that holds the business logic for providers registry.
 type ProviderService interface {
-	// Get returns a specific provider
+	// Get returns a specific provider.
 	Get(namespace, name string) (*provider.VersionListProviderDTO, error)
 
-	// GetVersion returns a specific installation for a provider
+	// GetVersion returns a specific installation for a provider.
 	GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error)
 
-	// Upload loads a new provider version into the system
-	// If the provider does not already exist, it will create a new one
+	// Upload loads a new provider version into the system.
+	// If the provider does not already exist, it will create a new one.
 	Upload(*provider.CreateProviderDTO) error
 
-	// Delete removes a provider from the system with all its data (versions)
+	// Delete removes a provider from the system with all its data (versions).
 	Delete(authorityID uuid.UUID, name string) error
 
-	// DeleteVersion removes a specific version from the system with all its data (installations)
+	// DeleteVersion removes a specific version from the system with all its data (installations).
 	// If the removed version is the only version available in the system, the entire
-	// provider will be removed
+	// provider will be removed.
 	DeleteVersion(authorityID uuid.UUID, name string, version string) error
 }
 
-// DefaultProviderService is the concrete implementation of ProviderService
+// DefaultProviderService is the concrete implementation of ProviderService.
 type DefaultProviderService struct {
 	ProviderRepository repositories.ProviderRepository
 	AuthorityService   AuthorityService
@@ -216,7 +216,7 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 	return nil
 }
 
-// resolveLocations resolves the keys for a provider platform
+// resolveLocations resolves the keys for a provider platform.
 func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDTO) error {
 	var err error
 
@@ -238,7 +238,7 @@ func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDT
 	return err
 }
 
-// downloadFiles fetches all provider files
+// downloadFiles fetches all provider files.
 func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]file.File, error) {
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
@@ -275,7 +275,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 	return files, nil
 }
 
-// uploadFiles uploads all stored provider files
+// uploadFiles uploads all stored provider files.
 func (s *DefaultProviderService) uploadFiles(
 	namespace, name, version string,
 	files map[string]file.File,
@@ -302,7 +302,7 @@ func (s *DefaultProviderService) uploadFiles(
 	return keys, nil
 }
 
-// deleteVersion removes all provider files for a specific version
+// deleteVersion removes all provider files for a specific version.
 func (s *DefaultProviderService) deleteVersion(v *provider.Version) {
 	for _, plat := range v.Platforms {
 		if err := s.Resolver.Purge(plat.Location); err != nil {

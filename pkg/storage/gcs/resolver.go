@@ -12,7 +12,7 @@ import (
 )
 
 // The GCS resolver will download files from the given URL then
-// uploads them to an GCS bucket, generating a public download URL
+// uploads them to an GCS bucket, generating a public download URL.
 
 type Resolver struct {
 	BucketName   string
@@ -22,7 +22,7 @@ type Resolver struct {
 	Client *gcs.Client
 }
 
-// Resolver is the concrete implementation of storage.Resolver
+// Resolver is the concrete implementation of storage.Resolver.
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
 

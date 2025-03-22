@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -19,16 +20,16 @@ const (
 	modulesDefaultApiBase   = "/api/modules"
 )
 
-// ModuleController registers the routes that handles the modules
+// ModuleController registers the routes that handles the modules.
 type ModuleController interface {
 	api.RestController
 
 	// TerraformApi returns the endpoint where Terraform can query
-	// modules
+	// modules.
 	TerraformApi() string
 }
 
-// DefaultModuleController is a concrete implementation of ModuleController
+// DefaultModuleController is a concrete implementation of ModuleController.
 type DefaultModuleController struct {
 	ModuleService services.ModuleService
 	Authorization *handlers.Authorization
@@ -196,8 +197,29 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			defer func() {
-				onDiskFile.Close()
-				onDiskFile.Remove()
+				if err := onDiskFile.Close(); err != nil {
+					log.Error().
+						Err(err).
+						Str("artifact", "module").
+						Str("name", name).
+						Str("provider", provider).
+						Str("version", version).
+						Str("file", onDiskFile.Name()).
+						Str("filepath", onDiskFile.Path()).
+						Msg("could not close the file")
+				}
+
+				if err := onDiskFile.Remove(); err != nil {
+					log.Error().
+						Err(err).
+						Str("artifact", "module").
+						Str("name", name).
+						Str("provider", provider).
+						Str("version", version).
+						Str("file", onDiskFile.Name()).
+						Str("filepath", onDiskFile.Path()).
+						Msg("could not remove module temp disk file")
+				}
 			}()
 
 			// Write form content to the temp file

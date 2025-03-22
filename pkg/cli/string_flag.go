@@ -7,7 +7,7 @@ import (
 	"github.com/ssoroka/slice"
 )
 
-// StringFlag holds data for the flags with string values
+// StringFlag holds data for the flags with string values.
 type StringFlag struct {
 	Description  string
 	Choices      []string

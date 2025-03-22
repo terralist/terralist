@@ -5,7 +5,7 @@ import (
 )
 
 // Config implements auth.Configurator interface and
-// handles the configuration parameters of the sqlite database
+// handles the configuration parameters of the sqlite database.
 type Config struct {
 	ClientID     string
 	ClientSecret string

@@ -13,38 +13,38 @@ var (
 	ErrKeyNotFound = errors.New("key not found")
 )
 
-// AuthorityService describes a service that can interact with the authorities database
+// AuthorityService describes a service that can interact with the authorities database.
 type AuthorityService interface {
-	// Get returns an authority with a specific ID
+	// Get returns an authority with a specific ID.
 	GetByID(id uuid.UUID) (*authority.Authority, error)
 
-	// Get returns an authority with a specific name
+	// Get returns an authority with a specific name.
 	GetByName(name string) (*authority.Authority, error)
 
-	// GetAll returns all authorities
+	// GetAll returns all authorities.
 	GetAll() ([]*authority.Authority, error)
 
-	// GetAllByOwner returns all authorities for a given owner
+	// GetAllByOwner returns all authorities for a given owner.
 	GetAllByOwner(owner string) ([]*authority.Authority, error)
 
-	// Create creates a new authority
+	// Create creates a new authority.
 	Create(authority.AuthorityCreateDTO) (*authority.AuthorityDTO, error)
 
-	// Update updates an existing authority
+	// Update updates an existing authority.
 	Update(uuid.UUID, authority.AuthorityDTO) (*authority.AuthorityDTO, error)
 
-	// AddKey adds a new key to an existing authority
+	// AddKey adds a new key to an existing authority.
 	AddKey(uuid.UUID, authority.KeyDTO) (*authority.KeyDTO, error)
 
-	// RemoveKey removes an existing key from an existing authority
-	// If no keys are left, the entire authority is removed
+	// RemoveKey removes an existing key from an existing authority.
+	// If no keys are left, the entire authority is removed.
 	RemoveKey(uuid.UUID, uuid.UUID) error
 
-	// Delete removes an existing authority
+	// Delete removes an existing authority.
 	Delete(id uuid.UUID) error
 }
 
-// DefaultAuthorityService is a concrete implementation of AuthorityService
+// DefaultAuthorityService is a concrete implementation of AuthorityService.
 type DefaultAuthorityService struct {
 	AuthorityRepository repositories.AuthorityRepository
 }

@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// IntFlag holds data for the flags with integer values
+// IntFlag holds data for the flags with integer values.
 type IntFlag struct {
 	Description  string
 	DefaultValue int

@@ -13,26 +13,26 @@ import (
 	"gorm.io/gorm"
 )
 
-// ProviderRepository describes a service that can interact with the providers database
+// ProviderRepository describes a service that can interact with the providers database.
 type ProviderRepository interface {
-	// Find searches for a specific provider
+	// Find searches for a specific provider.
 	Find(namespace, name string) (*provider.Provider, error)
 
 	// FindVersionPlatform searches for a specific platform binary metadata
-	// of a provider version
+	// of a provider version.
 	FindVersionPlatform(namespace, name, version, os, arch string) (*provider.Platform, error)
 
-	// Upsert either updates or creates a new (if it does not already exist) provider
+	// Upsert either updates or creates a new (if it does not already exist) provider.
 	Upsert(provider.Provider) (*provider.Provider, error)
 
-	// Delete removes a provider with all its data (versions)
+	// Delete removes a provider with all its data (versions).
 	Delete(*provider.Provider) error
 
-	// DeleteVersion removes a version from a provider
+	// DeleteVersion removes a version from a provider.
 	DeleteVersion(p *provider.Provider, version string) error
 }
 
-// DefaultProviderRepository is a concrete implementation of ProviderRepository
+// DefaultProviderRepository is a concrete implementation of ProviderRepository.
 type DefaultProviderRepository struct {
 	Database database.Engine
 }

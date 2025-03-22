@@ -14,29 +14,29 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// ModuleService describes a service that holds the business logic for modules registry
+// ModuleService describes a service that holds the business logic for modules registry.
 type ModuleService interface {
-	// Get returns a specific module
+	// Get returns a specific module.
 	Get(namespace, name, provider string) (*module.ListResponseDTO, error)
 
 	// GetVersion returns a public URL from which a specific a module version can be
-	// downloaded
+	// downloaded.
 	GetVersion(namespace, name, provider, version string) (*string, error)
 
-	// Upload loads a new module version to the system
-	// If the module does not exist, it will be created
+	// Upload loads a new module version to the system.
+	// If the module does not exist, it will be created.
 	Upload(dto *module.CreateDTO, url string, header http.Header) error
 
-	// Delete removes a module with all its data from the system
+	// Delete removes a module with all its data from the system.
 	Delete(authorityID uuid.UUID, name string, provider string) error
 
-	// DeleteVersion removes a module version from the system
+	// DeleteVersion removes a module version from the system.
 	// If the version removed is the only module version available, the entire
-	// module will be removed
+	// module will be removed.
 	DeleteVersion(authorityID uuid.UUID, name string, provider string, version string) error
 }
 
-// DefaultModuleService is the concrete implementation of ModuleService
+// DefaultModuleService is the concrete implementation of ModuleService.
 type DefaultModuleService struct {
 	ModuleRepository repositories.ModuleRepository
 	AuthorityService AuthorityService
@@ -195,7 +195,7 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 	return s.ModuleRepository.DeleteVersion(v)
 }
 
-// deleteVersion removes the files for a specific module version
+// deleteVersion removes the files for a specific module version.
 func (s *DefaultModuleService) deleteVersion(v *module.Version) {
 	if err := s.Resolver.Purge(v.Location); err != nil {
 		log.Warn().

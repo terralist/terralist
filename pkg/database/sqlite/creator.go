@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"fmt"
 	"net/url"
 	"sync"
 
@@ -21,7 +22,10 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	cfg := config.(*Config)
+	cfg, ok := config.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("unsupported configurator: %T", config)
+	}
 
 	// See https://gitlab.com/cznic/sqlite/-/issues/47
 	dsn := cfg.Path

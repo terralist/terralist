@@ -9,7 +9,7 @@ import (
 	"terralist/pkg/auth"
 )
 
-// Provider is the concrete implementation of oauth.Engine
+// Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
 	ClientID     string
 	ClientSecret string
@@ -124,5 +124,17 @@ func (p *Provider) PerformUserInfoRequest(t tokenResponse) (string, string, erro
 		return "", "", err
 	}
 
-	return data["sub"].(string), data["email"].(string), nil
+	var sub string
+	var email string
+	var ok bool
+
+	if sub, ok = data["sub"].(string); !ok {
+		return "", "", fmt.Errorf("no user provided")
+	}
+
+	if email, ok = data["email"].(string); !ok {
+		return "", "", fmt.Errorf("no email provided")
+	}
+
+	return sub, email, nil
 }

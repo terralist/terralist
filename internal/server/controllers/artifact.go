@@ -19,13 +19,13 @@ const (
 	artifactApiBase = "/api/artifacts"
 )
 
-// ArtifactController registers the endpoints to control authorities
+// ArtifactController registers the endpoints to control authorities.
 type ArtifactController interface {
 	api.RestController
 }
 
 // DefaultArtifactController is a concrete implementation of
-// ArtifactController
+// ArtifactController.
 type DefaultArtifactController struct {
 	AuthorityService services.AuthorityService
 	ModuleService    services.ModuleService

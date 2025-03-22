@@ -7,13 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// InternalController registers the endpoints used internally
+// InternalController registers the endpoints used internally.
 type InternalController interface {
 	api.RestController
 }
 
 // DefaultInternalController is a concrete implementation of
-// InternalController
+// InternalController.
 type DefaultInternalController struct {
 	HostURL               string
 	CanonicalDomain       string
