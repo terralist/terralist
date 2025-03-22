@@ -50,9 +50,9 @@ jobs:
 
       - name: Run frontend linters
         run: |
-          yarn --cwd ./web format:check
-          yarn --cwd ./web check
-          yarn --cwd ./web lint:check
+          yarn --cwd ./web run format:check
+          yarn --cwd ./web run check
+          yarn --cwd ./web run lint:check
 
       - name: Run unit tests
         run: task run-tests
