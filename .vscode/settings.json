@@ -6,6 +6,10 @@
     ]
   },
   "go.testTags": "mocks",
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": [
+    "--fast"
+  ],
 
   // Frontend
   "eslint.enable": true,
