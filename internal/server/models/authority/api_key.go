@@ -32,7 +32,7 @@ func (a ApiKey) ToDTO() ApiKeyDTO {
 	}
 
 	return ApiKeyDTO{
-		ID:         a.ID.String(),
+		ID:         a.Entity.ID.String(),
 		Expiration: exp,
 		Name:       a.Name,
 	}

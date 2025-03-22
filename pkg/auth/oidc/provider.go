@@ -34,11 +34,11 @@ func (p *Provider) Name() string {
 
 func (p *Provider) GetAuthorizeUrl(state string) string {
 	queryParams := url.Values{
-		"client_id":     {p.ClientID},
-		"state":         {state},
-		"response_type": {"code"},
-		"redirect_uri":  {p.RedirectUrl},
-		"scope":         {p.Scope},
+		"client_id":     []string{p.ClientID},
+		"state":         []string{state},
+		"response_type": []string{"code"},
+		"redirect_uri":  []string{p.RedirectUrl},
+		"scope":         []string{p.Scope},
 	}
 	return fmt.Sprintf(
 		"%s?%s",
@@ -66,11 +66,11 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 
 func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) error {
 	reqBody := url.Values{
-		"client_id":     {p.ClientID},
-		"client_secret": {p.ClientSecret},
-		"grant_type":    {"authorization_code"},
-		"code":          {code},
-		"redirect_uri":  {p.RedirectUrl},
+		"client_id":     []string{p.ClientID},
+		"client_secret": []string{p.ClientSecret},
+		"grant_type":    []string{"authorization_code"},
+		"code":          []string{code},
+		"redirect_uri":  []string{p.RedirectUrl},
 	}
 	req, err := http.NewRequest(http.MethodPost, p.TokenUrl, strings.NewReader(reqBody.Encode()))
 

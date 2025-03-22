@@ -23,7 +23,7 @@ import (
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/mazen160/go-random"
+	random "github.com/mazen160/go-random"
 	"github.com/rs/zerolog/log"
 )
 

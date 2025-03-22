@@ -76,8 +76,8 @@ func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) erro
 	)
 
 	reqBody := url.Values{
-		"grant_type": {"authorization_code"},
-		"code":       {code},
+		"grant_type": []string{"authorization_code"},
+		"code":       []string{code},
 	}
 	req, err := http.NewRequest(http.MethodPost, accessTokenUrl, strings.NewReader(reqBody.Encode()))
 	if err != nil {

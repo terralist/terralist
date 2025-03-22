@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/go-getter"
+	getter "github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )
 
