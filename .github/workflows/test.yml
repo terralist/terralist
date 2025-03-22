@@ -43,6 +43,17 @@ jobs:
       - name: Build web application
         run: task build-webapp
 
+      - name: Run backend linters
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+
+      - name: Run frontend linters
+        run: |
+          yarn --cwd ./web format:check
+          yarn --cwd ./web check
+          yarn --cwd ./web lint:check
+
       - name: Run unit tests
         run: task run-tests
 
@@ -84,17 +95,6 @@ jobs:
 
       - name: Build Terralist
         run: task build -- release
-
-      - name: Run backend linters
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-
-      - name: Run frontend linters
-        run: |
-          yarn --cwd ./web format:check
-          yarn --cwd ./web check
-          yarn --cwd ./web lint:check
 
       - name: Save binary
         uses: actions/upload-artifact@v4
