@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { link } from 'svelte-spa-router';
   import { clickOutside } from 'svelte-use-click-outside';
 
@@ -24,9 +25,17 @@
   let selectedSearchEntry: number = 0;
 
   const result = useQuery(Artifacts.getAll);
-  $: artifacts = $result.data ?? [];
 
+  let artifacts: Artifact[] = [];
   let filteredArtifacts: Artifact[] = [];
+
+  const unsubscribe = result.subscribe(({ data, isLoading, error }) => {
+    if (isLoading || error) {
+      return;
+    }
+
+    artifacts = data ?? [];
+  });
 
   const useMetaKey = ['macOS', 'iPadOS', 'iOS'].includes(Device.OSName);
 
@@ -72,6 +81,10 @@
     open = false;
     searchbar?.blur();
   };
+
+  onDestroy(() => {
+    unsubscribe();
+  });
 </script>
 
 {#if open}

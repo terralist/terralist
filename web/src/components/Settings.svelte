@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
+
   import Icon from './Icon.svelte';
 
   import FormModal from './FormModal.svelte';
@@ -17,8 +19,21 @@
 
   const result = useQuery(Authorities.getAll);
 
-  $: authorities = writable($result.data ?? []);
-  $: errorMessage = writable($result.error);
+  let authorities = writable<AuthorityT[]>([]);
+  let errorMessage = writable<string>('');
+
+  const unsubscribe = result.subscribe(({ data, isLoading, error }) => {
+    if (isLoading) {
+      return;
+    }
+
+    if (error) {
+      errorMessage.set(error);
+      return;
+    }
+
+    authorities.set(data ?? []);
+  });
 
   const [createModalEnabled, showCreateModal, hideCreateModal] = useFlag(false);
 
@@ -36,7 +51,7 @@
     let result = await Authorities.create(name ?? '', policyUrl ?? '');
 
     if (result.status === 'OK') {
-      authorities.set([...($authorities ?? []), result.data]);
+      authorities.set([...$authorities, result.data]);
     } else {
       errorMessage.set(result.message);
     }
@@ -75,6 +90,10 @@
       errorMessage.set(result.message);
     }
   };
+
+  onDestroy(() => {
+    unsubscribe();
+  });
 </script>
 
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">

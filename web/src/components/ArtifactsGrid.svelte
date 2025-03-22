@@ -17,8 +17,8 @@
   let currentPage: number = 0;
   let artifactsCount: number = 0;
 
+  let artifacts: Artifact[] = [];
   const result = useQuery(Artifacts.getAll);
-  $: artifacts = $result.data ?? [];
 
   let filteredArtifacts: Artifact[];
 
@@ -98,19 +98,27 @@
 
   let filtersUnsubscribe: () => void;
 
-  const artifactsUnsubscribe = result.subscribe(() => {
-    updateArtifacts();
+  const artifactsUnsubscribe = result.subscribe(
+    ({ data, isLoading, error }) => {
+      if (isLoading || error) {
+        return;
+      }
 
-    initPages();
+      artifacts = data ?? [];
 
-    filtersUnsubscribe = filters.subscribe(() => {
-      updateFilters();
       updateArtifacts();
 
       initPages();
-      buildPages(0);
-    });
-  });
+
+      filtersUnsubscribe = filters.subscribe(() => {
+        updateFilters();
+        updateArtifacts();
+
+        initPages();
+        buildPages(0);
+      });
+    }
+  );
 
   onDestroy(() => {
     filtersUnsubscribe();

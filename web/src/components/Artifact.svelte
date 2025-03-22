@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { push } from 'svelte-spa-router';
 
   import config from '@/config';
@@ -67,18 +68,33 @@
     provider
   );
 
-  $: versions = $result.data ?? [];
-  $: if (
-    // There is no version, or user selected 'latest' version
-    (!version || version == 'latest') &&
-    // We have fetched versions
-    !$result.isLoading &&
-    $result.data &&
-    $result.data.length > 0
-  ) {
-    version = $result.data[0];
-    label = `${$result.data[0]} (latest)`;
-  }
+  let versions: string[] = [];
+
+  const unsubscribe = result.subscribe(res => {
+    if (res.error || res.isLoading) {
+      return;
+    }
+
+    versions = res.data ?? [];
+
+    if (versions.length == 0) {
+      return;
+    }
+
+    // If there is no version, or user selected 'latest' version
+    if (!version || version == 'latest') {
+      version = versions[0];
+    }
+
+    // If the selected version is the latest, change the label
+    if (version == versions[0]) {
+      label = `${version} (latest)`;
+    }
+  });
+
+  onDestroy(() => {
+    unsubscribe();
+  });
 </script>
 
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
