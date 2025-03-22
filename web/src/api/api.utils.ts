@@ -77,7 +77,7 @@ const withError = (errorCode?: ErrorCode, data?: unknown): ResultError => {
 };
 
 const handleResponse = <T>(response: AxiosResponse<T>): Result<T> => {
-  if ([200, 201].includes(response.status)) {
+  if (response.status >= 200 && response.status < 300) {
     return withSuccess<T>(response.data);
   }
 
