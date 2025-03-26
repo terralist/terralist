@@ -115,6 +115,18 @@ The secret to use when signing authorization tokens.
 | cli | `--token-signing-secret` |
 | env | `TERRALIST_TOKEN_SIGNING_SECRET` |
 
+### `authorized-users`
+
+Comma separated list of users authorized to access the settings page. If empty, all users are allowed.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--authorized-users` |
+| env | `TERRALIST_AUTHORIZED_USERS` |
+
 ### `oauth-provider`
 
 The OAuth 2.0 provider.

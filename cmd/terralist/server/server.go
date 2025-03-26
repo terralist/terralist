@@ -181,6 +181,7 @@ func (s *Command) run() error {
 		ModulesAnonymousRead:   flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
 		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 		Home:                   flags[HomeFlag].(*cli.PathFlag).Value,
+		AuthorizedUsers:        flags[AuthorizedUsersFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {
