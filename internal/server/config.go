@@ -12,4 +12,5 @@ type UserConfig struct {
 	CustomCompanyName      string `mapstructure:"custom-company-name"`
 	ModulesAnonymousRead   bool   `mapstructure:"modules-anonymous-read"`
 	ProvidersAnonymousRead bool   `mapstructure:"providers-anonymous-read"`
+	AuthorizedUsers        string `mapstructure:"authorized-users"`
 }
