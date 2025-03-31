@@ -23,7 +23,7 @@
     "@types/node": "^22.13.11",
     "@types/semver-compare": "^1.0.3",
     "@typescript-eslint/parser": "^8.26.1",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.8.4",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
