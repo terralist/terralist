@@ -1899,16 +1899,7 @@ postcss-value-parser@^4.0.0, postcss-value-parser@^4.2.0:
   resolved "https://registry.yarnpkg.com/postcss-value-parser/-/postcss-value-parser-4.2.0.tgz#723c09920836ba6d3e5af019f92bc0971c02e514"
   integrity sha512-1NNCs6uurfkVbeXG4S8JFT9t19m45ICnif8zWLd5oPSZ50QnwMfK+H3jv408d4jw/7Bttv5axS5IiHoLaVNHeQ==
 
-postcss@^8.4.20, postcss@^8.4.47, postcss@^8.5.2:
-  version "8.5.2"
-  resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.5.2.tgz#e7b99cb9d2ec3e8dd424002e7c16517cb2b846bd"
-  integrity sha512-MjOadfU3Ys9KYoX0AdkBlFEF1Vx37uCCeN4ZHnmwm9FfpbsGWMZeBLMmmpY+6Ocqod7mkdZ0DT31OlbsFrLlkA==
-  dependencies:
-    nanoid "^3.3.8"
-    picocolors "^1.1.1"
-    source-map-js "^1.2.1"
-
-postcss@^8.4.49:
+postcss@^8.4.20, postcss@^8.4.47, postcss@^8.4.49, postcss@^8.5.2:
   version "8.5.3"
   resolved "https://registry.yarnpkg.com/postcss/-/postcss-8.5.3.tgz#1463b6f1c7fb16fe258736cba29a2de35237eafb"
   integrity sha512-dle9A3yYxlBSrt8Fu+IpjGT8SY8hN0mlaA6GY8t0P5PjIOZemULz/E2Bnm/2dcUOena75OTNkHI76uZBNUUq3A==
@@ -2200,10 +2191,10 @@ svelte-check@^4.1.4:
     picocolors "^1.0.0"
     sade "^1.7.4"
 
-svelte-eslint-parser@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/svelte-eslint-parser/-/svelte-eslint-parser-1.0.1.tgz#af9912288ebc691b986861db8fcf44fe71fedfeb"
-  integrity sha512-JjdEMXOJqy+dxeaElxbN+meTOtVpHfLnq9VGpiTAOLgM0uHO+ogmUsA3IFgx0x3Wl15pqTZWycCikcD7cAQN/g==
+svelte-eslint-parser@^1.0.1, svelte-eslint-parser@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/svelte-eslint-parser/-/svelte-eslint-parser-1.1.1.tgz#8bea379aa0ac8c36fb42677dcb2ac27c14134755"
+  integrity sha512-QLVGPIMDettl30qRHXU2VrPvVJKG8GsGstye7n8rFbEiu3gEARksuQg9Xu4GzubNxhGNM8stfBZkhyMbBQmjFA==
   dependencies:
     eslint-scope "^8.2.0"
     eslint-visitor-keys "^4.0.0"
