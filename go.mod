@@ -18,7 +18,7 @@ require (
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0
-	google.golang.org/api v0.227.0
+	google.golang.org/api v0.228.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
@@ -30,7 +30,7 @@ require (
 	cel.dev/expr v0.19.2 // indirect
 	cloud.google.com/go v0.118.3 // indirect
 	cloud.google.com/go/auth v0.15.0 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	cloud.google.com/go/iam v1.4.1 // indirect
 	cloud.google.com/go/monitoring v1.24.0 // indirect
@@ -303,7 +303,7 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 )
 
 exclude google.golang.org/grpc/stats/opentelemetry v0.0.0-20240907200651-3ffb98b2c93a
