@@ -236,8 +236,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		CertFile: userConfig.CertFile,
 		KeyFile:  userConfig.KeyFile,
 
-		AuthorizedUsers: userConfig.AuthorizedUsers,
-
 		Router: router,
 
 		JWT:      jwtManager,
