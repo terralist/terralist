@@ -2,6 +2,7 @@ package s3
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"terralist/pkg/storage"
@@ -31,6 +32,12 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	serverSideEncryption := aws.String(r.ServerSideEncryption)
 	if r.ServerSideEncryption == "none" {
 		serverSideEncryption = nil
+	}
+
+	// Needed to explicitly rewind the file because it has been entirely consumed before.
+	// Otherwise the body will be nil due to the Read method returning nothing.
+	if _, err := in.Reader.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not upload archive, file can't be rewinded: %w", err)
 	}
 
 	if _, err := s3.New(r.Session).PutObject(&s3.PutObjectInput{
