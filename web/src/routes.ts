@@ -47,9 +47,12 @@ const baseConditions: RoutePrecondition[] = [
 const isAuthorizedUser = () => {
   return async () => {
     const user = UserStore.get();
+    if (user === null) {
+      return false;
+    }
     const authorizedUsers =
       config.runtime.TERRALIST_AUTHORIZED_USERS.split(',');
-    return authorizedUsers === '' || authorizedUsers.includes(user.userName);
+    return authorizedUsers[0] === '' || authorizedUsers.includes(user.userName);
   };
 };
 
