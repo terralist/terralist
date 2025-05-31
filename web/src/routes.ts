@@ -44,6 +44,18 @@ const baseConditions: RoutePrecondition[] = [
   }
 ];
 
+const isAuthorizedUser = () => {
+  return async () => {
+    const user = UserStore.get();
+    if (user === null) {
+      return false;
+    }
+    const authorizedUsers =
+      config.runtime.TERRALIST_AUTHORIZED_USERS.split(',');
+    return authorizedUsers[0] === '' || authorizedUsers.includes(user.userName);
+  };
+};
+
 const isAuthenticatedCondition = (shouldBe = true) => {
   return async () => {
     return UserStore.isAvailable() == shouldBe;
@@ -90,7 +102,10 @@ const routes = {
   '/settings': wrap({
     asyncComponent: async () => import('@/pages/Settings.svelte'),
     loadingComponent: Loading,
-    conditions: baseConditions.concat([isAuthenticatedCondition()]),
+    conditions: baseConditions.concat([
+      isAuthenticatedCondition(),
+      isAuthorizedUser()
+    ]),
     userData: newUserData({
       onFailureRedirectTo: '/login'
     })
