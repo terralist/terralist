@@ -217,7 +217,7 @@ jobs:
 
       - name: Configure MinIO
         run: |
-          mc config host add minio $TERRALIST_S3_ENDPOINT $TERRALIST_S3_ACCESS_KEY_ID $TERRALIST_S3_SECRET_ACCESS_KEY
+          mc alias set minio $TERRALIST_S3_ENDPOINT $TERRALIST_S3_ACCESS_KEY_ID $TERRALIST_S3_SECRET_ACCESS_KEY
           mc mb --ignore-existing minio/$TERRALIST_S3_BUCKET_NAME
 
       - name: Spin up Terralist server
