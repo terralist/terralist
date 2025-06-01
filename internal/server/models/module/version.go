@@ -43,7 +43,7 @@ type VersionDTO struct {
 func (v VersionDTO) ToArtifactVersion() artifact.Version {
 	return artifact.Version{
 		Tag:           v.Version,
-		Documentation: string(v.Documentation),
+		Documentation: v.Documentation,
 	}
 }
 

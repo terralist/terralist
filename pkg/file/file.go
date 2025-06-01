@@ -292,7 +292,7 @@ func NewEmptyFile(name string) File {
 	}
 }
 
-// NewInMemoryFile returns a file stored in memory
+// NewInMemoryFile returns a file stored in memory.
 func NewInMemoryFile(name string, content []byte) File {
 	return &InMemoryFile{
 		name: name,
@@ -307,7 +307,7 @@ func NewInMemoryFile(name string, content []byte) File {
 }
 
 // FileInfoToDirEntry returns the file info relative
-// to the given dir
+// to the given dir.
 func FileInfoToDirEntry(f File, dir string) (fs.DirEntry, error) {
 	fi := f.Metadata()
 

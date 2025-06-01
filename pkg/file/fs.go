@@ -14,12 +14,12 @@ var (
 )
 
 // FS implements io.FS and represents an FS based on
-// the File interface
+// the File interface.
 type FS struct {
 	files map[string]File
 }
 
-// NewFS takes a list of files and creates a FS
+// NewFS takes a list of files and creates a FS.
 func NewFS(files []File) (*FS, error) {
 	filesMap := map[string]File{}
 
@@ -38,8 +38,8 @@ func NewFS(files []File) (*FS, error) {
 	}, nil
 }
 
-// MustNewFS takes a list of files and creates a FS
-// It panics if it cannot create the FS
+// MustNewFS takes a list of files and creates a FS.
+// It panics if it cannot create the FS.
 func MustNewFS(files []File) *FS {
 	fs, err := NewFS(files)
 	if err != nil {
@@ -64,7 +64,7 @@ func (f *FS) Open(name string) (fs.File, error) {
 func (f *FS) ReadFile(name string) ([]byte, error) {
 	if file, ok := f.files[name]; ok {
 		// Rewind the file
-		file.Seek(0, io.SeekStart)
+		_, _ = file.Seek(0, io.SeekStart)
 
 		// Read to the buffer
 		body := make([]byte, file.Metadata().Size())

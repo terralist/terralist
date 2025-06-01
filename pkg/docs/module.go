@@ -109,7 +109,7 @@ func GetModuleDocumentation(moduleFS *file.FS, rootRelativePath string) (string,
 	foundEntrypoints := []string{}
 	if err := moduleFS.Walk(rootRelativePath, func(filepath string, fi fs.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 
 		// If we are searching in a subdirectory, we can skip it
