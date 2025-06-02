@@ -15,7 +15,7 @@
     "all": "yarn run format:check && yarn run check && yarn run lint:check && yarn run build"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.2.7",
+    "@eslint/compat": "^1.2.9",
     "@eslint/js": "^9.22.0",
     "@stylistic/eslint-plugin-ts": "^4.2.0",
     "@sveltejs/vite-plugin-svelte": "^2.5.3",
