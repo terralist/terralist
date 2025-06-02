@@ -40,7 +40,7 @@ RUN go build -a -v -o terralist \
   -X 'main.Mode=release'" \
   ./cmd/terralist/main.go
 
-FROM alpine:3.21
+FROM alpine:3.22
 
 ARG VERSION="dev"
 ARG COMMIT_HASH="n/a"
