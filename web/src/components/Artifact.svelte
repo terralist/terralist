@@ -9,7 +9,7 @@
   import config from '@/config';
   import { indent } from '@/lib/utils';
   import { useQuery } from '@/lib/hooks';
-  import context from '@/context';
+  import context, { type Theme } from '@/context';
 
   import Icon from './Icon.svelte';
   import Dropdown from './Dropdown.svelte';
@@ -23,19 +23,10 @@
   } from '@/api/artifacts';
   import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
 
-  let currentThemeLink: HTMLLinkElement | null = null;
+  let currentTheme: Theme = 'light';
 
   const themeUnsubscribe = context.theme.subscribe(theme => {
-    const href = theme === 'light' ? lightHref : darkHref;
-
-    if (currentThemeLink) currentThemeLink.remove();
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = href;
-    document.head.appendChild(link);
-
-    currentThemeLink = link;
+    currentTheme = theme;
   });
 
   export let type: 'module' | 'provider';
@@ -149,6 +140,11 @@
   });
 </script>
 
+<svelte:head>
+  <link
+    rel="stylesheet"
+    href={currentTheme == 'light' ? lightHref : darkHref} />
+</svelte:head>
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
   {#if $result.isLoading}
     <LoadingScreen />
