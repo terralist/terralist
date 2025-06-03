@@ -256,43 +256,51 @@ func TestUploadModule(t *testing.T) {
 						Convey(td.Desc, func() {
 							td.Func()
 
-							Convey("If the resolver is not set", func() {
-								moduleService.Resolver = nil
+							Convey("If the fetcher fails to download the module", func() {
+								expectedErr := errors.New("some reason")
 
-								mockModuleRepository.
-									On("Upsert", mock.AnythingOfType("module.Module")).
-									Return(&module.Module{}, nil)
+								mockFetcher.
+									On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
+									Return(nil, expectedErr)
 
 								Convey("When the service is queried", func() {
 									err := moduleService.Upload(&dto, url, nil)
 
-									Convey("No error should be returned", func() {
-										So(err, ShouldBeNil)
+									Convey("The fetcher error should be returned", func() {
+										So(err, ShouldEqual, expectedErr)
 									})
 								})
 							})
 
-							Convey("If the resolver is set", func() {
-								// Set by default
+							Convey("If the fetcher downloads the module", func() {
+								archive, err := file.Archive("module.zip", []file.File{
+									file.NewInMemoryFile("README.md", []byte("# module\n")),
+									file.NewInMemoryFile("main.tf", []byte("locals {\n  test = true\n}\n")),
+								})
+								So(err, ShouldBeNil)
 
-								Convey("If the module files cannot be downloaded", func() {
-									mockFetcher.
-										On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
-										Return(nil, errors.New(""))
+								mockFetcher.
+									On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
+									Return(archive, nil)
+
+								Convey("If the resolver is not set", func() {
+									moduleService.Resolver = nil
+
+									mockModuleRepository.
+										On("Upsert", mock.AnythingOfType("module.Module")).
+										Return(&module.Module{}, nil)
 
 									Convey("When the service is queried", func() {
 										err := moduleService.Upload(&dto, url, nil)
 
-										Convey("An error should be returned", func() {
-											So(err, ShouldNotBeNil)
+										Convey("No error should be returned", func() {
+											So(err, ShouldBeNil)
 										})
 									})
 								})
 
-								Convey("If the module files can be downloaded", func() {
-									mockFetcher.
-										On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
-										Return(file.NewEmptyFile("test.txt"), nil)
+								Convey("If the resolver is set", func() {
+									// Set by default
 
 									Convey("If the resolver fails to store the module files", func() {
 										mockResolver.
@@ -308,22 +316,49 @@ func TestUploadModule(t *testing.T) {
 										})
 									})
 
-									Convey("If the resolver is successfully stores the module files", func() {
+									Convey("If the resolver successfully stores the module files", func() {
 										location, _ := random.String(16)
 
 										mockResolver.
 											On("Store", mock.AnythingOfType("*storage.StoreInput")).
 											Return(location, nil)
 
-										mockModuleRepository.
-											On("Upsert", mock.AnythingOfType("module.Module")).
-											Return(&module.Module{}, nil)
+										Convey("If the resolver fails to store the documentation file", func() {
+											mockResolver.
+												On("Store", mock.AnythingOfType("*storage.StoreInput")).
+												Return("", errors.New(""))
 
-										Convey("When the service is queried", func() {
-											err := moduleService.Upload(&dto, url, nil)
+											mockModuleRepository.
+												On("Upsert", mock.AnythingOfType("module.Module")).
+												Return(&module.Module{}, nil)
 
-											Convey("No error should be returned", func() {
-												So(err, ShouldBeNil)
+											Convey("When the service is queried", func() {
+												err := moduleService.Upload(&dto, url, nil)
+
+												Convey("No error should be returned", func() {
+													// If we fail to push the documentation, we ignore and log a warning
+													So(err, ShouldBeNil)
+												})
+											})
+										})
+
+										Convey("If the resolver successfully stores the documentation file", func() {
+											docsLocation, _ := random.String(16)
+
+											mockResolver.
+												On("Store", mock.AnythingOfType("*storage.StoreInput")).
+												Return(docsLocation, nil)
+
+											mockModuleRepository.
+												On("Upsert", mock.AnythingOfType("module.Module")).
+												Return(&module.Module{}, nil)
+
+											Convey("When the service is queried", func() {
+												err := moduleService.Upload(&dto, url, nil)
+
+												Convey("No error should be returned", func() {
+													So(err, ShouldBeNil)
+												})
 											})
 										})
 									})
