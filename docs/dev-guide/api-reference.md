@@ -520,7 +520,7 @@ If the URL from which the module files should be downloaded is of types `http` o
       http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
     ```
 
-  !!! note "Notice the `archive=zip` query argument. If you want to instruct Terralist to download the asset from the API, you will also need to manually specify that the asset which is being downloaded is a zip archive."
+    !!! note "Notice the `archive=zip` query argument. If you want to instruct Terralist to download the asset from the API, you will also need to manually specify that the asset which is being downloaded is a zip archive."
 
 === "GitHub HTTP"
 
