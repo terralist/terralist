@@ -13,7 +13,7 @@ type Version struct {
 	Module        Module
 	Version       string       `gorm:"not null"`
 	Location      string       `gorm:"not null"`
-	Documentation string       `gorm:"not null"`
+	Documentation string       `gorm:"not null;default:''"` // TODO: This adds backwards-compatibility, we should remove it in future versions
 	Providers     []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Dependencies  []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Submodules    []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
