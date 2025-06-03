@@ -510,7 +510,7 @@ If the URL from which the module files should be downloaded is of types `http` o
     curl -L -X POST \
       -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
       -d '{
-        "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{ASSET-ID}",
+        "download_url": "https://api.github.com/repos/{OWNER}/{REPO}/releases/assets/{ASSET-ID}?archive=zip",
         "headers": {
             "Accept": "application/octet-stream",
             "Authorization": "Bearer {TOKEN}",
@@ -519,6 +519,8 @@ If the URL from which the module files should be downloaded is of types `http` o
       }' \
       http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
     ```
+
+  !!! note "Notice the `archive=zip` query argument. If you want to instruct Terralist to download the asset from the API, you will also need to manually specify that the asset which is being downloaded is a zip archive."
 
 === "GitHub HTTP"
 
