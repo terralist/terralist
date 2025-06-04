@@ -17,6 +17,10 @@ You can also generate API keys for programmatic access.
 Terralist can host your modules code and providers binaries either locally or remotely in a private storage environment (e.g. a cloud bucket).
 If you opt for a remote storage environment, every time Terralist is asked for a download request, it will ask the cloud environment to generate a temporarily presigned URL, then forward that particular URL to the requester.
 
+### Artifacts documentation
+
+Terralist analyses the artifacts you are pushing into it and automatically generates documentation for them. You can also bring your own documentation if you prefer handling it on your own. The documentation is then versioned and displayed in the web UI.
+
 ### Proxy mode
 
 Terralist can also operate in proxy mode, where Terralist will simply forward any URL that it receives from the creators. This means you can take advantage of the Terraform `version` attribute while storing your modules in a git mono-repository.

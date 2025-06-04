@@ -18,6 +18,9 @@ type ModuleRepository interface {
 	// Find searches for a specific module.
 	Find(namespace, name, provider string) (*module.Module, error)
 
+	// FindVersion searches for a specific module version.
+	FindVersion(namespace, name, provider, version string) (*module.Version, error)
+
 	// FindVersionLocation searches for a specific module version location.
 	FindVersionLocation(namespace, name, provider, version string) (*string, error)
 
@@ -82,6 +85,63 @@ func (r *DefaultModuleRepository) Find(namespace, name, provider string) (*modul
 	})
 
 	return &m, nil
+}
+
+func (r *DefaultModuleRepository) FindVersion(namespace, name, provider, version string) (*module.Version, error) {
+	ver := module.Version{}
+
+	atn := (authority.Authority{}).TableName()
+	mtn := (module.Module{}).TableName()
+	vtn := (module.Version{}).TableName()
+
+	err := r.Database.Handler().
+		Table(vtn).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.module_id AND LOWER(%s.name) = LOWER(?) AND LOWER(%s.provider) = LOWER(?)",
+				mtn,
+				mtn,
+				vtn,
+				mtn,
+				mtn,
+			),
+			name,
+			provider,
+		).
+		Joins(
+			fmt.Sprintf(
+				"JOIN %s ON %s.id = %s.authority_id AND LOWER(%s.name) = LOWER(?)",
+				atn,
+				atn,
+				mtn,
+				atn,
+			),
+			namespace,
+		).
+		Where(fmt.Sprintf("%s.version = ?", vtn), version).
+		Preload("Providers").
+		Preload("Dependencies").
+		Preload("Submodules").
+		Preload("Submodules.Providers").
+		Preload("Submodules.Dependencies").
+		First(&ver).
+		Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf(
+				"no module version found with given arguments (module %s/%s/%s/%s)",
+				namespace,
+				name,
+				provider,
+				version,
+			)
+		} else {
+			return nil, fmt.Errorf("error while querying the database: %v", err)
+		}
+	}
+
+	return &ver, nil
 }
 
 func (r *DefaultModuleRepository) FindVersionLocation(namespace, name, provider, version string) (*string, error) {

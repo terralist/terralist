@@ -37,6 +37,7 @@ nav:
   - Installation: installation.md
   - Getting Started: getting-started.md
   - Configuration: configuration.md
+  - Artifacts Documentation: artifacts-documentation.md
   - Developer Guide: 
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md

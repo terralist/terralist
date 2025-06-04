@@ -108,6 +108,26 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 
 	api.GET(
+		"/:namespace/:name/:provider/version/:version",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			dto, err := c.ModuleService.GetVersion(namespace, name, provider, version)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, dto)
+		},
+	)
+
+	api.GET(
 		"/:namespace/:name/version",
 		func(ctx *gin.Context) {
 			namespace := ctx.Param("namespace")

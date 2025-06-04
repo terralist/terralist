@@ -1,6 +1,6 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
-import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte'
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+import { svelte, vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,25 +8,26 @@ export default defineConfig({
     svelte({
       preprocess: [vitePreprocess()],
       onwarn: (warning, handler) => {
-          if (warning.code.startsWith('a11y-')) {
-            return; // silence a11y warnings
-          }
-          handler?.(warning);
-      },
-    }),
+        if (warning.code.startsWith('a11y-')) {
+          return; // silence a11y warnings
+        }
+        handler?.(warning);
+      }
+    })
   ],
-  envPrefix: "TERRALIST",
-  base: "./",
+  envPrefix: 'TERRALIST',
+  base: './',
   build: {
+    minify: false,
     rollupOptions: {
       input: {
-        index: resolve(__dirname, 'index.html'),
+        index: resolve(__dirname, 'index.html')
       }
-    },
+    }
   },
   resolve: {
     alias: {
-      '@': __dirname + '/src',
+      '@': __dirname + '/src'
     }
-  },
+  }
 });

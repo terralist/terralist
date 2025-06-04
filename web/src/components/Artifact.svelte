@@ -1,18 +1,33 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { push } from 'svelte-spa-router';
+  import SvelteMarkdown from 'svelte-markdown';
+
+  import lightHref from 'github-markdown-css/github-markdown-light.css?url';
+  import darkHref from 'github-markdown-css/github-markdown-dark.css?url';
 
   import config from '@/config';
   import { indent } from '@/lib/utils';
   import { useQuery } from '@/lib/hooks';
+  import context, { type Theme } from '@/context';
 
   import Icon from './Icon.svelte';
   import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
 
-  import { Artifacts, type ArtifactVersion } from '@/api/artifacts';
+  import {
+    Artifacts,
+    type ArtifactVersion,
+    type ArtifactVersionWithDocumentation
+  } from '@/api/artifacts';
   import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
+
+  let currentTheme: Theme = 'light';
+
+  const themeUnsubscribe = context.theme.subscribe(theme => {
+    currentTheme = theme;
+  });
 
   export let type: 'module' | 'provider';
   export let namespace: string;
@@ -92,11 +107,44 @@
     }
   });
 
+  let documentation: string | undefined;
+
+  const versionUnsubscribe = useQuery<ArtifactVersionWithDocumentation>(
+    Artifacts.getOneVersion,
+    namespace,
+    name,
+    provider,
+    version
+  ).subscribe(res => {
+    if (res.isLoading) {
+      return;
+    }
+
+    if (res.error) {
+      console.error(
+        'Skipping module version display as it cannot be fetched:',
+        res.error
+      );
+      return;
+    }
+
+    if (res.data) {
+      documentation = res.data.documentation;
+    }
+  });
+
   onDestroy(() => {
     unsubscribe();
+    versionUnsubscribe();
+    themeUnsubscribe();
   });
 </script>
 
+<svelte:head>
+  <link
+    rel="stylesheet"
+    href={currentTheme == 'light' ? lightHref : darkHref} />
+</svelte:head>
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
   {#if $result.isLoading}
     <LoadingScreen />
@@ -145,6 +193,14 @@
         <pre
           class="bg-gray-200 dark:bg-gray-700 border border-slate-400 dark:border-slate-600 p-3 text-xs overflow-y-auto">{template}</pre>
       </div>
+      {#if documentation}
+        <div class="m-6 p-4 flex flex-col gap-4">
+          <h2 class="text-lg font-bold">Readme</h2>
+          <div class="markdown-body bg-slate-50">
+            <SvelteMarkdown source={documentation} />
+          </div>
+        </div>
+      {/if}
     </section>
   {/if}
 </main>

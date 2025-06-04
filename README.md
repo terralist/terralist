@@ -21,7 +21,7 @@
 
 Terralist is a private Terraform registry for providers and modules that follows the published HashiCorp protocols. It provides:
 * A secure way to distribute your confidential modules and providers;
-* [_Soon_] A management interface to visualize documentation;
+* A management interface to visualize artifacts (including modules documentation);
 
 ## Highlights
 

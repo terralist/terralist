@@ -85,7 +85,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			location, err := c.ModuleService.GetVersion(namespace, name, provider, version)
+			location, err := c.ModuleService.GetVersionURL(namespace, name, provider, version)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -125,7 +125,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				AuthorityID: authorityID,
 				Name:        name,
 				Provider:    provider,
-				VersionDTO: module.VersionDTO{
+				VersionCreateDTO: module.VersionCreateDTO{
 					Version: version,
 				},
 			}
@@ -234,7 +234,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				AuthorityID: authorityID,
 				Name:        name,
 				Provider:    provider,
-				VersionDTO: module.VersionDTO{
+				VersionCreateDTO: module.VersionCreateDTO{
 					Version: version,
 				},
 			}
