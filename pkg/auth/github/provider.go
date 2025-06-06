@@ -34,7 +34,7 @@ type Team struct {
 }
 
 var (
-	httpClient    = &http.Client{}
+	httpClient = &http.Client{}
 )
 
 func (p *Provider) Name() string {
