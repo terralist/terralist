@@ -11,9 +11,14 @@ type Config struct {
 	ClientSecret string
 	Organization string
 	Teams        string
+	Domain       string
 }
 
-func (c *Config) SetDefaults() {}
+func (c *Config) SetDefaults() {
+	if c.Domain == "" {
+		c.Domain = "github.com"
+	}
+}
 
 func (c *Config) Validate() error {
 	if c.ClientID == "" {
