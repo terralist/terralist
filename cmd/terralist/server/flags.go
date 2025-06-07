@@ -197,8 +197,8 @@ var flags = map[string]cli.Flag{
 		Description: "The GitHub team slugs in CSV format to use for user validation.",
 	},
 	GitHubDomainFlag: &cli.StringFlag{
-		Description: "The GitHub base domain if you are using GitHub Enterprise. (default: 'github.com')",
-		DefaultValue: "github.com"
+		Description:  "The GitHub base domain if you are using GitHub Enterprise. (default: 'github.com')",
+		DefaultValue: "github.com",
 	},
 	BitBucketClientIDFlag: &cli.StringFlag{
 		Description: "The BitBucket OAuth Application client ID.",
