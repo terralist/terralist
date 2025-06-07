@@ -14,10 +14,12 @@ import (
 
 // Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
-	ClientID     string
-	ClientSecret string
-	Organization string
-	Teams        string
+	ClientID      string
+	ClientSecret  string
+	Organization  string
+	Teams         string
+	oauthEndpoint string
+	apiEndpoint   string
 }
 
 type tokenResponse struct {
@@ -32,9 +34,7 @@ type Team struct {
 }
 
 var (
-	oauthEndpoint = "https://github.com/login/oauth"
-	apiEndpoint   = "https://api.github.com"
-	httpClient    = &http.Client{}
+	httpClient = &http.Client{}
 )
 
 func (p *Provider) Name() string {
@@ -52,7 +52,7 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 
 	return fmt.Sprintf(
 		"%s/authorize?client_id=%s&state=%s&scope=%s",
-		oauthEndpoint,
+		p.oauthEndpoint,
 		p.ClientID,
 		state,
 		url.QueryEscape(scope),
@@ -96,7 +96,7 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) error {
 	accessTokenUrl := fmt.Sprintf(
 		"%s/access_token?client_id=%s&client_secret=%s&code=%s",
-		oauthEndpoint,
+		p.oauthEndpoint,
 		p.ClientID,
 		p.ClientSecret,
 		code,
@@ -123,7 +123,7 @@ func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) erro
 }
 
 func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
-	userEndpoint := fmt.Sprintf("%s/user", apiEndpoint)
+	userEndpoint := fmt.Sprintf("%s/user", p.apiEndpoint)
 
 	req, err := http.NewRequest(http.MethodGet, userEndpoint, nil)
 	if err != nil {
@@ -160,7 +160,7 @@ func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
 }
 
 func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
-	emailsEndpoint := fmt.Sprintf("%s/user/emails", apiEndpoint)
+	emailsEndpoint := fmt.Sprintf("%s/user/emails", p.apiEndpoint)
 
 	req, err := http.NewRequest(http.MethodGet, emailsEndpoint, nil)
 	if err != nil {
@@ -203,7 +203,7 @@ func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
 }
 
 func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
-	orgEndpoint := fmt.Sprintf("%s/user/memberships/orgs/%s", apiEndpoint, p.Organization)
+	orgEndpoint := fmt.Sprintf("%s/user/memberships/orgs/%s", p.apiEndpoint, p.Organization)
 
 	req, err := http.NewRequest(http.MethodGet, orgEndpoint, nil)
 	if err != nil {
@@ -227,7 +227,7 @@ func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
 }
 
 func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse) error {
-	teamsEndpoint := fmt.Sprintf("%s/orgs/%s/teams", apiEndpoint, p.Organization)
+	teamsEndpoint := fmt.Sprintf("%s/orgs/%s/teams", p.apiEndpoint, p.Organization)
 
 	req, err := http.NewRequest(http.MethodGet, teamsEndpoint, nil)
 	if err != nil {

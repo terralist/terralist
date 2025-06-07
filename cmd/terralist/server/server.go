@@ -242,6 +242,7 @@ func (s *Command) run() error {
 			ClientSecret: flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
 			Organization: flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
 			Teams:        flags[GitHubTeamsFlag].(*cli.StringFlag).Value,
+			Domain:       flags[GitHubDomainFlag].(*cli.StringFlag).Value,
 		})
 	case "bitbucket":
 		provider, err = authFactory.NewProvider(auth.BITBUCKET, &bitbucket.Config{ //nolint:forcetypeassert

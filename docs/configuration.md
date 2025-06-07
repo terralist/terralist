@@ -188,6 +188,18 @@ The GitHub team slugs in CSV format to use for user validation. This requires `g
 | cli | `--gh-teams` |
 | env | `TERRALIST_GH_TEAMS` |
 
+### `gh-domain`
+
+The GitHub base domain if you are using GitHub Enterprise.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `github.com` |
+| cli | `--gh-domain` |
+| env | `TERRALIST_GH_DOMAIN` |
+
 ### `bb-client-id`
 
 The BitBucket OAuth Application client ID.
