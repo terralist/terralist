@@ -34,7 +34,7 @@
     "postcss": "^8.5.4",
     "prettier": "^3.5.3",
     "prettier-eslint": "^16.4.2",
-    "prettier-plugin-svelte": "^3.3.3",
+    "prettier-plugin-svelte": "^3.4.0",
     "semver-compare": "^1.0.0",
     "svelte": "^4.2.19",
     "svelte-check": "^4.1.4",
