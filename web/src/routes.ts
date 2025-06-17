@@ -52,7 +52,11 @@ const isAuthorizedUser = () => {
     }
     const authorizedUsers =
       config.runtime.TERRALIST_AUTHORIZED_USERS.split(',');
-    return authorizedUsers[0] === '' || authorizedUsers.includes(user.userName);
+    return (
+      authorizedUsers[0] === '' ||
+      authorizedUsers.includes(user.userName) ||
+      authorizedUsers.includes(user.userEmail)
+    );
   };
 };
 
