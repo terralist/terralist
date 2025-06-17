@@ -56,7 +56,6 @@ const isAuthorizedUser = () => {
       authorizedUsers[0] === '' ||
       authorizedUsers.includes(user.userName) ||
       authorizedUsers.includes(user.userEmail)
-      )
     );
   };
 };
