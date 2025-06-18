@@ -25,45 +25,32 @@ var (
 	ErrNoEntrypointFound = errors.New("could not find an entrypoint")
 )
 
-// findModuleRoot finds the top-level directory in a FS.
-// It returns the relative path to this dir.
-func findModuleRoot(moduleFS *file.FS) (string, error) {
-	var results []string = []string{}
-
+// findTopLevelFile finds the shallowest occurrence of a given filename in a file system.
+func findTopLevelFile(moduleFS *file.FS, fileName string) (string, error) {
+	var paths []string
 	if err := moduleFS.Walk("./", func(p string, fi fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if path.Base(p) == tfEntrypointFile || path.Base(p) == docsEntrypointFile {
-			results = append(results, p)
+		if path.Base(p) == fileName {
+			paths = append(paths, p)
 		}
 
 		return nil
 	}); err != nil {
-		return "", fmt.Errorf("could not traverse the module: %w", err)
+		return "", fmt.Errorf("could not search for %s: %w", fileName, err)
 	}
 
-	slices.SortFunc(results, func(lhs, rhs string) int {
-		lhsParts := strings.Split(lhs, "/")
-		rhsParts := strings.Split(rhs, "/")
+	if len(paths) == 0 {
+		return "", ErrNoEntrypointFound
+	}
 
-		if len(lhsParts) < len(rhsParts) {
-			return -1
-		} else if len(lhsParts) > len(rhsParts) {
-			return 1
-		}
-
-		// We don't really care if the folder depth is equal.
-		// Whichever comes first goes first.
-		return 0
+	slices.SortFunc(paths, func(lhs, rhs string) int {
+		return strings.Count(lhs, "/") - strings.Count(rhs, "/")
 	})
 
-	if len(results) == 0 {
-		return ".", nil
-	}
-
-	return path.Dir(results[0]), nil
+	return paths[0], nil
 }
 
 // generateModuleDocumentation traverse a module FS and analyze module files.
@@ -88,70 +75,81 @@ func generateModuleDocumentation(moduleFS *file.FS, rootRelativePath string) (st
 	return buf.String(), nil
 }
 
-// GetModuleDocumentation traverse a module FS and returns a markdown documentation for it.
-// If the relative path to the module is known (relative within the FS), it can be passed as
-// the second argument, otherwise, the function will try to detect the top-level directory
-// which contains either a README.md file, or a main.tf file.
-// If the README.md file is found, the content of this file is returned. If a main.tf file is
-// found, the module is automatically analyzed and a generic documentation will be generated
-// for it.
-func GetModuleDocumentation(moduleFS *file.FS, rootRelativePath string) (string, error) {
-	if rootRelativePath == "" {
-		// If there is no rootRelativePath, we need to find it
-		var err error
-		rootRelativePath, err = findModuleRoot(moduleFS)
-		if err != nil {
-			return "", fmt.Errorf("could not find module root: %w", err)
+// GetModuleDocumentation traverses a module's file system to find its documentation.
+// It prioritizes finding the shallowest `main.tf` to locate the module root. It then
+// checks for a `README.md` at the same level or higher. If a suitable `README.md` is
+// found, its content is returned. Otherwise, documentation is generated from the .tf files.
+// If no `main.tf` is found, it falls back to the shallowest `README.md`.
+func GetModuleDocumentation(moduleFS *file.FS, relativePath string) (string, error) {
+	mainTfPath, mainTfErr := findTopLevelFile(moduleFS, tfEntrypointFile)
+	readmePath, readmeErr := findTopLevelFile(moduleFS, docsEntrypointFile)
+
+	// If a specific subdirectory is requested, prioritize that.
+	if relativePath != "" {
+		readmeInSubdir := path.Join(relativePath, docsEntrypointFile)
+		readmeFile, err := moduleFS.Open(readmeInSubdir)
+
+		if err == nil {
+			defer readmeFile.Close()
+			buf := new(bytes.Buffer)
+
+			if _, err := io.Copy(buf, readmeFile); err != nil {
+				return "", fmt.Errorf("could not read README.md in subdir: %w", err)
+			}
+
+			return buf.String(), nil
 		}
+
+		return generateModuleDocumentation(moduleFS, relativePath)
 	}
 
-	// We need to search the rootRelativePath and find all possible entrypoints
-	foundEntrypoints := []string{}
-	if err := moduleFS.Walk(rootRelativePath, func(filepath string, fi fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// If we are searching in a subdirectory, we can skip it
-		if path.Dir(filepath) != rootRelativePath {
-			return file.WalkSkipDir
-		}
-
-		// Save any entrypoint found
-		if path.Base(filepath) == tfEntrypointFile || path.Base(filepath) == docsEntrypointFile {
-			foundEntrypoints = append(foundEntrypoints, filepath)
-		}
-
-		return nil
-	}); err != nil {
-		return "", fmt.Errorf("could not find module entrypoint: %w", err)
-	}
-
-	if len(foundEntrypoints) == 0 {
+	if mainTfErr != nil && readmeErr != nil {
 		return "", ErrNoEntrypointFound
 	}
 
-	// Sort the entrypoints to make sure the docs entrypoint goes first
-	slices.SortFunc(foundEntrypoints, func(lhs, rhs string) int {
-		if path.Base(lhs) == tfEntrypointFile && path.Base(rhs) == docsEntrypointFile {
-			return 1
-		} else if path.Base(lhs) == docsEntrypointFile && path.Base(rhs) == tfEntrypointFile {
-			return -1
+	// Logic to decide which entrypoint to use
+	var entrypointPath string
+	var useReadme bool
+
+	if mainTfErr == nil && readmeErr == nil {
+		// Both files exist. Prefer the one that is at a shallower directory level.
+		// If README is at the same or higher level as main.tf, use README.
+		if strings.Count(readmePath, "/") <= strings.Count(mainTfPath, "/") {
+			entrypointPath = readmePath
+			useReadme = true
+		} else {
+			// main.tf is shallower, check for a README in its directory.
+			moduleRoot := path.Dir(mainTfPath)
+			readmeInModuleRoot := path.Join(moduleRoot, docsEntrypointFile)
+			readmeFile, err := moduleFS.Open(readmeInModuleRoot)
+
+			if err == nil {
+				readmeFile.Close()
+				entrypointPath = readmeInModuleRoot
+				useReadme = true
+			} else {
+				entrypointPath = mainTfPath
+				useReadme = false
+			}
 		}
+	} else if readmeErr == nil {
+		entrypointPath = readmePath
+		useReadme = true
+	} else {
+		entrypointPath = mainTfPath
+		useReadme = false
+	}
 
-		return 0
-	})
+	if useReadme {
+		file, err := moduleFS.Open(entrypointPath)
 
-	entrypoint := foundEntrypoints[0]
-
-	// If we found a docs entrypoint, read it and return the content as the documentation
-	if path.Base(entrypoint) == docsEntrypointFile {
-		file, err := moduleFS.Open(entrypoint)
 		if err != nil {
 			return "", fmt.Errorf("could not open entrypoint: %w", err)
 		}
 
+		defer file.Close()
 		buf := new(bytes.Buffer)
+
 		if _, err := io.Copy(buf, file); err != nil {
 			return "", fmt.Errorf("could not read file: %w", err)
 		}
@@ -160,5 +158,5 @@ func GetModuleDocumentation(moduleFS *file.FS, rootRelativePath string) (string,
 	}
 
 	// Otherwise, analyze the module and generate documentation for it
-	return generateModuleDocumentation(moduleFS, rootRelativePath)
+	return generateModuleDocumentation(moduleFS, path.Dir(entrypointPath))
 }
