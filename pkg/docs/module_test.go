@@ -94,6 +94,25 @@ func TestGetModuleDocumentation(t *testing.T) {
 			relativePath: "subdir2",
 			expected:     `# my module2\n`,
 		},
+		{
+			title: "Module with multiple .tf files and a README.md but no main.tf because it wasn't authored that way",
+			fs: file.MustNewFS([]file.File{
+				file.NewInMemoryFile("rds.tf", []byte(`
+				resource "postgresql_role" "service_role" {}
+				`)),
+				file.NewInMemoryFile("variables.tf", []byte(`variable "test" {}`)),
+				file.NewInMemoryFile("outputs.tf", []byte(`output "test" {}`)),
+				file.NewInMemoryFile("README.md", []byte(`# My Custom Module Readme`)),
+			}),
+			expected: `# My Custom Module Readme`,
+		},
+		{
+			title: "Module with no README.md and no main.tf",
+			fs: file.MustNewFS([]file.File{
+				file.NewInMemoryFile("other.tf", []byte(`resource "null_resource" "foo" {}`)),
+			}),
+			shouldError: true,
+		},
 	}
 
 	for i, test := range testData {
