@@ -53,8 +53,8 @@ ARG VCS_REF="${COMMIT_HASH}"
 LABEL \
   org.opencontainers.image.created="${BUILD_TIMESTAMP}" \
   org.opencontainers.image.description="A truly private Terraform registry" \
-  org.opencontainers.image.documentation="https://${IMAGE_URL_BASE}/${IMAGE_NAME}/blob/master/README.md" \
-  org.opencontainers.image.licenses="MLP-2.0" \
+  org.opencontainers.image.documentation="https://www.terralist.io" \
+  org.opencontainers.image.licenses="MPL-2.0" \
   org.opencontainers.image.ref.name="${IMAGE_NAME}" \
   org.opencontainers.image.revision="${VCS_REF}" \
   org.opencontainers.image.source="https://${IMAGE_URL_BASE}/${IMAGE_NAME}.git" \
