@@ -182,6 +182,7 @@ func (s *Command) run() error {
 		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 		Home:                   flags[HomeFlag].(*cli.PathFlag).Value,
 		AuthorizedUsers:        flags[AuthorizedUsersFlag].(*cli.StringFlag).Value,
+		AuthTokenExpiration:    flags[AuthTokenExpirationFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {

@@ -127,6 +127,19 @@ Comma separated list of users authorized to access the settings page. If empty, 
 | cli | `--authorized-users` |
 | env | `TERRALIST_AUTHORIZED_USERS` |
 
+### `auth-token-expiration`
+
+The duration for which auth tokens remain valid.
+
+| Name | Value |
+| --- | --- |
+| type | select |
+| choices | `1d`, `1w`, `1m`, `1y`, `never` |
+| required | no |
+| default | `1d` |
+| cli | `--auth-token-expiration` |
+| env | `TERRALIST_AUTH_TOKEN_EXPIRATION` |
+
 ### `oauth-provider`
 
 The OAuth 2.0 provider.

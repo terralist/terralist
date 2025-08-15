@@ -129,12 +129,59 @@ func TestRedirect(t *testing.T) {
 	})
 }
 
+func TestParseTokenExpiration(t *testing.T) {
+	Convey("Subject: Parse token expiration durations", t, func() {
+		Convey("When parsing '1d'", func() {
+			result := ParseTokenExpiration("1d")
+			Convey("Should return 1 day in seconds", func() {
+				So(result, ShouldEqual, 24*60*60)
+			})
+		})
+
+		Convey("When parsing '1w'", func() {
+			result := ParseTokenExpiration("1w")
+			Convey("Should return 1 week in seconds", func() {
+				So(result, ShouldEqual, 7*24*60*60)
+			})
+		})
+
+		Convey("When parsing '1m'", func() {
+			result := ParseTokenExpiration("1m")
+			Convey("Should return 1 month (30 days) in seconds", func() {
+				So(result, ShouldEqual, 30*24*60*60)
+			})
+		})
+
+		Convey("When parsing '1y'", func() {
+			result := ParseTokenExpiration("1y")
+			Convey("Should return 1 year in seconds", func() {
+				So(result, ShouldEqual, 365*24*60*60)
+			})
+		})
+
+		Convey("When parsing 'never'", func() {
+			result := ParseTokenExpiration("never")
+			Convey("Should return 0 (no expiration)", func() {
+				So(result, ShouldEqual, 0)
+			})
+		})
+
+		Convey("When parsing an unknown value", func() {
+			result := ParseTokenExpiration("unknown")
+			Convey("Should return 1 day as default", func() {
+				So(result, ShouldEqual, 24*60*60)
+			})
+		})
+	})
+}
+
 func TestValidateToken(t *testing.T) {
 	Convey("Subject: Validate a token", t, func() {
 		mockJWT := mockJWT.NewJWT(t)
 
 		loginService := &DefaultLoginService{
-			JWT: mockJWT,
+			JWT:                 mockJWT,
+			TokenExpirationSecs: 24 * 60 * 60, // 1 day default
 		}
 
 		Convey("Given the code components and the code verifier", func() {
