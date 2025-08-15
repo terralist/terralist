@@ -61,6 +61,7 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 		LinkExpire:   cfg.LinkExpire,
 
 		ServerSideEncryption: cfg.ServerSideEncryption,
+		DisableACL:           cfg.DisableACL,
 
 		Session: sess,
 	}, nil
