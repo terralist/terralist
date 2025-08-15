@@ -22,6 +22,7 @@ type Resolver struct {
 	LinkExpire   int
 
 	ServerSideEncryption string
+	DisableACL           bool
 
 	Session *session.Session
 }
@@ -40,16 +41,22 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 		return "", fmt.Errorf("could not upload archive, file can't be rewinded: %w", err)
 	}
 
-	if _, err := s3.New(r.Session).PutObject(&s3.PutObjectInput{
+	putObjectInput := &s3.PutObjectInput{
 		Bucket:               aws.String(r.BucketName),
 		Key:                  r.withPrefix(key),
-		ACL:                  aws.String("private"),
 		Body:                 in.Reader,
 		ContentLength:        aws.Int64(in.Size),
 		ContentType:          aws.String(in.ContentType),
 		ContentDisposition:   aws.String("attachment"),
 		ServerSideEncryption: serverSideEncryption,
-	}); err != nil {
+	}
+
+	// Only set ACL if not disabled (for bucket policy support)
+	if !r.DisableACL {
+		putObjectInput.ACL = aws.String("private")
+	}
+
+	if _, err := s3.New(r.Session).PutObject(putObjectInput); err != nil {
 		return "", fmt.Errorf("could not upload archive: %v", err)
 	}
 
