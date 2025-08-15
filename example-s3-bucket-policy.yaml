@@ -1,0 +1,58 @@
+# Example configuration for using S3 with bucket policy instead of ACLs
+# This configuration disables ACLs and relies on bucket policies for access control
+
+# Basic server configuration
+port: 5758
+url: "https://terralist.example.com"
+log-level: "info"
+
+# Authentication
+oauth-provider: "github"
+gh-client-id: "${GITHUB_OAUTH_CLIENT_ID}"
+gh-client-secret: "${GITHUB_OAUTH_CLIENT_SECRET}"
+token-signing-secret: "supersecretstring"
+
+# Database
+database-backend: "sqlite"
+sqlite-path: "terralist.db"
+
+# S3 Storage with bucket policy (ACLs disabled)
+modules-storage-resolver: "s3"
+providers-storage-resolver: "s3"
+
+s3-bucket-name: "my-terralist-bucket"
+s3-bucket-region: "us-east-1"
+s3-access-key-id: "${AWS_ACCESS_KEY_ID}"
+s3-secret-access-key: "${AWS_SECRET_ACCESS_KEY}"
+
+# Key configuration: Disable ACLs to use bucket policy
+s3-disable-acl: true
+
+# Optional S3 settings
+s3-bucket-prefix: "terralist"
+s3-presign-expire: 15
+s3-server-side-encryption: "AES256"
+
+# Session management
+session-store: "cookie"
+cookie-secret: "anothersupersecretstring"
+
+# Example bucket policy for reference:
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Sid": "TerraformRegistryAccess",
+#       "Effect": "Allow",
+#       "Principal": {
+#         "AWS": "arn:aws:iam::ACCOUNT-ID:user/terralist-user"
+#       },
+#       "Action": [
+#         "s3:GetObject",
+#         "s3:PutObject",
+#         "s3:DeleteObject"
+#       ],
+#       "Resource": "arn:aws:s3:::my-terralist-bucket/terralist/*"
+#     }
+#   ]
+# }
