@@ -22,6 +22,7 @@ type Resolver struct {
 	LinkExpire   int
 
 	ServerSideEncryption string
+	DisableACL           bool
 
 	Client *s3.Client
 }
@@ -37,11 +38,15 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	putObjectInput := &s3.PutObjectInput{
 		Bucket:             aws.String(r.BucketName),
 		Key:                r.withPrefix(key),
-		ACL:                types.ObjectCannedACLPrivate,
 		Body:               in.Reader,
 		ContentLength:      aws.Int64(in.Size),
 		ContentType:        aws.String(in.ContentType),
 		ContentDisposition: aws.String("attachment"),
+	}
+
+	// Only set ACL if not disabled (for bucket policy support)
+	if !r.DisableACL {
+		putObjectInput.ACL = types.ObjectCannedACLPrivate
 	}
 
 	if r.ServerSideEncryption != "none" {

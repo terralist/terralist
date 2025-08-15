@@ -724,6 +724,18 @@ The server-side encryption algorithm that was used when you store this object in
 | cli | `--s3-server-side-encryption` |
 | env | `TERRALIST_S3_SERVER_SIDE_ENCRYPTION` |
 
+### `s3-disable-acl`
+
+Disable S3 ACL and rely on bucket policy for access control.
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--s3-disable-acl` |
+| env | `TERRALIST_S3_DISABLE_ACL` |
+
 ### `local-store`
 
 The path to a directory in which Terralist can store files.
