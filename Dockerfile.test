@@ -21,7 +21,7 @@ RUN curl -sL https://go.dev/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar
 ENV PATH $PATH:/usr/local/go/bin
 
 # Install Node.js
-RUN curl -fsSL curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+RUN curl -fsSL curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
   apt-get install -y nodejs \
   build-essential && \
   node --version && \ 
