@@ -92,11 +92,12 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		Getters: generateGetters(header),
 	}
 
-	if kind == file {
+	switch kind {
+	case file:
 		client.Mode = getter.ClientModeFile
-	} else if kind == dir {
+	case dir:
 		client.Mode = getter.ClientModeDir
-	} else if kind == unknown {
+	case unknown:
 		client.Mode = getter.ClientModeAny
 	}
 
@@ -153,9 +154,10 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 // parseResult parses the download result and returns an
 // File.
 func parseResult(name, src string, kind int) (File, error) {
-	if kind == file {
+	switch kind {
+	case file:
 		return readFile(name, src)
-	} else if kind == dir {
+	case dir:
 		return archiveDir(name, src)
 	}
 
@@ -187,7 +189,7 @@ func archiveDir(name, src string) (File, error) {
 
 		relPath, _ := filepath.Rel(src, fpath)
 		relPath = filepath.Clean(relPath)
-		relPath = strings.Replace(relPath, "\\", "/", -1)
+		relPath = strings.ReplaceAll(relPath, "\\", "/")
 
 		file, err := readFile(relPath, fpath)
 		if err != nil {

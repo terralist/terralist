@@ -34,7 +34,7 @@ type AuthorityDTO struct {
 
 func (a Authority) ToDTO() AuthorityDTO {
 	return AuthorityDTO{
-		ID:        a.Entity.ID.String(),
+		ID:        a.ID.String(),
 		Name:      a.Name,
 		PolicyURL: a.PolicyURL,
 

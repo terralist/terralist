@@ -29,7 +29,7 @@ func (t *Creator) New(configurator storage.Configurator) (storage.Resolver, erro
 		awsConfigResolvers = append(awsConfigResolvers, config.WithCredentialsProvider(credsProvider))
 	}
 
-	var endpointOptions func(*s3.Options) = func(o *s3.Options) {}
+	var endpointOptions = func(o *s3.Options) {}
 	if options.Endpoint != "" {
 		endpointOptions = func(o *s3.Options) {
 			o.BaseEndpoint = &options.Endpoint

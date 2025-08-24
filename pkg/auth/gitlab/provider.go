@@ -151,7 +151,7 @@ func (p *Provider) PerformUserProfileRequest(t tokenResponse) (map[string]interf
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("Gitlab responded with status %d", res.StatusCode)
+		return nil, fmt.Errorf("gitlab responded with status %d", res.StatusCode)
 	}
 
 	var data map[string]interface{}
