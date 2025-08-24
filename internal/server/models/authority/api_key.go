@@ -26,13 +26,13 @@ type ApiKeyDTO struct {
 }
 
 func (a ApiKey) ToDTO() ApiKeyDTO {
-	var exp string = ""
+	var exp = ""
 	if a.Expiration != nil {
 		exp = a.Expiration.Format("2006-01-02T15:04:05")
 	}
 
 	return ApiKeyDTO{
-		ID:         a.Entity.ID.String(),
+		ID:         a.ID.String(),
 		Expiration: exp,
 		Name:       a.Name,
 	}

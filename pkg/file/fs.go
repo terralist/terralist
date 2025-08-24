@@ -96,7 +96,9 @@ func (f *FS) ReadDir(dirname string) ([]fs.DirEntry, error) {
 }
 
 var (
+	//nolint:staticcheck // ST1012: this is an user-facing error used to control the walking flow
 	WalkSkipAll = errors.New("skip all files")
+	//nolint:staticcheck // ST1012: this is an user-facing error used to control the walking flow
 	WalkSkipDir = errors.New("skip current directory")
 )
 

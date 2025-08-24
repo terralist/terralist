@@ -155,7 +155,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 	}
 	defer archive.Close()
 
-	var mdDocs string = ""
+	var mdDocs = ""
 	if archiveFile, ok := archive.(*file.ArchiveFile); ok {
 		markdown, err := docs.GetModuleDocumentation(archiveFile.FS(), "")
 		if err != nil {

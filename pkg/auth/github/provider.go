@@ -185,7 +185,7 @@ func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
 		return "", err
 	}
 
-	var verifiedEmail string = ""
+	var verifiedEmail = ""
 	for _, e := range data {
 		if isPrimary, ok := e["primary"].(bool); ok && isPrimary {
 			if email, ok := e["email"].(string); ok {

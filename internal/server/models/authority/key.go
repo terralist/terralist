@@ -27,7 +27,7 @@ type KeyDTO struct {
 
 func (k Key) ToKeyDTO() KeyDTO {
 	return KeyDTO{
-		ID:             k.Entity.ID.String(),
+		ID:             k.ID.String(),
 		KeyId:          k.KeyId,
 		AsciiArmor:     k.AsciiArmor,
 		TrustSignature: k.TrustSignature,
