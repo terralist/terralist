@@ -1,16 +1,17 @@
-issues:
-  max-same-issues: 0
-
+version: "2"
+run:
+  go: "1.24"
+  issues-exit-code: 1
+  allow-parallel-runners: true
 linters:
-  disable-all: true
+  default: none
   enable:
+    - copyloopvar
     - durationcheck
     - errcheck
-    - copyloopvar
     - forcetypeassert
     - godot
-    - gofmt
-    - gosimple
+    - govet
     - ineffassign
     - makezero
     - misspell
@@ -20,10 +21,25 @@ linters:
     - unconvert
     - unparam
     - unused
-    - govet
-
-run:
-  timeout: "10m"
-  go: "1.24"
-  issues-exit-code: 1
-  allow-parallel-runners: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
