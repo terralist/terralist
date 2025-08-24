@@ -1,67 +1,57 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 
 	"terralist/pkg/storage"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type Creator struct{}
 
-func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
-	cfg, ok := config.(*Config)
+func (t *Creator) New(configurator storage.Configurator) (storage.Resolver, error) {
+	options, ok := configurator.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("unsupported configurator")
 	}
 
-	var creds *credentials.Credentials = nil
-	var sharedConfig session.SharedConfigState = session.SharedConfigEnable
-
-	if !cfg.DefaultCredentials {
-		creds = credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.SecretAccessKey, "")
-		sharedConfig = session.SharedConfigDisable
+	awsConfigResolvers := []func(*config.LoadOptions) error{
+		config.WithRegion(options.BucketRegion),
+		config.WithRetryMaxAttempts(1),
 	}
 
-	var endpointResolver endpoints.ResolverFunc = endpoints.DefaultResolver().EndpointFor
-	if cfg.Endpoint != "" {
-		endpointResolver = endpoints.ResolverFunc(
-			func(service, region string, opts ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-				return endpoints.ResolvedEndpoint{
-					PartitionID:   "aws",
-					URL:           cfg.Endpoint,
-					SigningRegion: region,
-				}, nil
-			},
-		)
+	if !options.DefaultCredentials {
+		credsProvider := credentials.NewStaticCredentialsProvider(options.AccessKeyID, options.SecretAccessKey, "")
+		awsConfigResolvers = append(awsConfigResolvers, config.WithCredentialsProvider(credsProvider))
 	}
 
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region:           aws.String(cfg.BucketRegion),
-			MaxRetries:       aws.Int(1),
-			Credentials:      creds,
-			EndpointResolver: endpointResolver,
-			S3ForcePathStyle: aws.Bool(cfg.UsePathStyle),
-		},
-		SharedConfigState: sharedConfig,
-	})
+	var endpointOptions func(*s3.Options) = func(o *s3.Options) {}
+	if options.Endpoint != "" {
+		endpointOptions = func(o *s3.Options) {
+			o.BaseEndpoint = &options.Endpoint
+			o.Region = options.BucketRegion
+			o.UsePathStyle = true
+		}
+	}
 
+	cfg, err := config.LoadDefaultConfig(context.TODO(), awsConfigResolvers...)
 	if err != nil {
-		return nil, fmt.Errorf("could not initiate AWS session: %v", err)
+		return nil, fmt.Errorf("could not load AWS config: %v", err)
 	}
+
+	client := s3.NewFromConfig(cfg, endpointOptions)
 
 	return &Resolver{
-		BucketName:   cfg.BucketName,
-		BucketPrefix: cfg.BucketPrefix,
-		LinkExpire:   cfg.LinkExpire,
+		BucketName:   options.BucketName,
+		BucketPrefix: options.BucketPrefix,
+		LinkExpire:   options.LinkExpire,
 
-		ServerSideEncryption: cfg.ServerSideEncryption,
+		ServerSideEncryption: options.ServerSideEncryption,
 
-		Session: sess,
+		Client: client,
 	}, nil
 }
