@@ -51,7 +51,7 @@ jobs:
       with:
         context: .
         file: Dockerfile.test
-        platforms: linux/arm64/v8,linux/amd64,linux/arm/v7
+        platforms: linux/arm64,linux/amd64
         push: ${{ github.event_name != 'pull_request' }}
         cache-to: type=gha,mode=max,ignore-error=true
         cache-from: type=gha
