@@ -1,15 +1,8 @@
 {
   // Backend
-  "gopls": {
-    "buildFlags": [
-      "-tags=mocks",
-    ]
-  },
-  "go.testTags": "mocks",
   "go.lintTool": "golangci-lint",
   "go.lintFlags": [
     "--fast",
-    "--build-tags=mocks"
   ],
 
   // Frontend

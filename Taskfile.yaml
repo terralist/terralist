@@ -136,14 +136,13 @@ tasks:
             {{- end -}}
           {{- end -}}
           echo "{{$pkgs | join " "}}"
-      BUILD_TAGS: "mocks"
     cmds:
       - task: test:generate-mocks
       - >-
         {{- if eq .WITH_SUMMARY "true" -}}
-        go run gotest.tools/gotestsum -f testname -- -tags={{.BUILD_TAGS}} -count=1 {{.TEST_PACKAGES}}
+        go run gotest.tools/gotestsum -f testname -- -count=1 {{.TEST_PACKAGES}}
         {{- else -}}
-        go test -tags={{.BUILD_TAGS}} -count=1 {{.TEST_PACKAGES}}
+        go test -count=1 {{.TEST_PACKAGES}}
         {{- end -}}
 
   test:e2e:
