@@ -6,12 +6,9 @@ import (
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/provider"
+	"terralist/internal/server/repositories"
 	"terralist/pkg/file"
-
-	mockFile "terralist/mocks/pkg/file"
-	mockStorage "terralist/mocks/pkg/storage"
-	mockRepositories "terralist/mocks/server/repositories"
-	mockServices "terralist/mocks/server/services"
+	"terralist/pkg/storage"
 
 	"github.com/google/uuid"
 	"github.com/mazen160/go-random"
@@ -21,7 +18,7 @@ import (
 
 func TestGetProvider(t *testing.T) {
 	Convey("Subject: Find a provider", t, func() {
-		mockProviderRepository := mockRepositories.NewProviderRepository(t)
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
 
 		providerService := &DefaultProviderService{
 			ProviderRepository: mockProviderRepository,
@@ -68,9 +65,9 @@ func TestGetProvider(t *testing.T) {
 
 func TestGetProviderVersionDownloadInfo(t *testing.T) {
 	Convey("Subject: Find a provider version download info", t, func() {
-		mockProviderRepository := mockRepositories.NewProviderRepository(t)
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockResolver := mockStorage.NewResolver(t)
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
 
 		providerService := &DefaultProviderService{
 			ProviderRepository: mockProviderRepository,
@@ -240,10 +237,10 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 
 func TestUploadProvider(t *testing.T) {
 	Convey("Subject: Upload a provider version", t, func() {
-		mockProviderRepository := mockRepositories.NewProviderRepository(t)
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockResolver := mockStorage.NewResolver(t)
-		mockFetcher := mockFile.NewFetcher(t)
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
+		mockFetcher := file.NewMockFetcher(t)
 
 		providerService := &DefaultProviderService{
 			ProviderRepository: mockProviderRepository,
@@ -442,9 +439,9 @@ func TestUploadProvider(t *testing.T) {
 
 func TestDeleteProvider(t *testing.T) {
 	Convey("Subject: Delete a provider", t, func() {
-		mockProviderRepository := mockRepositories.NewProviderRepository(t)
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockResolver := mockStorage.NewResolver(t)
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
 
 		providerService := &DefaultProviderService{
 			ProviderRepository: mockProviderRepository,
@@ -543,9 +540,9 @@ func TestDeleteProvider(t *testing.T) {
 
 func TestDeleteProviderVersion(t *testing.T) {
 	Convey("Subject: Delete a provider version", t, func() {
-		mockProviderRepository := mockRepositories.NewProviderRepository(t)
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockResolver := mockStorage.NewResolver(t)
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
 
 		providerService := &DefaultProviderService{
 			ProviderRepository: mockProviderRepository,

@@ -1,0 +1,33 @@
+all: false
+dir: '{{.InterfaceDir}}'
+filename: mocks.go
+force-file-write: false
+formatter: goimports
+include-auto-generated: false
+log-level: info
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}'
+recursive: false
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+build-tags: "mocks"
+packages:
+  terralist/internal/server/services:
+    config:
+      all: true
+  terralist/internal/server/repositories:
+    config:
+      all: true
+  terralist/pkg/auth:
+    config:
+      all: true
+  terralist/pkg/auth/jwt:
+    config:
+      all: true
+  terralist/pkg/file:
+    config:
+      all: true
+  terralist/pkg/storage:
+    config:
+      all: true

@@ -92,28 +92,17 @@ tasks:
   test:generate-mocks:
     desc: "Generate necessary mock files for the tests to be executed."
     silent: true
-    vars:
-      MOCKERY_ARGS: '--all --case underscore --note "go:build mocks"'
+    env:
+      # Mockery's force-file-write cannot be overwritten from outside (for some reason).
+      # MOCKERY_FORCE_FILE_WRITE: '{{.CLI_FORCE}}'
     cmds:
-      - for:
-          - source: ./internal/server/services
-            output: ./mocks/server/services
-          - source: ./internal/server/repositories
-            output: ./mocks/server/repositories
-          - source: ./pkg/auth
-            output: ./mocks/pkg/auth
-          - source: ./pkg/auth/jwt
-            output: ./mocks/pkg/auth
-          - source: ./pkg/file
-            output: ./mocks/pkg/file
-          - source: ./pkg/storage
-            output: ./mocks/pkg/storage
-        cmd: |
-          if [ "{{.CLI_FORCE}}" = "true" ] || [ ! -d {{.ITEM.output}} ]; then
-            go run github.com/vektra/mockery/v2 --dir {{.ITEM.source}} --output {{.ITEM.output}} {{.MOCKERY_ARGS}}
-          else
-            echo "Generation of {{.ITEM.source}} was skipped because {{.ITEM.output}} already exists."
-          fi
+      - >-
+        {{if .CLI_FORCE}}
+          find ./ -type f -name 'mocks.go' -print0 | xargs -0 rm
+        {{else}}
+          :;
+        {{end}}
+      - go run github.com/vektra/mockery/v3
 
   test:prepare-database:
     desc: "Generate an SQLite database ready for testing."
