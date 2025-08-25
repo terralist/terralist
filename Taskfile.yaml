@@ -92,17 +92,19 @@ tasks:
   test:generate-mocks:
     desc: "Generate necessary mock files for the tests to be executed."
     silent: true
-    env:
-      # Mockery's force-file-write cannot be overwritten from outside (for some reason).
-      # MOCKERY_FORCE_FILE_WRITE: '{{.CLI_FORCE}}'
+    vars:
+      MOCK_FILES:
+        sh: find ./ -type f -name 'mocks.go'
     cmds:
       - >-
-        {{if .CLI_FORCE}}
-          find ./ -type f -name 'mocks.go' -print0 | xargs -0 rm
+        {{if eq .MOCK_FILES ""}}
+          go run github.com/vektra/mockery/v3
+        {{else if .CLI_FORCE}}
+          echo "{{.MOCK_FILES}}" | xargs rm; \
+          go run github.com/vektra/mockery/v3
         {{else}}
-          :;
+          echo 'Mocks are already created. Re-run with --force if you wish to overwrite them.'
         {{end}}
-      - go run github.com/vektra/mockery/v3
 
   test:prepare-database:
     desc: "Generate an SQLite database ready for testing."
