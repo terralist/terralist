@@ -1,10 +1,11 @@
-FROM public.ecr.aws/docker/library/debian:bookworm
+FROM public.ecr.aws/docker/library/debian:13
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 
 RUN apt-get update && \
     apt-get install -yq --no-install-recommends \
+      build-essential \
       ca-certificates \
       curl \
       git \
@@ -18,12 +19,11 @@ ARG GOLANG_VERSION=1.24.6
 RUN curl -sL https://go.dev/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz -o golang.tar.gz \
   && tar -C /usr/local -xzf golang.tar.gz \
   && /usr/local/go/bin/go version
-ENV PATH $PATH:/usr/local/go/bin
+ENV PATH=$PATH:/usr/local/go/bin
 
 # Install Node.js
-RUN curl -fsSL curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
-  apt-get install -y nodejs \
-  build-essential && \
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+  apt-get install -y nodejs && \
   node --version && \
   npm --version
 
