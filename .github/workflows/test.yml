@@ -34,28 +34,23 @@ jobs:
       - name: Install task
         uses: arduino/setup-task@v2
 
-      - name: Install mockery
-        run: go install github.com/vektra/mockery/v2@latest
+      - name: Install dependencies
+        run: task --verbose tidy
 
       - name: Generate mocks
-        run: task generate-mocks
-
-      - name: Build web application
-        run: task build-webapp
+        run: task test:generate-mocks
 
       - name: Run backend linters
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: latest
+        run: task --verbose lint:backend
 
       - name: Run frontend linters
-        run: |
-          yarn --cwd ./web run format:check
-          yarn --cwd ./web run check
-          yarn --cwd ./web run lint:check
+        run: task --verbose lint:frontend
+
+      - name: Build frontend
+        run: task --verbose build:frontend
 
       - name: Run unit tests
-        run: task run-tests
+        run: task --verbose test:unit
 
   build-terralist-binary:
     name: Build Terralist
@@ -94,7 +89,7 @@ jobs:
         run: git config --global --add safe.directory /__w/terralist/terralist
 
       - name: Build Terralist
-        run: task build -- release
+        run: task --verbose build -- --release
 
       - name: Save binary
         uses: actions/upload-artifact@v4
