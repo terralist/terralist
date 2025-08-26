@@ -395,10 +395,10 @@
     svelte-hmr "^0.15.3"
     vitefu "^0.2.4"
 
-"@tsconfig/svelte@^5.0.4":
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/@tsconfig/svelte/-/svelte-5.0.4.tgz#8bd0254472bd39a5e750f1b4a05ecb18c9f3bf80"
-  integrity sha512-BV9NplVgLmSi4mwKzD8BD/NQ8erOY/nUE/GpgWe2ckx+wIQF5RyRirn/QsSSCPeulVpc3RA/iJt6DpfTIZps0Q==
+"@tsconfig/svelte@^5.0.5":
+  version "5.0.5"
+  resolved "https://registry.yarnpkg.com/@tsconfig/svelte/-/svelte-5.0.5.tgz#781df887c6a41b574e6972f9e002cea7edf4f450"
+  integrity sha512-48fAnUjKye38FvMiNOj0J9I/4XlQQiZlpe9xaNPfe8vy2Y1hFBt8g1yqf2EGjVvHavo4jf2lC+TQyENCr4BJBQ==
 
 "@types/estree@^1.0.0", "@types/estree@^1.0.1", "@types/estree@^1.0.6":
   version "1.0.6"
