@@ -22,7 +22,7 @@
     "@tsconfig/svelte": "^5.0.4",
     "@types/node": "^24.3.0",
     "@types/semver-compare": "^1.0.3",
-    "@typescript-eslint/parser": "^8.26.1",
+    "@typescript-eslint/parser": "^8.41.0",
     "autoprefixer": "^10.4.21",
     "axios": "^1.11.0",
     "eslint": "^9.28.0",
