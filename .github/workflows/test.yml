@@ -199,6 +199,7 @@ jobs:
             sqlite3 "$TERRALIST_SQLITE_PATH" < ./e2e/data/terralist.sqlite.sql
           elif [ "$TERRALIST_DATABASE_BACKEND" = "mysql" ]; then
             mysql \
+              --skip-ssl \
               -u $TERRALIST_MYSQL_USERNAME \
               -p"${TERRALIST_MYSQL_PASSWORD}" \
               -h $TERRALIST_MYSQL_HOST \
