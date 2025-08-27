@@ -37,7 +37,7 @@
       matchPackageNames: [
         'node',
       ],
-      groupName: 'nodejs-version',
+      groupName: 'node-version',
     },
   ],
   npm: {
@@ -99,7 +99,7 @@
         'typescript-node:dev-(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)-bookworm',
       ],
       depNameTemplate: 'node',
-      datasourceTemplate: 'nodejs-version',
+      datasourceTemplate: 'node-version',
     },
     {
       customType: 'regex',
@@ -111,7 +111,7 @@
         'node-version\\: "(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)"\\s*',
       ],
       depNameTemplate: 'node',
-      datasourceTemplate: 'nodejs-version',
+      datasourceTemplate: 'node-version',
     },
   ],
   vulnerabilityAlerts: {
