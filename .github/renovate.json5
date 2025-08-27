@@ -138,6 +138,5 @@
   rebaseWhen: 'behind-base-branch',
   rollbackPrs: true,
   ignoreUnstable: true,
-  dependencyDashboard: true,
-  dependencyDashboardAutoclose: true,
+  dependencyDashboard: false,
 }
