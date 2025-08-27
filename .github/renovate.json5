@@ -84,7 +84,7 @@
       "depNameTemplate": "node",
       "datasourceTemplate": "nodejs-version"
     }
-  ]
+  ],
 
   "vulnerabilityAlerts": {
     "labels": ["security"],
