@@ -32,7 +32,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: "24"
           cache: "yarn"
           cache-dependency-path: |
             web/yarn.lock
