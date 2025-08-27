@@ -19,7 +19,7 @@
     "@eslint/js": "^9.33.0",
     "@stylistic/eslint-plugin-ts": "^4.4.1",
     "@sveltejs/vite-plugin-svelte": "^2.5.3",
-    "@tsconfig/svelte": "^5.0.4",
+    "@tsconfig/svelte": "^5.0.5",
     "@types/node": "^24.3.0",
     "@types/semver-compare": "^1.0.3",
     "@typescript-eslint/parser": "^8.41.0",
