@@ -39,6 +39,18 @@
       ],
       groupName: 'node-version',
     },
+    // The following packages are not versioned, so there is no need to upgrade them
+    {
+      matchManagers: [
+        'gomod'
+      ],
+      matchPackageNames: [
+        'github.com/hashicorp/terraform-config-inspect',
+        'github.com/gin-gonic/contrib',
+        'github.com/ssoroka/slice'
+      ],
+      "enabled": false
+    },
   ],
   npm: {
     enabled: true,
@@ -56,6 +68,7 @@
     enabled: true,
   },
   customManagers: [
+    // Regex manager for Golang versions
     {
       customType: 'regex',
       managerFilePatterns: [
@@ -90,6 +103,7 @@
       depNameTemplate: 'golang',
       datasourceTemplate: 'golang-version',
     },
+    // Regex manager for Node.js versions
     {
       customType: 'regex',
       managerFilePatterns: [
