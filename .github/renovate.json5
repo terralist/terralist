@@ -1,100 +1,128 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
-  "extends": [
-    "config:base",
-    ":rebaseStalePrs",
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':rebaseStalePrs',
   ],
-
-  "schedule": ["every weekend"],
-
-  "labels": ["dependencies"],
-
-  "packageRules": [
-    {
-      "matchManagers": ["gomod", "dockerfile", "regex"],
-      "matchPackageNames": ["golang"],
-      "groupName": "golang-version"
-    },
-    {
-      "matchManagers": ["npm", "dockerfile", "regex"],
-      "matchPackageNames": ["node"],
-      "groupName": "nodejs-version"
-    }
+  schedule: [
+    'every weekend',
   ],
-
-  "npm": {
-    "enabled": true,
-    "fileMatch": ["(^|/)web/package.json"]
-  },
-
-  "devcontainer": {
-    "enabled": true
-  },
-
-  "gomod": {
-    "enabled": true
-  },
-
-  "docker": {
-    "enabled": true
-  },
-
-  "github-actions": {
-    "enabled": true
-  },
-
-  "regexManagers": [
-    // Regex manager for Golang versions
+  labels: [
+    'dependencies',
+  ],
+  packageRules: [
     {
-      "fileMatch": ["^\\.go-version$"],
-      "matchStrings": ["^(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)\\s*$"],
-      "depNameTemplate": "golang",
-      "datasourceTemplate": "golang-version"
-    },
-    {
-      "fileMatch": ["^\\.golangci\\.yml$"],
-      "matchStrings": ["go\\: \"(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)\"\\s*"],
-      "depNameTemplate": "golang",
-      "datasourceTemplate": "golang-version"
-    },
-    {
-      "fileMatch": [
-        "^\\.github\\/workflows\\/release\\.yml$",
-        "^\\.github\\/workflows\\/test\\.yml$"
+      matchCategories: [
+        'docker',
       ],
-      "matchStrings": ["go-version\\: \"(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)\"\\s*"],
-      "depNameTemplate": "golang",
-      "datasourceTemplate": "golang-version"
-    },
-
-    // Regex manager for Node.js versions
-    {
-      "fileMatch": ["^\\.devcontainer\\/devcontainer\\.json$"],
-      "matchStrings": ["typescript-node:dev-(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)-bookworm"],
-      "depNameTemplate": "node",
-      "datasourceTemplate": "nodejs-version"
+      enabled: true,
     },
     {
-      "fileMatch": [
-        "^\\.github\\/workflows\\/release\\.yml$",
-        "^\\.github\\/workflows\\/test\\.yml$"
+      matchManagers: [
+        'gomod',
+        'dockerfile',
+        'custom.regex',
       ],
-      "matchStrings": ["node-version\\: \"(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)\"\\s*"],
-      "depNameTemplate": "node",
-      "datasourceTemplate": "nodejs-version"
-    }
+      matchPackageNames: [
+        'golang',
+      ],
+      groupName: 'golang-version',
+    },
+    {
+      matchManagers: [
+        'npm',
+        'dockerfile',
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'node',
+      ],
+      groupName: 'nodejs-version',
+    },
   ],
-
-  "vulnerabilityAlerts": {
-    "labels": ["security"],
-    "automerge": false
+  npm: {
+    enabled: true,
+    managerFilePatterns: [
+      '/(^|/)web/package.json/',
+    ],
   },
-
-  "platformAutomerge": false,
-  "rebaseWhen": "behind-base-branch",
-  "rollbackPrs": true,
-
-  "dependencyDashboard": true,
-  "dependencyDashboardAutoclose": true
+  devcontainer: {
+    enabled: true,
+  },
+  gomod: {
+    enabled: true,
+  },
+  'github-actions': {
+    enabled: true,
+  },
+  customManagers: [
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.go-version$/',
+      ],
+      matchStrings: [
+        '^(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)\\s*$',
+      ],
+      depNameTemplate: 'golang',
+      datasourceTemplate: 'golang-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.golangci\\.yml$/',
+      ],
+      matchStrings: [
+        'go\\: "(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"\\s*',
+      ],
+      depNameTemplate: 'golang',
+      datasourceTemplate: 'golang-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github\\/workflows\\/release\\.yml$/',
+        '/^\\.github\\/workflows\\/test\\.yml$/',
+      ],
+      matchStrings: [
+        'go-version\\: "(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"\\s*',
+      ],
+      depNameTemplate: 'golang',
+      datasourceTemplate: 'golang-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.devcontainer\\/devcontainer\\.json$/',
+      ],
+      matchStrings: [
+        'typescript-node:dev-(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)-bookworm',
+      ],
+      depNameTemplate: 'node',
+      datasourceTemplate: 'nodejs-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github\\/workflows\\/release\\.yml$/',
+        '/^\\.github\\/workflows\\/test\\.yml$/',
+      ],
+      matchStrings: [
+        'node-version\\: "(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)"\\s*',
+      ],
+      depNameTemplate: 'node',
+      datasourceTemplate: 'nodejs-version',
+    },
+  ],
+  vulnerabilityAlerts: {
+    labels: [
+      'security',
+    ],
+    automerge: false,
+  },
+  platformAutomerge: false,
+  rebaseWhen: 'behind-base-branch',
+  rollbackPrs: true,
+  dependencyDashboard: true,
+  dependencyDashboardAutoclose: true,
 }
