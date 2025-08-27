@@ -13,4 +13,5 @@ type UserConfig struct {
 	ModulesAnonymousRead   bool   `mapstructure:"modules-anonymous-read"`
 	ProvidersAnonymousRead bool   `mapstructure:"providers-anonymous-read"`
 	AuthorizedUsers        string `mapstructure:"authorized-users"`
+	AuthTokenExpiration    string `mapstructure:"auth-token-expiration"`
 }
