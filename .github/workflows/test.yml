@@ -217,7 +217,7 @@ jobs:
           mc mb --ignore-existing minio/$TERRALIST_S3_BUCKET_NAME
 
       - name: Spin up Terralist server
-        uses: JarvusInnovations/background-action@v1
+        uses: JarvusInnovations/background-action@v1.0.7
         with:
           run: terralist server
           wait-on: |
