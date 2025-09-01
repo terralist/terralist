@@ -71,7 +71,7 @@ func (t *BoolFlag) Format() string {
 }
 
 func (t *BoolFlag) Validate() error {
-	if t.Required && t.isSet {
+	if t.Required && !t.isSet {
 		return fmt.Errorf("required but not set")
 	}
 
