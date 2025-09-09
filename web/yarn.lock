@@ -2456,19 +2456,7 @@ svelte-check@^4.1.4:
     picocolors "^1.0.0"
     sade "^1.7.4"
 
-svelte-eslint-parser@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/svelte-eslint-parser/-/svelte-eslint-parser-1.2.0.tgz#24054d37d8db4eaed6e6874e574c54a668c4bc49"
-  integrity sha512-mbPtajIeuiyU80BEyGvwAktBeTX7KCr5/0l+uRGLq1dafwRNrjfM5kHGJScEBlPG3ipu6dJqfW/k0/fujvIEVw==
-  dependencies:
-    eslint-scope "^8.2.0"
-    eslint-visitor-keys "^4.0.0"
-    espree "^10.0.0"
-    postcss "^8.4.49"
-    postcss-scss "^4.0.9"
-    postcss-selector-parser "^7.0.0"
-
-svelte-eslint-parser@^1.3.0:
+svelte-eslint-parser@^1.2.0, svelte-eslint-parser@^1.3.0:
   version "1.3.1"
   resolved "https://registry.yarnpkg.com/svelte-eslint-parser/-/svelte-eslint-parser-1.3.1.tgz#f8090936579a8569757ade1b33c157a4d012519e"
   integrity sha512-0Iztj5vcOVOVkhy1pbo5uA9r+d3yaVoE5XPc9eABIWDOSJZ2mOsZ4D+t45rphWCOr0uMw3jtSG2fh2e7GvKnPg==
