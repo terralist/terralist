@@ -36,7 +36,7 @@ type DefaultLoginService struct {
 	TokenExpirationSecs int
 }
 
-// ParseTokenExpiration converts duration string to seconds
+// ParseTokenExpiration converts duration string to seconds.
 func ParseTokenExpiration(duration string) int {
 	switch duration {
 	case "1d":
