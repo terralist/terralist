@@ -27,7 +27,8 @@ func TestS3DisableACLIntegration(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resolver, ShouldNotBeNil)
 
-			s3Resolver := resolver.(*Resolver)
+			s3Resolver, ok := resolver.(*Resolver)
+			So(ok, ShouldBeTrue)
 
 			Convey("Should have DisableACL set to true", func() {
 				So(s3Resolver.DisableACL, ShouldBeTrue)
@@ -51,7 +52,8 @@ func TestS3DisableACLIntegration(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(resolver, ShouldNotBeNil)
 
-			s3Resolver := resolver.(*Resolver)
+			s3Resolver, ok := resolver.(*Resolver)
+			So(ok, ShouldBeTrue)
 
 			Convey("Should have DisableACL set to false", func() {
 				So(s3Resolver.DisableACL, ShouldBeFalse)
@@ -65,7 +67,7 @@ func TestS3ConfigValidation(t *testing.T) {
 		Convey("When config has DisableACL set", func() {
 			config := &Config{
 				BucketName:      "test-bucket",
-				BucketRegion:    "us-east-1", 
+				BucketRegion:    "us-east-1",
 				LinkExpire:      15,
 				DisableACL:      true,
 				AccessKeyID:     "test",

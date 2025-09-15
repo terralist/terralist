@@ -15,24 +15,46 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// MockS3API is a mock implementation of the S3 API interface
+// MockS3API is a mock implementation of the S3 API interface.
 type MockS3API struct {
 	mock.Mock
 }
 
 func (m *MockS3API) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
 	args := m.Called(input)
-	return args.Get(0).(*s3.PutObjectOutput), args.Error(1)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	output, ok := args.Get(0).(*s3.PutObjectOutput)
+	if !ok {
+		return nil, args.Error(1)
+	}
+	return output, args.Error(1)
 }
 
 func (m *MockS3API) GetObjectRequest(input *s3.GetObjectInput) (*request.Request, *s3.GetObjectOutput) {
 	args := m.Called(input)
-	return args.Get(0).(*request.Request), args.Get(1).(*s3.GetObjectOutput)
+	if args.Get(0) == nil {
+		return nil, nil
+	}
+	req, ok1 := args.Get(0).(*request.Request)
+	output, ok2 := args.Get(1).(*s3.GetObjectOutput)
+	if !ok1 || !ok2 {
+		return nil, nil
+	}
+	return req, output
 }
 
 func (m *MockS3API) DeleteObject(input *s3.DeleteObjectInput) (*s3.DeleteObjectOutput, error) {
 	args := m.Called(input)
-	return args.Get(0).(*s3.DeleteObjectOutput), args.Error(1)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	output, ok := args.Get(0).(*s3.DeleteObjectOutput)
+	if !ok {
+		return nil, args.Error(1)
+	}
+	return output, args.Error(1)
 }
 
 func TestStore(t *testing.T) {
@@ -81,9 +103,9 @@ func TestDisableACLConfiguration(t *testing.T) {
 	Convey("Subject: S3 DisableACL configuration", t, func() {
 		Convey("When DisableACL is false", func() {
 			config := &Config{
-				BucketName:  "test-bucket",
-				LinkExpire:  15,
-				DisableACL:  false,
+				BucketName: "test-bucket",
+				LinkExpire: 15,
+				DisableACL: false,
 			}
 
 			Convey("Config should indicate ACL is enabled", func() {
@@ -93,9 +115,9 @@ func TestDisableACLConfiguration(t *testing.T) {
 
 		Convey("When DisableACL is true", func() {
 			config := &Config{
-				BucketName:  "test-bucket",
-				LinkExpire:  15,
-				DisableACL:  true,
+				BucketName: "test-bucket",
+				LinkExpire: 15,
+				DisableACL: true,
 			}
 
 			Convey("Config should indicate ACL is disabled", func() {
@@ -111,11 +133,11 @@ func TestResolverCreation(t *testing.T) {
 
 		Convey("When creating resolver with ACL disabled", func() {
 			config := &Config{
-				BucketName:    "test-bucket",
-				BucketRegion:  "us-east-1",
-				LinkExpire:    15,
-				DisableACL:    true,
-				AccessKeyID:   "test-key",
+				BucketName:      "test-bucket",
+				BucketRegion:    "us-east-1",
+				LinkExpire:      15,
+				DisableACL:      true,
+				AccessKeyID:     "test-key",
 				SecretAccessKey: "test-secret",
 			}
 
@@ -124,7 +146,7 @@ func TestResolverCreation(t *testing.T) {
 			Convey("Should create resolver with DisableACL set to true", func() {
 				So(err, ShouldBeNil)
 				So(resolver, ShouldNotBeNil)
-				
+
 				s3Resolver, ok := resolver.(*Resolver)
 				So(ok, ShouldBeTrue)
 				So(s3Resolver.DisableACL, ShouldBeTrue)
@@ -133,11 +155,11 @@ func TestResolverCreation(t *testing.T) {
 
 		Convey("When creating resolver with ACL enabled", func() {
 			config := &Config{
-				BucketName:    "test-bucket",
-				BucketRegion:  "us-east-1",
-				LinkExpire:    15,
-				DisableACL:    false,
-				AccessKeyID:   "test-key",
+				BucketName:      "test-bucket",
+				BucketRegion:    "us-east-1",
+				LinkExpire:      15,
+				DisableACL:      false,
+				AccessKeyID:     "test-key",
 				SecretAccessKey: "test-secret",
 			}
 
@@ -146,7 +168,7 @@ func TestResolverCreation(t *testing.T) {
 			Convey("Should create resolver with DisableACL set to false", func() {
 				So(err, ShouldBeNil)
 				So(resolver, ShouldNotBeNil)
-				
+
 				s3Resolver, ok := resolver.(*Resolver)
 				So(ok, ShouldBeTrue)
 				So(s3Resolver.DisableACL, ShouldBeFalse)
