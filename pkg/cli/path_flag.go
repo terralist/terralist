@@ -69,7 +69,7 @@ func (t *PathFlag) Format() string {
 }
 
 func (t *PathFlag) Validate() error {
-	if t.Required && t.isSet {
+	if t.Required && !t.isSet {
 		return fmt.Errorf("required but not set")
 	}
 
