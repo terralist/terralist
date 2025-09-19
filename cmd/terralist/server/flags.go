@@ -95,6 +95,8 @@ const (
 	CustomCompanyNameFlag = "custom-company-name"
 
 	AuthorizedUsersFlag = "authorized-users"
+
+	AuthTokenExpirationFlag = "auth-token-expiration"
 )
 
 var flags = map[string]cli.Flag{
@@ -349,5 +351,11 @@ var flags = map[string]cli.Flag{
 
 	AuthorizedUsersFlag: &cli.StringFlag{
 		Description: "The list of users that are authorized to access the Terralist instance (comma separated).",
+	},
+
+	AuthTokenExpirationFlag: &cli.StringFlag{
+		Description:  "The duration for which auth tokens remain valid.",
+		Choices:      []string{"1d", "1w", "1m", "1y", "never"},
+		DefaultValue: "1d",
 	},
 }
