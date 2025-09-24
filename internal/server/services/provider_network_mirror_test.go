@@ -189,6 +189,68 @@ func TestGetVersionAllPlatforms(t *testing.T) {
 							})
 						})
 					})
+
+					Convey("With ShaSumsUrl", func() {
+						shaSumsLocation := "providers/test/provider/1.0.0/SHA256SUMS"
+						resolvedShaSumsURL := "https://s3.example.com/providers/test/provider/1.0.0/SHA256SUMS?signed"
+
+						mockProviderRepository.
+							On("Find", namespace, name).
+							Return(&provider.Provider{
+								Name: name,
+								Versions: []provider.Version{
+									{
+										Version:    version,
+										Protocols:  "5.0",
+										ShaSumsUrl: shaSumsLocation,
+										Platforms: []provider.Platform{
+											{
+												System:       "linux",
+												Architecture: "amd64",
+												Location:     "key1",
+												ShaSum:       "abc123",
+											},
+										},
+									},
+								},
+							}, nil)
+
+						Convey("If resolver is set", func() {
+							mockResolver.
+								On("Find", shaSumsLocation).
+								Return(resolvedShaSumsURL, nil)
+
+							mockResolver.
+								On("Find", "key1").
+								Return("https://s3.example.com/key1", nil)
+
+							Convey("When the service is queried", func() {
+								result, err := providerService.GetVersionAllPlatforms(namespace, name, version)
+
+								Convey("ShaSumsUrl should be resolved", func() {
+									So(err, ShouldBeNil)
+									So(result, ShouldNotBeNil)
+									So(result.ShaSumsUrl, ShouldEqual, resolvedShaSumsURL)
+								})
+							})
+						})
+
+						Convey("If resolver fails to resolve ShaSumsUrl", func() {
+							mockResolver.
+								On("Find", shaSumsLocation).
+								Return("", errors.New("shasums resolution failed"))
+
+							Convey("When the service is queried", func() {
+								result, err := providerService.GetVersionAllPlatforms(namespace, name, version)
+
+								Convey("An error should be returned", func() {
+									So(err, ShouldNotBeNil)
+									So(result, ShouldBeNil)
+									So(err.Error(), ShouldContainSubstring, "could not resolve shasums")
+								})
+							})
+						})
+					})
 				})
 			})
 		})
