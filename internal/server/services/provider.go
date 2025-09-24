@@ -108,11 +108,20 @@ func (s *DefaultProviderService) GetVersionAllPlatforms(namespace, name, version
 	for _, v := range p.Versions {
 		if v.Version == version {
 			dto := &provider.VersionAllPlatformsDTO{
-				Version:    v.Version,
-				Protocols:  []string{},
-				ShaSumsUrl: v.ShaSumsUrl,
-				Platforms:  make([]provider.PlatformDTO, 0),
+				Version:   v.Version,
+				Protocols: []string{},
+				Platforms: make([]provider.PlatformDTO, 0),
 			}
+
+			shaSumsUrl := v.ShaSumsUrl
+			if s.Resolver != nil && v.ShaSumsUrl != "" {
+				resolvedURL, err := s.Resolver.Find(v.ShaSumsUrl)
+				if err != nil {
+					return nil, fmt.Errorf("could not resolve shasums location: %v", err)
+				}
+				shaSumsUrl = resolvedURL
+			}
+			dto.ShaSumsUrl = shaSumsUrl
 
 			if v.Protocols != "" {
 				dto.Protocols = strings.Split(v.Protocols, ",")
