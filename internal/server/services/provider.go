@@ -108,9 +108,10 @@ func (s *DefaultProviderService) GetVersionAllPlatforms(namespace, name, version
 	for _, v := range p.Versions {
 		if v.Version == version {
 			dto := &provider.VersionAllPlatformsDTO{
-				Version:   v.Version,
-				Protocols: []string{},
-				Platforms: make([]provider.PlatformDTO, 0),
+				Version:    v.Version,
+				Protocols:  []string{},
+				ShaSumsUrl: v.ShaSumsUrl,
+				Platforms:  make([]provider.PlatformDTO, 0),
 			}
 
 			if v.Protocols != "" {
