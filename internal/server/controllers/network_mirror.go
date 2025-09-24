@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"net/http"
 	"strings"
 
@@ -75,13 +77,25 @@ func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 			archives := make(map[string]interface{})
 			for _, platform := range versionData.Platforms {
 				key := platform.OS + "_" + platform.Arch
-				shasum := platform.Shasum
-				if !strings.HasPrefix(shasum, "h1:") {
-					shasum = "h1:" + shasum
+
+				hash := platform.Shasum
+				if strings.HasPrefix(hash, "h1:") {
+					hash = hash[3:]
 				}
+
+				hashBytes, err := hex.DecodeString(hash)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"errors": "invalid hash format",
+					})
+					return
+				}
+
+				h1Hash := "h1:" + base64.StdEncoding.EncodeToString(hashBytes)
+
 				archives[key] = gin.H{
 					"url": platform.DownloadURL,
-					"hashes": []string{shasum},
+					"hashes": []string{h1Hash},
 				}
 			}
 
