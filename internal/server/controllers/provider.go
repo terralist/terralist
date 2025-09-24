@@ -3,7 +3,6 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/provider"
@@ -110,69 +109,6 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			ctx.JSON(http.StatusOK, dto)
-		},
-	)
-
-	// Network Mirror Protocol: List available versions
-	// Docs: https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol
-	tfApi.GET(
-		"/:hostname/:namespace/:name/index.json",
-		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
-			name := ctx.Param("name")
-
-			provider, err := c.ProviderService.Get(namespace, name)
-			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
-					"errors": err.Error(),
-				})
-				return
-			}
-
-			versions := make(map[string]interface{})
-			for _, v := range provider.Versions {
-				versions[v.Version] = struct{}{}
-			}
-
-			ctx.JSON(http.StatusOK, gin.H{
-				"versions": versions,
-			})
-		},
-	)
-
-	// Network Mirror Protocol: Get version details with platform archives
-	// Docs: https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol
-	tfApi.GET(
-		"/:hostname/:namespace/:name/:version.json",
-		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
-			name := ctx.Param("name")
-			version := ctx.Param("version")
-
-			versionData, err := c.ProviderService.GetVersionAllPlatforms(namespace, name, version)
-			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
-					"errors": err.Error(),
-				})
-				return
-			}
-
-			archives := make(map[string]interface{})
-			for _, platform := range versionData.Platforms {
-				key := platform.OS + "_" + platform.Arch
-				shasum := platform.Shasum
-				if !strings.HasPrefix(shasum, "h1:") {
-					shasum = "h1:" + shasum
-				}
-				archives[key] = gin.H{
-					"url": platform.DownloadURL,
-					"hashes": []string{shasum},
-				}
-			}
-
-			ctx.JSON(http.StatusOK, gin.H{
-				"archives": archives,
-			})
 		},
 	)
 

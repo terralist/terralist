@@ -202,6 +202,18 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(providerController)
 
+	networkMirrorGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "",
+	})
+
+	networkMirrorController := &controllers.DefaultNetworkMirrorController{
+		ProviderService: providerService,
+		Authorization:   authorization,
+		AnonymousRead:   userConfig.ProvidersAnonymousRead,
+	}
+
+	networkMirrorGroup.Register(networkMirrorController)
+
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
 		ApiKeyService:    apiKeyService,
