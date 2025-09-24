@@ -37,8 +37,9 @@ nav:
   - Installation: installation.md
   - Getting Started: getting-started.md
   - Configuration: configuration.md
+  - Network Mirror Protocol: network-mirror.md
   - Artifacts Documentation: artifacts-documentation.md
-  - Developer Guide: 
+  - Developer Guide:
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md
     - Local Development: dev-guide/local-development.md
