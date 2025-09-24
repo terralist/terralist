@@ -50,9 +50,10 @@ type VersionListVersionDTO struct {
 }
 
 type VersionAllPlatformsDTO struct {
-	Version   string        `json:"version"`
-	Protocols []string      `json:"protocols"`
-	Platforms []PlatformDTO `json:"platforms"`
+	Version    string        `json:"version"`
+	Protocols  []string      `json:"protocols"`
+	ShaSumsUrl string        `json:"shasums_url"`
+	Platforms  []PlatformDTO `json:"platforms"`
 }
 
 type PlatformDTO struct {

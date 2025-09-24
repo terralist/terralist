@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"encoding/base64"
-	"encoding/hex"
+	"bufio"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -25,6 +26,41 @@ type DefaultNetworkMirrorController struct {
 
 func (c *DefaultNetworkMirrorController) Paths() []string {
 	return []string{""}
+}
+
+func parseSHASUMS(content string, filename string) (string, error) {
+	scanner := bufio.NewScanner(strings.NewReader(content))
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			hash := parts[0]
+			file := parts[1]
+			if file == filename {
+				return hash, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("hash not found for %s", filename)
+}
+
+func fetchSHASUMS(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to fetch SHASUMS: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
 }
 
 func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
@@ -74,27 +110,37 @@ func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
+			var shasums string
+			var fetchErr error
+			if versionData.ShaSumsUrl != "" {
+				shasums, fetchErr = fetchSHASUMS(versionData.ShaSumsUrl)
+				if fetchErr != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"errors": fmt.Sprintf("failed to fetch SHASUMS: %v", fetchErr),
+					})
+					return
+				}
+			}
+
 			archives := make(map[string]interface{})
 			for _, platform := range versionData.Platforms {
 				key := platform.OS + "_" + platform.Arch
 
-				hash := platform.Shasum
-				if strings.HasPrefix(hash, "h1:") {
-					hash = hash[3:]
-				}
+				filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", name, version, platform.OS, platform.Arch)
 
-				hashBytes, err := hex.DecodeString(hash)
-				if err != nil {
-					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"errors": "invalid hash format",
-					})
-					return
+				h1Hash := ""
+				if shasums != "" {
+					h1Hash, fetchErr = parseSHASUMS(shasums, filename)
+					if fetchErr != nil {
+						ctx.JSON(http.StatusInternalServerError, gin.H{
+							"errors": fmt.Sprintf("failed to parse SHASUMS: %v", fetchErr),
+						})
+						return
+					}
 				}
-
-				h1Hash := "h1:" + base64.StdEncoding.EncodeToString(hashBytes)
 
 				archives[key] = gin.H{
-					"url": platform.DownloadURL,
+					"url":    platform.DownloadURL,
 					"hashes": []string{h1Hash},
 				}
 			}
