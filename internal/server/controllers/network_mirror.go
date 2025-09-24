@@ -57,11 +57,12 @@ func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 
 	rootApi.GET(
-		"/:hostname/:namespace/:name/:version.json",
+		"/:hostname/:namespace/:name/:version",
 		func(ctx *gin.Context) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
-			version := ctx.Param("version")
+			versionWithExt := ctx.Param("version")
+			version := strings.TrimSuffix(versionWithExt, ".json")
 
 			versionData, err := c.ProviderService.GetVersionAllPlatforms(namespace, name, version)
 			if err != nil {
