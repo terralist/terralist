@@ -137,6 +137,9 @@ func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 						})
 						return
 					}
+					if !strings.HasPrefix(h1Hash, "h1:") {
+						h1Hash = "h1:" + h1Hash
+					}
 				}
 
 				archives[key] = gin.H{
