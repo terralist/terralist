@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"terralist/internal/server/handlers"
@@ -12,6 +13,7 @@ import (
 	"terralist/pkg/api"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/mod/sumdb/dirhash"
 )
 
 type NetworkMirrorController interface {
@@ -61,6 +63,37 @@ func fetchSHASUMS(url string) (string, error) {
 	}
 
 	return string(body), nil
+}
+
+func computeH1Hash(zipURL string) (string, error) {
+	resp, err := http.Get(zipURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download zip: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download zip: status %d", resp.StatusCode)
+	}
+
+	tmpFile, err := os.CreateTemp("", "provider-*.zip")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	_, err = io.Copy(tmpFile, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to write zip: %v", err)
+	}
+
+	h1Hash, err := dirhash.HashZip(tmpFile.Name(), dirhash.DefaultHash)
+	if err != nil {
+		return "", fmt.Errorf("failed to compute h1 hash: %v", err)
+	}
+
+	return h1Hash, nil
 }
 
 func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
@@ -128,23 +161,29 @@ func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 
 				filename := fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", name, version, platform.OS, platform.Arch)
 
-				h1Hash := ""
-				if shasums != "" {
-					h1Hash, fetchErr = parseSHASUMS(shasums, filename)
-					if fetchErr != nil {
+				hashes := []string{}
+
+				if platform.DownloadURL != "" {
+					h1Hash, err := computeH1Hash(platform.DownloadURL)
+					if err != nil {
 						ctx.JSON(http.StatusInternalServerError, gin.H{
-							"errors": fmt.Sprintf("failed to parse SHASUMS: %v", fetchErr),
+							"errors": fmt.Sprintf("failed to compute h1 hash: %v", err),
 						})
 						return
 					}
-					if !strings.HasPrefix(h1Hash, "h1:") {
-						h1Hash = "h1:" + h1Hash
+					hashes = append(hashes, h1Hash)
+				}
+
+				if shasums != "" {
+					rawHash, fetchErr := parseSHASUMS(shasums, filename)
+					if fetchErr == nil {
+						hashes = append(hashes, "zh:"+rawHash)
 					}
 				}
 
 				archives[key] = gin.H{
 					"url":    platform.DownloadURL,
-					"hashes": []string{h1Hash},
+					"hashes": hashes,
 				}
 			}
 
