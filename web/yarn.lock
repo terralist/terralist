@@ -1171,9 +1171,9 @@ eslint-plugin-prettier@^5.2.3:
     synckit "^0.11.7"
 
 eslint-plugin-svelte@^3.1.0:
-  version "3.12.3"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-svelte/-/eslint-plugin-svelte-3.12.3.tgz#39571f0c72e2f5167b16f09d0913aea5826bfbc6"
-  integrity sha512-YVNhKsHZeXVvsjZcSMjnce9gO31frICu453p5JjFiXNszHoG9k8WvsA/LAoLi4K8T69G7DIrgg1AqasDJLpgoQ==
+  version "3.12.4"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-svelte/-/eslint-plugin-svelte-3.12.4.tgz#a6b540b4d5e9045303e3d38eb5f4171472dae828"
+  integrity sha512-hD7wPe+vrPgx3U2X2b/wyTMtWobm660PygMGKrWWYTc9lvtY8DpNFDaU2CJQn1szLjGbn/aJ3g8WiXuKakrEkw==
   dependencies:
     "@eslint-community/eslint-utils" "^4.6.1"
     "@jridgewell/sourcemap-codec" "^1.5.0"
@@ -2323,9 +2323,9 @@ semver@^7.3.6, semver@^7.5.4, semver@^7.6.0:
   integrity sha512-hlq8tAfn0m/61p4BVRcPzIGr6LKiMwo4VM6dGi6pt4qcRkmNzTcWq6eCEjEh+qXjkMDvPlOFFSGwQjoEa6gyMA==
 
 semver@^7.6.3:
-  version "7.7.2"
-  resolved "https://registry.yarnpkg.com/semver/-/semver-7.7.2.tgz#67d99fdcd35cec21e6f8b87a7fd515a33f982b58"
-  integrity sha512-RF0Fw+rO5AMf9MAyaRXI4AV0Ulj5lMHqVxxdSgiVbixSCXoEmmX/jk0CuJw4+3SqroYO9VoUh+HcuJivvtJemA==
+  version "7.7.3"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.7.3.tgz#4b5f4143d007633a8dc671cd0a6ef9147b8bb946"
+  integrity sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q==
 
 shebang-command@^2.0.0:
   version "2.0.0"
@@ -2455,22 +2455,10 @@ svelte-check@^4.1.4:
     picocolors "^1.0.0"
     sade "^1.7.4"
 
-svelte-eslint-parser@^1.2.0:
+svelte-eslint-parser@^1.2.0, svelte-eslint-parser@^1.3.0:
   version "1.3.3"
   resolved "https://registry.yarnpkg.com/svelte-eslint-parser/-/svelte-eslint-parser-1.3.3.tgz#6ca9010e35ba2f870acbbe9da9396d5767a468d3"
   integrity sha512-oTrDR8Z7Wnguut7QH3YKh7JR19xv1seB/bz4dxU5J/86eJtZOU4eh0/jZq4dy6tAlz/KROxnkRQspv5ZEt7t+Q==
-  dependencies:
-    eslint-scope "^8.2.0"
-    eslint-visitor-keys "^4.0.0"
-    espree "^10.0.0"
-    postcss "^8.4.49"
-    postcss-scss "^4.0.9"
-    postcss-selector-parser "^7.0.0"
-
-svelte-eslint-parser@^1.3.0:
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/svelte-eslint-parser/-/svelte-eslint-parser-1.3.2.tgz#0decf28ca2ac4fa7fe393f9bc8cf545626ab599b"
-  integrity sha512-whla4VlUbwJidn/bNyC3Ho3pBrXnR2CBEkuJwtaURW+wfwgKHPaYtZAmwAkp6HWWKCw1ILZL6iKsFdVY11rpDA==
   dependencies:
     eslint-scope "^8.2.0"
     eslint-visitor-keys "^4.0.0"
