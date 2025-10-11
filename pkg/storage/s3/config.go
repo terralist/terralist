@@ -23,6 +23,7 @@ type Config struct {
 
 	ServerSideEncryption string
 	UsePathStyle         bool
+	UseACLs              bool
 
 	LinkExpire         int
 	DefaultCredentials bool

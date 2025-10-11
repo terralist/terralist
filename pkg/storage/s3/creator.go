@@ -46,12 +46,13 @@ func (t *Creator) New(configurator storage.Configurator) (storage.Resolver, erro
 	client := s3.NewFromConfig(cfg, endpointOptions)
 
 	return &Resolver{
-		BucketName:   options.BucketName,
-		BucketPrefix: options.BucketPrefix,
-		LinkExpire:   options.LinkExpire,
-
+		BucketName:           options.BucketName,
+		BucketPrefix:         options.BucketPrefix,
+		LinkExpire:           options.LinkExpire,
 		ServerSideEncryption: options.ServerSideEncryption,
+		UseACLs:              options.UseACLs,
 
-		Client: client,
+		Client:    client,
+		Presigner: s3.NewPresignClient(client),
 	}, nil
 }

@@ -38,6 +38,9 @@ nav:
   - Getting Started: getting-started.md
   - Configuration: configuration.md
   - Artifacts Documentation: artifacts-documentation.md
+  - User Guide: 
+    - user-guide/index.md
+    - AWS S3 Bucket Configuration: user-guide/aws-s3-bucket-configuration.md
   - Developer Guide: 
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md

@@ -321,6 +321,7 @@ func (s *Command) run() error {
 				LinkExpire:           flags[S3PresignExpireFlag].(*cli.IntFlag).Value,
 				UsePathStyle:         flags[S3UsePathStyleFlag].(*cli.BoolFlag).Value,
 				ServerSideEncryption: flags[S3ServerSideEncryptionFlag].(*cli.StringFlag).Value,
+				UseACLs:              flags[S3UseACLsFlag].(*cli.BoolFlag).Value,
 			})
 		case "azure":
 			resolvers[name], err = storageFactory.NewResolver(storage.AZURE, &azure.Config{ //nolint:forcetypeassert
