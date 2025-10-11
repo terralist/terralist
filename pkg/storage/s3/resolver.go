@@ -9,9 +9,21 @@ import (
 	"terralist/pkg/storage"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
+
+// S3Client is a wrapper interface around the S3 client methods used by the Resolver.
+type S3Client interface {
+	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+}
+
+// PresignClient is a wrapper interface around the S3 Presign client methods used by the Resolver.
+type PresignClient interface {
+	PresignGetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error)
+}
 
 // Resolver is the concrete implementation of storage.Resolver.
 // The S3 resolver will download files from the given URL then
@@ -24,7 +36,8 @@ type Resolver struct {
 	ServerSideEncryption string
 	DisableACL           bool
 
-	Client *s3.Client
+	Client    S3Client
+	Presigner PresignClient
 }
 
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
@@ -61,9 +74,7 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 }
 
 func (r *Resolver) Find(key string) (string, error) {
-	client := s3.NewPresignClient(r.Client)
-
-	req, err := client.PresignGetObject(context.TODO(), &s3.GetObjectInput{
+	req, err := r.Presigner.PresignGetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(r.BucketName),
 		Key:    r.withPrefix(key),
 	}, func(po *s3.PresignOptions) {

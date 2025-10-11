@@ -30,3 +30,9 @@ packages:
   terralist/pkg/storage:
     config:
       all: true
+  terralist/pkg/storage/s3:
+    config:
+      all: true
+    interfaces:
+      S3Client:
+      PresignClient:

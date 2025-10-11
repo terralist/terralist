@@ -2,49 +2,71 @@ package s3
 
 import (
 	"bytes"
-	"context"
+	"fmt"
 	"testing"
 
 	"terralist/pkg/storage"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	. "github.com/smartystreets/goconvey/convey"
+	mock "github.com/stretchr/testify/mock"
 )
-
-func newAWSS3Client(t *testing.T) *s3.Client {
-	cfg, err := config.LoadDefaultConfig(
-		context.TODO(),
-		config.WithRegion("us-east-1"),
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider("test", "test", ""),
-		),
-	)
-	if err != nil {
-		t.Fatalf("failed to load SDK configuration, %v", err)
-	}
-
-	return s3.NewFromConfig(cfg)
-}
 
 func TestStore(t *testing.T) {
 	Convey("Subject: Store files in S3", t, func() {
+		client := NewMockS3Client(t)
+		presigner := NewMockPresignClient(t)
+
+		storeInput := &storage.StoreInput{
+			KeyPrefix:   "test",
+			FileName:    "test.txt",
+			Reader:      bytes.NewReader([]byte("test content")),
+			Size:        int64(12),
+			ContentType: "text/plain",
+		}
+
+		expectedKey := "test/test.txt"
+		expectedPrefixedKey := "test-prefix/" + expectedKey
+
 		Convey("When ACL is enabled (default behavior)", func() {
 			resolver := &Resolver{
 				BucketName:           "test-bucket",
 				BucketPrefix:         "test-prefix/",
 				ServerSideEncryption: "AES256",
-				DisableACL:           false, // ACL enabled
-				Client:               newAWSS3Client(t),
+				DisableACL:           false,
+				Client:               client,
+				Presigner:            presigner,
 			}
 
-			Convey("Should prepare PutObjectInput with ACL set to private", func() {
-				// This test validates that when DisableACL is false, the logic prepares
-				// the PutObjectInput with ACL set to "private"
-				So(resolver.DisableACL, ShouldBeFalse)
+			Convey("Should succeed and set ACL and SSE", func() {
+				client.
+					On("PutObject", mock.Anything, mock.MatchedBy(func(input *s3.PutObjectInput) bool {
+						So(*input.Bucket, ShouldEqual, "test-bucket")
+						So(*input.Key, ShouldEqual, expectedPrefixedKey)
+						So(input.ACL, ShouldEqual, types.ObjectCannedACLPrivate)
+						So(input.ServerSideEncryption, ShouldEqual, types.ServerSideEncryptionAes256)
+						return true
+					})).
+					Return(&s3.PutObjectOutput{}, nil).
+					Once()
+
+				key, err := resolver.Store(storeInput)
+				So(err, ShouldBeNil)
+				So(key, ShouldEqual, expectedKey)
+				client.AssertExpectations(t)
+			})
+
+			Convey("Should fail and return error from S3", func() {
+				client.
+					On("PutObject", mock.Anything, mock.AnythingOfType("*s3.PutObjectInput")).
+					Return(nil, fmt.Errorf("s3 error")).
+					Once()
+
+				key, err := resolver.Store(storeInput)
+				So(err, ShouldNotBeNil)
+				So(key, ShouldBeEmpty)
 			})
 		})
 
@@ -53,171 +75,156 @@ func TestStore(t *testing.T) {
 				BucketName:           "test-bucket",
 				BucketPrefix:         "test-prefix/",
 				ServerSideEncryption: "AES256",
-				DisableACL:           true, // ACL disabled
-				Client:               newAWSS3Client(t),
+				DisableACL:           true,
+				Client:               client,
+				Presigner:            presigner,
 			}
 
-			Convey("Should prepare PutObjectInput without ACL parameter", func() {
-				// This test validates that when DisableACL is true, the ACL parameter
-				// is not set, allowing bucket policies to control access
-				So(resolver.DisableACL, ShouldBeTrue)
-			})
-		})
-	})
-}
+			Convey("Should succeed and not set ACL, but set SSE", func() {
+				client.
+					On("PutObject", mock.Anything, mock.MatchedBy(func(input *s3.PutObjectInput) bool {
+						So(*input.Bucket, ShouldEqual, "test-bucket")
+						So(*input.Key, ShouldEqual, expectedPrefixedKey)
+						So(input.ACL, ShouldBeEmpty)
+						So(input.ServerSideEncryption, ShouldEqual, types.ServerSideEncryptionAes256)
+						return true
+					})).
+					Return(&s3.PutObjectOutput{}, nil).
+					Once()
 
-func TestDisableACLConfiguration(t *testing.T) {
-	Convey("Subject: S3 DisableACL configuration", t, func() {
-		Convey("When DisableACL is false", func() {
-			config := &Config{
-				BucketName: "test-bucket",
-				LinkExpire: 15,
-				DisableACL: false,
-			}
-
-			Convey("Config should indicate ACL is enabled", func() {
-				So(config.DisableACL, ShouldBeFalse)
-			})
-		})
-
-		Convey("When DisableACL is true", func() {
-			config := &Config{
-				BucketName: "test-bucket",
-				LinkExpire: 15,
-				DisableACL: true,
-			}
-
-			Convey("Config should indicate ACL is disabled", func() {
-				So(config.DisableACL, ShouldBeTrue)
-			})
-		})
-	})
-}
-
-func TestResolverCreation(t *testing.T) {
-	Convey("Subject: Create S3 Resolver with DisableACL configuration", t, func() {
-		creator := &Creator{}
-
-		Convey("When creating resolver with ACL disabled", func() {
-			config := &Config{
-				BucketName:      "test-bucket",
-				BucketRegion:    "us-east-1",
-				LinkExpire:      15,
-				DisableACL:      true,
-				AccessKeyID:     "test-key",
-				SecretAccessKey: "test-secret",
-			}
-
-			resolver, err := creator.New(config)
-
-			Convey("Should create resolver with DisableACL set to true", func() {
+				key, err := resolver.Store(storeInput)
 				So(err, ShouldBeNil)
-				So(resolver, ShouldNotBeNil)
+				So(key, ShouldEqual, expectedKey)
+				client.AssertExpectations(t)
+			})
 
-				s3Resolver, ok := resolver.(*Resolver)
-				So(ok, ShouldBeTrue)
-				So(s3Resolver.DisableACL, ShouldBeTrue)
+			Convey("Should fail and return error from S3", func() {
+				client.
+					On("PutObject", mock.Anything, mock.AnythingOfType("*s3.PutObjectInput")).
+					Return(nil, fmt.Errorf("s3 error")).
+					Once()
+
+				key, err := resolver.Store(storeInput)
+				So(err, ShouldNotBeNil)
+				So(key, ShouldBeEmpty)
+				client.AssertExpectations(t)
 			})
 		})
 
-		Convey("When creating resolver with ACL enabled", func() {
-			config := &Config{
-				BucketName:      "test-bucket",
-				BucketRegion:    "us-east-1",
-				LinkExpire:      15,
-				DisableACL:      false,
-				AccessKeyID:     "test-key",
-				SecretAccessKey: "test-secret",
+		Convey("When ServerSideEncryption is 'none'", func() {
+			resolver := &Resolver{
+				BucketName:           "test-bucket",
+				BucketPrefix:         "test-prefix/",
+				ServerSideEncryption: "none",
+				DisableACL:           false,
+				Client:               client,
+				Presigner:            presigner,
 			}
 
-			resolver, err := creator.New(config)
+			Convey("Should not set ServerSideEncryption", func() {
+				client.
+					On("PutObject", mock.Anything, mock.MatchedBy(func(input *s3.PutObjectInput) bool {
+						So(input.ServerSideEncryption, ShouldBeEmpty)
+						return true
+					})).
+					Return(&s3.PutObjectOutput{}, nil).
+					Once()
 
-			Convey("Should create resolver with DisableACL set to false", func() {
+				_, err := resolver.Store(storeInput)
 				So(err, ShouldBeNil)
-				So(resolver, ShouldNotBeNil)
 
-				s3Resolver, ok := resolver.(*Resolver)
-				So(ok, ShouldBeTrue)
-				So(s3Resolver.DisableACL, ShouldBeFalse)
+				client.AssertExpectations(t)
 			})
 		})
 	})
 }
 
-func TestPutObjectInputPreparation(t *testing.T) {
-	Convey("Subject: PutObjectInput preparation with ACL configuration", t, func() {
-		storeInput := &storage.StoreInput{
-			KeyPrefix:   "modules",
-			FileName:    "test.zip",
-			Reader:      bytes.NewReader([]byte("test content")),
-			Size:        12,
-			ContentType: "application/zip",
+func TestFind(t *testing.T) {
+	Convey("Subject: Find files in S3 (presigned URL)", t, func() {
+		client := NewMockS3Client(t)
+		presigner := NewMockPresignClient(t)
+
+		expectedKey := "test/test.txt"
+		expectedPrefixedKey := "test-prefix/" + expectedKey
+		expectedURL := "https://example.com/s3/test-prefix/test/test.txt"
+
+		resolver := &Resolver{
+			BucketName:   "test-bucket",
+			BucketPrefix: "test-prefix/",
+			LinkExpire:   15,
+			Client:       client,
+			Presigner:    presigner,
 		}
 
-		Convey("When ACL is enabled", func() {
-			resolver := &Resolver{
-				BucketName:           "test-bucket",
-				BucketPrefix:         "test-prefix/",
-				ServerSideEncryption: "AES256",
-				DisableACL:           false,
-				Client:               newAWSS3Client(t),
-			}
+		Convey("Should succeed and return presigned URL", func() {
+			presigner.
+				On("PresignGetObject", mock.Anything, mock.MatchedBy(func(input *s3.GetObjectInput) bool {
+					So(*input.Bucket, ShouldEqual, "test-bucket")
+					So(*input.Key, ShouldEqual, expectedPrefixedKey)
+					return true
+				}), mock.Anything).
+				Return(&v4.PresignedHTTPRequest{URL: expectedURL}, nil).
+				Once()
 
-			// Create the PutObjectInput as the Store method would
-			key := "modules/test.zip"
-			putObjectInput := &s3.PutObjectInput{
-				Bucket:             aws.String(resolver.BucketName),
-				Key:                resolver.withPrefix(key),
-				Body:               storeInput.Reader,
-				ContentLength:      aws.Int64(storeInput.Size),
-				ContentType:        aws.String(storeInput.ContentType),
-				ContentDisposition: aws.String("attachment"),
-			}
-
-			if !resolver.DisableACL {
-				putObjectInput.ACL = types.ObjectCannedACLPrivate
-			}
-
-			if resolver.ServerSideEncryption != "none" {
-				putObjectInput.ServerSideEncryption = types.ServerSideEncryption(resolver.ServerSideEncryption)
-			}
-
-			Convey("PutObjectInput should have ACL set to private", func() {
-				So(putObjectInput.ACL, ShouldEqual, types.ObjectCannedACLPrivate)
-			})
+			url, err := resolver.Find(expectedKey)
+			So(err, ShouldBeNil)
+			So(url, ShouldEqual, expectedURL)
+			presigner.AssertExpectations(t)
 		})
 
-		Convey("When ACL is disabled", func() {
-			resolver := &Resolver{
-				BucketName:           "test-bucket",
-				BucketPrefix:         "test-prefix/",
-				ServerSideEncryption: "AES256",
-				DisableACL:           true,
-				Client:               newAWSS3Client(t),
-			}
+		Convey("Should fail and return error from presigner", func() {
+			presigner.
+				On("PresignGetObject", mock.Anything, mock.AnythingOfType("*s3.GetObjectInput"), mock.Anything).
+				Return(nil, fmt.Errorf("presign error")).
+				Once()
 
-			// Create the PutObjectInput as the Store method would
-			key := "modules/test.zip"
-			putObjectInput := &s3.PutObjectInput{
-				Bucket:             aws.String(resolver.BucketName),
-				Key:                resolver.withPrefix(key),
-				Body:               storeInput.Reader,
-				ContentLength:      aws.Int64(storeInput.Size),
-				ContentType:        aws.String(storeInput.ContentType),
-				ContentDisposition: aws.String("attachment"),
-			}
+			url, err := resolver.Find(expectedKey)
+			So(err, ShouldNotBeNil)
+			So(url, ShouldBeEmpty)
+			presigner.AssertExpectations(t)
+		})
+	})
+}
 
-			if !resolver.DisableACL {
-				putObjectInput.ACL = types.ObjectCannedACLPrivate
-			}
+func TestPurge(t *testing.T) {
+	Convey("Subject: Purge files from S3", t, func() {
+		client := NewMockS3Client(t)
+		presigner := NewMockPresignClient(t)
 
-			if resolver.ServerSideEncryption != "none" {
-				putObjectInput.ServerSideEncryption = types.ServerSideEncryption(resolver.ServerSideEncryption)
-			}
+		expectedKey := "test/test.txt"
+		expectedPrefixedKey := "test-prefix/" + expectedKey
 
-			Convey("PutObjectInput should not have ACL set", func() {
-				So(putObjectInput.ACL, ShouldBeEmpty)
-			})
+		resolver := &Resolver{
+			BucketName:   "test-bucket",
+			BucketPrefix: "test-prefix/",
+			Client:       client,
+			Presigner:    presigner,
+		}
+
+		Convey("Should succeed and delete the object", func() {
+			client.
+				On("DeleteObject", mock.Anything, mock.MatchedBy(func(input *s3.DeleteObjectInput) bool {
+					So(*input.Bucket, ShouldEqual, "test-bucket")
+					So(*input.Key, ShouldEqual, expectedPrefixedKey)
+					return true
+				})).
+				Return(&s3.DeleteObjectOutput{}, nil).
+				Once()
+
+			err := resolver.Purge(expectedKey)
+			So(err, ShouldBeNil)
+			client.AssertExpectations(t)
+		})
+
+		Convey("Should fail and return error from S3", func() {
+			client.
+				On("DeleteObject", mock.Anything, mock.AnythingOfType("*s3.DeleteObjectInput")).
+				Return(nil, fmt.Errorf("delete error")).
+				Once()
+
+			err := resolver.Purge(expectedKey)
+			So(err, ShouldNotBeNil)
+			client.AssertExpectations(t)
 		})
 	})
 }

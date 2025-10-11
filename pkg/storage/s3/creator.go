@@ -52,6 +52,7 @@ func (t *Creator) New(configurator storage.Configurator) (storage.Resolver, erro
 		ServerSideEncryption: options.ServerSideEncryption,
 		DisableACL:           options.DisableACL,
 
-		Client: client,
+		Client:    client,
+		Presigner: s3.NewPresignClient(client),
 	}, nil
 }
