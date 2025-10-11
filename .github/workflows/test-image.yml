@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
@@ -51,7 +51,7 @@ jobs:
       with:
         context: .
         file: Dockerfile.test
-        platforms: linux/arm64/v8,linux/amd64,linux/arm/v7
+        platforms: linux/arm64,linux/amd64
         push: ${{ github.event_name != 'pull_request' }}
         cache-to: type=gha,mode=max,ignore-error=true
         cache-from: type=gha

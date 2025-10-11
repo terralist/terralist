@@ -198,6 +198,7 @@ config.yaml
 # Test mocks
 mocks
 mocks/**
+**/mocks.go
 
 # Venom reports
 reports/

@@ -1,0 +1,142 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    ':rebaseStalePrs',
+  ],
+  schedule: [
+    'every weekend',
+  ],
+  labels: [
+    'dependencies',
+  ],
+  packageRules: [
+    {
+      matchCategories: [
+        'docker',
+      ],
+      enabled: true,
+    },
+    {
+      matchManagers: [
+        'gomod',
+        'dockerfile',
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'golang',
+      ],
+      groupName: 'golang-version',
+    },
+    {
+      matchManagers: [
+        'npm',
+        'dockerfile',
+        'custom.regex',
+      ],
+      matchPackageNames: [
+        'node',
+      ],
+      groupName: 'node-version',
+    },
+    // The following packages are not versioned, so there is no need to upgrade them
+    {
+      matchManagers: [
+        'gomod'
+      ],
+      matchPackageNames: [
+        'github.com/hashicorp/terraform-config-inspect',
+        'github.com/gin-gonic/contrib',
+        'github.com/ssoroka/slice'
+      ],
+      "enabled": false
+    },
+  ],
+  npm: {
+    enabled: true,
+    managerFilePatterns: [
+      '/(^|/)web/package.json/',
+    ],
+  },
+  devcontainer: {
+    enabled: true,
+  },
+  gomod: {
+    enabled: true,
+  },
+  'github-actions': {
+    enabled: true,
+  },
+  customManagers: [
+    // Regex manager for Golang versions
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.go-version$/',
+      ],
+      matchStrings: [
+        '^(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)\\s*$',
+      ],
+      depNameTemplate: 'golang',
+      datasourceTemplate: 'golang-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.golangci\\.yml$/',
+      ],
+      matchStrings: [
+        'go\\: "(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"\\s*',
+      ],
+      depNameTemplate: 'golang',
+      datasourceTemplate: 'golang-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github\\/workflows\\/release\\.yml$/',
+        '/^\\.github\\/workflows\\/test\\.yml$/',
+      ],
+      matchStrings: [
+        'go-version\\: "(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?)"\\s*',
+      ],
+      depNameTemplate: 'golang',
+      datasourceTemplate: 'golang-version',
+    },
+    // Regex manager for Node.js versions
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.devcontainer\\/devcontainer\\.json$/',
+      ],
+      matchStrings: [
+        'typescript-node:dev-(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)-bookworm',
+      ],
+      depNameTemplate: 'node',
+      datasourceTemplate: 'node-version',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github\\/workflows\\/release\\.yml$/',
+        '/^\\.github\\/workflows\\/test\\.yml$/',
+      ],
+      matchStrings: [
+        'node-version\\: "(?<currentValue>\\d+(?:\\.\\d+)?(?:\\.\\d+)?)"\\s*',
+      ],
+      depNameTemplate: 'node',
+      datasourceTemplate: 'node-version',
+    },
+  ],
+  vulnerabilityAlerts: {
+    labels: [
+      'security',
+    ],
+    automerge: false,
+  },
+  platformAutomerge: false,
+  rebaseWhen: 'behind-base-branch',
+  rollbackPrs: true,
+  ignoreUnstable: true,
+  dependencyDashboard: false,
+}

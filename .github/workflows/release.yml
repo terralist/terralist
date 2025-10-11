@@ -15,81 +15,81 @@ jobs:
   goreleaser:
     name: GoReleaser
     runs-on: ubuntu-22.04
-    
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
 
-    - name: Set release version
-      run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Set release version
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
-    - name: Set the commit hash
-      run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Set the commit hash
+        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-    - name: Set the build Timestamp
-      run: echo "BUILD_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%S")" >> $GITHUB_ENV
+      - name: Set the build Timestamp
+        run: echo "BUILD_TIMESTAMP=$(date +"%Y-%m-%dT%H:%M:%S")" >> $GITHUB_ENV
 
-    - name: Set up Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'yarn'
-        cache-dependency-path: |
-          web/yarn.lock
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "yarn"
+          cache-dependency-path: |
+            web/yarn.lock
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24'
-        cache-dependency-path: |
-          go.sum
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache-dependency-path: |
+            go.sum
 
-    - name: Install web UI dependencies
-      run: yarn --cwd ./web install
+      - name: Install web UI dependencies
+        run: yarn --cwd ./web install
 
-    - name: Build web UI
-      env:
-        TERRALIST_VERSION: ${{ env.RELEASE_VERSION }}
-      run: yarn --cwd ./web build
+      - name: Build web UI
+        env:
+          TERRALIST_VERSION: ${{ env.RELEASE_VERSION }}
+        run: yarn --cwd ./web build
 
-    # yarn build will remove the .gitkeep file from web/dist so
-    # goreleaser will fail because of the dirty state;
-    # we need to put back the file
-    - name: Fix git dirty state
-      run: touch web/dist/.gitkeep
+      # yarn build will remove the .gitkeep file from web/dist so
+      # goreleaser will fail because of the dirty state;
+      # we need to put back the file
+      - name: Fix git dirty state
+        run: touch web/dist/.gitkeep
 
-    - name: Release stable
-      uses: goreleaser/goreleaser-action@v6
-      if: (!contains(github.ref, '-pre.'))
-      with:
-        version: v2.4.8
-        args: release --clean
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COMMIT_HASH: ${{ env.COMMIT_HASH }}
-        BUILD_TIMESTAMP: ${{ env.BUILD_TIMESTAMP }}
-    
-    - name: Generate CHANGELOG for pre-release
-      if: contains(github.ref, '-pre.')
-      id: changelog
-      run: |
-        echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
-          -f tag_name="${GITHUB_REF#refs/tags/}" \
-          -f target_commitish=master \
-          -q .body > tmp-CHANGELOG.md
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - name: Release stable
+        uses: goreleaser/goreleaser-action@v6
+        if: (!contains(github.ref, '-pre.'))
+        with:
+          version: v2.4.8
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          BUILD_TIMESTAMP: ${{ env.BUILD_TIMESTAMP }}
 
-    - name: Release pre-release
-      uses: goreleaser/goreleaser-action@v6
-      if: contains(github.ref, '-pre.')
-      with:
-        version: v2.4.8
-        args: release --clean --release-notes=tmp-CHANGELOG.md
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GORELEASER_CURRENT_TAG: ${{ steps.changelog.outputs.RELEASE_TAG }}
-        RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
-        COMMIT_HASH: ${{ env.COMMIT_HASH }}
-        BUILD_TIMESTAMP: ${{ env.BUILD_TIMESTAMP }}
+      - name: Generate CHANGELOG for pre-release
+        if: contains(github.ref, '-pre.')
+        id: changelog
+        run: |
+          echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          gh api repos/$GITHUB_REPOSITORY/releases/generate-notes \
+            -f tag_name="${GITHUB_REF#refs/tags/}" \
+            -f target_commitish=master \
+            -q .body > tmp-CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Release pre-release
+        uses: goreleaser/goreleaser-action@v6
+        if: contains(github.ref, '-pre.')
+        with:
+          version: v2.4.8
+          args: release --clean --release-notes=tmp-CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ steps.changelog.outputs.RELEASE_TAG }}
+          RELEASE_VERSION: ${{ env.RELEASE_VERSION }}
+          COMMIT_HASH: ${{ env.COMMIT_HASH }}
+          BUILD_TIMESTAMP: ${{ env.BUILD_TIMESTAMP }}

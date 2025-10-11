@@ -1,40 +1,46 @@
-version: '3'
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
 
 tasks:
-  build:
-    summary: "Build the Terralist binary."
+  tidy:
+    desc: "Install all Terralist dependencies and tools."
+    silent: true
+    cmds:
+      - npm install -g yarn && yarn --cwd ./web install
+      - go mod tidy
+
+  build:frontend:
+    desc: "Build the web application."
+    silent: true
+    dir: web
+    cmds:
+      - yarn install
+      - yarn build
+
+  build:backend:
+    desc: |
+      Build the backend application.
+      The build mode defaults to 'release'. Debug mode can be enabled 
+      by passing the '--debug' CLI argument (as '-- --debug').
     silent: true
     vars:
-      ARG:
-        sh: echo "{{default "release" .CLI_ARGS}}"
-      ARG_CHECKER:
-        sh: echo "{{has .ARG (list "debug" "release")}}"
-      MODE:
-        sh: echo "{{ternary .ARG "release" (eq .ARG_CHECKER "true")}}"
+      WITH_DEBUG_MODE: '{{has "--debug" .CLI_ARGS_LIST}}'
+      MODE: '{{ternary "debug" "release" (eq .WITH_DEBUG_MODE "true")}}'
       BRANCH:
         sh: git rev-parse --abbrev-ref HEAD
       COMMIT_HASH:
         sh: git rev-parse --short HEAD
-      BINARY_FILE_NAME:
-        sh: echo '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
-      ALL_TAGS:
-        sh: git tag
-      LATEST_TAG: '{{splitList "\n" .ALL_TAGS | last}}'
-      TERRALIST_VERSION: "{{.LATEST_TAG}}-{{.BRANCH}}+{{.COMMIT_HASH}}"
+      LATEST_TAG:
+        sh: git tag | tail -n 1
+      TERRALIST_VERSION: '{{.LATEST_TAG}}-{{regexReplaceAll "[^a-zA-Z0-9-]+" .BRANCH "--"}}+{{.COMMIT_HASH}}'
+      BINARY_FILE_NAME: '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
     env:
       TERRALIST_VERSION: "{{.TERRALIST_VERSION}}"
     cmds:
-      - echo "[>] Installing web application dependencies."
-      - yarn --cwd ./web install
-      - echo "[>] Building web application."
-      - yarn --cwd ./web build
-      - >-
-        echo "{{
-          ternary 
-            (printf "[>] Building in '%s' mode." .MODE) 
-            (printf "[!] Build mode '%s' unknown, fallback to 'release' mode." .CLI_ARGS) 
-            (eq .ARG_CHECKER "true")
-          }}"
+      - cmd: touch ./web/dist/.gitkeep
+        ignore_error: true
+      - go mod download
       - >-
         go build \
           -o={{.BINARY_FILE_NAME}} \
@@ -44,39 +50,81 @@ tasks:
                     -X 'main.BuildTimestamp={{now | date "2006-01-02T15:04:05"}}' \
                     -X 'main.Mode={{.MODE}}'" \
           ./cmd/terralist/main.go
-      - echo "[>] Executable wrote to '{{ .BINARY_FILE_NAME }}'."
-  
+      - echo "Executable wrote to '{{ .BINARY_FILE_NAME }}'."
 
-  build-webapp:
-    summary: "Install web dependencies"
+  build:
+    desc: "Build Terralist."
     silent: true
     cmds:
-      - echo "[>] Installing web application dependencies."
-      - yarn --cwd ./web install
-      - echo "[>] Building web application."
-      - yarn --cwd ./web build
+      - task: build:frontend
+      - task: build:backend
 
-  generate-mocks:
-    summary: "Generate interface mocks."
-    silent: true
+  lint:frontend:
+    desc: "Run frontend linters."
     vars:
-      MOCKERY_ARGS: '--all --case underscore --note "go:build mocks"'
+      SHOULD_FIX: '{{has "--fix" .CLI_ARGS_LIST}}'
+    silent: true
+    dir: web
     cmds:
-      - mockery --dir ./internal/server/services --output ./mocks/server/services {{.MOCKERY_ARGS}}
-      - mockery --dir ./internal/server/repositories --output ./mocks/server/repositories {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/auth --output ./mocks/pkg/auth {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/auth/jwt --output ./mocks/pkg/auth/jwt {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/file --output ./mocks/pkg/file {{.MOCKERY_ARGS}}
-      - mockery --dir ./pkg/storage --output ./mocks/pkg/storage {{.MOCKERY_ARGS}}
+      - yarn run {{ternary "format:write" "format:check" (eq .SHOULD_FIX "true")}}
+      - yarn run check
+      - yarn run {{ternary "lint:fix" "lint:check" (eq .SHOULD_FIX "true")}}
 
-  run-tests:
-    summary: "Run all tests."
+  lint:backend:
+    desc: "Run backend linters."
+    vars:
+      SHOULD_FIX: '{{has "--fix" .CLI_ARGS_LIST}}'
+    silent: true
+    cmds:
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint run ./... {{ternary "--fix" "" (eq .SHOULD_FIX "true")}}
+
+  lint:
+    desc: |
+      Runs all Terralist linters.
+      Launches into execution all Terralist linters (for both backend and frontend).
+      Can also be used to automatically fix all issues found by passing the
+      `--fix` CLI argument (as `-- --fix`).
+    silent: true
+    cmds:
+      - task: lint:frontend
+      - task: lint:backend
+
+  test:generate-mocks:
+    desc: "Generate necessary mock files for the tests to be executed."
     silent: true
     vars:
-      WITH_SUMMARY: '{{eq .CLI_ARGS "summary"}}'
+      MOCK_FILES:
+        sh: find ./ -type f -name 'mocks.go'
+    cmds:
+      - >-
+        {{if eq .MOCK_FILES ""}}
+          go run github.com/vektra/mockery/v3
+        {{else if .CLI_FORCE}}
+          echo "{{.MOCK_FILES}}" | xargs rm; \
+          go run github.com/vektra/mockery/v3
+        {{else}}
+          echo 'Mocks are already created. Re-run with --force if you wish to overwrite them.'
+        {{end}}
+
+  test:prepare-database:
+    desc: "Generate an SQLite database ready for testing."
+    silent: true
+    vars:
+      DATABASE_NAME: 'test.db'
+    cmds:
+      - cmd: rm {{.DATABASE_NAME}}
+        ignore_error: true
+      - sqlite3 {{.DATABASE_NAME}} 'VACUUM;'
+      - sqlite3 {{.DATABASE_NAME}} < ./e2e/data/terralist.sqlite.sql
+      - echo "Test database file written at $PWD/{{.DATABASE_NAME}}."
+
+  test:unit:
+    desc: "Run all unit tests."
+    silent: true
+    vars:
+      WITH_SUMMARY: '{{has "--summary" .CLI_ARGS_LIST}}'
       ALL_PACKAGES:
-        sh: >- 
-          go list ./...
+        sh: go list ./...
       TEST_EXCLUSIONS: '{{list "mocks" "cmd" "models" | join "|"}}'
       TEST_PACKAGES:
         sh: >-
@@ -88,18 +136,28 @@ tasks:
             {{- end -}}
           {{- end -}}
           echo "{{$pkgs | join " "}}"
-      BUILD_TAGS: "mocks"
     cmds:
+      - task: test:generate-mocks
       - >-
         {{- if eq .WITH_SUMMARY "true" -}}
-        gotestsum -f testname -- -tags={{.BUILD_TAGS}} -count=1 {{.TEST_PACKAGES}}
+        go run gotest.tools/gotestsum -f testname -- -count=1 {{.TEST_PACKAGES}}
         {{- else -}}
-        go test -tags=mocks -count=1 {{.TEST_PACKAGES}}
+        go test -count=1 {{.TEST_PACKAGES}}
         {{- end -}}
 
-  run-e2e-tests:
-    summary: "Run all E2E tests."
+  test:e2e:
+    desc: "Run all E2E tests."
     silent: true
     cmds:
-      - rm -rf ./reports
-      - venom run --html-report --output-dir="./reports" --var-from-file ./e2e/variables.yaml ./e2e/suites
+      - task: test:prepare-database
+      - echo 'WARNING! Make sure to have a Terralist server up-and-running for the tests to run against.'
+      - cmd: rm -r ./reports
+        ignore_error: true
+      - go run github.com/ovh/venom/cmd/venom run --html-report --output-dir="./reports" --var-from-file ./e2e/variables.yaml ./e2e/suites
+
+  test:
+    desc: "Run all tests."
+    silent: true
+    cmds:
+      - task: test:unit
+      - task: test:e2e

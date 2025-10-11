@@ -8,9 +8,6 @@ import (
 	"terralist/internal/server/repositories"
 	"terralist/pkg/database/entity"
 
-	mockRepositories "terralist/mocks/server/repositories"
-	mockServices "terralist/mocks/server/services"
-
 	"github.com/google/uuid"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
@@ -18,8 +15,8 @@ import (
 
 func TestGetUserDetails(t *testing.T) {
 	Convey("Subject: Finding user details for a given API key", t, func() {
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockApiKeyRepository := mockRepositories.NewApiKeyRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockApiKeyRepository := repositories.NewMockApiKeyRepository(t)
 
 		apiKeyService := &DefaultApiKeyService{
 			AuthorityService: mockAuthorityService,
@@ -98,8 +95,8 @@ func TestGetUserDetails(t *testing.T) {
 
 func TestGrant(t *testing.T) {
 	Convey("Subject: Generating a new API key", t, func() {
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockApiKeyRepository := mockRepositories.NewApiKeyRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockApiKeyRepository := repositories.NewMockApiKeyRepository(t)
 
 		apiKeyService := &DefaultApiKeyService{
 			AuthorityService: mockAuthorityService,
@@ -162,8 +159,8 @@ func TestGrant(t *testing.T) {
 
 func TestRevoke(t *testing.T) {
 	Convey("Subject: Revoking access from an existing API key", t, func() {
-		mockAuthorityService := mockServices.NewAuthorityService(t)
-		mockApiKeyRepository := mockRepositories.NewApiKeyRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockApiKeyRepository := repositories.NewMockApiKeyRepository(t)
 
 		apiKeyService := &DefaultApiKeyService{
 			AuthorityService: mockAuthorityService,

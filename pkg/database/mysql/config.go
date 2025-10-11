@@ -30,8 +30,8 @@ type Config struct {
 func (t *Config) SetDefaults() {}
 
 func (t *Config) Validate() error {
-	connectionWithParts := !(t.Username == "" || t.Password == "" || t.Hostname == "" || t.Port == 0 || t.Name == "")
-	connectionWithURL := !(t.URL == "")
+	connectionWithParts := t.Username != "" && t.Password != "" && t.Hostname != "" && t.Port != 0 && t.Name != ""
+	connectionWithURL := t.URL != ""
 
 	if !connectionWithParts && !connectionWithURL {
 		return fmt.Errorf("no method for connection was provided")

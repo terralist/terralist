@@ -22,40 +22,35 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: "1.24"
           cache-dependency-path: |
             go.sum
 
       - name: Install task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v2.0.0
 
-      - name: Install mockery
-        run: go install github.com/vektra/mockery/v2@latest
+      - name: Install dependencies
+        run: task --verbose tidy
 
       - name: Generate mocks
-        run: task generate-mocks
-
-      - name: Build web application
-        run: task build-webapp
+        run: task test:generate-mocks
 
       - name: Run backend linters
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
+        run: task --verbose lint:backend
 
       - name: Run frontend linters
-        run: |
-          yarn --cwd ./web run format:check
-          yarn --cwd ./web run check
-          yarn --cwd ./web run lint:check
+        run: task --verbose lint:frontend
+
+      - name: Build frontend
+        run: task --verbose build:frontend
 
       - name: Run unit tests
-        run: task run-tests
+        run: task --verbose test:unit
 
   build-terralist-binary:
     name: Build Terralist
@@ -65,7 +60,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache Go Packages
         uses: actions/cache@v4
@@ -94,7 +89,7 @@ jobs:
         run: git config --global --add safe.directory /__w/terralist/terralist
 
       - name: Build Terralist
-        run: task build -- release
+        run: task --verbose build -- --release
 
       - name: Save binary
         uses: actions/upload-artifact@v4
@@ -177,7 +172,7 @@ jobs:
 
     steps:
       - name: Download terralist binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: terralist
           path: /usr/local/bin/terralist
@@ -188,7 +183,7 @@ jobs:
           echo "PATH=$PATH:/usr/local/bin/terralist" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: 
             e2e
@@ -204,6 +199,7 @@ jobs:
             sqlite3 "$TERRALIST_SQLITE_PATH" < ./e2e/data/terralist.sqlite.sql
           elif [ "$TERRALIST_DATABASE_BACKEND" = "mysql" ]; then
             mysql \
+              --skip-ssl \
               -u $TERRALIST_MYSQL_USERNAME \
               -p"${TERRALIST_MYSQL_PASSWORD}" \
               -h $TERRALIST_MYSQL_HOST \
@@ -221,7 +217,7 @@ jobs:
           mc mb --ignore-existing minio/$TERRALIST_S3_BUCKET_NAME
 
       - name: Spin up Terralist server
-        uses: JarvusInnovations/background-action@v1
+        uses: JarvusInnovations/background-action@v1.0.7
         with:
           run: terralist server
           wait-on: |

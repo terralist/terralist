@@ -698,7 +698,7 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
 | cli | `--s3-use-path-style` |
 | env | `TERRALIST_S3_USE_PATH_STYLE` |
 
-## `s3-server-side-encryption`
+### `s3-server-side-encryption`
 
 The server-side encryption algorithm that was used when you store this object in Amazon S3.
 
