@@ -159,6 +159,11 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 		code := ctx.Query("code")
 		state := ctx.Query("state")
 
+		if code == "" || state == "" {
+			ctx.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
 		r, err := oauth.Payload(state).ToRequest(c.EncryptSalt)
 		if err != nil {
 			ctx.Redirect(
