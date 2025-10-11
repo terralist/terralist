@@ -73,7 +73,7 @@ The path to the directory where Terralist can store files.
 | Name | Value |
 | --- | --- |
 | type | string |
-| required | yes |
+| required | no |
 | default | `$HOME/.terralist.d` |
 | cli | `--home` |
 | env | `TERRALIST_HOME` |

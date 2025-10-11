@@ -124,7 +124,6 @@ var flags = map[string]cli.Flag{
 	HomeFlag: &cli.PathFlag{
 		Description:  "The path to the directory where Terralist can store files.",
 		DefaultValue: "~/.terralist.d",
-		Required:     true,
 	},
 
 	CertFileFlag: &cli.StringFlag{
