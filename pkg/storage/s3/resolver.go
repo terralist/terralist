@@ -34,7 +34,7 @@ type Resolver struct {
 	LinkExpire   int
 
 	ServerSideEncryption string
-	DisableACL           bool
+	UseACLs              bool
 
 	Client    S3Client
 	Presigner PresignClient
@@ -58,7 +58,7 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	}
 
 	// Only set ACL if not disabled (for bucket policy support)
-	if !r.DisableACL {
+	if r.UseACLs {
 		putObjectInput.ACL = types.ObjectCannedACLPrivate
 	}
 

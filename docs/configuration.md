@@ -724,17 +724,17 @@ The server-side encryption algorithm that was used when you store this object in
 | cli | `--s3-server-side-encryption` |
 | env | `TERRALIST_S3_SERVER_SIDE_ENCRYPTION` |
 
-### `s3-disable-acl`
+### `s3-use-acls`
 
-Disable S3 ACL and rely on bucket policy for access control.
+Use S3 ACLs for access control. By default, Terralist relies on the S3 bucket configuration (e.g. via AWS S3 Bucket Policy) for enforcing the privacy of the artifacts.
 
 | Name | Value |
 | --- | --- |
 | type | bool |
 | required | no |
 | default | `false` |
-| cli | `--s3-disable-acl` |
-| env | `TERRALIST_S3_DISABLE_ACL` |
+| cli | `--s3-use-acls` |
+| env | `TERRALIST_S3_USE_ACLS` |
 
 ### `local-store`
 

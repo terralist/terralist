@@ -30,12 +30,12 @@ func TestStore(t *testing.T) {
 		expectedKey := "test/test.txt"
 		expectedPrefixedKey := "test-prefix/" + expectedKey
 
-		Convey("When ACL is enabled (default behavior)", func() {
+		Convey("When ACL is enabled", func() {
 			resolver := &Resolver{
 				BucketName:           "test-bucket",
 				BucketPrefix:         "test-prefix/",
 				ServerSideEncryption: "AES256",
-				DisableACL:           false,
+				UseACLs:              true,
 				Client:               client,
 				Presigner:            presigner,
 			}
@@ -70,12 +70,12 @@ func TestStore(t *testing.T) {
 			})
 		})
 
-		Convey("When ACL is disabled (bucket policy mode)", func() {
+		Convey("When ACL is disabled (default behavior - bucket policy mode)", func() {
 			resolver := &Resolver{
 				BucketName:           "test-bucket",
 				BucketPrefix:         "test-prefix/",
 				ServerSideEncryption: "AES256",
-				DisableACL:           true,
+				UseACLs:              false,
 				Client:               client,
 				Presigner:            presigner,
 			}
@@ -116,7 +116,7 @@ func TestStore(t *testing.T) {
 				BucketName:           "test-bucket",
 				BucketPrefix:         "test-prefix/",
 				ServerSideEncryption: "none",
-				DisableACL:           false,
+				UseACLs:              false,
 				Client:               client,
 				Presigner:            presigner,
 			}

@@ -75,7 +75,7 @@ const (
 	S3PresignExpireFlag        = "s3-presign-expire"
 	S3ServerSideEncryptionFlag = "s3-server-side-encryption"
 	S3UsePathStyleFlag         = "s3-use-path-style"
-	S3DisableAclFlag           = "s3-disable-acl"
+	S3UseACLsFlag              = "s3-use-acls"
 
 	AzureAccountNameFlag   = "azure-account-name"
 	AzureAccountKeyFlag    = "azure-account-key"
@@ -309,8 +309,8 @@ var flags = map[string]cli.Flag{
 		Choices:      []string{"none", "AES256", "aws:kms", "aws:kms:dsse"},
 		DefaultValue: "AES256",
 	},
-	S3DisableAclFlag: &cli.BoolFlag{
-		Description:  "Disable S3 ACL and rely on bucket policy for access control.",
+	S3UseACLsFlag: &cli.BoolFlag{
+		Description:  "Use S3 ACLs for access control.",
 		DefaultValue: false,
 	},
 

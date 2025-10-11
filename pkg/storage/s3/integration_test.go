@@ -6,16 +6,16 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestS3DisableACLIntegration(t *testing.T) {
-	Convey("Subject: S3 DisableACL configuration integration", t, func() {
+func TestS3UseACLsIntegration(t *testing.T) {
+	Convey("Subject: S3 UseACLs configuration integration", t, func() {
 		creator := &Creator{}
 
-		Convey("When creating S3 resolver with DisableACL true", func() {
+		Convey("When creating S3 resolver with UseACLs true", func() {
 			config := &Config{
 				BucketName:      "test-bucket",
 				BucketRegion:    "us-east-1",
 				LinkExpire:      15,
-				DisableACL:      true,
+				UseACLs:         true,
 				AccessKeyID:     "test",
 				SecretAccessKey: "test",
 			}
@@ -30,17 +30,17 @@ func TestS3DisableACLIntegration(t *testing.T) {
 			s3Resolver, ok := resolver.(*Resolver)
 			So(ok, ShouldBeTrue)
 
-			Convey("Should have DisableACL set to true", func() {
-				So(s3Resolver.DisableACL, ShouldBeTrue)
+			Convey("Should have UseACLs set to true", func() {
+				So(s3Resolver.UseACLs, ShouldBeTrue)
 			})
 		})
 
-		Convey("When creating S3 resolver with DisableACL false (default)", func() {
+		Convey("When creating S3 resolver with UseACLs false (default)", func() {
 			config := &Config{
 				BucketName:      "test-bucket",
 				BucketRegion:    "us-east-1",
 				LinkExpire:      15,
-				DisableACL:      false,
+				UseACLs:         false,
 				AccessKeyID:     "test",
 				SecretAccessKey: "test",
 			}
@@ -55,21 +55,21 @@ func TestS3DisableACLIntegration(t *testing.T) {
 			s3Resolver, ok := resolver.(*Resolver)
 			So(ok, ShouldBeTrue)
 
-			Convey("Should have DisableACL set to false", func() {
-				So(s3Resolver.DisableACL, ShouldBeFalse)
+			Convey("Should have UseACLs set to false", func() {
+				So(s3Resolver.UseACLs, ShouldBeFalse)
 			})
 		})
 	})
 }
 
 func TestS3ConfigValidation(t *testing.T) {
-	Convey("Subject: S3 Config validation with DisableACL", t, func() {
-		Convey("When config has DisableACL set", func() {
+	Convey("Subject: S3 Config validation with UseACLs", t, func() {
+		Convey("When config has UseACLs set", func() {
 			config := &Config{
 				BucketName:      "test-bucket",
 				BucketRegion:    "us-east-1",
 				LinkExpire:      15,
-				DisableACL:      true,
+				UseACLs:         true,
 				AccessKeyID:     "test",
 				SecretAccessKey: "test",
 			}
@@ -82,7 +82,7 @@ func TestS3ConfigValidation(t *testing.T) {
 
 		Convey("When config has missing required fields", func() {
 			config := &Config{
-				DisableACL: true,
+				UseACLs:    true,
 				LinkExpire: 15,
 			}
 

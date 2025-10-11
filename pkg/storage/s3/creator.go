@@ -50,7 +50,7 @@ func (t *Creator) New(configurator storage.Configurator) (storage.Resolver, erro
 		BucketPrefix:         options.BucketPrefix,
 		LinkExpire:           options.LinkExpire,
 		ServerSideEncryption: options.ServerSideEncryption,
-		DisableACL:           options.DisableACL,
+		UseACLs:              options.UseACLs,
 
 		Client:    client,
 		Presigner: s3.NewPresignClient(client),
