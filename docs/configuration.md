@@ -127,6 +127,32 @@ Comma separated list of users authorized to access the settings page. If empty, 
 | cli | `--authorized-users` |
 | env | `TERRALIST_AUTHORIZED_USERS` |
 
+
+### `rbac-policy-path`
+
+Path to the RBAC server-side policy.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--rbac-policy-path` |
+| env | `TERRALIST_RBAC_POLICY_PATH` |
+
+
+### `rbac-default-role`
+
+The name of the RBAC role that should be assigned by default to all users.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `readonly` |
+| cli | `--rbac-default-role` |
+| env | `TERRALIST_RBAC_DEFAULT_ROLE` |
+
 ### `auth-token-expiration`
 
 The duration for which auth tokens remain valid.

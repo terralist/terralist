@@ -8,7 +8,7 @@ import (
 	"terralist/pkg/version"
 
 	"github.com/google/uuid"
-	"github.com/ssoroka/slice"
+	"github.com/samber/lo"
 )
 
 type Provider struct {
@@ -50,7 +50,7 @@ func (p Provider) ToArtifact() artifact.Artifact {
 		ID:   p.ID.String(),
 		Name: p.Name,
 		Type: artifact.TypeProvider,
-		Versions: slice.Map[Version, string](p.Versions, func(v Version) string {
+		Versions: lo.Map(p.Versions, func(v Version, _ int) string {
 			return v.Version
 		}),
 		CreatedAt: p.CreatedAt.Format("2006-01-02T15:04:05"),

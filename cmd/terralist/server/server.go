@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"terralist/pkg/auth/bitbucket"
 	"terralist/pkg/auth/gitlab"
@@ -34,7 +35,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/ssoroka/slice"
 )
 
 // Command is an abstraction for the server command.
@@ -157,7 +157,7 @@ func (s *Command) run() error {
 
 	// Set defaults for other flags
 	for k := range flags {
-		if !slice.Contains(configuredFlags, k) {
+		if !slices.Contains(configuredFlags, k) {
 			_ = flags[k].Set(nil)
 		}
 	}
@@ -182,6 +182,8 @@ func (s *Command) run() error {
 		ProvidersAnonymousRead: flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 		Home:                   flags[HomeFlag].(*cli.PathFlag).Value,
 		AuthorizedUsers:        flags[AuthorizedUsersFlag].(*cli.StringFlag).Value,
+		RbacPolicyPath:         flags[RbacPolicyPathFlag].(*cli.StringFlag).Value,
+		RbacDefaultRole:        flags[RbacDefaultRoleFlag].(*cli.StringFlag).Value,
 		AuthTokenExpiration:    flags[AuthTokenExpirationFlag].(*cli.StringFlag).Value,
 	}
 

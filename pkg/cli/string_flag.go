@@ -2,9 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"slices"
 	"strings"
-
-	"github.com/ssoroka/slice"
 )
 
 // StringFlag holds data for the flags with string values.
@@ -53,7 +52,7 @@ func (t *StringFlag) Set(value any) error {
 		}
 
 		if len(t.Choices) > 0 {
-			if !slice.Contains(t.Choices, v) {
+			if !slices.Contains(t.Choices, v) {
 				options := strings.Join(t.Choices, ", ")
 				return fmt.Errorf("value (%v) must be one of the values: %s", value, options)
 			}
@@ -87,7 +86,7 @@ func (t *StringFlag) Validate() error {
 	}
 
 	if len(t.Choices) > 0 {
-		if !slice.Contains(t.Choices, t.Value) {
+		if !slices.Contains(t.Choices, t.Value) {
 			options := strings.Join(t.Choices, ", ")
 			return fmt.Errorf("invalid value %v; must be one of: %s", t.Value, options)
 		}

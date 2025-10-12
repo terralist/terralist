@@ -95,6 +95,9 @@ const (
 
 	CustomCompanyNameFlag = "custom-company-name"
 
+	RbacPolicyPathFlag  = "rbac-policy-path"
+	RbacDefaultRoleFlag = "rbac-default-role"
+
 	AuthorizedUsersFlag = "authorized-users"
 
 	AuthTokenExpirationFlag = "auth-token-expiration"
@@ -351,6 +354,14 @@ var flags = map[string]cli.Flag{
 
 	CustomCompanyNameFlag: &cli.StringFlag{
 		Description: "The name of the company hosting the Terralist instance.",
+	},
+
+	RbacPolicyPathFlag: &cli.StringFlag{
+		Description: "Path to the RBAC server-side policy.",
+	},
+	RbacDefaultRoleFlag: &cli.StringFlag{
+		Description:  "The name of the RBAC role that should be assigned by default to all users.",
+		DefaultValue: "readonly",
 	},
 
 	AuthorizedUsersFlag: &cli.StringFlag{

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog/log"
+	"github.com/samber/lo"
 
 	"terralist/pkg/auth"
 )
@@ -75,20 +76,32 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 		return err
 	}
 
+	var teams []Team
+
 	if p.Organization != "" {
 		if err := p.PerformCheckUserMemberInOrganization(t); err != nil {
 			return err
 		}
+
+		userTeams, err := p.GetUserTeams(t)
+		if err != nil {
+			return err
+		}
+
+		teams = userTeams
 	}
 
 	if p.Teams != "" {
-		if err := p.PerformCheckUserMemberOfTeams(t); err != nil {
+		if err := p.PerformCheckUserMemberOfTeams(t, teams); err != nil {
 			return err
 		}
 	}
 
 	user.Name = name
 	user.Email = email
+	user.Groups = lo.Map(teams, func(t Team, _ int) string {
+		return t.Slug
+	})
 
 	return nil
 }
@@ -226,12 +239,12 @@ func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
 	return nil
 }
 
-func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse) error {
+func (p *Provider) GetUserTeams(t tokenResponse) ([]Team, error) {
 	teamsEndpoint := fmt.Sprintf("%s/orgs/%s/teams", p.apiEndpoint, p.Organization)
 
 	req, err := http.NewRequest(http.MethodGet, teamsEndpoint, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
@@ -239,19 +252,23 @@ func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse) error {
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return fmt.Errorf("unable to list teams of %s", p.Organization)
+		return nil, fmt.Errorf("unable to list teams of %s", p.Organization)
 	}
 
 	var userTeams []Team
 	if err := json.NewDecoder(res.Body).Decode(&userTeams); err != nil {
-		return fmt.Errorf("unable to parse teams of %s", p.Organization)
+		return nil, fmt.Errorf("unable to parse teams of %s", p.Organization)
 	}
 
+	return userTeams, nil
+}
+
+func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse, userTeams []Team) error {
 	teams := strings.Split(p.Teams, ",")
 
 	for _, team := range userTeams {

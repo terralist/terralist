@@ -9,6 +9,7 @@ import (
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/file"
+	"terralist/pkg/rbac"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,10 +32,11 @@ type ModuleController interface {
 
 // DefaultModuleController is a concrete implementation of ModuleController.
 type DefaultModuleController struct {
-	ModuleService services.ModuleService
-	Authorization *handlers.Authorization
-	AnonymousRead bool
-	HomeDir       string
+	ModuleService  services.ModuleService
+	Authentication *handlers.Authentication
+	Authorization  *handlers.Authorization
+	AnonymousRead  bool
+	HomeDir        string
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -49,12 +51,30 @@ func (c *DefaultModuleController) Paths() []string {
 }
 
 func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
+	requireAuthorization := c.Authorization.RequireAuthorization(rbac.ResourceModules)
+
+	fullSlugComposer := func(ctx *gin.Context) string {
+		namespace := ctx.Param("namespace")
+		name := ctx.Param("name")
+		provider := ctx.Param("provider")
+
+		return fmt.Sprintf("%s/%s/%s", namespace, name, provider)
+	}
+
+	partialSlugComposer := func(ctx *gin.Context) string {
+		name := ctx.Param("name")
+		provider := ctx.Param("provider")
+
+		return fmt.Sprintf("%s/%s/%s", ctx.GetString("authorityName"), name, provider)
+	}
+
 	// tfApi should be compliant with the Terraform Registry Protocol for
 	// modules
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
 	if !c.AnonymousRead {
-		tfApi.Use(c.Authorization.ApiAuthentication())
+		tfApi.Use(c.Authentication.RequireAuthentication())
+		tfApi.Use(requireAuthorization(rbac.ActionGet, fullSlugComposer))
 	}
 
 	tfApi.GET(
@@ -102,18 +122,19 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
-	api.Use(c.Authorization.ApiAuthentication())
+	api.Use(c.Authentication.RequireAuthentication())
 
 	// Upload a new module version
 	api.POST(
 		"/:name/:provider/:version/upload",
 		handlers.RequireAuthority(),
+		requireAuthorization(rbac.ActionCreate, partialSlugComposer),
 		func(ctx *gin.Context) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{"invalid authority"},
@@ -157,12 +178,13 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	api.POST(
 		"/:name/:provider/:version/upload-files",
 		handlers.RequireAuthority(),
+		requireAuthorization(rbac.ActionCreate, partialSlugComposer),
 		func(ctx *gin.Context) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{"invalid authority"},
@@ -258,11 +280,12 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	api.DELETE(
 		"/:name/:provider/remove",
 		handlers.RequireAuthority(),
+		requireAuthorization(rbac.ActionDelete, partialSlugComposer),
 		func(ctx *gin.Context) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 
-			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{"invalid authority"},
@@ -287,12 +310,13 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	api.DELETE(
 		"/:name/:provider/:version/remove",
 		handlers.RequireAuthority(),
+		requireAuthorization(rbac.ActionDelete, partialSlugComposer),
 		func(ctx *gin.Context) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			authorityID, err := uuid.Parse(ctx.GetString("authority"))
+			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{"invalid authority"},

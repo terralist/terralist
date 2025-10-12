@@ -194,8 +194,8 @@ CREATE TABLE public.providers (
 -- Data for Name: authorities; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-INSERT INTO public.authorities (id, created_at, updated_at, name, policy_url, owner) VALUES ('9a50dba6-7ab3-4ee6-8660-8f5901337883', '2024-04-19 13:42:02.409412+00', '2024-04-19 13:42:02.409412+00', 'terraform-aws-modules', '', '');
-INSERT INTO public.authorities (id, created_at, updated_at, name, policy_url, owner) VALUES ('04d7980b-9cdd-4cec-bc80-46db639e18b3', '2024-04-19 13:42:36.874539+00', '2024-04-19 13:53:57.578055+00', 'hashicorp', 'https://www.hashicorp.com/security.html', '');
+INSERT INTO public.authorities (id, created_at, updated_at, name, policy_url, owner) VALUES ('9a50dba6-7ab3-4ee6-8660-8f5901337883', '2024-04-19 13:42:02.409412+00', '2024-04-19 13:42:02.409412+00', 'terraform-aws-modules', '', 'admin@terralist.io');
+INSERT INTO public.authorities (id, created_at, updated_at, name, policy_url, owner) VALUES ('04d7980b-9cdd-4cec-bc80-46db639e18b3', '2024-04-19 13:42:36.874539+00', '2024-04-19 13:53:57.578055+00', 'hashicorp', 'https://www.hashicorp.com/security.html', 'admin@terralist.io');
 
 
 --

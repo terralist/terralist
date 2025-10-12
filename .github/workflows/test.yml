@@ -170,6 +170,9 @@ jobs:
       TERRALIST_S3_USE_PATH_STYLE: "true"
       TERRALIST_S3_SERVER_SIDE_ENCRYPTION: "none"
 
+      TERRALIST_RBAC_DEFAULT_ROLE: "readonly"
+      TERRALIST_RBAC_POLICY_PATH: ${{ format('{0}/e2e/policy.csv', github.workspace)}}
+
     steps:
       - name: Download terralist binary
         uses: actions/download-artifact@v5

@@ -3,12 +3,12 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"terralist/internal/server/models/authority"
 	"terralist/pkg/database"
 
 	"github.com/google/uuid"
-	"github.com/ssoroka/slice"
 	"gorm.io/gorm"
 )
 
@@ -146,7 +146,7 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 		}
 
 		for _, key := range current.Keys {
-			if !slice.Contains(a.Keys, key) {
+			if !slices.Contains(a.Keys, key) {
 				toDeleteKeys = append(toDeleteKeys, key)
 			}
 		}
