@@ -122,7 +122,7 @@ jobs:
           POSTGRES_PASSWORD: 'terralist'
           POSTGRES_DB: 'terralist'
       mysql:
-        image: public.ecr.aws/docker/library/mysql:8.4
+        image: public.ecr.aws/docker/library/mysql:9.4
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
         ports:
           - 3306:3306
