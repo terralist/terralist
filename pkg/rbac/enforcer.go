@@ -31,6 +31,10 @@ const (
 	ActionUpdate = "update"
 	ActionCreate = "create"
 	ActionDelete = "delete"
+
+	SubjectAnonymous = "role:anonymous"
+	SubjectReadonly  = "role:readonly"
+	SubjectAdmin     = "role:admin"
 )
 
 var (
@@ -88,7 +92,7 @@ func NewEnforcer(policyPath string, defaultRoleName string) (*Enforcer, error) {
 
 	enforcer.AddFunction("glob_match", globMatch)
 
-	defaultRole := "role:readonly"
+	defaultRole := SubjectReadonly
 	if defaultRoleName != "" {
 		defaultRole = fmt.Sprintf("role:%v", defaultRoleName)
 	}
@@ -110,6 +114,10 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 	var roles []string
 
 	for _, subject := range subjects {
+		if subject == "" {
+			continue
+		}
+
 		userRoles, err := e.enforcer.GetRolesForUser(subject)
 
 		if err != nil {
@@ -120,17 +128,17 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 		roles = append(roles, userRoles...)
 	}
 
-	// If the user has no roles, assign the default role.
-	if len(roles) == 0 {
+	// If the user is authenticated and has no roles, assign the default role.
+	if !slices.Contains(subjects, SubjectAnonymous) && len(roles) == 0 {
 		roles = []string{e.defaultRole}
 	}
 
-	if slices.Contains(roles, "role:admin") {
+	if slices.Contains(roles, SubjectAdmin) {
 		logger.Debug().Msg("Administrator role detected, allowing any action.")
 		return true
 	}
 
-	if action == ActionGet && slices.Contains(roles, "role:readonly") {
+	if action == ActionGet && slices.Contains(roles, SubjectReadonly) {
 		logger.Debug().Msg("Read-only role detected, allowing 'get' action.")
 		return true
 	}

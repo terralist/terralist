@@ -68,7 +68,6 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 	// Docs: https://www.terraform.io/docs/internals/provider-registry-protocol.html#find-a-provider-package
 	tfApi := apis[0]
 	if !c.AnonymousRead {
-		tfApi.Use(c.Authentication.RequireAuthentication())
 		tfApi.Use(requireAuthorization(rbac.ActionGet, fullSlugComposer))
 	}
 

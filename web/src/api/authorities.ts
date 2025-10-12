@@ -7,6 +7,7 @@ type Authority = {
   id: string;
   name: string;
   policyUrl: string;
+  public: boolean;
   keys: Key[];
   apiKeys: ApiKey[];
 };
@@ -15,6 +16,7 @@ type UpdateAuthority = {
   id: string;
   name?: string;
   policyUrl?: string;
+  public?: boolean;
   keys?: Key[];
   apiKeys?: ApiKey[];
 };
@@ -37,9 +39,9 @@ const actions = {
       .then(handleResponse<Authority>)
       .catch(handleError),
 
-  create: async (name: string, policyUrl: string) =>
+  create: async (name: string, policyUrl: string, isPublic: boolean) =>
     client
-      .post<Authority>('/', { name, policyUrl })
+      .post<Authority>('/', { name, policyUrl, public: isPublic })
       .then(handleResponse<Authority>)
       .catch(handleError),
 
@@ -73,8 +75,11 @@ const actions = {
 const Authorities = {
   getAll: async () => await actions.getAll(),
   getOne: async (id: string) => await actions.getOne(id),
-  create: async (name: string, policyUrl = '') =>
-    await actions.create(name, policyUrl),
+  create: async (
+    name: string,
+    policyUrl: string = '',
+    isPublic: boolean = false
+  ) => await actions.create(name, policyUrl, isPublic),
   update: async (authority: Authority) => await actions.update(authority),
   delete: async (id: string) => await actions.delete(id)
 };

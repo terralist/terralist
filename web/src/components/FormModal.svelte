@@ -136,6 +136,9 @@
         </label>
         <div class="col-span-3">
           <Input
+            class={entry.type == 'checkbox'
+              ? 'h-full flex justify-center items-center'
+              : null}
             id={entry.id}
             type={entry.type}
             value={entry.value}

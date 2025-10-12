@@ -2,11 +2,12 @@ import axios from 'axios';
 import { handleResponse, handleError } from '@/api/api.utils';
 import config from '@/config';
 
-interface SessionDetails {
+type SessionDetails = {
   authorityId: string;
   name: string;
   email: string;
-}
+  groups: string[];
+};
 
 const actions = {
   getSession: async () =>

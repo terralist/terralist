@@ -157,7 +157,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	authorization := &handlers.Authorization{
-		Enforcer: enforcer,
+		AuthorityService: authorityService,
+		Enforcer:         enforcer,
 	}
 
 	moduleRepository := &repositories.DefaultModuleRepository{

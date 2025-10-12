@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
 
   import type { InputType } from '@/lib/form';
+  import Icon from './Icon.svelte';
 
   export let id: string = Math.random().toString();
   export let type: InputType = 'text';
@@ -83,6 +84,11 @@
     onInput();
   };
 
+  const handleChecked = () => {
+    value = value == 'true' ? 'false' : 'true';
+    onInput();
+  };
+
   onMount(() => {
     if (ref && !['textarea'].includes(type)) {
       (ref as HTMLInputElement).type = type;
@@ -113,7 +119,19 @@
       {disabled}
       {value}
       on:input={handleChange}
-      bind:this={ref} />
+      bind:this={ref}
+      hidden={type == 'checkbox'} />
+    {#if type == 'checkbox'}
+      <div
+        class={`${classList.join(' ')} cursor-pointer w-6 h-6 border border-slate-400 rounded-lg relative ${value == 'true' && 'bg-teal-500 border-teal-500'}`}
+        on:click={handleChecked}>
+        {#if value == 'true'}
+          <Icon
+            name="check"
+            class="fill-slate-100 absolute top-0 left-0 w-6 h-6" />
+        {/if}
+      </div>
+    {/if}
   {/if}
   {#if slotPosition === 'end' && $$slots?.default}
     <slot></slot>

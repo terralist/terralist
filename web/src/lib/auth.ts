@@ -1,17 +1,23 @@
 import { Auth } from '@/api/auth';
+import { defaultIfNull } from './utils';
 
 type Session = {
-  [k: string]: string;
+  userName: string;
+  userEmail: string;
+  userGroups: string;
+  expireAt: string;
 };
 
 type UserSession = {
   userName: string;
   userEmail: string;
+  userGroups: string[];
 };
 
-const sessionKeys: Session = {
+const sessionKeys: Record<keyof Session, string> = {
   userName: 'user.name',
   userEmail: 'user.email',
+  userGroups: 'user.groups',
   expireAt: 'expire_at'
 };
 
@@ -28,9 +34,13 @@ const actions = {
   },
 
   upload: (session: Session) => {
-    Object.entries(session).forEach(([key, value]) =>
-      sessionStorage.setItem(`_auth.session.${sessionKeys[key]}`, value)
-    );
+    (Object.keys(session) as (keyof Session)[]).forEach(key => {
+      const value = session[key];
+      sessionStorage.setItem(
+        `_auth.session.${sessionKeys[key]}`,
+        String(value)
+      );
+    });
   },
 
   reset: () => {
@@ -43,7 +53,9 @@ const actions = {
 const isAvailable = (): boolean => {
   const session = actions.download();
 
-  const isSessionSet = Object.values(session).every(v => v);
+  const isSessionSet = Object.values(session).every(
+    v => v != undefined && v != null
+  );
 
   if (!isSessionSet) {
     return false;
@@ -72,7 +84,8 @@ const UserStore = {
 
     return {
       userName: session.userName,
-      userEmail: session.userEmail
+      userEmail: session.userEmail,
+      userGroups: session.userGroups.split('#').filter(g => g.length > 0)
     } satisfies UserSession;
   },
 
@@ -87,10 +100,11 @@ const UserStore = {
         new Date().getTime() + SESSION_EXPIRE_AFTER_MINUTES * 60 * 1000
       );
 
-      const session = {
+      const session: Session = {
         expireAt: expireAt.toISOString(),
         userName: data.name,
-        userEmail: data.email
+        userEmail: data.email,
+        userGroups: defaultIfNull(data.groups, []).join('#')
       };
 
       actions.upload(session);

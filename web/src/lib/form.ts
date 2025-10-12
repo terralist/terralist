@@ -1,6 +1,12 @@
 import type { Validation, ValidationResult } from './validation';
 
-type InputType = 'email' | 'text' | 'textarea' | 'password' | 'number';
+type InputType =
+  | 'email'
+  | 'text'
+  | 'textarea'
+  | 'password'
+  | 'number'
+  | 'checkbox';
 
 type FormEntry = {
   id: string;
