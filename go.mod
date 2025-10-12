@@ -25,7 +25,7 @@ require (
 	google.golang.org/api v0.248.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.4
+	gorm.io/gorm v1.31.0
 )
 
 require (
