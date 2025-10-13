@@ -75,11 +75,8 @@ const actions = {
 const Authorities = {
   getAll: async () => await actions.getAll(),
   getOne: async (id: string) => await actions.getOne(id),
-  create: async (
-    name: string,
-    policyUrl: string = '',
-    isPublic: boolean = false
-  ) => await actions.create(name, policyUrl, isPublic),
+  create: async (name: string, policyUrl = '', isPublic = false) =>
+    await actions.create(name, policyUrl, isPublic),
   update: async (authority: Authority) => await actions.update(authority),
   delete: async (id: string) => await actions.delete(id)
 };

@@ -120,8 +120,8 @@
             <p>Username:</p>
             <p>{user.userName}</p>
             {#if user.userEmail.length > 0}
-            <p>E-mail Address:</p>
-            <p>{user.userEmail}</p>
+              <p>E-mail Address:</p>
+              <p>{user.userEmail}</p>
             {/if}
             <p>Issuer:</p>
             <p>
@@ -134,7 +134,7 @@
           <div>
             <p>Groups:</p>
             <ul class="list-disc">
-              {#each user.userGroups as group}
+              {#each user.userGroups as group (group)}
                 <li class="ml-4">{group}</li>
               {/each}
             </ul>
