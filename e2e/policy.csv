@@ -1,0 +1,7 @@
+p, e2e-runner, modules, get, *, allow
+p, e2e-runner, modules, create, *, allow
+p, e2e-runner, modules, delete, *, allow
+p, e2e-runner, providers, get, *, allow
+p, e2e-runner, providers, create, *, allow
+p, e2e-runner, providers, delete, *, allow
+g, admin@terralist.io, e2e-runner

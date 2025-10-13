@@ -46,8 +46,7 @@
       ],
       matchPackageNames: [
         'github.com/hashicorp/terraform-config-inspect',
-        'github.com/gin-gonic/contrib',
-        'github.com/ssoroka/slice'
+        'github.com/gin-gonic/contrib'
       ],
       "enabled": false
     },

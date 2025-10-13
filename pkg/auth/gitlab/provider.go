@@ -89,6 +89,8 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 			Msg("expected user groups to be a slice of string, but it wasn't")
 
 		return fmt.Errorf("user data has no groups, cannot check user membership")
+	} else {
+		user.Groups = userGroups
 	}
 
 	for _, group := range p.Groups {

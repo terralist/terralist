@@ -8,6 +8,7 @@ import (
 
 	"terralist/pkg/auth"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/uuid"
 	"github.com/mazen160/go-random"
 )
@@ -55,8 +56,8 @@ func TestJWT_User(t *testing.T) {
 		t.Fatalf("extract returned with error: %v", err)
 	}
 
-	if *u != user {
-		t.Fatalf("user mismatch, expected = %v, got = %v", user, *u)
+	if !cmp.Equal(*u, user) {
+		t.Fatalf("user mismatch\n%v", cmp.Diff(*u, user))
 	}
 }
 

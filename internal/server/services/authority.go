@@ -6,7 +6,7 @@ import (
 	"terralist/internal/server/repositories"
 
 	"github.com/google/uuid"
-	"github.com/ssoroka/slice"
+	"github.com/samber/lo"
 )
 
 var (
@@ -112,7 +112,7 @@ func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.Key
 	}
 
 	// The find operation cannot fail if the upsert method passes
-	updatedKey, _ := slice.Find(updated.Keys, func(key authority.Key) bool {
+	updatedKey, _ := lo.Find(updated.Keys, func(key authority.Key) bool {
 		return key.KeyId == in.ToKey().KeyId
 	})
 

@@ -5,7 +5,7 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database/entity"
 
-	"github.com/ssoroka/slice"
+	"github.com/samber/lo"
 )
 
 type Authority struct {
@@ -38,11 +38,11 @@ func (a Authority) ToDTO() AuthorityDTO {
 		Name:      a.Name,
 		PolicyURL: a.PolicyURL,
 
-		Keys: slice.Map[Key, KeyDTO](a.Keys, func(k Key) KeyDTO {
+		Keys: lo.Map(a.Keys, func(k Key, _ int) KeyDTO {
 			return k.ToKeyDTO()
 		}),
 
-		ApiKeys: slice.Map[ApiKey, ApiKeyDTO](a.ApiKeys, func(a ApiKey) ApiKeyDTO {
+		ApiKeys: lo.Map(a.ApiKeys, func(a ApiKey, _ int) ApiKeyDTO {
 			return a.ToDTO()
 		}),
 	}
@@ -53,11 +53,11 @@ func (d AuthorityDTO) ToAuthority() Authority {
 		Name:      d.Name,
 		PolicyURL: d.PolicyURL,
 
-		Keys: slice.Map[KeyDTO, Key](d.Keys, func(k KeyDTO) Key {
+		Keys: lo.Map(d.Keys, func(k KeyDTO, _ int) Key {
 			return k.ToKey()
 		}),
 
-		ApiKeys: slice.Map[ApiKeyDTO, ApiKey](d.ApiKeys, func(a ApiKeyDTO) ApiKey {
+		ApiKeys: lo.Map(d.ApiKeys, func(a ApiKeyDTO, _ int) ApiKey {
 			return a.ToApiKey()
 		}),
 	}

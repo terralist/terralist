@@ -55,6 +55,7 @@ func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
 
 	return &auth.User{
 		Email:       authority.Owner,
+		Authority:   authority.Name,
 		AuthorityID: apiKey.AuthorityID.String(),
 	}, nil
 }

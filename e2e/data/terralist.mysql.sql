@@ -23,8 +23,8 @@ CREATE TABLE `authorities` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 INSERT INTO `authorities` (`id`, `created_at`, `updated_at`, `name`, `policy_url`, `owner`) VALUES
-('04d7980b-9cdd-4cec-bc80-46db639e18b3',	'2024-04-19 13:42:36',	'2024-04-19 13:53:57',	'hashicorp',	'https://www.hashicorp.com/security.html',	''),
-('9a50dba6-7ab3-4ee6-8660-8f5901337883',	'2024-04-19 13:42:02',	'2024-04-19 13:42:02',	'terraform-aws-modules',	'',	'');
+('04d7980b-9cdd-4cec-bc80-46db639e18b3',	'2024-04-19 13:42:36',	'2024-04-19 13:53:57',	'hashicorp',	'https://www.hashicorp.com/security.html',	'admin@terralist.io'),
+('9a50dba6-7ab3-4ee6-8660-8f5901337883',	'2024-04-19 13:42:02',	'2024-04-19 13:42:02',	'terraform-aws-modules',	'',	'admin@terralist.io');
 
 DROP TABLE IF EXISTS `authority_api_keys`;
 CREATE TABLE `authority_api_keys` (

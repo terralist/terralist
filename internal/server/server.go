@@ -17,6 +17,7 @@ import (
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
 	"terralist/pkg/file"
+	"terralist/pkg/rbac"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/web"
@@ -144,10 +145,19 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 	}
 
-	authorization := &handlers.Authorization{
-		JWT:           jwtManager,
+	enforcer, err := rbac.NewEnforcer(userConfig.RbacPolicyPath, userConfig.RbacDefaultRole)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create policy enforcer: %v", err)
+	}
+
+	authentication := &handlers.Authentication{
 		ApiKeyService: apiKeyService,
+		JWT:           jwtManager,
 		Store:         config.Store,
+	}
+
+	authorization := &handlers.Authorization{
+		Enforcer: enforcer,
 	}
 
 	moduleRepository := &repositories.DefaultModuleRepository{
@@ -162,9 +172,10 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	moduleController := &controllers.DefaultModuleController{
-		ModuleService: moduleService,
-		Authorization: authorization,
-		AnonymousRead: userConfig.ModulesAnonymousRead,
+		ModuleService:  moduleService,
+		Authentication: authentication,
+		Authorization:  authorization,
+		AnonymousRead:  userConfig.ModulesAnonymousRead,
 
 		HomeDir: userConfig.Home,
 	}
@@ -184,6 +195,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	providerController := &controllers.DefaultProviderController{
 		ProviderService: providerService,
+		Authentication:  authentication,
 		Authorization:   authorization,
 		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
@@ -194,7 +206,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		ApiKeyService:    apiKeyService,
 
-		Authorization: authorization,
+		Authentication: authentication,
+		Authorization:  authorization,
 	}
 
 	apiV1Group.Register(authorityController)
@@ -204,7 +217,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ModuleService:    moduleService,
 		ProviderService:  providerService,
 
-		Authorization: authorization,
+		Authentication: authentication,
+		Authorization:  authorization,
 	}
 
 	apiV1Group.Register(artifactController)
