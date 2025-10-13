@@ -73,6 +73,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
 	if !c.AnonymousRead {
+		tfApi.Use(c.Authentication.AttemptAuthentication())
 		tfApi.Use(requireAuthorization(rbac.ActionGet, fullSlugComposer))
 	}
 

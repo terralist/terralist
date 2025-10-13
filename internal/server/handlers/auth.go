@@ -167,17 +167,12 @@ func (a *Authentication) parseUser(c *gin.Context) (*auth.User, []error) {
 	return user, nil
 }
 
-// RequireAuthentication is a gin handler that ensures the user is authenticated.
-// Any other handler that is executed after this one should query the context to
-// retrieve the authenticated user.
-func (a *Authentication) RequireAuthentication() gin.HandlerFunc {
+// AttemptAuthentication is a gin handler that attempts to get the authenticated user.
+func (a *Authentication) AttemptAuthentication() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		user, errs := a.parseUser(ctx)
 		if errs != nil {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"errors": lo.Map(errs, func(err error, _ int) string { return err.Error() }),
-			})
-
+			ctx.Set("authErrors", lo.Map(errs, func(err error, _ int) string { return err.Error() }))
 			return
 		}
 
@@ -191,6 +186,25 @@ func (a *Authentication) RequireAuthentication() gin.HandlerFunc {
 
 		if user.AuthorityID != "" {
 			ctx.Set("authorityID", user.AuthorityID)
+		}
+	}
+}
+
+// RequireAuthentication is a gin handler that ensures the user is authenticated.
+// Any other handler that is executed after this one should query the context to
+// retrieve the authenticated user.
+func (a *Authentication) RequireAuthentication() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if _, ok := ctx.Get("user"); !ok {
+			if authErrors, ok := ctx.Get("authErrors"); ok {
+				ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"errors": authErrors,
+				})
+			} else {
+				ctx.AbortWithStatus(http.StatusUnauthorized)
+			}
+
+			return
 		}
 	}
 }
@@ -278,7 +292,5 @@ func RequireAuthority() gin.HandlerFunc {
 			})
 			return
 		}
-
-		c.Next()
 	}
 }
