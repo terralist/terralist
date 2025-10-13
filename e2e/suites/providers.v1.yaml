@@ -18,7 +18,7 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/versions
     timeout: 60
     assertions:
-    - result.statuscode ShouldEqual 401
+    - result.statuscode ShouldEqual 403
     - result.timeseconds ShouldBeLessThan 30
 - name: List Providers Versions - Authenticated Not Found
   steps:
@@ -54,7 +54,7 @@ testcases:
     url: {{.url}}/v1/providers/{{.namespace}}/{{.badName}}/{{.badVersion}}/download/{{.system}}/{{.arch}}
     timeout: 60
     assertions:
-    - result.statuscode ShouldEqual 401
+    - result.statuscode ShouldEqual 403
     - result.timeseconds ShouldBeLessThan 30
 - name: Download Provider Version - Authenticated Not Found Provider
   steps:
