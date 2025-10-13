@@ -123,7 +123,7 @@
       hidden={type == 'checkbox'} />
     {#if type == 'checkbox'}
       <div
-        class={`${classList.join(' ')} cursor-pointer w-6 h-6 border border-slate-400 rounded-lg relative ${value == 'true' && 'bg-teal-500 border-teal-500'}`}
+        class={`${classList.filter(c => !c.includes('w-')).join(' ')} cursor-pointer w-6 h-6 border border-slate-400 rounded-lg relative ${value == 'true' && 'bg-teal-500 border-teal-500'}`}
         on:click={handleChecked}>
         {#if value == 'true'}
           <Icon
