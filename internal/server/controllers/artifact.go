@@ -60,6 +60,8 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 		return fmt.Sprintf("%s/%s", namespace, name)
 	}
 
+	api.Use(c.Authentication.AttemptAuthentication())
+
 	// This is a protected endpoint, every request should be authenticated.
 	api.Use(c.Authentication.RequireAuthentication())
 

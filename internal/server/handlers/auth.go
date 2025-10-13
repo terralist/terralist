@@ -99,7 +99,7 @@ func (a *Authentication) parseApiKey(c *gin.Context) (*auth.User, error) {
 
 	user, err := a.ApiKeyService.GetUserDetails(apiKey)
 	if err != nil {
-		return nil, fmt.Errorf("Authorization: %w", ErrInvalidValue)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidValue, err)
 	}
 
 	return user, nil
@@ -161,7 +161,7 @@ func (a *Authentication) parseUser(c *gin.Context) (*auth.User, []error) {
 			Any("users", users).
 			Errs("errors", errs).
 			Msg("Cannot find any authenticated user.")
-		return nil, []error{fmt.Errorf("%w: missing authentication", ErrMissing)}
+		return nil, errs
 	}
 
 	return user, nil
