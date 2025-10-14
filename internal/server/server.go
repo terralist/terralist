@@ -419,6 +419,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	networkMirrorController := &controllers.DefaultNetworkMirrorController{
 		ProviderService: providerService,
+		Authentication:  authentication,
 		Authorization:   authorization,
 		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
