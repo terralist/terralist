@@ -29,7 +29,7 @@ type DefaultNetworkMirrorController struct {
 }
 
 func (c *DefaultNetworkMirrorController) Paths() []string {
-	return []string{""}
+	return []string{"/providers"}
 }
 
 func parseSHASUMS(content string, filename string) (string, error) {
