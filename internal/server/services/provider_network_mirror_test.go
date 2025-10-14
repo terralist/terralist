@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"terralist/internal/server/models/provider"
-	mockStorage "terralist/mocks/pkg/storage"
-	mockRepositories "terralist/mocks/server/repositories"
+	"terralist/internal/server/repositories"
+	"terralist/pkg/storage"
 
 	"github.com/mazen160/go-random"
 	. "github.com/smartystreets/goconvey/convey"
@@ -14,8 +14,8 @@ import (
 
 func TestGetVersionAllPlatforms(t *testing.T) {
 	Convey("Subject: Get all platforms for a provider version", t, func() {
-		mockProviderRepository := mockRepositories.NewProviderRepository(t)
-		mockResolver := mockStorage.NewResolver(t)
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockResolver := storage.NewMockResolver(t)
 
 		providerService := &DefaultProviderService{
 			ProviderRepository: mockProviderRepository,
