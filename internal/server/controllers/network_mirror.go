@@ -11,6 +11,7 @@ import (
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/rbac"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/mod/sumdb/dirhash"
@@ -22,6 +23,7 @@ type NetworkMirrorController interface {
 
 type DefaultNetworkMirrorController struct {
 	ProviderService services.ProviderService
+	Authentication  *handlers.Authentication
 	Authorization   *handlers.Authorization
 	AnonymousRead   bool
 }
@@ -97,9 +99,19 @@ func computeH1Hash(zipURL string) (string, error) {
 }
 
 func (c *DefaultNetworkMirrorController) Subscribe(apis ...*gin.RouterGroup) {
+	requireAuthorization := c.Authorization.RequireAuthorization(rbac.ResourceProviders)
+
+	fullSlugComposer := func(ctx *gin.Context) string {
+		namespace := ctx.Param("namespace")
+		name := ctx.Param("name")
+
+		return fmt.Sprintf("%s/%s", namespace, name)
+	}
+
 	rootApi := apis[0]
 	if !c.AnonymousRead {
-		rootApi.Use(c.Authorization.ApiAuthentication())
+		rootApi.Use(c.Authentication.RequireAuthentication())
+		rootApi.Use(requireAuthorization(rbac.ActionGet, fullSlugComposer))
 	}
 
 	rootApi.GET(
