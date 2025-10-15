@@ -58,9 +58,15 @@
       ? policyUrlValue.at(0)
       : policyUrlValue;
 
+    const publicValue = entries.get('public');
+    const isPublic = Array.isArray(publicValue)
+      ? publicValue.at(0)
+      : publicValue;
+
     onUpdate(authority.id, {
       ...authority,
-      policyUrl: policyUrl ?? ''
+      policyUrl: policyUrl ?? '',
+      public: (isPublic ?? 'false') == 'true'
     });
   };
 
@@ -154,7 +160,7 @@
 
 <div class="mb-4">
   <div
-    class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-6 lg:grid-cols-10 place-items-start">
+    class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-7 lg:grid-cols-11 place-items-start">
     <span class="col-span-2 lg:col-span-6">{authority.name}</span>
     <span>
       {#if authority.policyUrl}
@@ -164,7 +170,17 @@
           </TransparentButton>
         </a>
       {:else}
-        <span>-</span>
+        <span
+          class="p-1.5 flex flex-col md:flex-row justify-center items-center">
+          <Icon name="close-square" />
+        </span>
+      {/if}
+    </span>
+    <span class="p-1.5 flex flex-col md:flex-row justify-center items-center">
+      {#if authority.public}
+        <Icon name="checkmark-square" />
+      {:else}
+        <Icon name="close-square" />
       {/if}
     </span>
     <span class="flex flex-col md:flex-row justify-center items-center">
@@ -253,6 +269,12 @@
         type: 'text',
         value: authority.policyUrl,
         validations: [URLValidation()]
+      },
+      {
+        id: 'public',
+        name: 'Public',
+        type: 'checkbox',
+        value: authority.public ? 'true' : 'false'
       }
     ]} />
 

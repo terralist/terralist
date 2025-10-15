@@ -73,7 +73,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
 	if !c.AnonymousRead {
-		tfApi.Use(c.Authentication.RequireAuthentication())
+		tfApi.Use(c.Authentication.AttemptAuthentication())
 		tfApi.Use(requireAuthorization(rbac.ActionGet, fullSlugComposer))
 	}
 
@@ -122,6 +122,9 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
+	api.Use(c.Authentication.AttemptAuthentication())
+
+	// This is a protected endpoint, every request should be authenticated.
 	api.Use(c.Authentication.RequireAuthentication())
 
 	// Upload a new module version

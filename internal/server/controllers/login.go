@@ -269,6 +269,8 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"name":         u.Name,
 			"email":        u.Email,
+			"groups":       u.Groups,
+			"authority":    u.Authority,
 			"authority_id": u.AuthorityID,
 		})
 	})

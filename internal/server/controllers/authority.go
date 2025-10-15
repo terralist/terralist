@@ -66,6 +66,8 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 
 	api := apis[0]
 
+	api.Use(c.Authentication.AttemptAuthentication())
+
 	// This is a protected endpoint, every request should be authenticated.
 	api.Use(c.Authentication.RequireAuthentication())
 

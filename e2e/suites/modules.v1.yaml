@@ -17,7 +17,7 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/versions
     timeout: 60
     assertions:
-    - result.statuscode ShouldEqual 401
+    - result.statuscode ShouldEqual 403
     - result.timeseconds ShouldBeLessThan 30
 - name: List Modules Versions - Authenticated Not Found
   steps:
@@ -52,7 +52,7 @@ testcases:
     url: {{.url}}/v1/modules/{{.namespace}}/{{.badName}}/{{.provider}}/{{.badVersion}}/download
     timeout: 60
     assertions:
-    - result.statuscode ShouldEqual 401
+    - result.statuscode ShouldEqual 403
     - result.timeseconds ShouldBeLessThan 30
 - name: Download Module Version - Authenticated Not Found Module
   steps:
