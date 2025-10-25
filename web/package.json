@@ -36,7 +36,7 @@
     "prettier-eslint": "^16.4.2",
     "prettier-plugin-svelte": "^3.4.0",
     "semver-compare": "^1.0.0",
-    "svelte": "^4.2.19",
+    "svelte": "^5.0.0",
     "svelte-check": "^4.1.4",
     "svelte-eslint-parser": "^1.2.0",
     "svelte-markdown": "^0.4.1",
