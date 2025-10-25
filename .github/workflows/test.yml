@@ -132,7 +132,7 @@ jobs:
           MYSQL_DATABASE: 'terralist'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
       minio:
-        image: public.ecr.aws/bitnami/minio:2025.9.7
+        image: public.ecr.aws/bitnami/minio:2025.10.15
         ports:
           - 9000:9000
         env:
