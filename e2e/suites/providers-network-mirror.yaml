@@ -1,0 +1,193 @@
+name: Providers Network Mirror Protocol
+
+vars:
+  hostname: registry.terraform.io
+  namespace: hashicorp
+  goodName: aws
+  badName: aws-not-found
+  goodVersion: 5.46.0
+  badVersion: 5.47.0
+
+testcases:
+- name: Network Mirror - List Provider Versions - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 30
+
+- name: Network Mirror - List Provider Versions - Authenticated Not Found
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldNotBeEmpty
+
+- name: Network Mirror - List Provider Versions - Authenticated OK
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/index.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey versions
+    - result.bodyjson.versions ShouldContainKey {{.goodVersion}}
+
+- name: Network Mirror - Get Version Details - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/{{.badVersion}}.json
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 30
+
+- name: Network Mirror - Get Version Details - Authenticated Provider Not Found
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/{{.goodVersion}}.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldNotBeEmpty
+
+- name: Network Mirror - Get Version Details - Authenticated Version Not Found
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.badVersion}}.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldContainSubstring not found
+
+- name: Network Mirror - Get Version Details - Authenticated OK
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey archives
+    - result.bodyjson.archives ShouldContainKey linux_amd64
+    - result.bodyjson.archives.linux_amd64 ShouldContainKey url
+    - result.bodyjson.archives.linux_amd64.url ShouldNotBeEmpty
+    - result.bodyjson.archives.linux_amd64 ShouldContainKey hashes
+    - result.bodyjson.archives.linux_amd64.hashes ShouldHaveLength 1
+    - result.bodyjson.archives.linux_amd64.hashes.hashes0 ShouldStartWith h1:
+
+- name: Network Mirror - Hash Prefix Validation
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson.archives.linux_amd64.hashes.hashes0 ShouldStartWith h1:
+    - result.bodyjson.archives.linux_amd64.hashes.hashes0 ShouldNotStartWith h1:h1:
+
+- name: Network Mirror - Multiple Platforms Response
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson ShouldContainKey archives
+    - result.bodyjson.archives.__len__ ShouldBeGreaterThanOrEqual 1
+
+- name: Network Mirror - Version Object Format
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/index.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson.versions.{{.goodVersion}} ShouldEqual map[]
+
+- name: Network Mirror - Archives URL Accessibility
+  steps:
+  - name: get-version-details
+    type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.bodyjson.archives.linux_amd64.url ShouldNotBeEmpty
+    vars:
+      downloadUrl:
+        from: result.bodyjson.archives.linux_amd64.url
+        default: ""
+  - name: verify-download-url
+    type: http
+    method: HEAD
+    url: "{{.get-version-details.downloadUrl}}"
+    timeout: 60
+    skip:
+    - get-version-details.downloadUrl ShouldBeEmpty
+    assertions:
+    - result.statuscode ShouldBeIn 200 302 307
+
+- name: Network Mirror - Different Hostnames
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/custom.registry.io/{{.namespace}}/{{.goodName}}/index.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+
+- name: Network Mirror - Error Response Consistency
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
+    headers:
+      Authorization: Bearer x-api-key:{{.providersApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.bodyjson.errors ShouldBeString
+    - result.bodyjson.errors ShouldNotBeEmpty
