@@ -1,4 +1,5 @@
 <script lang="ts">
+  /* eslint-disable svelte/no-dom-manipulating, no-empty, @typescript-eslint/no-explicit-any */
   import { onDestroy, onMount } from 'svelte';
   import hljs from 'highlight.js';
   import mermaid from 'mermaid';

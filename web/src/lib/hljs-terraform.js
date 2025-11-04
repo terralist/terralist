@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*
  * highlight.js terraform syntax highlighting definition
  *
@@ -12,8 +13,6 @@
  * Description: Terraform (HCL) language definition
  * Category: scripting
  */
-
-var module = module ? module : {}; // shim for browser use
 
 function hljsDefineTerraform(hljs) {
   var NUMBERS = {
@@ -90,12 +89,6 @@ function hljsDefineTerraform(hljs) {
     contains: [hljs.COMMENT('\\#', '$'), NUMBERS, STRINGS]
   };
 }
-
-module.exports = function (hljs) {
-  hljs.registerLanguage('terraform', hljsDefineTerraform);
-};
-
-module.exports.definer = hljsDefineTerraform;
 
 // ESM exports for Vite/ESBuild
 export default function registerTerraform(hljs) {
