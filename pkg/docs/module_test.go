@@ -16,6 +16,75 @@ func TestGetModuleDocumentation(t *testing.T) {
 		shouldError  bool
 	}{
 		{
+			title: "README.md UTF-8 with emoji",
+			fs: file.MustNewFS([]file.File{
+				file.NewInMemoryFile("README.md", []byte("# hello 😀\n")),
+			}),
+			expected: "# hello 😀\n",
+		},
+		{
+			title: "README.md with UTF-8 BOM is normalized",
+			fs: file.MustNewFS([]file.File{
+				file.NewInMemoryFile("README.md", append([]byte{0xEF, 0xBB, 0xBF}, []byte("# bom utf8\n")...)),
+			}),
+			expected: "# bom utf8\n",
+		},
+		{
+			title: "README.md with UTF-16LE BOM is decoded (with emoji)",
+			fs: func() *file.FS {
+				// Encode a string as UTF-16LE with BOM
+				s := "# utf16le 😀\n"
+				// Build bytes: BOM 0xFF,0xFE then little-endian 16-bit code units
+				// Use Go's rune encoding into UTF-16LE manually to avoid pulling encoder in tests
+				// Simple encoder for test purposes
+				var data []byte
+				data = append(data, 0xFF, 0xFE)
+				for _, r := range s {
+					if r < 0x10000 {
+						data = append(data, byte(r), byte(r>>8))
+					} else {
+						// encode surrogate pair
+						rPrime := r - 0x10000
+						hi := 0xD800 + ((rPrime >> 10) & 0x3FF)
+						lo := 0xDC00 + (rPrime & 0x3FF)
+						data = append(data, byte(hi), byte(hi>>8))
+						data = append(data, byte(lo), byte(lo>>8))
+					}
+				}
+				return file.MustNewFS([]file.File{file.NewInMemoryFile("README.md", data)})
+			}(),
+			expected: "# utf16le 😀\n",
+		},
+		{
+			title: "README.md with UTF-16BE BOM is decoded",
+			fs: func() *file.FS {
+				s := "# utf16be\n"
+				var data []byte
+				data = append(data, 0xFE, 0xFF)
+				for _, r := range s {
+					if r < 0x10000 {
+						data = append(data, byte(r>>8), byte(r))
+					} else {
+						rPrime := r - 0x10000
+						hi := 0xD800 + ((rPrime >> 10) & 0x3FF)
+						lo := 0xDC00 + (rPrime & 0x3FF)
+						data = append(data, byte(hi>>8), byte(hi))
+						data = append(data, byte(lo>>8), byte(lo))
+					}
+				}
+				return file.MustNewFS([]file.File{file.NewInMemoryFile("README.md", data)})
+			}(),
+			expected: "# utf16be\n",
+		},
+		{
+			title: "README.md with malformed UTF-16LE BOM errors",
+			fs: file.MustNewFS([]file.File{
+				// BOM then odd trailing byte to force decode error
+				file.NewInMemoryFile("README.md", []byte{0xFF, 0xFE, 0x61}),
+			}),
+			shouldError: true,
+		},
+		{
 			title: "Module with only main.tf",
 			fs: file.MustNewFS([]file.File{
 				file.NewInMemoryFile("main.tf", []byte(`

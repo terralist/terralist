@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"terralist/internal/server/models/authority"
@@ -629,6 +630,86 @@ func TestDeleteModuleVersion(t *testing.T) {
 						})
 					})
 				})
+			})
+		})
+	})
+}
+
+func TestUploadModuleDocumentation_MultibytePreserved(t *testing.T) {
+	Convey("Subject: Upload preserves multibyte README content", t, func() {
+		mockModuleRepository := repositories.NewMockModuleRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
+		mockFetcher := file.NewMockFetcher(t)
+
+		moduleService := &DefaultModuleService{
+			ModuleRepository: mockModuleRepository,
+			AuthorityService: mockAuthorityService,
+			Resolver:         mockResolver,
+			Fetcher:          mockFetcher,
+		}
+
+		dto := module.CreateDTO{VersionCreateDTO: module.VersionCreateDTO{Version: "1.0.0"}}
+		url := "http://example.invalid/archive.zip"
+
+		// Authority exists and module does not exist yet
+		mockAuthorityService.
+			On("GetByID", mock.AnythingOfType("uuid.UUID")).
+			Return(&authority.Authority{}, nil)
+
+		mockModuleRepository.
+			On("Find", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+			Return(nil, errors.New("not found"))
+
+		// README with Japanese and Chinese characters
+		expected := "# 日本語テスト 中文測試\n"
+		arch, err := file.Archive("module.zip", []file.File{
+			file.NewInMemoryFile("README.md", []byte(expected)),
+			file.NewInMemoryFile("main.tf", []byte("locals { x = true }")),
+		})
+		So(err, ShouldBeNil)
+
+		mockFetcher.
+			On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
+			Return(arch, nil)
+
+		// First store for archive (accept anything but the docs markdown filename)
+		mockResolver.
+			On("Store", mock.MatchedBy(func(in *storage.StoreInput) bool {
+				return in != nil && in.FileName != "1.0.0.md"
+			})).
+			Return("modules/location", nil).Once()
+
+		// Second store for documentation: assert content type and content
+		mockResolver.
+			On("Store", mock.MatchedBy(func(in *storage.StoreInput) bool {
+				if in == nil {
+					return false
+				}
+				if in.FileName != "1.0.0.md" {
+					return false
+				}
+				if in.ContentType != "text/markdown; charset=utf-8" {
+					return false
+				}
+				// Read all bytes from the reader to assert content
+				_, _ = in.Reader.Seek(0, io.SeekStart)
+				b, err := io.ReadAll(in.Reader)
+				if err != nil {
+					return false
+				}
+				return string(b) == expected
+			})).
+			Return("modules/docs", nil).Once()
+
+		mockModuleRepository.
+			On("Upsert", mock.AnythingOfType("module.Module")).
+			Return(&module.Module{}, nil)
+
+		Convey("When uploading the module", func() {
+			err := moduleService.Upload(&dto, url, nil)
+			Convey("Should succeed and preserve content", func() {
+				So(err, ShouldBeNil)
 			})
 		})
 	})

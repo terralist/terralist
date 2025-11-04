@@ -56,13 +56,20 @@ func (t *Config) DSN() string {
 		pu := *t.parsedURL
 		values := pu.Query()
 		values.Set("parseTime", "true")
+		// Ensure full Unicode support (emojis)
+		if values.Get("charset") == "" {
+			values.Set("charset", "utf8mb4")
+		}
+		if values.Get("collation") == "" {
+			values.Set("collation", "utf8mb4_unicode_ci")
+		}
 		pu.RawQuery = values.Encode()
 
 		return pu.String()
 	}
 
 	return fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?parseTime=true",
+		"%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
 		t.Username,
 		t.Password,
 		t.Hostname,

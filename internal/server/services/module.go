@@ -198,7 +198,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		docsLocation, err := s.Resolver.Store(&storage.StoreInput{
 			Reader:      docsFile,
 			Size:        docsFile.Metadata().Size(),
-			ContentType: "text/markdown",
+			ContentType: "text/markdown; charset=utf-8",
 			KeyPrefix: fmt.Sprintf(
 				"modules/%s/%s/%s",
 				a.Name,

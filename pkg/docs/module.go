@@ -13,6 +13,9 @@ import (
 
 	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
+
 	"terralist/pkg/file"
 )
 
@@ -97,7 +100,12 @@ func GetModuleDocumentation(moduleFS *file.FS, relativePath string) (string, err
 				return "", fmt.Errorf("could not read README.md in subdir: %w", err)
 			}
 
-			return buf.String(), nil
+			normalized, nerr := normalizeToUTF8(buf.Bytes())
+			if nerr != nil {
+				return "", nerr
+			}
+
+			return normalized, nil
 		}
 
 		return generateModuleDocumentation(moduleFS, relativePath)
@@ -154,9 +162,52 @@ func GetModuleDocumentation(moduleFS *file.FS, relativePath string) (string, err
 			return "", fmt.Errorf("could not read file: %w", err)
 		}
 
-		return buf.String(), nil
+		normalized, nerr := normalizeToUTF8(buf.Bytes())
+		if nerr != nil {
+			return "", nerr
+		}
+
+		return normalized, nil
 	}
 
 	// Otherwise, analyze the module and generate documentation for it
 	return generateModuleDocumentation(moduleFS, path.Dir(entrypointPath))
+}
+
+// normalizeToUTF8 ensures the provided data is returned as a valid UTF-8 string.
+// It strips UTF-8 BOM and decodes UTF-16 (LE/BE) content when a BOM is present.
+func normalizeToUTF8(data []byte) (string, error) {
+	// UTF-8 BOM
+	if len(data) >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF {
+		return string(data[3:]), nil
+	}
+
+	// UTF-16 LE BOM
+	if len(data) >= 2 && data[0] == 0xFF && data[1] == 0xFE {
+		if ((len(data) - 2) % 2) != 0 {
+			return "", fmt.Errorf("could not decode utf-16le: odd number of bytes")
+		}
+		rdr := transform.NewReader(bytes.NewReader(data[2:]), unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder())
+		buf := new(bytes.Buffer)
+		if _, err := io.Copy(buf, rdr); err != nil {
+			return "", fmt.Errorf("could not decode utf-16le: %w", err)
+		}
+		return buf.String(), nil
+	}
+
+	// UTF-16 BE BOM
+	if len(data) >= 2 && data[0] == 0xFE && data[1] == 0xFF {
+		if ((len(data) - 2) % 2) != 0 {
+			return "", fmt.Errorf("could not decode utf-16be: odd number of bytes")
+		}
+		rdr := transform.NewReader(bytes.NewReader(data[2:]), unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM).NewDecoder())
+		buf := new(bytes.Buffer)
+		if _, err := io.Copy(buf, rdr); err != nil {
+			return "", fmt.Errorf("could not decode utf-16be: %w", err)
+		}
+		return buf.String(), nil
+	}
+
+	// Assume input is UTF-8 (common for README.md); return as-is
+	return string(data), nil
 }
