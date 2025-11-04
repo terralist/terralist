@@ -20,7 +20,7 @@
     "@stylistic/eslint-plugin-ts": "^4.4.1",
     "@sveltejs/vite-plugin-svelte": "^2.5.3",
     "@tsconfig/svelte": "^5.0.5",
-    "@types/node": "^24.3.0",
+    "@types/node": "^24.10.0",
     "@types/semver-compare": "^1.0.3",
     "@typescript-eslint/parser": "^8.41.0",
     "autoprefixer": "^10.4.21",
