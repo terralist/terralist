@@ -18,6 +18,7 @@
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
   import MarkdownCode from './MarkdownCode.svelte';
+  import { emojify } from 'node-emoji';
 
   import {
     Artifacts,
@@ -132,7 +133,7 @@
     }
 
     if (res.data) {
-      documentation = res.data.documentation;
+      documentation = emojify(res.data.documentation || '');
     }
   });
 
