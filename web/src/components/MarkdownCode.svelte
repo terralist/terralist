@@ -3,6 +3,9 @@
   import hljs from 'highlight.js';
   import mermaid from 'mermaid';
   import context, { type Theme } from '@/context';
+  import hljsTerraform, {
+    definer as hljsTerraformDefiner
+  } from '@/lib/hljs-terraform';
 
   export let lang: string | undefined;
   export let text: string | undefined;
@@ -11,6 +14,20 @@
   let mermaidEl: HTMLElement | null = null;
   let currentTheme: Theme = 'light';
   const unsubscribe = context.theme.subscribe(t => (currentTheme = t));
+
+  // Register Terraform/HCL grammar if available (vendored)
+  try {
+    // Register terraform
+    if (hljsTerraform && typeof hljsTerraform === 'function') {
+      hljsTerraform(hljs);
+    }
+    // Register aliases using the definer
+    const def = hljsTerraformDefiner as any;
+    if (def) {
+      if (!hljs.getLanguage('hcl')) hljs.registerLanguage('hcl', def);
+      if (!hljs.getLanguage('tf')) hljs.registerLanguage('tf', def);
+    }
+  } catch {}
 
   const applyHighlight = () => {
     if (!codeEl) return;
