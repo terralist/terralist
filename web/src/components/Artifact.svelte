@@ -5,6 +5,8 @@
 
   import lightHref from 'github-markdown-css/github-markdown-light.css?url';
   import darkHref from 'github-markdown-css/github-markdown-dark.css?url';
+  import hlLightHref from 'highlight.js/styles/github.css?url';
+  import hlDarkHref from 'highlight.js/styles/github-dark.css?url';
 
   import config from '@/config';
   import { indent } from '@/lib/utils';
@@ -15,6 +17,7 @@
   import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
+  import MarkdownCode from './MarkdownCode.svelte';
 
   import {
     Artifacts,
@@ -144,6 +147,9 @@
   <link
     rel="stylesheet"
     href={currentTheme == 'light' ? lightHref : darkHref} />
+  <link
+    rel="stylesheet"
+    href={currentTheme == 'light' ? hlLightHref : hlDarkHref} />
 </svelte:head>
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
   {#if $result.isLoading}
@@ -197,7 +203,9 @@
         <div class="m-6 p-4 flex flex-col gap-4">
           <h2 class="text-lg font-bold">Readme</h2>
           <div class="markdown-body bg-slate-50">
-            <SvelteMarkdown source={documentation} />
+            <SvelteMarkdown
+              source={documentation}
+              renderers={{ code: MarkdownCode }} />
           </div>
         </div>
       {/if}
