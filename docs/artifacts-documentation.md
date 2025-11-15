@@ -21,3 +21,58 @@ Terralist will attempt to find a `README.md` before generating the documentation
 ## Providers
 
 Provider documentation is still in progress. It will be available soon!
+
+## README Rendering Features
+
+Terralist provides rich rendering capabilities for README files with performance-optimized loading:
+
+### Code Syntax Highlighting
+
+Terralist supports syntax highlighting for code blocks using [Shiki](https://shiki.style/), a modern syntax highlighter. Supported languages include:
+
+- **Programming Languages**: JavaScript, TypeScript, Python, Go, Rust, Java, C/C++, and many more
+- **Infrastructure as Code**: Terraform (HCL), YAML, JSON, Bash scripts
+- **Markup Languages**: HTML, CSS, Markdown
+
+Code blocks are automatically detected and highlighted when present in README files. For optimal performance, syntax highlighting libraries are loaded from CDN only when code blocks are detected in the content.
+
+```terraform
+# Example Terraform code block
+resource "aws_instance" "example" {
+  ami           = "ami-0c55b159cbfafe1d0"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "Example instance"
+  }
+}
+```
+
+### Mermaid Diagrams
+
+Terralist supports diagram creation using [Mermaid](https://mermaid.js.org/), a JavaScript-based diagramming library. Supported diagram types include:
+
+- **Flowcharts**: Graph and flowchart diagrams
+- **Sequence Diagrams**: Interaction diagrams
+- **State Diagrams**: Finite state machine diagrams
+- **Class Diagrams**: Object-oriented design diagrams
+- **Entity Relationship Diagrams**: Database schema diagrams
+
+Mermaid diagrams are automatically detected and rendered when present in README files. For optimal performance, the Mermaid library is loaded from CDN only when diagram code blocks are detected in the content.
+
+```mermaid
+graph TD;
+    A[Start] --> B[Process];
+    B --> C[Validate];
+    C --> D[Deploy];
+    D --> E[End];
+```
+
+### Emoji Shortcode Support
+
+README files support emoji shortcodes using the [node-emoji](https://github.com/omnidan/node-emoji) library. You can use GitHub-style emoji shortcodes that are automatically converted to Unicode emojis:
+
+- `:smile:` → 😄
+- `:rocket:` → 🚀
+- `:warning:` → ⚠️
+- `:bulb:` → 💡
