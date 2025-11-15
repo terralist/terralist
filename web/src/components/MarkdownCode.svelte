@@ -1,70 +1,103 @@
 <script lang="ts">
   /* eslint-disable svelte/no-dom-manipulating, no-empty, @typescript-eslint/no-explicit-any */
   import { onDestroy, onMount } from 'svelte';
-  import hljs from 'highlight.js';
-  import mermaid from 'mermaid';
   import context, { type Theme } from '@/context';
-  import hljsTerraform, {
-    definer as hljsTerraformDefiner
-  } from '@/lib/hljs-terraform';
+
+  // Fallback imports for backward compatibility
+  let shikiHighlighter: any = null;
+  let mermaidFallback: any = null;
 
   export let lang: string | undefined;
   export let text: string | undefined;
+  export let shiki: any = null;
+  export let mermaid: any = null;
 
   let codeEl: HTMLElement | null = null;
   let mermaidEl: HTMLElement | null = null;
   let currentTheme: Theme = 'light';
   const unsubscribe = context.theme.subscribe(t => (currentTheme = t));
 
-  // Register Terraform/HCL grammar if available (vendored)
-  try {
-    // Register terraform
-    if (hljsTerraform && typeof hljsTerraform === 'function') {
-      hljsTerraform(hljs);
-    }
-    // Register aliases using the definer
-    const def = hljsTerraformDefiner as any;
-    if (def) {
-      if (!hljs.getLanguage('hcl')) hljs.registerLanguage('hcl', def);
-      if (!hljs.getLanguage('tf')) hljs.registerLanguage('tf', def);
-    }
-  } catch {}
+  // Load fallback libraries if not provided as props
+  $: if (!shiki && !shikiHighlighter) {
+    import('https://cdn.jsdelivr.net/npm/shiki@3.15.0/+esm')
+      .then(async ({ createHighlighter }) => {
+        shikiHighlighter = await createHighlighter({
+          themes: ['github-light', 'github-dark'],
+          langs: [
+            'javascript',
+            'typescript',
+            'python',
+            'bash',
+            'json',
+            'yaml',
+            'markdown',
+            'hcl',
+            'terraform'
+          ]
+        });
+      })
+      .catch(err => {
+        console.error('Failed to load Shikijs from CDN in MarkdownCode:', err);
+      });
+  }
 
-  const applyHighlight = () => {
+  $: if (!mermaid && !mermaidFallback) {
+    import('https://cdn.jsdelivr.net/npm/mermaid@10.9.0/+esm')
+      .then(module => {
+        mermaidFallback = module.default;
+      })
+      .catch(err => {
+        console.error('Failed to load mermaid from CDN in MarkdownCode:', err);
+      });
+  }
+
+  const applyHighlight = async () => {
     if (!codeEl) return;
-    codeEl.className = 'hljs' + (lang ? ` language-${lang}` : '');
     codeEl.textContent = text ?? '';
     try {
-      hljs.highlightElement(codeEl);
+      const shikiInstance = shiki || shikiHighlighter;
+      if (shikiInstance && text) {
+        const theme = currentTheme === 'dark' ? 'github-dark' : 'github-light';
+        const html = await shikiInstance.codeToHtml(text, {
+          lang: lang || 'text',
+          theme,
+          transformers: []
+        });
+        codeEl.innerHTML = html;
+      }
     } catch {}
   };
 
   const renderMermaid = async () => {
     if (!mermaidEl || !text) return;
     try {
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: currentTheme === 'dark' ? 'dark' : 'default'
-      });
+      const mermaidInstance = mermaid || mermaidFallback;
+      if (mermaidInstance) {
+        mermaidInstance.initialize({
+          startOnLoad: false,
+          securityLevel: 'strict',
+          theme: currentTheme === 'dark' ? 'dark' : 'default'
+        });
 
-      const id = `mmd-${Math.random().toString(36).slice(2)}`;
-      const { svg } = await mermaid.render(id, text);
-      mermaidEl.innerHTML = svg;
+        const id = `mmd-${Math.random().toString(36).slice(2)}`;
+        const { svg } = await mermaidInstance.render(id, text);
+        mermaidEl.innerHTML = svg;
+      }
     } catch {}
   };
 
-  onMount(() => {
+  onMount(async () => {
     if (lang === 'mermaid') {
       renderMermaid();
     } else {
-      applyHighlight();
+      await applyHighlight();
     }
   });
 
   $: if (lang === 'mermaid') {
     renderMermaid();
   } else {
+    // Trigger re-highlight when theme or content changes
     applyHighlight();
   }
 
