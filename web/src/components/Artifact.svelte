@@ -7,9 +7,8 @@
   import 'github-markdown-css/github-markdown-dark.css';
 
   import config from '@/config';
-  import { indent, analyzeReadmeContent } from '@/lib/utils';
+  import { indent } from '@/lib/utils';
   import { useQuery } from '@/lib/hooks';
-  import context, { type Theme } from '@/context';
 
   import Icon from './Icon.svelte';
   import Dropdown from './Dropdown.svelte';
@@ -24,12 +23,6 @@
     type ArtifactVersionWithDocumentation
   } from '@/api/artifacts';
   import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
-
-  let currentTheme: Theme = 'light';
-
-  const themeUnsubscribe = context.theme.subscribe(theme => {
-    currentTheme = theme;
-  });
 
   export let type: 'module' | 'provider';
   export let namespace: string;
@@ -110,12 +103,6 @@
   });
 
   let documentation: string | undefined;
-  let needsShiki = false;
-  let needsMermaid = false;
-
-  // Dynamically loaded libraries
-  let shikiHighlighter: any = null;
-  let mermaidLib: any = null;
 
   const versionUnsubscribe = useQuery<ArtifactVersionWithDocumentation>(
     Artifacts.getOneVersion,
@@ -138,53 +125,12 @@
 
     if (res.data) {
       documentation = emojify(res.data.documentation || '');
-
-      // Analyze the documentation content to determine what libraries we need
-      const analysis = analyzeReadmeContent(documentation);
-      needsShiki = analysis.hasCodeBlocks;
-      needsMermaid = analysis.hasMermaidDiagrams;
     }
   });
-
-  // Dynamically load Shikijs from CDN when needed
-  $: if (needsShiki && !shikiHighlighter) {
-    import('https://cdn.jsdelivr.net/npm/shiki@3.15.0/+esm')
-      .then(async ({ createHighlighter }) => {
-        shikiHighlighter = await createHighlighter({
-          themes: ['github-light', 'github-dark'],
-          langs: [
-            'javascript',
-            'typescript',
-            'python',
-            'bash',
-            'json',
-            'yaml',
-            'markdown',
-            'hcl',
-            'terraform'
-          ]
-        });
-      })
-      .catch(err => {
-        console.error('Failed to load Shikijs from CDN:', err);
-      });
-  }
-
-  // Dynamically load mermaid from CDN when needed
-  $: if (needsMermaid && !mermaidLib) {
-    import('https://cdn.jsdelivr.net/npm/mermaid@10.9.0/+esm')
-      .then(module => {
-        mermaidLib = module.default;
-      })
-      .catch(err => {
-        console.error('Failed to load mermaid from CDN:', err);
-      });
-  }
 
   onDestroy(() => {
     unsubscribe();
     versionUnsubscribe();
-    themeUnsubscribe();
   });
 </script>
 
@@ -243,12 +189,7 @@
             <SvelteMarkdown
               source={documentation}
               renderers={{
-                code: props =>
-                  MarkdownCode({
-                    ...props,
-                    shiki: shikiHighlighter,
-                    mermaid: mermaidLib
-                  })
+                code: MarkdownCode
               }} />
           </div>
         </div>

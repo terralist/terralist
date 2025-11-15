@@ -67,35 +67,4 @@ const timeSince = (since: Date, from: Date = new Date()): string => {
   return formatter.format(-secondsSince, 'second');
 };
 
-// Analyze README content to detect if it contains code blocks or mermaid diagrams
-const analyzeReadmeContent = (
-  content: string
-): {
-  hasCodeBlocks: boolean;
-  hasMermaidDiagrams: boolean;
-} => {
-  // Regular expression to match fenced code blocks
-  const codeBlockRegex = /```([\w-]*)\s*\n[\s\S]*?```/g;
-
-  let hasCodeBlocks = false;
-  let hasMermaidDiagrams = false;
-
-  let match;
-  while ((match = codeBlockRegex.exec(content)) !== null) {
-    hasCodeBlocks = true;
-
-    // Check if the language is mermaid
-    const language = match[1]?.toLowerCase();
-    if (language === 'mermaid') {
-      hasMermaidDiagrams = true;
-      break; // No need to continue if we found mermaid
-    }
-  }
-
-  return {
-    hasCodeBlocks,
-    hasMermaidDiagrams
-  };
-};
-
-export { defaultIfNull, indent, timeSince, analyzeReadmeContent };
+export { defaultIfNull, indent, timeSince };

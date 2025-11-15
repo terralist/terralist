@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
 import tsparser from '@typescript-eslint/parser';
 import svelteParser from 'svelte-eslint-parser';
-import stylisticTs from '@stylistic/eslint-plugin-ts';
+import stylistic from '@stylistic/eslint-plugin';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
 
@@ -18,7 +18,7 @@ const gitignorePath = path.resolve(__dirname, '.gitignore');
 export default defineConfig([
   includeIgnoreFile(gitignorePath),
   {
-    ignores: ['dist', '*.json', '*.config.*', 'src/lib/hljs-terraform.js']
+    ignores: ['dist', '*.json', '*.config.*']
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -51,7 +51,7 @@ export default defineConfig([
       }
     },
     plugins: {
-      '@stylistic/ts': stylisticTs
+      '@stylistic': stylistic
     },
     rules: {
       camelcase: 'off',
@@ -99,8 +99,8 @@ export default defineConfig([
       '@typescript-eslint/restrict-plus-operands': 'error',
       '@typescript-eslint/space-before-function-paren': 'off',
       '@typescript-eslint/unbound-method': 'error',
-      '@stylistic/ts/type-annotation-spacing': 'error',
-      '@stylistic/ts/func-call-spacing': ['error', 'never']
+      '@stylistic/type-annotation-spacing': 'error',
+      '@stylistic/function-call-spacing': ['error', 'never']
     }
   }
 ]);
