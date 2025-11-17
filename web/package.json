@@ -18,7 +18,7 @@
     "@eslint/compat": "^1.2.9",
     "@eslint/js": "^9.33.0",
     "@stylistic/eslint-plugin": "^5.5.0",
-    "@sveltejs/vite-plugin-svelte": "^2.5.3",
+    "@sveltejs/vite-plugin-svelte": "^6.0.0",
     "@tsconfig/svelte": "^5.0.5",
     "@types/node": "^24.10.0",
     "@types/semver-compare": "^1.0.3",
