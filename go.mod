@@ -18,7 +18,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-getter v1.8.2
+	github.com/hashicorp/go-getter v1.8.3
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20241129133400-c404f8227ea6
 	github.com/mazen160/go-random v0.0.0-20210308102632-d2b501c85c03
 	github.com/pkg/errors v0.9.1
