@@ -1,15 +1,15 @@
-import { defineConfig } from 'eslint/config'
-import { includeIgnoreFile } from '@eslint/compat'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import eslint from '@eslint/js'
-import tseslint from 'typescript-eslint'
-import prettierRecommended from 'eslint-plugin-prettier/recommended'
-import tsparser from '@typescript-eslint/parser'
-import svelteParser from 'svelte-eslint-parser'
-import stylisticTs from '@stylistic/eslint-plugin-ts'
-import svelte from 'eslint-plugin-svelte'
-import globals from 'globals'
+import { defineConfig } from 'eslint/config';
+import { includeIgnoreFile } from '@eslint/compat';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import prettierRecommended from 'eslint-plugin-prettier/recommended';
+import tsparser from '@typescript-eslint/parser';
+import svelteParser from 'svelte-eslint-parser';
+import stylistic from '@stylistic/eslint-plugin';
+import svelte from 'eslint-plugin-svelte';
+import globals from 'globals';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,11 +18,7 @@ const gitignorePath = path.resolve(__dirname, '.gitignore');
 export default defineConfig([
   includeIgnoreFile(gitignorePath),
   {
-    ignores: [
-      'dist',
-      '*.json',
-      '*.config.*',
-    ]
+    ignores: ['dist', '*.json', '*.config.*']
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -36,12 +32,12 @@ export default defineConfig([
       parser: svelteParser,
       parserOptions: {
         parser: tseslint.parser,
-        extraFileExtensions: ['.svelte'],
+        extraFileExtensions: ['.svelte']
       },
       globals: {
-        ...globals.browser,
+        ...globals.browser
       }
-    },
+    }
   },
   {
     ignores: ['**/*.svelte'],
@@ -51,11 +47,11 @@ export default defineConfig([
       sourceType: 'module',
       parser: tsparser,
       parserOptions: {
-        project: ['./tsconfig.json'],
+        project: ['./tsconfig.json']
       }
     },
     plugins: {
-      '@stylistic/ts': stylisticTs,
+      '@stylistic': stylistic
     },
     rules: {
       camelcase: 'off',
@@ -103,8 +99,8 @@ export default defineConfig([
       '@typescript-eslint/restrict-plus-operands': 'error',
       '@typescript-eslint/space-before-function-paren': 'off',
       '@typescript-eslint/unbound-method': 'error',
-      '@stylistic/ts/type-annotation-spacing': 'error',
-      '@stylistic/ts/func-call-spacing': ['error', 'never'],
+      '@stylistic/type-annotation-spacing': 'error',
+      '@stylistic/function-call-spacing': ['error', 'never']
     }
   }
 ]);
