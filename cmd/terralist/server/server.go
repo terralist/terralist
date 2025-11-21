@@ -211,6 +211,7 @@ func (s *Command) run() error {
 	case "sqlite":
 		db, err = dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{ //nolint:forcetypeassert
 			Path: flags[SQLitePathFlag].(*cli.StringFlag).Value,
+			Home: userConfig.Home,
 		})
 	case "postgresql":
 		db, err = dbFactory.NewDatabase(database.POSTGRESQL, &postgresql.Config{ //nolint:forcetypeassert
