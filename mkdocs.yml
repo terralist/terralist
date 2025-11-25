@@ -37,12 +37,13 @@ nav:
   - Installation: installation.md
   - Getting Started: getting-started.md
   - Configuration: configuration.md
+  - Network Mirror Protocol: network-mirror.md
   - Artifacts Documentation: artifacts-documentation.md
-  - User Guide: 
+  - User Guide:
     - user-guide/index.md
     - AWS S3 Bucket Configuration: user-guide/aws-s3-bucket-configuration.md
     - RBAC Configuration: user-guide/rbac-configuration.md
-  - Developer Guide: 
+  - Developer Guide:
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md
     - Local Development: dev-guide/local-development.md
