@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"os"
 	"path/filepath"
 )
 
@@ -26,19 +25,5 @@ func (c *Config) Validate() error {
 
 // DefaultPath returns the default sqlite path for the given home directory.
 func DefaultPath(home string) string {
-	if home == "" {
-		home = os.Getenv("TERRALIST_HOME")
-	}
-
-	if home == "" {
-		if userHome, err := os.UserHomeDir(); err == nil {
-			home = userHome
-		}
-	}
-
-	if home == "" {
-		home = "."
-	}
-
 	return filepath.Join(home, "data", "storage.db")
 }

@@ -1,7 +1,6 @@
 package sqlite
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -15,28 +14,10 @@ func TestDefaultPathUsesProvidedHome(t *testing.T) {
 	}
 }
 
-func TestDefaultPathUsesEnvWhenHomeEmpty(t *testing.T) {
-	const envHome = "/env/terralist"
-
-	t.Setenv("TERRALIST_HOME", envHome)
-
+func TestDefaultPathAllowsEmptyHome(t *testing.T) {
 	got := DefaultPath("")
-	want := filepath.Join(envHome, "data", "storage.db")
-	if got != want {
-		t.Fatalf("DefaultPath(empty) = %q, want %q", got, want)
-	}
-}
+	want := filepath.Join("data", "storage.db")
 
-func TestDefaultPathFallsBackToUserHome(t *testing.T) {
-	t.Setenv("TERRALIST_HOME", "")
-
-	userHome, err := os.UserHomeDir()
-	if err != nil {
-		t.Fatalf("could not determine user home dir: %v", err)
-	}
-
-	got := DefaultPath("")
-	want := filepath.Join(userHome, "data", "storage.db")
 	if got != want {
 		t.Fatalf("DefaultPath(empty) = %q, want %q", got, want)
 	}
