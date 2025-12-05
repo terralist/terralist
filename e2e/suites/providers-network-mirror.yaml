@@ -13,7 +13,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -23,7 +23,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -37,7 +37,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/index.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/index.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -51,7 +51,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/{{.badVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/{{.badVersion}}.json
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -61,7 +61,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/{{.goodVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/{{.goodVersion}}.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -75,7 +75,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.badVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.badVersion}}.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -89,7 +89,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -108,7 +108,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -121,7 +121,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -134,7 +134,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/index.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/index.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -147,7 +147,7 @@ testcases:
   - name: get-version-details
     type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.goodName}}/{{.goodVersion}}.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -172,7 +172,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/custom.registry.io/{{.namespace}}/{{.goodName}}/index.json
+    url: {{.url}}/providers/custom.registry.io/{{.namespace}}/{{.goodName}}/index.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -183,7 +183,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
+    url: {{.url}}/providers/{{.hostname}}/{{.namespace}}/{{.badName}}/index.json
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
