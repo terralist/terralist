@@ -209,7 +209,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
 
-	apiV1Group.Register(networkMirrorController)
+	// Network mirror is registered at root level (/providers) to match Terraform's network mirror protocol
+	rootGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "",
+	})
+	rootGroup.Register(networkMirrorController)
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
