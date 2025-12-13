@@ -2,9 +2,6 @@ package sqlite
 
 import (
 	"fmt"
-	"net/url"
-	"os"
-	"path/filepath"
 	"sync"
 
 	"terralist/pkg/database"
@@ -30,15 +27,7 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 		return nil, fmt.Errorf("unsupported configurator: %T", config)
 	}
 
-	// See https://gitlab.com/cznic/sqlite/-/issues/47
-	dsn := cfg.Path
-	q := make(url.Values)
-	q.Set("_time_format", "sqlite")
-	dsn += "?" + q.Encode()
-
-	if err := os.MkdirAll(filepath.Dir(cfg.Path), os.ModePerm); err != nil {
-		return nil, fmt.Errorf("could not prepare sqlite directory: %w", err)
-	}
+	dsn := cfg.DSN()
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: &logger.Logger{},

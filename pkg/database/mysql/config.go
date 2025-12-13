@@ -22,9 +22,6 @@ type Config struct {
 	// The database URL can be used to establish the connection without specifying
 	// other credentials.
 	URL string
-
-	// URL in parsed form.
-	parsedURL *url.URL
 }
 
 func (t *Config) SetDefaults() {}
@@ -38,42 +35,38 @@ func (t *Config) Validate() error {
 	}
 
 	if connectionWithURL {
-		pu, err := url.Parse(t.URL)
-		if err != nil {
+		if _, err := url.Parse(t.URL); err != nil {
 			return fmt.Errorf("cannot parse connection url: %w", err)
 		}
-
-		t.parsedURL = pu
 	}
 
 	return nil
 }
 
 func (t *Config) DSN() string {
-	// MySQL DSN needs to have parseTime=true (https://github.com/go-sql-driver/mysql#timetime-support)
-
-	if t.parsedURL != nil {
-		pu := *t.parsedURL
-		values := pu.Query()
-		values.Set("parseTime", "true")
-		// Ensure full Unicode support (emojis)
-		if values.Get("charset") == "" {
-			values.Set("charset", "utf8mb4")
-		}
-		if values.Get("collation") == "" {
-			values.Set("collation", "utf8mb4_unicode_ci")
-		}
-		pu.RawQuery = values.Encode()
-
-		return pu.String()
+	if t.URL != "" {
+		return t.URL
 	}
 
-	return fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s?parseTime=true&charset=utf8mb4&collation=utf8mb4_unicode_ci",
-		t.Username,
-		t.Password,
-		t.Hostname,
-		t.Port,
-		t.Name,
-	)
+	// Build the connection string according to the MySQL DSN schema:
+	// https://github.com/go-sql-driver/mysql#dsn-data-source-name
+
+	userInfo := url.UserPassword(t.Username, t.Password)
+	url := &url.URL{
+		Opaque: fmt.Sprintf("%s@tcp(%s:%d)/%s", userInfo.String(), t.Hostname, t.Port, t.Name),
+		Host:   fmt.Sprintf("%s:%d", t.Hostname, t.Port),
+		Path:   t.Name,
+	}
+
+	q := url.Query()
+
+	// MySQL DSN needs to have parseTime=true (https://github.com/go-sql-driver/mysql#timetime-support)
+	q.Set("parseTime", "true")
+
+	q.Set("charset", "utf8mb4")
+	q.Set("collation", "utf8mb4_unicode_ci")
+
+	url.RawQuery = q.Encode()
+
+	return url.String()
 }
