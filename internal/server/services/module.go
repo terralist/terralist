@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
@@ -23,6 +24,9 @@ type ModuleService interface {
 
 	// GetVersion returns a module version.
 	GetVersion(namespace, name, provider, version string) (*module.VersionDTO, error)
+
+	// GetSubmoduleDocumentation returns documentation for a specific submodule within a module version.
+	GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath string) (string, error)
 
 	// GetVersionURL returns a public URL from which a specific a module version can be
 	// downloaded.
@@ -107,6 +111,72 @@ func (s *DefaultModuleService) GetVersion(namespace, name, provider, version str
 	return dto, nil
 }
 
+func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath string) (string, error) {
+	v, err := s.ModuleRepository.FindVersion(namespace, name, provider, version)
+	if err != nil {
+		return "", err
+	}
+
+	// Check if the submodule exists
+	var submoduleExists bool
+	for _, sm := range v.Submodules {
+		if sm.Path == submodulePath {
+			submoduleExists = true
+			break
+		}
+	}
+
+	if !submoduleExists {
+		return "", fmt.Errorf("submodule %s not found in module %s/%s/%s/%s", submodulePath, namespace, name, provider, version)
+	}
+
+	if s.Resolver == nil {
+		return "", fmt.Errorf("no resolver configured to fetch submodule documentation")
+	}
+
+	// Construct the documentation file path
+	docsFileName := fmt.Sprintf("%s_%s.md", version, strings.ReplaceAll(submodulePath, "/", "_"))
+	docsKey := fmt.Sprintf("modules/%s/%s/%s/submodules/%s", namespace, name, provider, docsFileName)
+
+	url, err := s.Resolver.Find(docsKey)
+	if err != nil {
+		log.Warn().
+			Str("moduleSlug", fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)).
+			Str("submodulePath", submodulePath).
+			Err(err).
+			Msg("no documentation for submodule")
+
+		return "", nil
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Warn().
+			Str("moduleSlug", fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)).
+			Str("submodulePath", submodulePath).
+			Str("url", url).
+			Err(err).
+			Msg("could not fetch submodule's documentation")
+
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Warn().
+			Str("moduleSlug", fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)).
+			Str("submodulePath", submodulePath).
+			Str("url", url).
+			Err(err).
+			Msg("could not read submodule documentation")
+
+		return "", err
+	}
+
+	return string(body), nil
+}
+
 func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version string) (*string, error) {
 	location, err := s.ModuleRepository.FindVersionLocation(namespace, name, provider, version)
 	if err != nil {
@@ -156,7 +226,10 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 	defer archive.Close()
 
 	var mdDocs = ""
+	var submoduleDocs = make(map[string]string)
+
 	if archiveFile, ok := archive.(*file.ArchiveFile); ok {
+		// Generate main module documentation
 		markdown, err := docs.GetModuleDocumentation(archiveFile.FS(), "")
 		if err != nil {
 			log.Warn().
@@ -166,6 +239,24 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		}
 
 		mdDocs = markdown
+
+		// Scan and generate documentation for submodules
+		submodules, err := docs.FindSubmodules(archiveFile.FS())
+		if err != nil {
+			log.Warn().
+				Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
+				Err(err).
+				Msg("failed to scan for submodules")
+		} else if len(submodules) > 0 {
+			log.Info().
+				Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
+				Int("count", len(submodules)).
+				Msg("found submodules in module")
+
+			for _, sm := range submodules {
+				submoduleDocs[sm.Path] = sm.Documentation
+			}
+		}
 	} else {
 		log.Warn().
 			Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
@@ -213,6 +304,59 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 
 		// Update the module documentation location
 		m.Versions[0].Documentation = docsLocation
+
+		// Upload submodule documentation to the resolver datastore
+		for submodulePath, submoduleDoc := range submoduleDocs {
+			if submoduleDoc == "" {
+				continue
+			}
+
+			submoduleDocsFile := file.NewInMemoryFile(
+				fmt.Sprintf("%s_%s.md", d.Version, strings.ReplaceAll(submodulePath, "/", "_")),
+				[]byte(submoduleDoc),
+			)
+			submoduleDocsLocation, err := s.Resolver.Store(&storage.StoreInput{
+				Reader:      submoduleDocsFile,
+				Size:        submoduleDocsFile.Metadata().Size(),
+				ContentType: "text/markdown; charset=utf-8",
+				KeyPrefix: fmt.Sprintf(
+					"modules/%s/%s/%s/submodules",
+					a.Name,
+					m.Name,
+					m.Provider,
+				),
+				FileName: submoduleDocsFile.Name(),
+			})
+			if err != nil {
+				log.Warn().
+					Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
+					Str("submodulePath", submodulePath).
+					Err(err).
+					Msg("failed to store submodule documentation")
+				continue
+			}
+
+			// Find or create the submodule in the version
+			found := false
+			for i := range m.Versions[0].Submodules {
+				if m.Versions[0].Submodules[i].Path == submodulePath {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				m.Versions[0].Submodules = append(m.Versions[0].Submodules, module.Submodule{
+					Path: submodulePath,
+				})
+			}
+
+			log.Info().
+				Str("moduleSlug", fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)).
+				Str("submodulePath", submodulePath).
+				Str("docsLocation", submoduleDocsLocation).
+				Msg("stored submodule documentation")
+		}
 	} else {
 		// Terralist is using a proxy provider.
 		m.Versions[0].Location = url
@@ -254,7 +398,7 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 
 	if s.Resolver != nil {
 		for _, ver := range m.Versions {
-			s.deleteVersion(&ver)
+			s.deleteVersion(a.Name, &ver)
 		}
 	}
 
@@ -282,7 +426,7 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 	}
 
 	if s.Resolver != nil {
-		s.deleteVersion(v)
+		s.deleteVersion(a.Name, v)
 	}
 
 	if len(m.Versions) == 1 {
@@ -293,13 +437,47 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 }
 
 // deleteVersion removes the files for a specific module version.
-func (s *DefaultModuleService) deleteVersion(v *module.Version) {
+func (s *DefaultModuleService) deleteVersion(namespace string, v *module.Version) {
+	// Delete the module archive
 	if err := s.Resolver.Purge(v.Location); err != nil {
 		log.Warn().
 			AnErr("Error", err).
 			Str("Module", v.Module.String()).
 			Str("Version", v.Version).
 			Str("Key", v.Location).
-			Msg("Could not purge, require manual clean-up")
+			Msg("Could not purge module archive, require manual clean-up")
+	}
+
+	// Delete the module documentation
+	if v.Documentation != "" {
+		if err := s.Resolver.Purge(v.Documentation); err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("Module", v.Module.String()).
+				Str("Version", v.Version).
+				Str("Key", v.Documentation).
+				Msg("Could not purge module documentation, require manual clean-up")
+		}
+	}
+
+	// Delete documentation for all submodules
+	for _, sm := range v.Submodules {
+		// Construct the documentation file path using the same convention as Upload
+		docsFileName := fmt.Sprintf("%s_%s.md", v.Version, strings.ReplaceAll(sm.Path, "/", "_"))
+		docsKey := fmt.Sprintf("modules/%s/%s/%s/submodules/%s",
+			namespace,
+			v.Module.Name,
+			v.Module.Provider,
+			docsFileName)
+
+		if err := s.Resolver.Purge(docsKey); err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("Module", v.Module.String()).
+				Str("Version", v.Version).
+				Str("SubmodulePath", sm.Path).
+				Str("Key", docsKey).
+				Msg("Could not purge submodule documentation, require manual clean-up")
+		}
 	}
 }

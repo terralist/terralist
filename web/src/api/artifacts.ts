@@ -9,9 +9,14 @@ import cmp from 'semver-compare';
 
 type ArtifactVersion = string;
 
+type Submodule = {
+  path: string;
+};
+
 type ArtifactVersionWithDocumentation = {
   version: ArtifactVersion;
   documentation: string;
+  submodules?: Submodule[];
 };
 
 type ArtifactBase = {
@@ -159,6 +164,23 @@ const actions = {
         `/${[namespace, name, provider].filter(e => e).join('/')}/version/${version}`
       )
       .then(handleResponse<boolean>)
+      .catch(handleError),
+
+  getSubmoduleDocumentation: async (
+    namespace: string,
+    name: string,
+    provider: string,
+    version: string,
+    submodulePath: string
+  ) =>
+    client
+      .get<{ documentation: string }>(
+        `/modules/${name}/${provider}/${version}/submodules/${submodulePath}`,
+        {
+          baseURL: '/v1/api'
+        }
+      )
+      .then(handleResponse<{ documentation: string }>)
       .catch(handleError)
 };
 
@@ -169,6 +191,13 @@ const Artifacts = {
     name: string,
     provider: string | undefined
   ) => await actions.getOne(namespace, name, provider),
+  getSubmoduleDocumentation: async (
+    namespace: string,
+    name: string,
+    provider: string,
+    version: string,
+    submodulePath: string
+  ) => await actions.getSubmoduleDocumentation(namespace, name, provider, version, submodulePath),
   getAllVersionsForOne: async (
     namespace: string,
     name: string,
@@ -192,5 +221,6 @@ export {
   type Artifact,
   type ArtifactVersion,
   type ArtifactVersionWithDocumentation,
+  type Submodule,
   Artifacts
 };

@@ -28,7 +28,7 @@
     }
   },
   "features": {
-    "ghcr.io/devcontainers-contrib/features/go-task:1": {
+    "ghcr.io/devcontainers-extra/features/go-task:1": {
       "version": "latest"
     },
     "ghcr.io/jckimble/devcontainer-features/ngrok:3": {},

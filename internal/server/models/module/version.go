@@ -24,9 +24,15 @@ func (Version) TableName() string {
 }
 
 func (v Version) ToDTO() VersionDTO {
+	var submodulesDTO []SubmoduleResponseDTO
+	for _, sm := range v.Submodules {
+		submodulesDTO = append(submodulesDTO, sm.ToDTO())
+	}
+
 	return VersionDTO{
 		Version:       v.Version,
 		Documentation: v.Documentation,
+		Submodules:    submodulesDTO,
 	}
 }
 
@@ -36,8 +42,9 @@ type RootDTO struct {
 }
 
 type VersionDTO struct {
-	Version       string `json:"version"`
-	Documentation string `json:"documentation"`
+	Version       string                 `json:"version"`
+	Documentation string                 `json:"documentation"`
+	Submodules    []SubmoduleResponseDTO `json:"submodules,omitempty"`
 }
 
 func (v VersionDTO) ToArtifactVersion() artifact.Version {

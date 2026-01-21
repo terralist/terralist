@@ -20,7 +20,8 @@
   import {
     Artifacts,
     type ArtifactVersion,
-    type ArtifactVersionWithDocumentation
+    type ArtifactVersionWithDocumentation,
+    type Submodule
   } from '@/api/artifacts';
   import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
 
@@ -103,6 +104,10 @@
   });
 
   let documentation: string | undefined;
+  let submodules: Submodule[] = [];
+  let selectedSubmodule: string | null = null;
+  let submoduleLabel: string = 'Select a submodule';
+  let submoduleDocumentation: string | undefined;
 
   const versionUnsubscribe = useQuery<ArtifactVersionWithDocumentation>(
     Artifacts.getOneVersion,
@@ -125,8 +130,37 @@
 
     if (res.data) {
       documentation = emojify(res.data.documentation || '');
+      submodules = res.data.submodules || [];
+      // Reset submodule selection when version changes
+      selectedSubmodule = null;
+      submoduleLabel = 'Select a submodule';
+      submoduleDocumentation = undefined;
     }
   });
+
+  const onSubmoduleSelect = async (submodulePath: string) => {
+    if (type !== 'module') return;
+    
+    selectedSubmodule = submodulePath;
+    submoduleLabel = submodulePath;
+    submoduleDocumentation = undefined;
+    
+    try {
+      const result = await Artifacts.getSubmoduleDocumentation(
+        namespace,
+        name,
+        provider,
+        version,
+        submodulePath
+      );
+      
+      if (result.status === 'OK' && result.data) {
+        submoduleDocumentation = emojify(result.data.documentation || '');
+      }
+    } catch (error) {
+      console.error('Failed to load submodule documentation:', error);
+    }
+  };
 
   onDestroy(() => {
     unsubscribe();
@@ -171,6 +205,36 @@
         <div class="w-full lg:w-auto">
           <Dropdown {label} options={versions} onSelect={onOptionSelect} />
         </div>
+      </div>
+      {#if type === 'module' && submodules && submodules.length > 0}
+        <div class="mt-6 flex flex-col lg:flex-row items-start lg:items-center gap-4">
+          <div class="flex items-center gap-4">
+            <h2 class="text-lg font-bold">Submodules:</h2>
+            <div class="w-80">
+              <Dropdown
+                label={submoduleLabel}
+                options={submodules.map(sm => sm.path)}
+                onSelect={onSubmoduleSelect} />
+            </div>
+          </div>
+        </div>
+        {#if selectedSubmodule && submoduleDocumentation}
+          <div class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
+            <h3 class="text-md font-bold mb-2">{selectedSubmodule}</h3>
+            <div class="markdown-body bg-slate-50">
+              <SvelteMarkdown
+                source={submoduleDocumentation}
+                renderers={{
+                  code: MarkdownCode
+                }} />
+            </div>
+          </div>
+        {:else if selectedSubmodule}
+          <div class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Loading documentation...</p>
+          </div>
+        {/if}
+      {/if}
       </div>
       <div
         class="bg-gray-100 dark:bg-gray-800 border border-teal-400 dark:border-teal-600 p-4 flex flex-col gap-4">
