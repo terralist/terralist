@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
-	"terralist/pkg/auth"
-
 	"slices"
+	"strings"
+
+	"terralist/pkg/auth"
 
 	"github.com/rs/zerolog/log"
 )
@@ -82,16 +82,26 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 	}
 
 	// Check if the user is a member of the required groups from GitLab
-	userGroups, ok := userdata["groups"].([]string)
+	rawGroups, ok := userdata["groups"].([]any)
 	if !ok {
 		log.Error().
 			Any("userdata", userdata).
-			Msg("expected user groups to be a slice of string, but it wasn't")
+			Msg("expected user groups to be a slice, but it wasn't")
 
 		return fmt.Errorf("user data has no groups, cannot check user membership")
-	} else {
-		user.Groups = userGroups
 	}
+	userGroups := make([]string, len(rawGroups))
+	for n, group := range rawGroups {
+		userGroups[n], ok = group.(string)
+		if !ok {
+			log.Error().
+				Any("userdata", userdata).
+				Msg("expected user groups to be a slice of string, but it wasn't")
+
+			return fmt.Errorf("user data has no groups, cannot check user membership")
+		}
+	}
+	user.Groups = userGroups
 
 	for _, group := range p.Groups {
 		if slices.Contains(userGroups, group) {
