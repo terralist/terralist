@@ -7,13 +7,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
-// RegistryConfig holds configuration for creating a metrics registry
+// RegistryConfig holds configuration for creating a metrics registry.
 type RegistryConfig struct {
 	// SqlDB is optional - if provided, database connection pool metrics will be registered
 	SqlDB *sql.DB
 }
 
-// NewRegistry creates and configures a new Prometheus registry with all metrics
+// NewRegistry creates and configures a new Prometheus registry with all metrics.
 func NewRegistry(cfg *RegistryConfig) *prometheus.Registry {
 	reg := prometheus.NewRegistry()
 

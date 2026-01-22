@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	// HTTPRequestsTotal counts total HTTP requests
+	// HTTPRequestsTotal counts total HTTP requests.
 	HTTPRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
@@ -14,7 +14,7 @@ var (
 		[]string{"method", "path", "status"},
 	)
 
-	// HTTPRequestDuration measures HTTP request latency
+	// HTTPRequestDuration measures HTTP request latency.
 	HTTPRequestDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
@@ -24,7 +24,7 @@ var (
 		[]string{"method", "path"},
 	)
 
-	// HTTPRequestSize measures HTTP request body size
+	// HTTPRequestSize measures HTTP request body size.
 	HTTPRequestSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_request_size_bytes",
@@ -34,7 +34,7 @@ var (
 		[]string{"method", "path"},
 	)
 
-	// HTTPResponseSize measures HTTP response body size
+	// HTTPResponseSize measures HTTP response body size.
 	HTTPResponseSize = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "http_response_size_bytes",
@@ -44,7 +44,7 @@ var (
 		[]string{"method", "path"},
 	)
 
-	// HTTPRequestsInFlight tracks active HTTP requests
+	// HTTPRequestsInFlight tracks active HTTP requests.
 	HTTPRequestsInFlight = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "http_requests_in_flight",

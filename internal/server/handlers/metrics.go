@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// PrometheusMetrics is a middleware that collects HTTP metrics
+// PrometheusMetrics is a middleware that collects HTTP metrics.
 func PrometheusMetrics(registry *prometheus.Registry) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Skip metrics for /metrics endpoint itself to avoid recursion

@@ -9,7 +9,7 @@ import (
 var (
 	startTime = time.Now()
 
-	// BuildInfo provides build information as labels
+	// BuildInfo provides build information as labels.
 	BuildInfo = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "terralist_build_info",
@@ -18,7 +18,7 @@ var (
 		[]string{"version", "commit_hash", "build_timestamp"},
 	)
 
-	// Uptime tracks application uptime in seconds
+	// Uptime tracks application uptime in seconds.
 	Uptime = prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Name: "terralist_uptime_seconds",
@@ -29,7 +29,7 @@ var (
 		},
 	)
 
-	// ApplicationErrors counts application-level errors
+	// ApplicationErrors counts application-level errors.
 	ApplicationErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "terralist_application_errors_total",
@@ -39,12 +39,12 @@ var (
 	)
 )
 
-// SetBuildInfo sets the build information
+// SetBuildInfo sets the build information.
 func SetBuildInfo(version, commitHash, buildTimestamp string) {
 	BuildInfo.WithLabelValues(version, commitHash, buildTimestamp).Set(1)
 }
 
-// RecordError records an application error
+// RecordError records an application error.
 func RecordError(component, severity string) {
 	ApplicationErrors.WithLabelValues(component, severity).Inc()
 }

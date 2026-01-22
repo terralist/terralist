@@ -6,8 +6,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// NewDatabaseCollectors creates Prometheus collectors for database metrics
-// Returns collectors that should be registered with the registry
+// NewDatabaseCollectors creates Prometheus collectors for database metrics.
+// Returns collectors that should be registered with the registry.
 func NewDatabaseCollectors(sqlDB *sql.DB) []prometheus.Collector {
 	if sqlDB == nil {
 		return nil
