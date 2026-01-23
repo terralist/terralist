@@ -20,6 +20,7 @@ import (
 	"terralist/pkg/database/mysql"
 	"terralist/pkg/database/postgresql"
 	"terralist/pkg/database/sqlite"
+	"terralist/pkg/metrics"
 	"terralist/pkg/session"
 	"terralist/pkg/session/cookie"
 	sessionFactory "terralist/pkg/session/factory"
@@ -42,7 +43,10 @@ type Command struct {
 	ServerCreator Creator
 	Viper         *viper.Viper
 
-	RunningMode string
+	RunningMode    string
+	Version        string
+	CommitHash     string
+	BuildTimestamp string
 
 	SilenceOutput bool
 }
@@ -360,6 +364,9 @@ func (s *Command) run() error {
 	if err != nil {
 		return err
 	}
+
+	// Set build info for metrics
+	metrics.SetBuildInfo(s.Version, s.CommitHash, s.BuildTimestamp)
 
 	srv, err := s.ServerCreator.NewServer(userConfig, server.Config{
 		Database:          db,
