@@ -18,6 +18,85 @@ Terralist will attempt to find a `README.md` before generating the documentation
 
 !!! note "If the archive contains multiple subdirectories, and at least two of them have `*.tf` files (and a `README.md` file), it is undetermined which one will be selected as the 'root module' - depending on how the OS sorts the directories."
 
+### Submodules
+
+Terralist automatically detects and generates documentation for Terraform submodules within your modules. Submodules are reusable components that follow the [Terraform module structure conventions](https://developer.hashicorp.com/terraform/language/modules/develop/structure).
+
+#### Submodule Discovery
+
+When you upload a module, Terralist automatically scans for submodules in these conventional directories:
+
+- `modules/` - The recommended directory name per Terraform conventions
+- `submodules/` - An alternative directory name sometimes used in projects
+
+For example, if your module has this structure:
+
+```
+terraform-aws-vpc/
+├── main.tf
+├── README.md
+└── modules/
+    ├── vpc-endpoints/
+    │   ├── main.tf
+    │   └── README.md
+    └── flow-log/
+        ├── main.tf
+        └── README.md
+```
+
+Terralist will automatically detect and document both the `modules/vpc-endpoints` and `modules/flow-log` submodules.
+
+#### Nested Submodules
+
+Terralist supports nested submodule structures. For example:
+
+```
+modules/
+├── networking/
+│   ├── vpc/
+│   │   └── main.tf
+│   └── subnet/
+│       └── main.tf
+```
+
+Both `modules/networking/vpc` and `modules/networking/subnet` will be detected as separate submodules.
+
+#### Submodule Documentation Generation
+
+For each discovered submodule, Terralist:
+
+1. Checks for a `README.md` file in the submodule directory - if found, uses it as documentation
+2. If no README exists, generates documentation automatically from the Terraform files using [terraform-config-inspect](https://github.com/hashicorp/terraform-config-inspect)
+3. Stores the documentation with a collision-resistant naming scheme: `{version}__{submodule_path_with_double_underscores}.md`
+
+For example:
+- `modules/vpc-endpoints` → `1.0.0__modules__vpc-endpoints.md`
+- `modules/networking/vpc` → `1.0.0__modules__networking__vpc.md`
+
+This naming scheme prevents collisions between submodules with similar names (e.g., `modules/net/vpc` vs `modules/net_vpc`).
+
+#### Accessing Submodule Documentation
+
+Submodule documentation can be accessed via API endpoint:
+
+```
+GET /v1/api/modules/{name}/{provider}/{version}/submodules/{submodule_path}
+```
+
+In the web UI, modules with submodules display a dropdown selector to view documentation for each submodule.
+
+#### Error Handling
+
+If Terralist cannot generate documentation for a submodule (e.g., missing files), it provides a helpful message instead of failing the upload:
+
+```
+# Documentation Not Available
+
+No README.md or main.tf file found in this submodule.
+```
+
+!!! tip "When organizing your modules, follow the [Terraform module structure conventions](https://developer.hashicorp.com/terraform/language/modules/develop/structure) by placing reusable components in a `modules/` directory. This ensures Terralist can automatically discover and document your submodules."
+
 ## Providers
 
 Provider documentation is still in progress. It will be available soon!
