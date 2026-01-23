@@ -3,12 +3,12 @@ name: Modules Submodules API
 
 vars:
   namespace: terraform-aws-modules
-  moduleName: vpc
+  moduleName: eks
   provider: aws
-  # Version 5.8.0 contains submodules: modules/flow-log and modules/vpc-endpoints
-  versionWithSubmodules: 5.8.0
-  submodulePath1: modules/flow-log
-  submodulePath2: modules/vpc-endpoints
+  # Version 20.31.0 contains submodules: modules/karpenter, modules/fargate-profile, modules/eks-managed-node-group, etc.
+  versionWithSubmodules: 20.31.0
+  submodulePath1: modules/karpenter
+  submodulePath2: modules/fargate-profile
 
 testcases:
 - name: Upload Module With Submodules
@@ -21,7 +21,7 @@ testcases:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
       {
-        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v{{.versionWithSubmodules}}.zip",
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-eks/archive/refs/tags/v{{.versionWithSubmodules}}.zip",
         "headers": {
           "Accept": "*/*",
           "User-Agent": "Terralist/1.0 e2erun"
@@ -38,7 +38,7 @@ testcases:
         from: result.statuscode
         default: 0
 
-- name: Get Submodule Documentation - Flow Log
+- name: Get Submodule Documentation - Karpenter
   steps:
   - type: http
     method: GET
@@ -51,9 +51,9 @@ testcases:
     - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey documentation
     - result.bodyjson.documentation ShouldNotBeEmpty
-    - result.bodyjson.documentation ShouldContainSubstring "flow"
+    - result.bodyjson.documentation ShouldContainSubstring "Karpenter"
 
-- name: Get Submodule Documentation - VPC Endpoints
+- name: Get Submodule Documentation - Fargate Profile
   steps:
   - type: http
     method: GET
@@ -66,7 +66,7 @@ testcases:
     - result.timeseconds ShouldBeLessThan 30
     - result.bodyjson ShouldContainKey documentation
     - result.bodyjson.documentation ShouldNotBeEmpty
-    - result.bodyjson.documentation ShouldContainSubstring "endpoint"
+    - result.bodyjson.documentation ShouldContainSubstring "Fargate"
 
 - name: Get Submodule Documentation - Non-Existent Submodule
   steps:
@@ -141,7 +141,7 @@ testcases:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
       {
-        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v{{.versionWithSubmodules}}.zip"
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-eks/archive/refs/tags/v{{.versionWithSubmodules}}.zip"
       }
     timeout: 90
     assertions:
@@ -172,7 +172,7 @@ testcases:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
       {
-        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v{{.versionWithSubmodules}}.zip"
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-eks/archive/refs/tags/v{{.versionWithSubmodules}}.zip"
       }
     timeout: 90
     assertions:
