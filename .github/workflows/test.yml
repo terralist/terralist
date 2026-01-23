@@ -114,7 +114,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:18.0
+        image: public.ecr.aws/docker/library/postgres:18.1
         ports:
           - 5432:5432
         env:
