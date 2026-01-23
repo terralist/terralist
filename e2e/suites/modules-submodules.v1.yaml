@@ -5,8 +5,8 @@ vars:
   namespace: terraform-aws-modules
   moduleName: eks
   provider: aws
-  # Version 20.31.0 contains submodules: modules/karpenter, modules/fargate-profile, modules/eks-managed-node-group, etc.
-  versionWithSubmodules: 20.31.0
+  # Version 21.15.1 contains submodules: modules/karpenter, modules/fargate-profile, modules/eks-managed-node-group, etc.
+  versionWithSubmodules: 21.15.1
   submodulePath1: modules/karpenter
   submodulePath2: modules/fargate-profile
 
