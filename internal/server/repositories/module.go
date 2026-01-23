@@ -196,11 +196,11 @@ func (r *DefaultModuleRepository) FindVersionLocation(namespace, name, provider,
 
 func (r *DefaultModuleRepository) Upsert(m module.Module) (*module.Module, error) {
 	if len(m.Versions) != 1 {
-		if err := r.Database.Handler().Save(&m).Error; err != nil {
+		if err := r.Database.Handler().Session(&gorm.Session{FullSaveAssociations: true}).Save(&m).Error; err != nil {
 			return nil, err
 		}
 	} else {
-		if err := r.Database.Handler().Create(&m).Error; err != nil {
+		if err := r.Database.Handler().Session(&gorm.Session{FullSaveAssociations: true}).Create(&m).Error; err != nil {
 			return nil, err
 		}
 	}

@@ -16,7 +16,7 @@ type Version struct {
 	Documentation string       `gorm:"not null;default:''"` // TODO: This adds backwards-compatibility, we should remove it in future versions
 	Providers     []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Dependencies  []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Submodules    []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Submodules    []Submodule  `gorm:"foreignKey:VersionID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Version) TableName() string {
@@ -24,9 +24,15 @@ func (Version) TableName() string {
 }
 
 func (v Version) ToDTO() VersionDTO {
+	var submodulesDTO []SubmoduleResponseDTO
+	for _, sm := range v.Submodules {
+		submodulesDTO = append(submodulesDTO, sm.ToDTO())
+	}
+
 	return VersionDTO{
 		Version:       v.Version,
 		Documentation: v.Documentation,
+		Submodules:    submodulesDTO,
 	}
 }
 
@@ -36,8 +42,9 @@ type RootDTO struct {
 }
 
 type VersionDTO struct {
-	Version       string `json:"version"`
-	Documentation string `json:"documentation"`
+	Version       string                 `json:"version"`
+	Documentation string                 `json:"documentation"`
+	Submodules    []SubmoduleResponseDTO `json:"submodules,omitempty"`
 }
 
 func (v VersionDTO) ToArtifactVersion() artifact.Version {

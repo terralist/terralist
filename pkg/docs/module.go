@@ -25,7 +25,10 @@ const (
 )
 
 var (
-	ErrNoEntrypointFound = errors.New("could not find an entrypoint")
+	ErrNoEntrypointFound    = errors.New("could not find an entrypoint")
+	ErrNoReadmeFound        = errors.New("no README.md file found")
+	ErrNoMainTfFound        = errors.New("no main.tf file found")
+	ErrNoDocumentationFound = errors.New("no documentation available")
 )
 
 // findTopLevelFile finds the shallowest occurrence of a given filename in a file system.
@@ -112,7 +115,9 @@ func GetModuleDocumentation(moduleFS *file.FS, relativePath string) (string, err
 	}
 
 	if mainTfErr != nil && readmeErr != nil {
-		return "", ErrNoEntrypointFound
+		// Neither main.tf nor README.md found - no way to generate docs
+		return "", fmt.Errorf("%w: searched for %s and %s",
+			ErrNoEntrypointFound, tfEntrypointFile, docsEntrypointFile)
 	}
 
 	// Logic to decide which entrypoint to use
