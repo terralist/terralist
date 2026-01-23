@@ -109,6 +109,9 @@
   let submoduleLabel: string = 'Select a submodule';
   let submoduleDocumentation: string | undefined;
 
+  // Cache for submodule documentation to avoid redundant API calls
+  let submoduleDocsCache: Map<string, string> = new Map();
+
   const versionUnsubscribe = useQuery<ArtifactVersionWithDocumentation>(
     Artifacts.getOneVersion,
     namespace,
@@ -135,16 +138,26 @@
       selectedSubmodule = null;
       submoduleLabel = 'Select a submodule';
       submoduleDocumentation = undefined;
+      // Clear cache when version changes to avoid stale data
+      submoduleDocsCache.clear();
     }
   });
 
   const onSubmoduleSelect = async (submodulePath: string) => {
     if (type !== 'module') return;
-    
+
     selectedSubmodule = submodulePath;
     submoduleLabel = submodulePath;
+
+    // Check cache first to avoid redundant API calls
+    if (submoduleDocsCache.has(submodulePath)) {
+      submoduleDocumentation = submoduleDocsCache.get(submodulePath);
+      return;
+    }
+
+    // Set to undefined to show loading state
     submoduleDocumentation = undefined;
-    
+
     try {
       const result = await Artifacts.getSubmoduleDocumentation(
         namespace,
@@ -153,12 +166,16 @@
         version,
         submodulePath
       );
-      
+
       if (result.status === 'OK' && result.data) {
-        submoduleDocumentation = emojify(result.data.documentation || '');
+        const docs = emojify(result.data.documentation || '');
+        // Cache the documentation for future use
+        submoduleDocsCache.set(submodulePath, docs);
+        submoduleDocumentation = docs;
       }
     } catch (error) {
       console.error('Failed to load submodule documentation:', error);
+      submoduleDocumentation = undefined;
     }
   };
 
@@ -207,7 +224,8 @@
         </div>
       </div>
       {#if type === 'module' && submodules && submodules.length > 0}
-        <div class="mt-6 flex flex-col lg:flex-row items-start lg:items-center gap-4">
+        <div
+          class="mt-6 flex flex-col lg:flex-row items-start lg:items-center gap-4">
           <div class="flex items-center gap-4">
             <h2 class="text-lg font-bold">Submodules:</h2>
             <div class="w-80">
@@ -219,7 +237,8 @@
           </div>
         </div>
         {#if selectedSubmodule && submoduleDocumentation}
-          <div class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
+          <div
+            class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
             <h3 class="text-md font-bold mb-2">{selectedSubmodule}</h3>
             <div class="markdown-body bg-slate-50">
               <SvelteMarkdown
@@ -230,12 +249,14 @@
             </div>
           </div>
         {:else if selectedSubmodule}
-          <div class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Loading documentation...</p>
+          <div
+            class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Loading documentation...
+            </p>
           </div>
         {/if}
       {/if}
-      </div>
       <div
         class="bg-gray-100 dark:bg-gray-800 border border-teal-400 dark:border-teal-600 p-4 flex flex-col gap-4">
         <h2 class="text-lg font-bold">Usage</h2>

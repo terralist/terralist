@@ -1,6 +1,8 @@
 package docs
 
 import (
+	"errors"
+	"fmt"
 	"io/fs"
 	"path"
 	"slices"
@@ -10,15 +12,29 @@ import (
 )
 
 const (
-	// Common subdirectory names that contain Terraform submodules
+	// submodulesDir is the conventional directory name used by the Terraform
+	// community for organizing reusable module components. This is the
+	// recommended pattern according to the Terraform module structure guide.
+	// See: https://developer.hashicorp.com/terraform/language/modules/develop/structure
 	submodulesDir = "modules"
+
+	// submodulesAlt is an alternative directory name sometimes used for
+	// organizing module components. While "modules" is the recommended
+	// convention, some projects use "submodules" for clarity or to avoid
+	// confusion with the root "modules" directory in multi-module repositories.
 	submodulesAlt = "submodules"
 )
 
-// SubmoduleInfo contains information about a discovered submodule
+// SubmoduleInfo contains information about a discovered submodule.
 type SubmoduleInfo struct {
 	Path          string
 	Documentation string
+}
+
+// dirInfo stores metadata about a directory discovered during the walk.
+type dirInfo struct {
+	hasMainTf bool
+	depth     int
 }
 
 // FindSubmodules scans the module filesystem for subdirectories containing submodules.
@@ -26,64 +42,69 @@ type SubmoduleInfo struct {
 // then identifies each subdirectory as a potential submodule.
 func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 	var submodules []SubmoduleInfo
-	submoduleDirsMap := make(map[string]bool)
+	dirs := make(map[string]*dirInfo)
 
-	// Walk the filesystem to collect all file paths
-	var allPaths []string
+	// Single pass: collect all directories and main.tf locations
 	if err := moduleFS.Walk("./", func(p string, fi fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		allPaths = append(allPaths, p)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
 
-	// Extract directories from file paths
-	for _, p := range allPaths {
 		normalizedPath := strings.TrimPrefix(p, "./")
 		if normalizedPath == "" || normalizedPath == "." {
-			continue
+			return nil
 		}
 
 		parts := strings.Split(normalizedPath, "/")
 
 		// Check if this path is within a "modules" or "submodules" directory
 		if len(parts) < 2 {
-			continue
+			return nil
 		}
 
 		if parts[0] != submodulesDir && parts[0] != submodulesAlt {
-			continue
+			return nil
 		}
 
-		// Extract all directory levels within modules/submodules
-		// For example, "modules/vpc/main.tf" -> ["modules/vpc"]
-		// "modules/networking/vpc/main.tf" -> ["modules/networking", "modules/networking/vpc"]
+		// If this is main.tf, mark the parent directory
+		if path.Base(p) == tfEntrypointFile {
+			dir := path.Dir(normalizedPath)
+			if dirs[dir] == nil {
+				dirs[dir] = &dirInfo{depth: strings.Count(dir, "/")}
+			}
+			dirs[dir].hasMainTf = true
+		}
+
+		// Record all directory levels in the path
+		// For example, "modules/networking/vpc/main.tf" records:
+		// - modules/networking
+		// - modules/networking/vpc
 		for i := 2; i <= len(parts); i++ {
 			dirPath := strings.Join(parts[:i], "/")
 			// Only add if it's a directory (not the file itself)
 			if i < len(parts) {
-				submoduleDirsMap[dirPath] = true
+				if dirs[dirPath] == nil {
+					dirs[dirPath] = &dirInfo{depth: strings.Count(dirPath, "/")}
+				}
 			}
 		}
+
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
-	// Convert map to slice
+	// Convert map to sorted slice for deterministic output
 	var submoduleDirs []string
-	for dir := range submoduleDirsMap {
+	for dir := range dirs {
 		submoduleDirs = append(submoduleDirs, dir)
 	}
 
-	// Sort by depth (shallowest first)
+	// Sort by depth (shallowest first), then by name
 	slices.SortFunc(submoduleDirs, func(lhs, rhs string) int {
-		lhsDepth := strings.Count(lhs, "/")
-		rhsDepth := strings.Count(rhs, "/")
-		if lhsDepth != rhsDepth {
-			return lhsDepth - rhsDepth
+		if dirs[lhs].depth != dirs[rhs].depth {
+			return dirs[lhs].depth - dirs[rhs].depth
 		}
-		// Secondary sort by name for consistent ordering
 		return strings.Compare(lhs, rhs)
 	})
 
@@ -93,25 +114,19 @@ func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 	// 2. It directly contains main.tf
 	filteredDirs := []string{}
 	for _, dir := range submoduleDirs {
-		hasMainTf := false
-		mainTfPath := path.Join(dir, tfEntrypointFile)
-		if _, err := moduleFS.Open(mainTfPath); err == nil {
-			hasMainTf = true
-		}
+		info := dirs[dir]
 
+		// Check if any subdirectory has main.tf
 		hasSubdirWithMainTf := false
-		for _, otherDir := range submoduleDirs {
-			if otherDir != dir && strings.HasPrefix(otherDir, dir+"/") {
-				otherMainTfPath := path.Join(otherDir, tfEntrypointFile)
-				if _, err := moduleFS.Open(otherMainTfPath); err == nil {
-					hasSubdirWithMainTf = true
-					break
-				}
+		for otherDir, otherInfo := range dirs {
+			if otherInfo.hasMainTf && otherDir != dir && strings.HasPrefix(otherDir, dir+"/") {
+				hasSubdirWithMainTf = true
+				break
 			}
 		}
 
 		// Include this directory if it has main.tf or has no subdirs with main.tf
-		if hasMainTf || !hasSubdirWithMainTf {
+		if info.hasMainTf || !hasSubdirWithMainTf {
 			filteredDirs = append(filteredDirs, dir)
 		}
 	}
@@ -120,8 +135,13 @@ func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 	for _, submodulePath := range filteredDirs {
 		doc, err := GetModuleDocumentation(moduleFS, submodulePath)
 		if err != nil {
-			// If we can't generate docs, include the submodule anyway with empty docs
-			doc = ""
+			// If we can't generate docs, provide a helpful message instead of empty string
+			// This helps users understand why documentation is missing
+			if errors.Is(err, ErrNoEntrypointFound) {
+				doc = "# Documentation Not Available\n\nNo README.md or main.tf file found in this submodule."
+			} else {
+				doc = fmt.Sprintf("# Documentation Not Available\n\nFailed to generate documentation: %s", err.Error())
+			}
 		}
 
 		submodules = append(submodules, SubmoduleInfo{
@@ -131,19 +151,4 @@ func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 	}
 
 	return submodules, nil
-}
-
-// uniquePaths removes duplicate paths from a slice
-func uniquePaths(paths []string) []string {
-	seen := make(map[string]bool)
-	result := []string{}
-
-	for _, p := range paths {
-		if !seen[p] {
-			seen[p] = true
-			result = append(result, p)
-		}
-	}
-
-	return result
 }

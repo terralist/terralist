@@ -1,0 +1,216 @@
+
+name: Modules Submodules API
+
+vars:
+  namespace: terraform-aws-modules
+  moduleName: vpc
+  provider: aws
+  # Version 5.8.0 contains submodules: modules/flow-log and modules/vpc-endpoints
+  versionWithSubmodules: 5.8.0
+  submodulePath1: modules/flow-log
+  submodulePath2: modules/vpc-endpoints
+
+testcases:
+- name: Upload Module With Submodules
+  steps:
+  - name: upload-module-with-submodules
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    body: >-
+      {
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v{{.versionWithSubmodules}}.zip",
+        "headers": {
+          "Accept": "*/*",
+          "User-Agent": "Terralist/1.0 e2erun"
+        }
+      }
+    timeout: 90
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 60
+    - result.bodyjson ShouldContainKey errors
+    - result.bodyjson.errors ShouldHaveLength 0
+    vars:
+      uploadResult:
+        from: result.statuscode
+        default: 0
+
+- name: Get Submodule Documentation - Flow Log
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey documentation
+    - result.bodyjson.documentation ShouldNotBeEmpty
+    - result.bodyjson.documentation ShouldContainSubstring "flow"
+
+- name: Get Submodule Documentation - VPC Endpoints
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath2}}
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 30
+    - result.bodyjson ShouldContainKey documentation
+    - result.bodyjson.documentation ShouldNotBeEmpty
+    - result.bodyjson.documentation ShouldContainSubstring "endpoint"
+
+- name: Get Submodule Documentation - Non-Existent Submodule
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/modules/non-existent
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 30
+
+- name: Get Submodule Documentation - Unauthenticated
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 401
+    - result.timeseconds ShouldBeLessThan 30
+
+- name: Get Submodule Documentation - Non-Existent Module
+  steps:
+  - type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/non-existent-module/{{.provider}}/1.0.0/submodules/modules/test
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 30
+
+- name: Delete Module and Verify Submodules Cleanup
+  steps:
+  - name: delete-module
+    type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    assertions:
+    - result.statuscode ShouldEqual 200
+    - result.timeseconds ShouldBeLessThan 30
+    vars:
+      deleteResult:
+        from: result.statuscode
+        default: 0
+  - name: verify-submodule-deleted
+    type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    skip:
+    - delete-module.deleteResult ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 404
+    - result.timeseconds ShouldBeLessThan 30
+
+- name: Edge Case - Deep Nested Submodule Path
+  steps:
+  - name: upload-test-module
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/test-nested/{{.provider}}/1.0.0/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    body: >-
+      {
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v{{.versionWithSubmodules}}.zip"
+      }
+    timeout: 90
+    assertions:
+    - result.statuscode ShouldBeIn 200 409
+    vars:
+      uploadStatus:
+        from: result.statuscode
+        default: 0
+  - name: cleanup-test-module
+    type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/test-nested/{{.provider}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    skip:
+    - upload-test-module.uploadStatus ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+
+- name: Performance - Multiple Concurrent Submodule Requests
+  steps:
+  - name: upload-for-performance-test
+    type: http
+    method: POST
+    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/1.0.0/upload
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    body: >-
+      {
+        "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v{{.versionWithSubmodules}}.zip"
+      }
+    timeout: 90
+    assertions:
+    - result.statuscode ShouldBeIn 200 409
+    vars:
+      perfUploadStatus:
+        from: result.statuscode
+        default: 0
+  - name: concurrent-request-1
+    type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/1.0.0/submodules/{{.submodulePath1}}
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    skip:
+    - upload-for-performance-test.perfUploadStatus ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: concurrent-request-2
+    type: http
+    method: GET
+    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/1.0.0/submodules/{{.submodulePath2}}
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    skip:
+    - upload-for-performance-test.perfUploadStatus ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200
+  - name: cleanup-performance-test
+    type: http
+    method: DELETE
+    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/remove
+    headers:
+      Authorization: Bearer x-api-key:{{.modulesApiKey}}
+    timeout: 60
+    skip:
+    - upload-for-performance-test.perfUploadStatus ShouldNotEqual 200
+    assertions:
+    - result.statuscode ShouldEqual 200

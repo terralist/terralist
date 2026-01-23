@@ -197,7 +197,14 @@ const Artifacts = {
     provider: string,
     version: string,
     submodulePath: string
-  ) => await actions.getSubmoduleDocumentation(namespace, name, provider, version, submodulePath),
+  ) =>
+    await actions.getSubmoduleDocumentation(
+      namespace,
+      name,
+      provider,
+      version,
+      submodulePath
+    ),
   getAllVersionsForOne: async (
     namespace: string,
     name: string,

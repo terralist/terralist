@@ -135,7 +135,7 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 	}
 
 	// Construct the documentation file path
-	docsFileName := fmt.Sprintf("%s_%s.md", version, strings.ReplaceAll(submodulePath, "/", "_"))
+	docsFileName := fmt.Sprintf("%s_%s.md", version, strings.ReplaceAll(submodulePath, "/", "__"))
 	docsKey := fmt.Sprintf("modules/%s/%s/%s/submodules/%s", namespace, name, provider, docsFileName)
 
 	url, err := s.Resolver.Find(docsKey)
@@ -146,7 +146,8 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 			Err(err).
 			Msg("no documentation for submodule")
 
-		return "", nil
+		// Return a helpful message instead of empty string or error
+		return "# Documentation Not Available\n\nNo documentation file found for this submodule.", nil
 	}
 
 	resp, err := http.Get(url)
@@ -312,7 +313,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 			}
 
 			submoduleDocsFile := file.NewInMemoryFile(
-				fmt.Sprintf("%s_%s.md", d.Version, strings.ReplaceAll(submodulePath, "/", "_")),
+				fmt.Sprintf("%s_%s.md", d.Version, strings.ReplaceAll(submodulePath, "/", "__")),
 				[]byte(submoduleDoc),
 			)
 			submoduleDocsLocation, err := s.Resolver.Store(&storage.StoreInput{
@@ -463,7 +464,7 @@ func (s *DefaultModuleService) deleteVersion(namespace string, v *module.Version
 	// Delete documentation for all submodules
 	for _, sm := range v.Submodules {
 		// Construct the documentation file path using the same convention as Upload
-		docsFileName := fmt.Sprintf("%s_%s.md", v.Version, strings.ReplaceAll(sm.Path, "/", "_"))
+		docsFileName := fmt.Sprintf("%s_%s.md", v.Version, strings.ReplaceAll(sm.Path, "/", "__"))
 		docsKey := fmt.Sprintf("modules/%s/%s/%s/submodules/%s",
 			namespace,
 			v.Module.Name,
