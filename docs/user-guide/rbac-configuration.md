@@ -5,7 +5,7 @@ The RBAC feature enables restrictions of access to Terralist resources. Terralis
 There are two main components where RBAC configuration can be defined:
 
 - The server-side (global) RBAC configuration;
-- The API Key RBAC configuration; (Not yet implemented)
+- The API Key RBAC configuration;
 
 ## Basic Built-in Roles
 
@@ -66,3 +66,19 @@ Below is a table that defines the correct object syntax for each resource group.
 | `providers`    | `<authority-name>/<provider-name>`               |
 
  For example, an object c
+
+## API Key Authority Isolation
+
+When using API keys for authentication, Terralist enforces strict authority isolation:
+
+- **API keys are bound to their issuing authority**: An API key can only access modules and providers belonging to the authority that issued the key.
+- **Cross-authority access is denied**: API keys from one authority cannot access resources from other authorities.
+- **Case-insensitive matching**: Authority names are compared case-insensitively.
+
+This is a security boundary that prevents API key privilege escalation in multi-tenant environments.
+
+**Example:**
+- API key issued by authority `my-org` can access `my-org/my-module/aws`
+- API key issued by authority `my-org` **cannot** access `other-org/their-module/aws`
+
+Note: This isolation only applies to API key authentication. Users authenticated via OAuth session can access resources based on their RBAC policies.
