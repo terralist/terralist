@@ -1,8 +1,10 @@
 package file
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -174,6 +176,7 @@ func readFile(name, src string) (File, error) {
 // and returns the archive file.
 func archiveDir(name, src string) (File, error) {
 	dirFiles := []File{}
+	var rootDir string
 
 	// Walk recursively through the given directory
 	if err := filepath.Walk(src, func(fpath string, info os.FileInfo, err error) error {
@@ -191,6 +194,15 @@ func archiveDir(name, src string) (File, error) {
 		relPath = filepath.Clean(relPath)
 		relPath = strings.ReplaceAll(relPath, "\\", "/")
 
+		// Detect if all files are under a single root directory
+		// (common in GitHub archive downloads like terraform-aws-eks-21.15.1/)
+		if rootDir == "" {
+			parts := strings.Split(relPath, "/")
+			if len(parts) > 1 {
+				rootDir = parts[0]
+			}
+		}
+
 		file, err := readFile(relPath, fpath)
 		if err != nil {
 			return fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
@@ -201,6 +213,37 @@ func archiveDir(name, src string) (File, error) {
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("%w: could not parse downloaded dir: %v", ErrSystemFailure, err)
+	}
+
+	// If all files share a common root directory, strip it to normalize the archive structure
+	// This handles GitHub archive downloads which include a version-specific root folder
+	if rootDir != "" {
+		allFilesInRoot := true
+		for _, f := range dirFiles {
+			if !strings.HasPrefix(f.Name(), rootDir+"/") {
+				allFilesInRoot = false
+				break
+			}
+		}
+
+		if allFilesInRoot {
+			// Strip the root directory from all file paths
+			strippedFiles := make([]File, len(dirFiles))
+			for i, f := range dirFiles {
+				originalName := f.Name()
+				strippedName := strings.TrimPrefix(originalName, rootDir+"/")
+
+				// Read the content from the original file
+				var buf bytes.Buffer
+				if _, err := io.Copy(&buf, f); err != nil {
+					return nil, fmt.Errorf("%w: failed to copy file content: %v", ErrSystemFailure, err)
+				}
+
+				// Create a new file with the stripped name
+				strippedFiles[i] = NewInMemoryFile(strippedName, buf.Bytes())
+			}
+			dirFiles = strippedFiles
+		}
 	}
 
 	archive, err := Archive(name, dirFiles)
