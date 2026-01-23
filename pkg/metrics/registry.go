@@ -37,6 +37,17 @@ func NewRegistry(cfg *RegistryConfig) *prometheus.Registry {
 		ApplicationErrors,
 	)
 
+	// Register Terralist-specific metrics
+	reg.MustRegister(
+		ArtifactsUploadedTotal,
+		ArtifactsDownloadedTotal,
+		ArtifactsDeletedTotal,
+		ArtifactsTotal,
+		RequestsByAuthorityTotal,
+		ApiKeysTotal, StorageOperationsTotal,
+		StorageBytesTotal,
+		StorageOperationDuration)
+
 	// Register database metrics if SQL DB is provided
 	if cfg != nil && cfg.SqlDB != nil {
 		dbCollectors := NewDatabaseCollectors(cfg.SqlDB)
