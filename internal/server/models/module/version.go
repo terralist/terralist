@@ -16,7 +16,7 @@ type Version struct {
 	Documentation string       `gorm:"not null;default:''"` // TODO: This adds backwards-compatibility, we should remove it in future versions
 	Providers     []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Dependencies  []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	Submodules    []Submodule  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Submodules    []Submodule  `gorm:"foreignKey:VersionID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Version) TableName() string {
