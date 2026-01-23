@@ -1,6 +1,7 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"net/url"
 	"os"
@@ -17,6 +18,7 @@ import (
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
 	"terralist/pkg/rbac"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
@@ -25,6 +27,7 @@ import (
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 	random "github.com/mazen160/go-random"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
@@ -66,7 +69,19 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		gin.SetMode(gin.DebugMode)
 	}
 
+	// Get SQL DB for metrics
+	var sqlDB *sql.DB
+	if config.Database != nil {
+		sqlDB, _ = config.Database.Handler().DB()
+	}
+
+	// Create Prometheus metrics registry
+	metricsRegistry := metrics.NewRegistry(&metrics.RegistryConfig{
+		SqlDB: sqlDB,
+	})
+
 	router := gin.New()
+	router.Use(handlers.PrometheusMetrics(metricsRegistry))
 	router.Use(handlers.Logger())
 	router.Use(gin.Recovery())
 
@@ -83,6 +98,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	// Serve static files (frontend) as middleware
 	router.Use(static.Serve("/", web.StaticFS()))
+
+	// Prometheus metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.HandlerFor(
+		metricsRegistry,
+		promhttp.HandlerOpts{},
+	)))
 
 	probeGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
 		Prefix: "/check",
