@@ -107,7 +107,6 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 				})
 				return
 			}
-
 			ctx.JSON(http.StatusOK, dto)
 		},
 	)
@@ -178,7 +177,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			if err := c.ProviderService.Delete(authorityID, name); err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
+				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return

@@ -18,19 +18,33 @@ func NewResolver(backend storage.Backend, config storage.Configurator) (storage.
 	config.SetDefaults()
 
 	var creator storage.Creator
+	var backendName string
 
 	switch backend {
 	case storage.LOCAL:
 		creator = &local.Creator{}
+		backendName = "local"
 	case storage.S3:
 		creator = &s3.Creator{}
+		backendName = "s3"
 	case storage.AZURE:
 		creator = &azure.Creator{}
+		backendName = "azure"
 	case storage.GCS:
 		creator = &gcs.Creator{}
+		backendName = "gcs"
 	default:
 		return nil, fmt.Errorf("unrecognized backend type")
 	}
 
-	return creator.New(config)
+	resolver, err := creator.New(config)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wrap resolver with metrics decorator
+	return &storage.MetricsResolver{
+		Resolver: resolver,
+		Backend:  backendName,
+	}, nil
 }

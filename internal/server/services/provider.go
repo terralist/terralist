@@ -6,6 +6,7 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
 	"terralist/pkg/storage"
 	"terralist/pkg/version"
 
@@ -55,6 +56,9 @@ func (s *DefaultProviderService) Get(namespace, name string) (*provider.VersionL
 		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
 
+	// Record list operation
+	metrics.RecordRequest(namespace, "list")
+
 	// Map to response DTO
 	dto := p.ToVersionListProviderDTO()
 
@@ -91,6 +95,10 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 			return nil, err
 		}
 	}
+
+	// Record download metrics
+	metrics.RecordRequest(namespace, "download")
+	metrics.RecordArtifactDownload("provider", namespace)
 
 	return &dto, nil
 }
@@ -154,6 +162,11 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 		return err
 	}
 
+	// Record artifact upload metric
+	metrics.RecordArtifactUpload("provider", a.Name)
+	// Record upload request
+	metrics.RecordRequest(a.Name, "upload")
+
 	return nil
 }
 
@@ -180,6 +193,11 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) erro
 
 	if err := s.ProviderRepository.Delete(p); err != nil {
 		return err
+	}
+
+	// Record artifact deletion metrics for all versions
+	for range p.Versions {
+		metrics.RecordArtifactDeletion("provider", a.Name)
 	}
 
 	return nil
@@ -212,6 +230,9 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 	if err := s.ProviderRepository.DeleteVersion(p, version); err != nil {
 		return err
 	}
+
+	// Record artifact deletion metric
+	metrics.RecordArtifactDeletion("provider", a.Name)
 
 	return nil
 }
