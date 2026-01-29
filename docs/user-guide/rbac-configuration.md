@@ -5,7 +5,7 @@ The RBAC feature enables restrictions of access to Terralist resources. Terralis
 There are two main components where RBAC configuration can be defined:
 
 - The server-side (global) RBAC configuration;
-- The API Key RBAC configuration;
+- The API Key RBAC configuration; (Not yet implemented)
 
 ## Basic Built-in Roles
 
