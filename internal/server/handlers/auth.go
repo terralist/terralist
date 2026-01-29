@@ -226,6 +226,20 @@ func (a *Authorization) CanPerform(subject auth.User, resource, action, object s
 		Str("action", action).
 		Logger()
 
+	// Enforce authority isolation for API key authenticated users.
+	// If user has an authority (from API key), they can only access their own authority's resources.
+	if subject.AuthorityID != "" && slices.Contains([]string{rbac.ResourceModules, rbac.ResourceProviders}, resource) {
+		if parts := strings.Split(object, "/"); len(parts) > 0 {
+			requestedNamespace := parts[0]
+			if !strings.EqualFold(requestedNamespace, subject.Authority) {
+				logger.Debug().
+					Str("requestedNamespace", requestedNamespace).
+					Msg("API key denied access to different authority")
+				return false
+			}
+		}
+	}
+
 	if slices.Contains([]string{rbac.ResourceModules, rbac.ResourceProviders}, resource) && action == rbac.ActionGet {
 		if parts := strings.Split(object, "/"); len(parts) >= 0 {
 			authorityName := parts[0]
