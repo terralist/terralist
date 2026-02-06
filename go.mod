@@ -1,6 +1,6 @@
 module terralist
 
-go 1.25.2
+go 1.25.7
 
 require (
 	cloud.google.com/go/storage v1.57.2
