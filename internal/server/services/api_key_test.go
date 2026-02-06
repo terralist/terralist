@@ -115,6 +115,9 @@ func TestGrant(t *testing.T) {
 					mockApiKeyRepository.
 						On("Create", &authority.ApiKey{AuthorityID: authorityID, Name: name}).
 						Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
+					mockAuthorityService.
+						On("GetByID", authorityID).
+						Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}, ApiKeys: []authority.ApiKey{}}, nil)
 
 					apiKey, err := apiKeyService.Grant(authorityID, name, expireIn)
 
@@ -140,6 +143,9 @@ func TestGrant(t *testing.T) {
 							mockApiKeyRepository.
 								On("Create", mock.AnythingOfType("*authority.ApiKey")).
 								Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
+							mockAuthorityService.
+								On("GetByID", authorityID).
+								Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}, ApiKeys: []authority.ApiKey{}}, nil)
 
 							apiKey, err := apiKeyService.Grant(authorityID, "key1", expireIn)
 
@@ -184,8 +190,16 @@ func TestRevoke(t *testing.T) {
 		Convey("Given a valid API key", func() {
 			apiKey, _ := uuid.NewRandom()
 			apiKeyStr := apiKey.String()
+			authorityID, _ := uuid.NewRandom()
 
+			mockApiKeyRepository.On("Find", apiKey).Return(&authority.ApiKey{
+				Entity:      entity.Entity{ID: apiKey},
+				AuthorityID: authorityID,
+			}, nil)
 			mockApiKeyRepository.On("Delete", apiKey).Return(nil)
+			mockAuthorityService.
+				On("GetByID", authorityID).
+				Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}, ApiKeys: []authority.ApiKey{}}, nil)
 
 			Convey("When the service is queried", func() {
 				err := apiKeyService.Revoke(apiKeyStr)

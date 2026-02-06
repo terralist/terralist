@@ -10,6 +10,7 @@ import (
 	"terralist/internal/server/repositories"
 	"terralist/pkg/docs"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
 	"terralist/pkg/storage"
 	"terralist/pkg/version"
 
@@ -58,6 +59,9 @@ func (s *DefaultModuleService) Get(namespace, name, provider string) (*module.Li
 	if err != nil {
 		return nil, err
 	}
+
+	// Record list operation
+	metrics.RecordRequest(namespace, "list")
 
 	dto := m.ToListResponseDTO()
 	return &dto, nil
@@ -190,8 +194,16 @@ func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version 
 			return nil, fmt.Errorf("could not resolve location: %v", err)
 		}
 
+		// Record download metrics
+		metrics.RecordRequest(namespace, "download")
+		metrics.RecordArtifactDownload("module", namespace)
+
 		return &url, nil
 	}
+
+	// Record download metrics for proxy mode
+	metrics.RecordRequest(namespace, "download")
+	metrics.RecordArtifactDownload("module", namespace)
 
 	return location, nil
 }
@@ -383,6 +395,11 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		return err
 	}
 
+	// Record artifact upload metric
+	metrics.RecordArtifactUpload("module", a.Name)
+	// Record upload request
+	metrics.RecordRequest(a.Name, "upload")
+
 	return nil
 }
 
@@ -405,6 +422,11 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 
 	if err := s.ModuleRepository.Delete(m); err != nil {
 		return err
+	}
+
+	// Record artifact deletion metrics for all versions
+	for range m.Versions {
+		metrics.RecordArtifactDeletion("module", a.Name)
 	}
 
 	return nil
@@ -431,10 +453,18 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 	}
 
 	if len(m.Versions) == 1 {
-		return s.ModuleRepository.Delete(m)
+		if err := s.ModuleRepository.Delete(m); err != nil {
+			return err
+		}
+		metrics.RecordArtifactDeletion("module", a.Name)
+		return nil
 	}
 
-	return s.ModuleRepository.DeleteVersion(v)
+	if err := s.ModuleRepository.DeleteVersion(v); err != nil {
+		return err
+	}
+	metrics.RecordArtifactDeletion("module", a.Name)
+	return nil
 }
 
 // deleteVersion removes the files for a specific module version.
