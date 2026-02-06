@@ -72,10 +72,10 @@ RUN addgroup terralist && \
   chmod g=u /etc/passwd
 
 RUN apk add --no-cache \
-  git~=2.49 \
-  libcap~=2.76 \
+  git~=2.52 \
+  libcap~=2.77 \
   dumb-init~=1.2 \
-  su-exec~=0.2
+  su-exec~=0.3
 
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY --from=backend /go/src/terralist/terralist /usr/local/bin
