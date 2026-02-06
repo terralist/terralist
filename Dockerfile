@@ -1,4 +1,4 @@
-FROM node:24-alpine3.22 AS frontend
+FROM node:24-alpine3.23 AS frontend
 
 WORKDIR /home/node/terralist
 
@@ -11,7 +11,7 @@ ENV TERRALIST_VERSION=${VERSION}
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.25-alpine3.22 AS backend
+FROM golang:1.25-alpine3.23 AS backend
 
 WORKDIR /go/src/terralist
 
@@ -40,7 +40,7 @@ RUN go build -a -v -o terralist \
   -X 'main.Mode=release'" \
   ./cmd/terralist/main.go
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 ARG VERSION="dev"
 ARG COMMIT_HASH="n/a"
@@ -72,10 +72,10 @@ RUN addgroup terralist && \
   chmod g=u /etc/passwd
 
 RUN apk add --no-cache \
-  git~=2.49 \
-  libcap~=2.76 \
+  git~=2.52 \
+  libcap~=2.77 \
   dumb-init~=1.2 \
-  su-exec~=0.2
+  su-exec~=0.3
 
 COPY docker-entrypoint.sh /usr/local/bin/
 COPY --from=backend /go/src/terralist/terralist /usr/local/bin
