@@ -1,6 +1,8 @@
 package docs
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"terralist/pkg/file"
@@ -193,6 +195,15 @@ func TestGetModuleDocumentation(t *testing.T) {
 
 		if err == nil && test.shouldError {
 			t.Fatalf("#%d (%v): expected error, but got result: %v", i, test.title, result)
+		}
+
+		// Verify that the error for missing entrypoint provides helpful information
+		if test.shouldError && err != nil {
+			if errors.Is(err, ErrNoEntrypointFound) {
+				if !strings.Contains(err.Error(), "main.tf") || !strings.Contains(err.Error(), "README.md") {
+					t.Errorf("#%d (%v): error should mention both main.tf and README.md, got: %v", i, test.title, err)
+				}
+			}
 		}
 
 		if test.expectedFn == nil && result != test.expected {

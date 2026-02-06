@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/module"
@@ -276,6 +277,33 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			ctx.JSON(http.StatusOK, gin.H{
 				"errors": []string{},
+			})
+		},
+	)
+
+	// Get submodule documentation for a specific module version
+	api.GET(
+		"/:name/:provider/:version/submodules/*submodulePath",
+		handlers.RequireAuthority(),
+		requireAuthorization(rbac.ActionGet, partialSlugComposer),
+		func(ctx *gin.Context) {
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+			submodulePath := strings.TrimPrefix(ctx.Param("submodulePath"), "/")
+
+			authorityName := ctx.GetString("authorityName")
+
+			doc, err := c.ModuleService.GetSubmoduleDocumentation(authorityName, name, provider, version, submodulePath)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"documentation": doc,
 			})
 		},
 	)

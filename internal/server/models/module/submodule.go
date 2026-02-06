@@ -18,8 +18,18 @@ func (Submodule) TableName() string {
 	return "module_submodules"
 }
 
+func (s Submodule) ToDTO() SubmoduleResponseDTO {
+	return SubmoduleResponseDTO{
+		Path: s.Path,
+	}
+}
+
 type SubmoduleDTO struct {
 	Path         string          `json:"path"`
 	Providers    []ProviderDTO   `json:"providers"`
 	Dependencies []DependencyDTO `json:"dependencies"`
+}
+
+type SubmoduleResponseDTO struct {
+	Path string `json:"path"`
 }
