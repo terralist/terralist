@@ -44,6 +44,11 @@ func PrometheusMetrics(registry *prometheus.Registry) gin.HandlerFunc {
 		duration := time.Since(start).Seconds()
 		status := strconv.Itoa(c.Writer.Status())
 
+		// Record error metrics for 5xx responses
+		if c.Writer.Status() >= 500 {
+			metrics.RecordError("http", "server_error")
+		}
+
 		// Record metrics
 		metrics.HTTPRequestsTotal.WithLabelValues(method, path, status).Inc()
 		metrics.HTTPRequestDuration.WithLabelValues(method, path).Observe(duration)

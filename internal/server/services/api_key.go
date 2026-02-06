@@ -6,6 +6,7 @@ import (
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
+	"terralist/pkg/metrics"
 	"time"
 
 	"github.com/google/uuid"
@@ -76,6 +77,9 @@ func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, name string, expireI
 		return "", err
 	}
 
+	// Update metrics after creating API key
+	s.updateApiKeysMetrics(authorityID)
+
 	return apiKey.ID.String(), nil
 }
 
@@ -85,5 +89,42 @@ func (s *DefaultApiKeyService) Revoke(key string) error {
 		return fmt.Errorf("%w: %v", ErrCannotParseID, err)
 	}
 
-	return s.ApiKeyRepository.Delete(id)
+	// Get the API key before deleting to update metrics
+	apiKey, err := s.ApiKeyRepository.Find(id)
+	if err != nil {
+		return err
+	}
+
+	err = s.ApiKeyRepository.Delete(id)
+	if err != nil {
+		return err
+	}
+
+	// Update metrics after revoking API key
+	s.updateApiKeysMetrics(apiKey.AuthorityID)
+
+	return nil
+}
+
+// updateApiKeysMetrics updates the API keys metrics for a specific authority.
+func (s *DefaultApiKeyService) updateApiKeysMetrics(authorityID uuid.UUID) {
+	authority, err := s.AuthorityService.GetByID(authorityID)
+	if err != nil {
+		return
+	}
+
+	now := time.Now()
+	activeCount := 0
+	expiredCount := 0
+
+	for _, apiKey := range authority.ApiKeys {
+		if apiKey.Expiration == nil || apiKey.Expiration.After(now) {
+			activeCount++
+		} else {
+			expiredCount++
+		}
+	}
+
+	metrics.SetApiKeysCount(authority.Name, "active", float64(activeCount))
+	metrics.SetApiKeysCount(authority.Name, "expired", float64(expiredCount))
 }

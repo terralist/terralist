@@ -266,6 +266,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			// Pass-in local-file URI for go-getter
 			uri := fmt.Sprintf("file://%v", onDiskFile.Path())
+
 			if err := c.ModuleService.Upload(&dto, uri, nil); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
