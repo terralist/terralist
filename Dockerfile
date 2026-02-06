@@ -1,4 +1,4 @@
-FROM node:24-alpine3.22 AS frontend
+FROM node:24-alpine3.23 AS frontend
 
 WORKDIR /home/node/terralist
 
@@ -11,7 +11,7 @@ ENV TERRALIST_VERSION=${VERSION}
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.25-alpine3.22 AS backend
+FROM golang:1.25-alpine3.23 AS backend
 
 WORKDIR /go/src/terralist
 
