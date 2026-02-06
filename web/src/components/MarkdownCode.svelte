@@ -81,21 +81,20 @@
     if (mermaid) return mermaid;
     if (mermaidFallback) return mermaidFallback;
     if (!mermaidLoading) {
-      mermaidLoading = import(
-        'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/+esm'
-      )
-        .then(module => {
-          mermaidFallback = module.default as MermaidApi;
-        })
-        .catch(err => {
-          console.error(
-            'Failed to load mermaid from CDN in MarkdownCode:',
-            err
-          );
-        })
-        .finally(() => {
-          mermaidLoading = null;
-        });
+      mermaidLoading =
+        import('https://cdn.jsdelivr.net/npm/mermaid@10.9.0/+esm')
+          .then(module => {
+            mermaidFallback = module.default as MermaidApi;
+          })
+          .catch(err => {
+            console.error(
+              'Failed to load mermaid from CDN in MarkdownCode:',
+              err
+            );
+          })
+          .finally(() => {
+            mermaidLoading = null;
+          });
     }
 
     await mermaidLoading;
