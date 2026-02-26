@@ -1,27 +1,25 @@
-const defaultIfNull = (v: any, d: any) => { 
-  return v === null ? d : v; 
-}
+const defaultIfNull = <T>(v: T | null, d: T): T => {
+  return v == null ? d : v;
+};
 
 const indent: (params: {
-  s: string,
-  n: number,
-  reverse?: boolean,
-  trim?: boolean,
-}) => string = ({
-  s, 
-  n,
-  reverse = false,
-  trim = true,
-}) => {
-  const lines = s.split("\n");
+  s: string;
+  n: number;
+  reverse?: boolean;
+  trim?: boolean;
+}) => string = ({ s, n, reverse = false, trim = true }) => {
+  const lines = s.split('\n');
 
-  const trimmedLines = lines.slice(trim ? 1 : 0, trim ? lines.length - 1 : lines.length);
+  const trimmedLines = lines.slice(
+    trim ? 1 : 0,
+    trim ? lines.length - 1 : lines.length
+  );
 
-  const formattedLines = reverse ? 
-    trimmedLines.map(v => v.slice(n)) : 
-    trimmedLines.map(v => `${new Array(n + 1).join(" ")}${v}`);
-  
-  return formattedLines.join("\n");
+  const formattedLines = reverse
+    ? trimmedLines.map(v => v.slice(n))
+    : trimmedLines.map(v => `${new Array(n + 1).join(' ')}${v}`);
+
+  return formattedLines.join('\n');
 };
 
 const toSeconds = 1000;
@@ -36,7 +34,7 @@ const timeSince = (since: Date, from: Date = new Date()): string => {
 
   const formatter = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 
-  const convert = (v: number, b: number) => {
+  const convert = (v: number, b: number): number => {
     return Math.floor(Math.round(v / b));
   };
 
@@ -49,7 +47,7 @@ const timeSince = (since: Date, from: Date = new Date()): string => {
     const monthsSince = convert(diff, toMonths);
     return formatter.format(-monthsSince, 'month');
   }
-  
+
   if (diff > toDays) {
     const daysSince = convert(diff, toDays);
     return formatter.format(-daysSince, 'day');
@@ -59,7 +57,7 @@ const timeSince = (since: Date, from: Date = new Date()): string => {
     const hoursSince = convert(diff, toHours);
     return formatter.format(-hoursSince, 'hour');
   }
-  
+
   if (diff > toMinutes) {
     const minutesSince = convert(diff, toMinutes);
     return formatter.format(-minutesSince, 'minute');
@@ -67,10 +65,6 @@ const timeSince = (since: Date, from: Date = new Date()): string => {
 
   const secondsSince = convert(diff, toSeconds);
   return formatter.format(-secondsSince, 'second');
-}
-
-export {
-  defaultIfNull,
-  indent,
-  timeSince
 };
+
+export { defaultIfNull, indent, timeSince };

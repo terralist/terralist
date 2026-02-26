@@ -1,12 +1,14 @@
 package sqlite
 
 import (
+	"fmt"
 	"sync"
 
 	"terralist/pkg/database"
 	"terralist/pkg/database/logger"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
+	"github.com/rs/zerolog/log"
 	"gorm.io/gorm"
 )
 
@@ -20,15 +22,22 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	cfg := config.(*Config)
+	cfg, ok := config.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("unsupported configurator: %T", config)
+	}
 
-	db, err := gorm.Open(sqlite.Open(cfg.Path), &gorm.Config{
+	dsn := cfg.DSN()
+
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: &logger.Logger{},
 	})
 
 	if err != nil {
 		return nil, err
 	}
+
+	log.Info().Msgf("Using SQLite database at %s", cfg.Path)
 
 	return &database.DefaultEngine{
 		Handle: db,

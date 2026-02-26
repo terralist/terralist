@@ -10,7 +10,7 @@ import (
 )
 
 // Store is a concrete implementation of session.Store and uses
-// gorilla CookieStore as backend
+// gorilla CookieStore as backend.
 type Store struct {
 	name string
 

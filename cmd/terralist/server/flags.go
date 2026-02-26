@@ -11,6 +11,8 @@ const (
 
 	URLFlag = "url"
 
+	HomeFlag = "home"
+
 	CertFileFlag = "cert-file"
 	KeyFileFlag  = "key-file"
 
@@ -34,20 +36,20 @@ const (
 
 	OAuthProviderFlag = "oauth-provider"
 
-	// GitHub OAuth Flags
 	GitHubClientIDFlag     = "gh-client-id"
 	GitHubClientSecretFlag = "gh-client-secret"
 	GitHubOrganizationFlag = "gh-organization"
+	GitHubTeamsFlag        = "gh-teams"
+	GitHubDomainFlag       = "gh-domain"
 
-	// BitBucket OAuth Flags
 	BitBucketClientIDFlag     = "bb-client-id"
 	BitBucketClientSecretFlag = "bb-client-secret"
 	BitBucketWorkspaceFlag    = "bb-workspace"
 
-	// GitLab OAuth Flags
 	GitLabClientIDFlag     = "gl-client-id"
 	GitLabClientSecretFlag = "gl-client-secret"
 	GitLabHostFlag         = "gl-host"
+	GitLabGroupsFlag       = "gl-groups"
 
 	OidcClientIDFlag     = "oi-client-id"
 	OidcClientSecretFlag = "oi-client-secret"
@@ -64,17 +66,26 @@ const (
 	ModulesAnonymousReadFlag   = "modules-anonymous-read"
 	ProvidersAnonymousReadFlag = "providers-anonymous-read"
 
-	S3BucketNameFlag      = "s3-bucket-name"
-	S3BucketRegionFlag    = "s3-bucket-region"
-	S3BucketPrefixFlag    = "s3-bucket-prefix"
-	S3AccessKeyIDFlag     = "s3-access-key-id"
-	S3SecretAccessKeyFlag = "s3-secret-access-key"
-	S3PresignExpireFlag   = "s3-presign-expire"
+	S3EndpointFlag             = "s3-endpoint"
+	S3BucketNameFlag           = "s3-bucket-name"
+	S3BucketRegionFlag         = "s3-bucket-region"
+	S3BucketPrefixFlag         = "s3-bucket-prefix"
+	S3AccessKeyIDFlag          = "s3-access-key-id"
+	S3SecretAccessKeyFlag      = "s3-secret-access-key"
+	S3PresignExpireFlag        = "s3-presign-expire"
+	S3ServerSideEncryptionFlag = "s3-server-side-encryption"
+	S3UsePathStyleFlag         = "s3-use-path-style"
+	S3UseACLsFlag              = "s3-use-acls"
 
 	AzureAccountNameFlag   = "azure-account-name"
 	AzureAccountKeyFlag    = "azure-account-key"
 	AzureContainerNameFlag = "azure-container-name"
 	AzureSASExpireFlag     = "azure-sas-expire"
+
+	GcsBucketNameFlag                 = "gcs-bucket-name"
+	GcsBucketPrefixFlag               = "gcs-bucket-prefix"
+	GcsSignExpireFlag                 = "gcs-sign-expire"
+	GcsServiceAccountCredFilePathFlag = "gcs-service-account-cred-file-path"
 
 	LocalStoreFlag = "local-store"
 
@@ -83,6 +94,13 @@ const (
 	CookieSecretFlag = "cookie-secret"
 
 	CustomCompanyNameFlag = "custom-company-name"
+
+	RbacPolicyPathFlag  = "rbac-policy-path"
+	RbacDefaultRoleFlag = "rbac-default-role"
+
+	AuthorizedUsersFlag = "authorized-users"
+
+	AuthTokenExpirationFlag = "auth-token-expiration"
 )
 
 var flags = map[string]cli.Flag{
@@ -104,6 +122,11 @@ var flags = map[string]cli.Flag{
 	URLFlag: &cli.StringFlag{
 		Description:  "The URL that Terralist is accessible from.",
 		DefaultValue: "http://localhost:5758",
+	},
+
+	HomeFlag: &cli.PathFlag{
+		Description:  "The path to the directory where Terralist can store files.",
+		DefaultValue: "~/.terralist.d",
 	},
 
 	CertFileFlag: &cli.StringFlag{
@@ -175,6 +198,13 @@ var flags = map[string]cli.Flag{
 	GitHubOrganizationFlag: &cli.StringFlag{
 		Description: "The GitHub organization to use for user validation.",
 	},
+	GitHubTeamsFlag: &cli.StringFlag{
+		Description: "The GitHub team slugs in CSV format to use for user validation.",
+	},
+	GitHubDomainFlag: &cli.StringFlag{
+		Description:  "The GitHub base domain if you are using GitHub Enterprise. (default: 'github.com')",
+		DefaultValue: "github.com",
+	},
 	BitBucketClientIDFlag: &cli.StringFlag{
 		Description: "The BitBucket OAuth Application client ID.",
 	},
@@ -193,6 +223,10 @@ var flags = map[string]cli.Flag{
 	GitLabHostFlag: &cli.StringFlag{
 		Description:  "The GitLab host to use.",
 		DefaultValue: "gitlab.com",
+	},
+	GitLabGroupsFlag: &cli.StringFlag{
+		Description:  "The GitLab groups the user must be member. Comma separated.",
+		DefaultValue: "",
 	},
 	OidcClientIDFlag: &cli.StringFlag{
 		Description: "The OIDC Application client ID.",
@@ -226,13 +260,13 @@ var flags = map[string]cli.Flag{
 
 	ModulesStorageResolverFlag: &cli.StringFlag{
 		Description:  "The modules storage resolver.",
-		Choices:      []string{"proxy", "local", "s3", "azure"},
+		Choices:      []string{"proxy", "local", "s3", "azure", "gcs"},
 		DefaultValue: "proxy",
 	},
 
 	ProvidersStorageResolverFlag: &cli.StringFlag{
 		Description:  "The providers storage resolver.",
-		Choices:      []string{"proxy", "local", "s3", "azure"},
+		Choices:      []string{"proxy", "local", "s3", "azure", "gcs"},
 		DefaultValue: "proxy",
 	},
 
@@ -246,6 +280,9 @@ var flags = map[string]cli.Flag{
 		DefaultValue: false,
 	},
 
+	S3EndpointFlag: &cli.StringFlag{
+		Description: "The endpoint where the S3 SDK should connect.",
+	},
 	S3BucketNameFlag: &cli.StringFlag{
 		Description: "The S3 bucket name.",
 	},
@@ -265,6 +302,20 @@ var flags = map[string]cli.Flag{
 		Description:  "The number of minutes after which the presigned URLs should expire.",
 		DefaultValue: 15,
 	},
+	S3UsePathStyleFlag: &cli.BoolFlag{
+		Description:  "Set this to `true` to force the request to use path-style addressing.",
+		DefaultValue: false,
+	},
+	S3ServerSideEncryptionFlag: &cli.StringFlag{
+		Description:  "The server-side encryption algorithm that was used when you store this object in Amazon S3.",
+		Choices:      []string{"none", "AES256", "aws:kms", "aws:kms:dsse"},
+		DefaultValue: "AES256",
+	},
+	S3UseACLsFlag: &cli.BoolFlag{
+		Description:  "Use S3 ACLs for access control.",
+		DefaultValue: false,
+	},
+
 	AzureAccountNameFlag: &cli.StringFlag{
 		Description: "The Azure account name.",
 	},
@@ -278,7 +329,19 @@ var flags = map[string]cli.Flag{
 		Description:  "The number of minutes after which the Azure Shared Access Signature(SAS) should expire.",
 		DefaultValue: 15,
 	},
-
+	GcsBucketNameFlag: &cli.StringFlag{
+		Description: "The GCS bucket name.",
+	},
+	GcsBucketPrefixFlag: &cli.StringFlag{
+		Description: "The GCS bucket folder.",
+	},
+	GcsSignExpireFlag: &cli.IntFlag{
+		Description:  "The number of minutes after which the GCS Sign should expire.",
+		DefaultValue: 15,
+	},
+	GcsServiceAccountCredFilePathFlag: &cli.StringFlag{
+		Description: "The GCP Service Account key file path.",
+	},
 	SessionStoreFlag: &cli.StringFlag{
 		Description:  "The session store backend.",
 		Choices:      []string{"cookie"},
@@ -291,5 +354,23 @@ var flags = map[string]cli.Flag{
 
 	CustomCompanyNameFlag: &cli.StringFlag{
 		Description: "The name of the company hosting the Terralist instance.",
+	},
+
+	RbacPolicyPathFlag: &cli.StringFlag{
+		Description: "Path to the RBAC server-side policy.",
+	},
+	RbacDefaultRoleFlag: &cli.StringFlag{
+		Description:  "The name of the RBAC role that should be assigned by default to all users.",
+		DefaultValue: "readonly",
+	},
+
+	AuthorizedUsersFlag: &cli.StringFlag{
+		Description: "The list of users that are authorized to access the Terralist instance (comma separated).",
+	},
+
+	AuthTokenExpirationFlag: &cli.StringFlag{
+		Description:  "The duration for which auth tokens remain valid.",
+		Choices:      []string{"1d", "1w", "1m", "1y", "never"},
+		DefaultValue: "1d",
 	},
 }

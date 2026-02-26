@@ -2,15 +2,15 @@ package api
 
 import "github.com/gin-gonic/gin"
 
-// RouterGroup is an abstraction over gin-gonic routers
+// RouterGroup is an abstraction over gin-gonic routers.
 type RouterGroup interface {
-	// Prefix returns the base prefix for a router
+	// Prefix returns the base prefix for a router.
 	Prefix() string
 
-	// Register subscribes a controller to the router
+	// Register subscribes a controller to the router.
 	Register(RestController)
 
-	// RouterGroup returns the router
+	// RouterGroup returns the router.
 	RouterGroup() *gin.RouterGroup
 }
 
@@ -27,12 +27,12 @@ func NewRouterGroup(host *gin.Engine, opts *RouterGroupOptions) RouterGroup {
 	}
 }
 
-// defaultRouterGroup is a concrete implementation of RouterGroup
+// defaultRouterGroup is a concrete implementation of RouterGroup.
 type defaultRouterGroup struct {
-	// router is the router group configured with the given prefix
+	// router is the router group configured with the given prefix.
 	router *gin.RouterGroup
 
-	// prefix is the router prefix
+	// prefix is the router prefix.
 	prefix string
 }
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { useToggle } from '@/lib/hooks';
 
-  import Icon from "./Icon.svelte";
+  import Icon from './Icon.svelte';
 
   export let label: string;
   export let options: string[] = [];
@@ -12,10 +12,10 @@
   const select = (option: string) => {
     toggle();
     onSelect(option);
-  }
+  };
 </script>
 
-<button 
+<button
   on:click={toggle}
   class="
     text-slate-600
@@ -39,15 +39,14 @@
     gap-4
     items-center
     {$$props.class}
-  " 
-  type="button"
->
+  "
+  type="button">
   {label}
   <Icon name="arrow-down" />
 </button>
 
 {#if $open}
-  <div 
+  <div
     class="
       z-10
       mt-2
@@ -64,10 +63,9 @@
       overflow-y-auto
       dark:bg-gray-700
       {$$props.class}
-    "
-  >
+    ">
     <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
-      {#each options as option}
+      {#each options as option (option)}
         <li>
           <button
             class="
@@ -82,8 +80,7 @@
               justify-start
               items-center
             "
-            on:click={() => select(option)}
-          >
+            on:click={() => select(option)}>
             {option}
           </button>
         </li>

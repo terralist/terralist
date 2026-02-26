@@ -4,6 +4,7 @@ type UserConfig struct {
 	LogLevel               string `mapstructure:"log-level"`
 	Port                   int    `mapstructure:"port"`
 	URL                    string `mapstructure:"url"`
+	Home                   string `mapstructure:"home"`
 	CertFile               string `mapstructure:"cert-file"`
 	KeyFile                string `mapstructure:"key-file"`
 	TokenSigningSecret     string `mapstructure:"token-signing-secret"`
@@ -11,4 +12,8 @@ type UserConfig struct {
 	CustomCompanyName      string `mapstructure:"custom-company-name"`
 	ModulesAnonymousRead   bool   `mapstructure:"modules-anonymous-read"`
 	ProvidersAnonymousRead bool   `mapstructure:"providers-anonymous-read"`
+	AuthorizedUsers        string `mapstructure:"authorized-users"`
+	RbacPolicyPath         string `mapstructure:"rbac-policy-path"`
+	RbacDefaultRole        string `mapstructure:"rbac-default-role"`
+	AuthTokenExpiration    string `mapstructure:"auth-token-expiration"`
 }

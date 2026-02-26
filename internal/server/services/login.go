@@ -10,24 +10,20 @@ import (
 	"terralist/pkg/auth/jwt"
 )
 
-var (
-	tokenExpirationInSeconds = 24 * 60 * 60
-)
-
-// LoginService describes a service that holds the business logic for authentication
+// LoginService describes a service that holds the business logic for authentication.
 type LoginService interface {
-	// Authorize initiates the OAUTH 2.0 process, computing the provider authorize URL
+	// Authorize initiates the OAUTH 2.0 process, computing the provider authorize URL.
 	Authorize(state oauth.Payload) (string, oauth.Error)
 
 	// UnpackCode uses the code received from the OAUTH 2.0 callback and generates
-	// the code components
+	// the code components.
 	UnpackCode(code string, r *oauth.Request) (*oauth.CodeComponents, oauth.Error)
 
-	// Redirect converts the code components into a redirect URL
+	// Redirect converts the code components into a redirect URL.
 	Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error)
 
-	// ValidateToken is the method called on the third step from the OAUTH 2.0 protocol
-	// It verifies the code components and generates the authorization token
+	// ValidateToken is the method called on the third step from the OAUTH 2.0 protocol.
+	// It verifies the code components and generates the authorization token.
 	ValidateToken(components *oauth.CodeComponents, verifier string) (*oauth.TokenResponse, oauth.Error)
 }
 
@@ -35,8 +31,27 @@ type DefaultLoginService struct {
 	Provider auth.Provider
 	JWT      jwt.JWT
 
-	EncryptSalt     string
-	CodeExchangeKey string
+	EncryptSalt         string
+	CodeExchangeKey     string
+	TokenExpirationSecs int
+}
+
+// ParseTokenExpiration converts duration string to seconds.
+func ParseTokenExpiration(duration string) int {
+	switch duration {
+	case "1d":
+		return 24 * 60 * 60 // 1 day (default)
+	case "1w":
+		return 7 * 24 * 60 * 60 // 1 week
+	case "1m":
+		return 30 * 24 * 60 * 60 // 1 month (30 days)
+	case "1y":
+		return 365 * 24 * 60 * 60 // 1 year
+	case "never":
+		return 0 // 0 means no expiration
+	default:
+		return 24 * 60 * 60 // Default to 1 day
+	}
 }
 
 func (s *DefaultLoginService) Authorize(state oauth.Payload) (string, oauth.Error) {
@@ -82,7 +97,7 @@ func (s *DefaultLoginService) ValidateToken(components *oauth.CodeComponents, ve
 	t, err := s.JWT.Build(auth.User{
 		Name:  components.UserName,
 		Email: components.UserEmail,
-	}, tokenExpirationInSeconds)
+	}, s.TokenExpirationSecs)
 	if err != nil {
 		return nil, oauth.WrapError(err, oauth.InvalidRequest)
 	}
@@ -91,6 +106,6 @@ func (s *DefaultLoginService) ValidateToken(components *oauth.CodeComponents, ve
 		AccessToken:  t,
 		TokenType:    "bearer",
 		RefreshToken: "",
-		ExpiresIn:    tokenExpirationInSeconds,
+		ExpiresIn:    s.TokenExpirationSecs,
 	}, nil
 }

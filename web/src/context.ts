@@ -1,37 +1,46 @@
-import { writable, type Writable } from "svelte/store";
+import { writable, type Writable } from 'svelte/store';
 
-import { defaultIfNull } from "./lib/utils";
+import { defaultIfNull } from './lib/utils';
 
-type Theme = "light" | "dark";
+type Theme = 'light' | 'dark';
 
+function isTheme(arg: unknown): arg is Theme {
+  return typeof arg == 'string' && ['light', 'dark'].includes(arg);
+}
 class Context {
   theme: Writable<Theme>;
 
   constructor() {
-    let persistedTheme = defaultIfNull(localStorage.getItem("preferred.theme.style"), "light");
+    const persistedTheme = defaultIfNull(
+      localStorage.getItem('preferred.theme.style'),
+      'light'
+    );
+
+    if (!isTheme(persistedTheme)) {
+      throw new Error(`Unsupported theme: ${persistedTheme}`);
+    }
+
     this.theme = writable(persistedTheme);
     this.setTheme(persistedTheme);
   }
 
-  setTheme(theme: Theme) {
+  setTheme(theme: Theme): void {
     this.theme.set(theme);
 
-    localStorage.setItem("preferred.theme.style", theme);
-    
+    localStorage.setItem('preferred.theme.style', theme);
+
     const root = document.documentElement;
 
-    if (theme === "dark") {
-      root.classList.add("dark");
+    if (theme === 'dark') {
+      root.classList.add('dark');
     } else {
-      root.classList.remove("dark");
+      root.classList.remove('dark');
     }
   }
-};
+}
 
 const context: Context = new Context();
 
 export default context;
 
-export {
-  type Theme
-};
+export { type Theme };

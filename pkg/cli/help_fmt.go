@@ -8,7 +8,7 @@ import (
 	"text/template"
 )
 
-// cobraUsageTemplate is cobra.Command.UsageTemplate() with flags extracted
+// cobraUsageTemplate is cobra.Command.UsageTemplate() with flags extracted.
 const cobraUsageTemplate = `Usage:{{if .Runnable}}
 {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
 {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
@@ -35,14 +35,16 @@ Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
 Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
 `
 
-// flagTemplate describes the flag
+// flagTemplate describes the flag.
 const flagTemplate = "  --{{.Name}}{{if not .IsBoolFlag}}=<value>{{end}}\n{{.Description}}\n"
 
 // UsageTmpl returns a cobra-compatible usage template that will be printed
 // during the help output.
 // This template prints help like:
-//   --name=<value>
-//    <description>
+//
+//	--name=<value>
+//	 <description>
+//
 // We use it over the default template so that the output it easier to read.
 func UsageTmpl(flags map[string]Flag) string {
 	type _flag struct {

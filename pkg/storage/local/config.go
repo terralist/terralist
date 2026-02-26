@@ -9,7 +9,7 @@ const (
 )
 
 // Config implements storage.Configurator interface and
-// handles the configuration parameters of the local resolver
+// handles the configuration parameters of the local resolver.
 type Config struct {
 	HomeDirectory string
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Navbar from "@/components/Navbar.svelte";
-  import LoadingScreen from "@/components/LoadingScreen.svelte";
+  import Navbar from '@/components/Navbar.svelte';
+  import LoadingScreen from '@/components/LoadingScreen.svelte';
 </script>
 
 <Navbar />

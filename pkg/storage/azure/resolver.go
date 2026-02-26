@@ -33,13 +33,8 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
 
 	ctx := context.Background()
-	buffer := []byte(in.Content)
 
-	_, err := r.Client.UploadBuffer(ctx,
-		r.ContainerName,
-		key,
-		buffer,
-		nil)
+	_, err := r.Client.UploadStream(ctx, r.ContainerName, key, in.Reader, nil)
 	if err != nil {
 		return "", fmt.Errorf("could not upload archive: %v", err)
 	}
@@ -48,7 +43,6 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 }
 
 func (r *Resolver) GetSASURL(blobName string) (string, error) {
-
 	if r.DefaultCredentials {
 		serviceClient := r.Client.ServiceClient()
 
@@ -89,10 +83,9 @@ func (r *Resolver) GetSASURL(blobName string) (string, error) {
 		expiry,
 		&blob.GetSASURLOptions{StartTime: &start},
 	)
-
 }
-func (r *Resolver) Find(keys string) (string, error) {
 
+func (r *Resolver) Find(keys string) (string, error) {
 	pager := r.Client.NewListBlobsFlatPager(r.ContainerName, &container.ListBlobsFlatOptions{Prefix: &keys})
 
 	for pager.More() {
@@ -100,6 +93,7 @@ func (r *Resolver) Find(keys string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("could not get next page: %v", err)
 		}
+
 		for _, blob := range page.Segment.BlobItems {
 			if *blob.Name == keys {
 				url, err := r.GetSASURL(*blob.Name)
@@ -110,15 +104,16 @@ func (r *Resolver) Find(keys string) (string, error) {
 			}
 		}
 	}
+
 	return "", fmt.Errorf("could not find: %s", keys)
 }
 
 func (r *Resolver) Purge(key string) error {
 	// Implement the Purge method
-
 	_, err := r.Client.DeleteBlob(context.Background(), r.ContainerName, key, nil)
 	if err != nil {
 		return fmt.Errorf("could not delete blob: %v", err)
 	}
+
 	return nil
 }

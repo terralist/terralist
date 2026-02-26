@@ -9,12 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ProbeController registers the routes that handles the probes
+// ProbeController registers the routes that handles the probes.
 type ProbeController interface {
 	api.RestController
 }
 
-// DefaultProbeController is a concrete implementation of ProbeController
+// DefaultProbeController is a concrete implementation of ProbeController.
 type DefaultProbeController struct {
 	Ready *atomic.Bool
 }

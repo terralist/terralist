@@ -6,6 +6,7 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
 	"terralist/pkg/storage"
 	"terralist/pkg/version"
 
@@ -18,28 +19,28 @@ const (
 	shaSumsSigKey = "shaSumsSig"
 )
 
-// ProviderService describes a service that holds the business logic for providers registry
+// ProviderService describes a service that holds the business logic for providers registry.
 type ProviderService interface {
-	// Get returns a specific provider
+	// Get returns a specific provider.
 	Get(namespace, name string) (*provider.VersionListProviderDTO, error)
 
-	// GetVersion returns a specific installation for a provider
+	// GetVersion returns a specific installation for a provider.
 	GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error)
 
-	// Upload loads a new provider version into the system
-	// If the provider does not already exist, it will create a new one
+	// Upload loads a new provider version into the system.
+	// If the provider does not already exist, it will create a new one.
 	Upload(*provider.CreateProviderDTO) error
 
-	// Delete removes a provider from the system with all its data (versions)
+	// Delete removes a provider from the system with all its data (versions).
 	Delete(authorityID uuid.UUID, name string) error
 
-	// DeleteVersion removes a specific version from the system with all its data (installations)
+	// DeleteVersion removes a specific version from the system with all its data (installations).
 	// If the removed version is the only version available in the system, the entire
-	// provider will be removed
+	// provider will be removed.
 	DeleteVersion(authorityID uuid.UUID, name string, version string) error
 }
 
-// DefaultProviderService is the concrete implementation of ProviderService
+// DefaultProviderService is the concrete implementation of ProviderService.
 type DefaultProviderService struct {
 	ProviderRepository repositories.ProviderRepository
 	AuthorityService   AuthorityService
@@ -54,6 +55,9 @@ func (s *DefaultProviderService) Get(namespace, name string) (*provider.VersionL
 	if err != nil {
 		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
+
+	// Record list operation
+	metrics.RecordRequest(namespace, "list")
 
 	// Map to response DTO
 	dto := p.ToVersionListProviderDTO()
@@ -91,6 +95,10 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 			return nil, err
 		}
 	}
+
+	// Record download metrics
+	metrics.RecordRequest(namespace, "download")
+	metrics.RecordArtifactDownload("provider", namespace)
 
 	return &dto, nil
 }
@@ -154,6 +162,11 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 		return err
 	}
 
+	// Record artifact upload metric
+	metrics.RecordArtifactUpload("provider", a.Name)
+	// Record upload request
+	metrics.RecordRequest(a.Name, "upload")
+
 	return nil
 }
 
@@ -180,6 +193,11 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) erro
 
 	if err := s.ProviderRepository.Delete(p); err != nil {
 		return err
+	}
+
+	// Record artifact deletion metrics for all versions
+	for range p.Versions {
+		metrics.RecordArtifactDeletion("provider", a.Name)
 	}
 
 	return nil
@@ -213,10 +231,13 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 		return err
 	}
 
+	// Record artifact deletion metric
+	metrics.RecordArtifactDeletion("provider", a.Name)
+
 	return nil
 }
 
-// resolveLocations resolves the keys for a provider platform
+// resolveLocations resolves the keys for a provider platform.
 func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDTO) error {
 	var err error
 
@@ -238,22 +259,24 @@ func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDT
 	return err
 }
 
-// downloadFiles fetches all provider files
-func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]*file.InMemoryFile, error) {
+// downloadFiles fetches all provider files.
+func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]file.File, error) {
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
+	headers := file.CreateHeader(d.Headers)
+
 	// Download provider files
-	shaSums, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL)
+	shaSums, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch shaSums file: %v", err)
 	}
 
-	shaSumsSig, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL)
+	shaSumsSig, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
 	}
 
-	files := map[string]*file.InMemoryFile{
+	files := map[string]file.File{
 		shaSumsKey:    shaSums,
 		shaSumsSigKey: shaSumsSig,
 	}
@@ -262,11 +285,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		p := platform.ToPlatform()
 		osArch := p.String()
 
-		binary, err := s.Fetcher.FetchFileChecksum(
-			fmt.Sprintf("%s_%s.zip", prefix, osArch),
-			p.Location,
-			p.ShaSum,
-		)
+		binary, err := s.Fetcher.FetchFileChecksum(fmt.Sprintf("%s_%s.zip", prefix, osArch), p.Location, p.ShaSum, headers)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch %s file: %v", osArch, err)
 		}
@@ -277,10 +296,10 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 	return files, nil
 }
 
-// uploadFiles uploads all stored provider files
+// uploadFiles uploads all stored provider files.
 func (s *DefaultProviderService) uploadFiles(
 	namespace, name, version string,
-	files map[string]*file.InMemoryFile,
+	files map[string]file.File,
 ) (map[string]string, error) {
 	keys := map[string]string{}
 
@@ -288,12 +307,14 @@ func (s *DefaultProviderService) uploadFiles(
 
 	for k, v := range files {
 		key, err := s.Resolver.Store(&storage.StoreInput{
-			Content:   v.Content,
-			KeyPrefix: prefix,
-			FileName:  v.Name,
+			Reader:      v,
+			Size:        v.Metadata().Size(),
+			ContentType: file.ContentType(v),
+			KeyPrefix:   prefix,
+			FileName:    v.Name(),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("could not upload %s: %v", v.Name, err)
+			return nil, fmt.Errorf("could not upload %s: %v", v.Name(), err)
 		}
 
 		keys[k] = key
@@ -302,7 +323,7 @@ func (s *DefaultProviderService) uploadFiles(
 	return keys, nil
 }
 
-// deleteVersion removes all provider files for a specific version
+// deleteVersion removes all provider files for a specific version.
 func (s *DefaultProviderService) deleteVersion(v *provider.Version) {
 	for _, plat := range v.Platforms {
 		if err := s.Resolver.Purge(plat.Location); err != nil {

@@ -2,9 +2,9 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaBuildEnv {
-  readonly TERRALIST_VERSION: string
+  readonly TERRALIST_VERSION: string;
 }
 
 interface ImportMeta {
-  readonly build: ImportMetaBuildEnv
+  readonly build: ImportMetaBuildEnv;
 }

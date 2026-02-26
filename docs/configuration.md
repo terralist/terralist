@@ -66,6 +66,19 @@ The URL that Terralist is accessible from.
 | cli | `--url` |
 | env | `TERRALIST_URL` |
 
+### `home`
+
+The path to the directory where Terralist can store files.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `$HOME/.terralist.d` |
+| cli | `--home` |
+| env | `TERRALIST_HOME` |
+
+
 ### `cert-file`
 
 The path to the certificate file (pem format).
@@ -101,6 +114,57 @@ The secret to use when signing authorization tokens.
 | default | `n/a` |
 | cli | `--token-signing-secret` |
 | env | `TERRALIST_TOKEN_SIGNING_SECRET` |
+
+### `authorized-users`
+
+Comma separated list of users authorized to access the settings page. If empty, all users are allowed.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--authorized-users` |
+| env | `TERRALIST_AUTHORIZED_USERS` |
+
+
+### `rbac-policy-path`
+
+Path to the RBAC server-side policy.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--rbac-policy-path` |
+| env | `TERRALIST_RBAC_POLICY_PATH` |
+
+
+### `rbac-default-role`
+
+The name of the RBAC role that should be assigned by default to all users.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `readonly` |
+| cli | `--rbac-default-role` |
+| env | `TERRALIST_RBAC_DEFAULT_ROLE` |
+
+### `auth-token-expiration`
+
+The duration for which auth tokens remain valid.
+
+| Name | Value |
+| --- | --- |
+| type | select |
+| choices | `1d`, `1w`, `1m`, `1y`, `never` |
+| required | no |
+| default | `1d` |
+| cli | `--auth-token-expiration` |
+| env | `TERRALIST_AUTH_TOKEN_EXPIRATION` |
 
 ### `oauth-provider`
 
@@ -150,6 +214,30 @@ The GitHub organization to use for user validation.
 | default | `n/a` |
 | cli | `--gh-organization` |
 | env | `TERRALIST_GH_ORGANIZATION` |
+
+### `gh-teams`
+
+The GitHub team slugs in CSV format to use for user validation. This requires `gh-organization` to be set.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gh-teams` |
+| env | `TERRALIST_GH_TEAMS` |
+
+### `gh-domain`
+
+The GitHub base domain if you are using GitHub Enterprise.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `github.com` |
+| cli | `--gh-domain` |
+| env | `TERRALIST_GH_DOMAIN` |
 
 ### `bb-client-id`
 
@@ -222,6 +310,19 @@ The (self hosted) GitLab host to use. E.g. gitlab.mycompany.com:8443
 | default | `gitlab.com` |
 | cli | `--gl-host` |
 | env | `TERRALIST_GL_HOST` |
+
+### `gl-groups`
+
+The GitLab groups names the user must be member of. It must be comma separated with no spaces.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gl-groups` |
+| env | `TERRALIST_GL_GROUPS` |
+
 
 ### `oi-client-id`
 
@@ -539,6 +640,18 @@ Allows anonymous read and download of providers.
 | cli | `--providers-anonymous-read` |
 | env | `TERRALIST_PROVIDERS_ANONYMOUS_READ` |
 
+### `s3-endpoint`
+
+The endpoint where the S3 SDK should connect. By default, Terralist will connect to the AWS S3 endpoint.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--s3-endpoint` |
+| env | `TERRALIST_S3_ENDPOINT` |
+
 ### `s3-bucket-name`
 
 The S3 bucket name.
@@ -611,6 +724,44 @@ The AWS secret access key to access the S3 bucket.
 | cli | `--s3-secret-access-key` |
 | env | `TERRALIST_S3_SECRET_ACCESS_KEY` |
 
+### `s3-use-path-style`
+
+Set this to `true` to force the request to use path-style addressing (i.e. `http://s3.amazonaws.com/BUCKET/KEY`).
+By default, the S3 client will use virtual hosted bucket addressing when possible (i.e. `http://BUCKET.s3.amazonaws.com/KEY`).
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--s3-use-path-style` |
+| env | `TERRALIST_S3_USE_PATH_STYLE` |
+
+### `s3-server-side-encryption`
+
+The server-side encryption algorithm that was used when you store this object in Amazon S3.
+
+| Name | Value |
+| --- | --- |
+| type | select |
+| choices | `none`, `AES256`, `aws:kms`, `aws:kms:dsse` |
+| required | no |
+| default | `AES256` |
+| cli | `--s3-server-side-encryption` |
+| env | `TERRALIST_S3_SERVER_SIDE_ENCRYPTION` |
+
+### `s3-use-acls`
+
+Use S3 ACLs for access control. By default, Terralist relies on the S3 bucket configuration (e.g. via AWS S3 Bucket Policy) for enforcing the privacy of the artifacts.
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--s3-use-acls` |
+| env | `TERRALIST_S3_USE_ACLS` |
+
 ### `local-store`
 
 The path to a directory in which Terralist can store files.
@@ -671,6 +822,55 @@ The number of minutes after which the Azure Shared Access Signature(SAS) should 
 | cli | `--azure-sas-expire` |
 | env | `TERRALIST_AZURE_SAS_EXPIRE` |
 
+
+### `gcs-bucket-name`
+
+The GCS bucket name.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gcs-bucket-name` |
+| env | `TERRALIST_GCS_BUCKET_NAME` |
+
+### `gcs-bucket-prefix`
+
+A prefix to be added to the GCS bucket objects.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gcs-bucket-prefix` |
+| env | `TERRALIST_GCS_BUCKET_PREFIX` |
+
+### `gcs-sign-expire`
+
+The number of minutes after which the signed URLs should expire.
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `15` |
+| cli | `--gcs-sign-expire` |
+| env | `TERRALIST_GCS_SIGN_EXPIRE` |
+
+### `gcs-service-account-cred-file-path`
+
+The GCP Service Account key path access key ID to access the GCS bucket. Leave empty for default credentials
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gcs-service-account-cred-file-path` |
+| env | `TERRALIST_GCS_SERVICE_ACCOUNT_CRED_FILE_PATH` |
+
 ### `custom-company-name`
 
 A small NIT branding of Terralist. The name of the company set by this variable will appear on the login page.
@@ -698,7 +898,10 @@ gh-client-secret: "${GITHUB_OAUTH_CLIENT_SECRET}"
 # gh-organization is optional, you can set it to restrict access to the registry
 # only to members of your GitHub organization
 gh-organization: "my-org"
-
+# gh-teams is optional, only users that are part of one of the teams will be able to access the registry
+# gh-organization is required for gh-teams to work
+# you must use the slug version of the team
+gh-teams: "team-a,team-b"
 token-signing-secret: "supersecretstring"
 
 database-backend: "sqlite"

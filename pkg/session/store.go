@@ -3,9 +3,9 @@ package session
 import "net/http"
 
 // Store is an interface that describes how a session
-// store should look like
+// store should look like.
 // Interface is a copy of gorilla/session.Store, but uses
-// our own Session implementation
+// our own Session implementation.
 type Store interface {
 	// Get should return a cached session.
 	Get(r *http.Request) (Session, error)

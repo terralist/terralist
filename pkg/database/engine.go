@@ -8,13 +8,13 @@ import (
 
 type DB = gorm.DB
 
-// Engine handles the database connection and operations
+// Engine handles the database connection and operations.
 type Engine interface {
 	WithMigration(Migrator) error
 	Handler() *DB
 }
 
-// DefaultEngine is the default concrete implementation of database.Engine
+// DefaultEngine is the default concrete implementation of database.Engine.
 type DefaultEngine struct {
 	Handle *gorm.DB
 }

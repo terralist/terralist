@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount } from 'svelte';
 
   export let trigger: string;
   export let action: (keys: Set<string>) => void;
@@ -9,7 +9,7 @@
   let keysPressed: Set<string> = new Set();
 
   onMount(() => {
-    keys = new Set(trigger.split("+").map(key => key.trim()));
+    keys = new Set(trigger.split('+').map(key => key.trim()));
   });
 
   const onKeyUp = (e: KeyboardEvent) => {
@@ -19,8 +19,11 @@
       }
 
       keysPressed.add(e.key);
-    
-      if (keys.size == keysPressed.size && [...keysPressed].every(k => keys.has(k))) {
+
+      if (
+        keys.size == keysPressed.size &&
+        [...keysPressed].every(k => keys.has(k))
+      ) {
         action(keysPressed);
       }
     }
@@ -33,8 +36,4 @@
   };
 </script>
 
-<svelte:window 
-  on:keydown={onKeyDown}
-  on:keyup={onKeyUp}
-/>
-
+<svelte:window on:keydown={onKeyDown} on:keyup={onKeyUp} />

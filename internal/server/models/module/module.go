@@ -8,7 +8,7 @@ import (
 	"terralist/pkg/version"
 
 	"github.com/google/uuid"
-	"github.com/ssoroka/slice"
+	"github.com/samber/lo"
 )
 
 type Module struct {
@@ -49,7 +49,7 @@ func (m Module) ToArtifact() artifact.Artifact {
 		Name:     m.Name,
 		Provider: m.Provider,
 		Type:     artifact.TypeModule,
-		Versions: slice.Map[Version, string](m.Versions, func(v Version) string {
+		Versions: lo.Map(m.Versions, func(v Version, _ int) string {
 			return v.Version
 		}),
 		CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05"),
@@ -78,14 +78,15 @@ type ModuleDTO struct {
 }
 
 type CreateDTO struct {
-	VersionDTO
+	VersionCreateDTO
 	AuthorityID uuid.UUID
 	Name        string `json:"name"`
 	Provider    string `json:"provider"`
 }
 
 type CreateFromURLDTO struct {
-	DownloadUrl string `json:"download_url"`
+	DownloadUrl string            `json:"download_url"`
+	Headers     map[string]string `json:"headers,omitempty"`
 }
 
 func (d CreateDTO) ToModule() Module {

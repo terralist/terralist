@@ -6,32 +6,36 @@ import (
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/artifact"
+	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
+	"terralist/pkg/rbac"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ssoroka/slice"
+	"github.com/samber/lo"
 )
 
 const (
 	artifactApiBase = "/api/artifacts"
 )
 
-// ArtifactController registers the endpoints to control authorities
+// ArtifactController registers the endpoints to control authorities.
 type ArtifactController interface {
 	api.RestController
 }
 
 // DefaultArtifactController is a concrete implementation of
-// ArtifactController
+// ArtifactController.
 type DefaultArtifactController struct {
 	AuthorityService services.AuthorityService
 	ModuleService    services.ModuleService
 	ProviderService  services.ProviderService
 
-	Authorization *handlers.Authorization
+	Authentication *handlers.Authentication
+	Authorization  *handlers.Authorization
 }
 
 func (c *DefaultArtifactController) Paths() []string {
@@ -40,7 +44,26 @@ func (c *DefaultArtifactController) Paths() []string {
 
 func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 	api := apis[0]
-	api.Use(c.Authorization.AnyAuthentication())
+
+	moduleComposer := func(ctx *gin.Context) string {
+		namespace := ctx.Param("namespace")
+		name := ctx.Param("name")
+		provider := ctx.Param("provider")
+
+		return fmt.Sprintf("%s/%s/%s", namespace, name, provider)
+	}
+
+	providerComposer := func(ctx *gin.Context) string {
+		namespace := ctx.Param("namespace")
+		name := ctx.Param("name")
+
+		return fmt.Sprintf("%s/%s", namespace, name)
+	}
+
+	api.Use(c.Authentication.AttemptAuthentication())
+
+	// This is a protected endpoint, every request should be authenticated.
+	api.Use(c.Authentication.RequireAuthentication())
 
 	api.GET(
 		"/",
@@ -53,8 +76,16 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
+			// The user key should be preset by the RequireAuthentication middleware.
+			user := handlers.MustGetFromContext[auth.User](ctx, "user")
+
+			// Filter only authorities where the user has access
+			filteredAuthorities := lo.Filter(authorities, func(authority *authority.Authority, idx int) bool {
+				return c.Authorization.CanPerform(*user, rbac.ResourceAuthorities, rbac.ActionGet, authority.Name)
+			})
+
 			artifactsCount := 0
-			for _, a := range authorities {
+			for _, a := range filteredAuthorities {
 				artifactsCount += len(a.Modules) + len(a.Providers)
 			}
 
@@ -65,6 +96,10 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 					artifact.Namespace = a.Name
 					artifact.FullName = fmt.Sprintf("%s/%s/%s", a.Name, m.Name, m.Provider)
 
+					if !c.Authorization.CanPerform(*user, rbac.ResourceModules, rbac.ActionGet, artifact.FullName) {
+						continue
+					}
+
 					artifacts = append(artifacts, artifact)
 				}
 
@@ -72,6 +107,10 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 					artifact := p.ToArtifact()
 					artifact.Namespace = a.Name
 					artifact.FullName = fmt.Sprintf("%s/%s", a.Name, p.Name)
+
+					if !c.Authorization.CanPerform(*user, rbac.ResourceProviders, rbac.ActionGet, artifact.FullName) {
+						continue
+					}
 
 					artifacts = append(artifacts, artifact)
 				}
@@ -81,8 +120,10 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
+	// TODO: I'm pretty sure this is unused
 	api.GET(
 		"/:namespace/:name/:provider/version",
+		c.Authorization.RequireAuthorization(rbac.ResourceModules)(rbac.ActionGet, moduleComposer),
 		func(ctx *gin.Context) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
@@ -96,9 +137,9 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			versions := slice.Map[module.VersionListDTO, string](
+			versions := lo.Map(
 				dto.Modules[0].Versions,
-				func(v module.VersionListDTO) string {
+				func(v module.VersionListDTO, _ int) string {
 					return v.Version
 				},
 			)
@@ -108,7 +149,29 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 
 	api.GET(
+		"/:namespace/:name/:provider/version/:version",
+		c.Authorization.RequireAuthorization(rbac.ResourceModules)(rbac.ActionGet, moduleComposer),
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			dto, err := c.ModuleService.GetVersion(namespace, name, provider, version)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, dto)
+		},
+	)
+
+	api.GET(
 		"/:namespace/:name/version",
+		c.Authorization.RequireAuthorization(rbac.ResourceProviders)(rbac.ActionGet, providerComposer),
 		func(ctx *gin.Context) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
@@ -121,9 +184,9 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			versions := slice.Map[provider.VersionListVersionDTO, string](
+			versions := lo.Map(
 				dto.Versions,
-				func(v provider.VersionListVersionDTO) string {
+				func(v provider.VersionListVersionDTO, _ int) string {
 					return v.Version
 				},
 			)
@@ -134,6 +197,7 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 
 	api.DELETE(
 		"/:namespace/:name/:provider/version/:version",
+		c.Authorization.RequireAuthorization(rbac.ResourceModules)(rbac.ActionDelete, moduleComposer),
 		func(ctx *gin.Context) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
@@ -166,6 +230,7 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 
 	api.DELETE(
 		"/:namespace/:name/version/:version",
+		c.Authorization.RequireAuthorization(rbac.ResourceProviders)(rbac.ActionDelete, providerComposer),
 		func(ctx *gin.Context) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")

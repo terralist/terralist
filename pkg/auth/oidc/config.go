@@ -5,7 +5,7 @@ import (
 )
 
 // Config implements auth.Configurator interface and
-// handles the configuration parameters for bitbucket authentication
+// handles the configuration parameters for bitbucket authentication.
 type Config struct {
 	ClientID                   string
 	ClientSecret               string

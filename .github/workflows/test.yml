@@ -18,44 +18,78 @@ concurrency:
 jobs:
   unit-test:
     name: Unit Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.22'
+          go-version: "1.25"
+          cache-dependency-path: |
+            go.sum
 
       - name: Install task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v2.0.0
 
-      - name: Install mockery
-        run: go install github.com/vektra/mockery/v2@latest
+      - name: Install dependencies
+        run: task --verbose tidy
 
       - name: Generate mocks
-        run: task generate-mocks
+        run: task test:generate-mocks
+
+      - name: Run backend linters
+        run: task --verbose lint:backend
+
+      - name: Run frontend linters
+        run: task --verbose lint:frontend
+
+      - name: Build frontend
+        run: task --verbose build:frontend
 
       - name: Run unit tests
-        run: task run-tests
+        run: task --verbose test:unit
 
   build-terralist-binary:
     name: Build Terralist
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     container: ghcr.io/terralist/test-base:latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Cache Go Packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: |
+            go-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Cache Yarn Packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            web/node_modules
+            web/node_modules_cache
+          key: yarn-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('web/package.json', 'web/yarn.lock') }}
+          restore-keys: |
+            yarn-${{ runner.os }}-${{ runner.arch }}-
+
+      - name: Set yarn cache folder
+        run: yarn config set cache-folder web/node_modules_cache
 
       - name: Mark repo clone as safe
         run: git config --global --add safe.directory /__w/terralist/terralist
 
       - name: Build Terralist
-        run: task build -- release
+        run: task --verbose build -- --release
 
       - name: Save binary
         uses: actions/upload-artifact@v4
@@ -67,7 +101,7 @@ jobs:
 
   e2e-tests:
     name: E2E Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     needs: [build-terralist-binary]
 
@@ -80,7 +114,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:16.3
+        image: public.ecr.aws/docker/library/postgres:18.1
         ports:
           - 5432:5432
         env:
@@ -88,7 +122,7 @@ jobs:
           POSTGRES_PASSWORD: 'terralist'
           POSTGRES_DB: 'terralist'
       mysql:
-        image: public.ecr.aws/docker/library/mysql:8.4
+        image: public.ecr.aws/docker/library/mysql:9.6
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
         ports:
           - 3306:3306
@@ -97,16 +131,24 @@ jobs:
           MYSQL_PASSWORD: 'terralist'
           MYSQL_DATABASE: 'terralist'
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      minio:
+        image: public.ecr.aws/bitnami/minio:2025.10.15
+        ports:
+          - 9000:9000
+        env:
+          MINIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
+          MINIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
     env:
       TERRALIST_PORT: 5758
+
       TERRALIST_LOG_LEVEL: debug
+
       TERRALIST_OAUTH_PROVIDER: github
       TERRALIST_GH_CLIENT_ID: 1234567890abcdef0123
       TERRALIST_GH_CLIENT_SECRET: 1234567890abcdef1234567890abcdef01234567
       TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
-      TERRALIST_MODULES_STORAGE_RESOLVER: "proxy"
-      TERRALIST_PROVIDERS_STORAGE_RESOLVER: "proxy"
+
       TERRALIST_SESSION_STORE: "cookie"
       TERRALIST_COOKIE_SECRET: "someotherrandomvalue"
 
@@ -118,9 +160,22 @@ jobs:
       TERRALIST_MYSQL_PASSWORD: terralist
       TERRALIST_MYSQL_DATABASE: terralist
 
+      TERRALIST_MODULES_STORAGE_RESOLVER: "s3"
+      TERRALIST_PROVIDERS_STORAGE_RESOLVER: "s3"
+      TERRALIST_S3_ENDPOINT: "http://minio:9000"
+      TERRALIST_S3_BUCKET_NAME: "terralist"
+      TERRALIST_S3_BUCKET_REGION: "us-east-1"
+      TERRALIST_S3_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+      TERRALIST_S3_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      TERRALIST_S3_USE_PATH_STYLE: "true"
+      TERRALIST_S3_SERVER_SIDE_ENCRYPTION: "none"
+
+      TERRALIST_RBAC_DEFAULT_ROLE: "readonly"
+      TERRALIST_RBAC_POLICY_PATH: ${{ format('{0}/e2e/policy.csv', github.workspace)}}
+
     steps:
       - name: Download terralist binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: terralist
           path: /usr/local/bin/terralist
@@ -131,7 +186,7 @@ jobs:
           echo "PATH=$PATH:/usr/local/bin/terralist" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: 
             e2e
@@ -147,6 +202,7 @@ jobs:
             sqlite3 "$TERRALIST_SQLITE_PATH" < ./e2e/data/terralist.sqlite.sql
           elif [ "$TERRALIST_DATABASE_BACKEND" = "mysql" ]; then
             mysql \
+              --skip-ssl \
               -u $TERRALIST_MYSQL_USERNAME \
               -p"${TERRALIST_MYSQL_PASSWORD}" \
               -h $TERRALIST_MYSQL_HOST \
@@ -158,19 +214,19 @@ jobs:
             exit 1
           fi
 
+      - name: Configure MinIO
+        run: |
+          mc alias set minio $TERRALIST_S3_ENDPOINT $TERRALIST_S3_ACCESS_KEY_ID $TERRALIST_S3_SECRET_ACCESS_KEY
+          mc mb --ignore-existing minio/$TERRALIST_S3_BUCKET_NAME
+
       - name: Spin up Terralist server
-        uses: miguelteixeiraa/action-run-in-background@v1
+        uses: JarvusInnovations/background-action@v1.0.7
         with:
-          shell: bash
-          script: terralist server
-          timeout: 30
-          readiness-script: |
-            if curl -sSf http://localhost:${{ env.TERRALIST_PORT }}/check/readyz >/dev/null; then
-              echo "Terralist is ready."
-            else
-              echo "Terralist is not yet ready."
-              exit 1
-            fi
+          run: terralist server
+          wait-on: |
+            http-get://localhost:${{ env.TERRALIST_PORT }}/check/readyz
+          wait-for: 30s
+          log-output-if: 'true'
 
       - name: Run E2E Tests
         run: venom run --var-from-file ./e2e/variables.yaml ./e2e/suites

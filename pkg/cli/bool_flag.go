@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// BoolFlag holds data for the flags with boolean values
+// BoolFlag holds data for the flags with boolean values.
 type BoolFlag struct {
 	Description  string
 	DefaultValue bool
@@ -71,7 +71,7 @@ func (t *BoolFlag) Format() string {
 }
 
 func (t *BoolFlag) Validate() error {
-	if t.Required && t.isSet {
+	if t.Required && !t.isSet {
 		return fmt.Errorf("required but not set")
 	}
 

@@ -1,43 +1,72 @@
 package s3
 
 import (
-	"bytes"
+	"context"
 	"fmt"
-	"net/http"
+	"io"
 	"time"
 
 	"terralist/pkg/storage"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-// The S3 resolver will download files from the given URL then
-// uploads them to an S3 bucket, generating a public download URL
+// S3Client is a wrapper interface around the S3 client methods used by the Resolver.
+type S3Client interface {
+	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
+}
 
-// Resolver is the concrete implementation of storage.Resolver
+// PresignClient is a wrapper interface around the S3 Presign client methods used by the Resolver.
+type PresignClient interface {
+	PresignGetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.PresignOptions)) (*v4.PresignedHTTPRequest, error)
+}
+
+// Resolver is the concrete implementation of storage.Resolver.
+// The S3 resolver will download files from the given URL then
+// uploads them to an S3 bucket, generating a public download URL.
 type Resolver struct {
 	BucketName   string
 	BucketPrefix string
 	LinkExpire   int
 
-	Session *session.Session
+	ServerSideEncryption string
+	UseACLs              bool
+
+	Client    S3Client
+	Presigner PresignClient
 }
 
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
 
-	if _, err := s3.New(r.Session).PutObject(&s3.PutObjectInput{
-		Bucket:               aws.String(r.BucketName),
-		Key:                  r.withPrefix(key),
-		ACL:                  aws.String("private"),
-		Body:                 bytes.NewReader(in.Content),
-		ContentLength:        aws.Int64(int64(len(in.Content))),
-		ContentType:          aws.String(http.DetectContentType(in.Content)),
-		ContentDisposition:   aws.String("attachment"),
-		ServerSideEncryption: aws.String("AES256"),
-	}); err != nil {
+	// Preemptively rewind the file to make sure all content is available.
+	if _, err := in.Reader.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not upload archive, file can't be rewinded: %w", err)
+	}
+
+	putObjectInput := &s3.PutObjectInput{
+		Bucket:             aws.String(r.BucketName),
+		Key:                r.withPrefix(key),
+		Body:               in.Reader,
+		ContentLength:      aws.Int64(in.Size),
+		ContentType:        aws.String(in.ContentType),
+		ContentDisposition: aws.String("attachment"),
+	}
+
+	// Only set ACL if not disabled (for bucket policy support)
+	if r.UseACLs {
+		putObjectInput.ACL = types.ObjectCannedACLPrivate
+	}
+
+	if r.ServerSideEncryption != "none" {
+		putObjectInput.ServerSideEncryption = types.ServerSideEncryption(r.ServerSideEncryption)
+	}
+
+	if _, err := r.Client.PutObject(context.TODO(), putObjectInput); err != nil {
 		return "", fmt.Errorf("could not upload archive: %v", err)
 	}
 
@@ -45,21 +74,21 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 }
 
 func (r *Resolver) Find(key string) (string, error) {
-	req, _ := s3.New(r.Session).GetObjectRequest(&s3.GetObjectInput{
+	req, err := r.Presigner.PresignGetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(r.BucketName),
 		Key:    r.withPrefix(key),
+	}, func(po *s3.PresignOptions) {
+		po.Expires = time.Duration(r.LinkExpire) * time.Minute
 	})
-
-	url, err := req.Presign(time.Duration(r.LinkExpire) * time.Minute)
 	if err != nil {
 		return "", fmt.Errorf("could not generate URL for %v: %v", key, err)
 	}
 
-	return url, nil
+	return req.URL, nil
 }
 
 func (r *Resolver) Purge(key string) error {
-	if _, err := s3.New(r.Session).DeleteObject(&s3.DeleteObjectInput{
+	if _, err := r.Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
 		Bucket: aws.String(r.BucketName),
 		Key:    r.withPrefix(key),
 	}); err != nil {

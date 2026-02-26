@@ -30,9 +30,12 @@ func main() {
 	v := viper.New()
 
 	serverCmd := &server.Command{
-		RunningMode:   Mode,
-		ServerCreator: &server.DefaultCreator{},
-		Viper:         v,
+		RunningMode:    Mode,
+		Version:        Version,
+		CommitHash:     CommitHash,
+		BuildTimestamp: BuildTimestamp,
+		ServerCreator:  &server.DefaultCreator{},
+		Viper:          v,
 	}
 
 	versionCmd := &version.Command{

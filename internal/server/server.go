@@ -1,9 +1,11 @@
 package server
 
 import (
+	"database/sql"
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"sync/atomic"
 	"time"
 
@@ -16,17 +18,20 @@ import (
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
+	"terralist/pkg/rbac"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/web"
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/mazen160/go-random"
+	random "github.com/mazen160/go-random"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
 
-// Server represents the Terralist server
+// Server represents the Terralist server.
 type Server struct {
 	Port     int
 	CertFile string
@@ -40,9 +45,11 @@ type Server struct {
 	Resolver storage.Resolver
 
 	Readiness *atomic.Bool
+
+	AuthorizedUsers string
 }
 
-// Config holds the server configuration that isn't configurable by the user
+// Config holds the server configuration that isn't configurable by the user.
 type Config struct {
 	RunningMode string
 
@@ -54,13 +61,27 @@ type Config struct {
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
-	if config.RunningMode == "release" {
+	// Set Gin mode based on the configuration
+	switch config.RunningMode {
+	case "release":
 		gin.SetMode(gin.ReleaseMode)
-	} else if config.RunningMode == "debug" {
+	case "debug":
 		gin.SetMode(gin.DebugMode)
 	}
 
+	// Get SQL DB for metrics
+	var sqlDB *sql.DB
+	if config.Database != nil {
+		sqlDB, _ = config.Database.Handler().DB()
+	}
+
+	// Create Prometheus metrics registry
+	metricsRegistry := metrics.NewRegistry(&metrics.RegistryConfig{
+		SqlDB: sqlDB,
+	})
+
 	router := gin.New()
+	router.Use(handlers.PrometheusMetrics(metricsRegistry))
 	router.Use(handlers.Logger())
 	router.Use(gin.Recovery())
 
@@ -78,6 +99,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	// Serve static files (frontend) as middleware
 	router.Use(static.Serve("/", web.StaticFS()))
 
+	// Prometheus metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.HandlerFor(
+		metricsRegistry,
+		promhttp.HandlerOpts{},
+	)))
+
 	probeGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
 		Prefix: "/check",
 	})
@@ -92,17 +119,24 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Prefix: "/v1",
 	})
 
-	jwtManager, _ := jwt.New(userConfig.TokenSigningSecret)
+	jwtManager, err := jwt.New(userConfig.TokenSigningSecret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create JWT manager: %v", err)
+	}
 
 	salt, _ := random.String(32)
 	exchangeKey, _ := random.String(32)
+
+	// Parse token expiration duration
+	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
 
 	loginService := &services.DefaultLoginService{
 		Provider: config.Provider,
 		JWT:      jwtManager,
 
-		EncryptSalt:     salt,
-		CodeExchangeKey: exchangeKey,
+		EncryptSalt:         salt,
+		CodeExchangeKey:     exchangeKey,
+		TokenExpirationSecs: tokenExpirationSeconds,
 	}
 
 	loginController := &controllers.DefaultLoginController{
@@ -132,10 +166,20 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 	}
 
-	authorization := &handlers.Authorization{
-		JWT:           jwtManager,
+	enforcer, err := rbac.NewEnforcer(userConfig.RbacPolicyPath, userConfig.RbacDefaultRole)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create policy enforcer: %v", err)
+	}
+
+	authentication := &handlers.Authentication{
 		ApiKeyService: apiKeyService,
+		JWT:           jwtManager,
 		Store:         config.Store,
+	}
+
+	authorization := &handlers.Authorization{
+		AuthorityService: authorityService,
+		Enforcer:         enforcer,
 	}
 
 	moduleRepository := &repositories.DefaultModuleRepository{
@@ -150,9 +194,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	moduleController := &controllers.DefaultModuleController{
-		ModuleService: moduleService,
-		Authorization: authorization,
-		AnonymousRead: userConfig.ModulesAnonymousRead,
+		ModuleService:  moduleService,
+		Authentication: authentication,
+		Authorization:  authorization,
+		AnonymousRead:  userConfig.ModulesAnonymousRead,
+
+		HomeDir: userConfig.Home,
 	}
 
 	apiV1Group.Register(moduleController)
@@ -170,6 +217,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	providerController := &controllers.DefaultProviderController{
 		ProviderService: providerService,
+		Authentication:  authentication,
 		Authorization:   authorization,
 		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
@@ -180,7 +228,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		ApiKeyService:    apiKeyService,
 
-		Authorization: authorization,
+		Authentication: authentication,
+		Authorization:  authorization,
 	}
 
 	apiV1Group.Register(authorityController)
@@ -190,7 +239,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ModuleService:    moduleService,
 		ProviderService:  providerService,
 
-		Authorization: authorization,
+		Authentication: authentication,
+		Authorization:  authorization,
 	}
 
 	apiV1Group.Register(artifactController)
@@ -218,6 +268,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorizationEndpoint: apiV1Group.Prefix() + loginController.AuthorizationRoute(),
 		SessionDetailsRoute:   apiV1Group.Prefix() + loginController.SessionDetailsRoute(),
 		ClearSessionRoute:     apiV1Group.Prefix() + loginController.ClearSessionRoute(),
+		AuthorizedUsers:       userConfig.AuthorizedUsers,
 	})
 
 	return &Server{
@@ -235,7 +286,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}, nil
 }
 
-// Start initializes the routes and starts serving
+// Start initializes the routes and starts serving.
 func (s *Server) Start() error {
 	useTLS := s.CertFile != "" && s.KeyFile != ""
 
@@ -250,6 +301,7 @@ func (s *Server) Start() error {
 
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
 
 	go func() {
 		// Mark the service as available
@@ -276,24 +328,26 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// waitForDrain blocks the process until draining is complete
+// waitForDrain blocks the process until draining is complete.
 func (s *Server) waitForDrain() {
 	// Mark the service as unavailable
-	s.Readiness.Store(true)
+	s.Readiness.Store(false)
 
 	drainComplete := make(chan bool, 1)
 
 	go func() {
-		// TODO: Make Drainer when necessary
+		// TODO: Implement actual draining logic here
 		drainComplete <- true
 	}()
 
 	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-drainComplete:
 			log.Info().Msg("All in-progress operations completed, shutting down.")
+			return
 		case <-ticker.C:
 			log.Info().Msg("Waiting for in-progress operations to complete...")
 		}

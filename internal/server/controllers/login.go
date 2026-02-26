@@ -27,28 +27,28 @@ const (
 )
 
 // LoginController registers the endpoints required to handle the OAUTH 2.0
-// authentication
+// authentication.
 type LoginController interface {
 	api.RestController
 
 	// AuthorizationRoute returns the endpoint where Terraform can call for
-	// initiating the authorization process
+	// initiating the authorization process.
 	AuthorizationRoute() string
 
 	// TokenRoute returns the endpoint where Terraform can call to validate
-	// the code components and obtain the authorization token
+	// the code components and obtain the authorization token.
 	TokenRoute() string
 
 	// SessionDetailsRoute returns the endpoint where user' session details
-	// can be found
+	// can be found.
 	SessionDetailsRoute() string
 
 	// ClearSessionRoute returns the endpoint where user' session can be
-	// cleared
+	// cleared.
 	ClearSessionRoute() string
 }
 
-// DefaultLoginController is a concrete implementation of LoginController
+// DefaultLoginController is a concrete implementation of LoginController.
 type DefaultLoginController struct {
 	Store        session.Store
 	LoginService services.LoginService
@@ -159,6 +159,11 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 		code := ctx.Query("code")
 		state := ctx.Query("state")
 
+		if code == "" || state == "" {
+			ctx.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
 		r, err := oauth.Payload(state).ToRequest(c.EncryptSalt)
 		if err != nil {
 			ctx.Redirect(
@@ -264,16 +269,29 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"name":         u.Name,
 			"email":        u.Email,
+			"groups":       u.Groups,
+			"authority":    u.Authority,
 			"authority_id": u.AuthorityID,
 		})
 	})
 
 	api.DELETE(sessionRoute, func(ctx *gin.Context) {
 		sess, err := c.Store.Get(ctx.Request)
-		if err == nil {
-			sess.Set("user", nil)
-			c.Store.Save(ctx.Request, ctx.Writer, sess)
+		if err != nil {
+			ctx.Status(http.StatusAccepted)
+			return
 		}
+
+		sess.Set("user", nil)
+
+		if err := c.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{fmt.Sprintf("could not wipe session: %v", err)},
+			})
+			return
+		}
+
+		ctx.Status(http.StatusNoContent)
 	})
 }
 

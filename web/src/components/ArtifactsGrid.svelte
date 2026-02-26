@@ -17,7 +17,8 @@
   let artifactsCount: number = 0;
 
   // View mode: 'grid' or 'list'
-  let viewMode: 'grid' | 'list' = (sessionStorage.getItem('viewMode') as 'grid' | 'list') ?? 'grid';
+  let viewMode: 'grid' | 'list' =
+    (sessionStorage.getItem('viewMode') as 'grid' | 'list') ?? 'grid';
 
   const toggleViewMode = (mode: 'grid' | 'list') => {
     viewMode = mode;
@@ -168,15 +169,20 @@
       </div>
 
       <!-- View mode toggle -->
-      <div class="flex flex-row gap-1 ml-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <div
+        class="flex flex-row gap-1 ml-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
         <button
-          class="p-1.5 rounded transition-colors {viewMode === 'grid' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
+          class="p-1.5 rounded transition-colors {viewMode === 'grid'
+            ? 'bg-white dark:bg-gray-600 shadow-sm'
+            : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
           on:click={() => toggleViewMode('grid')}
           title="Grid view">
           <Icon name="grid-view" width="1.25rem" height="1.25rem" />
         </button>
         <button
-          class="p-1.5 rounded transition-colors {viewMode === 'list' ? 'bg-white dark:bg-gray-600 shadow-sm' : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
+          class="p-1.5 rounded transition-colors {viewMode === 'list'
+            ? 'bg-white dark:bg-gray-600 shadow-sm'
+            : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
           on:click={() => toggleViewMode('list')}
           title="List view">
           <Icon name="list-view" width="1.25rem" height="1.25rem" />

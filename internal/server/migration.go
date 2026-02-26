@@ -26,7 +26,5 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		return err
 	}
 
-	
-
 	return nil
 }

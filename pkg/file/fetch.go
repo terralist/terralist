@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -12,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/go-getter"
+	getter "github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )
 
@@ -20,13 +21,47 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
-// fetch downloads a file/directory from a given URL and loads them into the memory
-func fetch(name string, url string, checksum string, kind int) (*InMemoryFile, error) {
+// generateGetters returns the map of getters.
+// Modified version of https://github.com/hashicorp/go-getter/blob/f7836fb97529673f24dac0aaa140762ee05c847f/get.go#L65
+// to add support for custom http headers.
+func generateGetters(header http.Header) map[string]getter.Getter {
+	httpGetter := &getter.HttpGetter{
+		Netrc:  true,
+		Header: header,
+	}
+
+	return map[string]getter.Getter{
+		"file":  new(getter.FileGetter),
+		"git":   new(getter.GitGetter),
+		"gcs":   new(getter.GCSGetter),
+		"hg":    new(getter.HgGetter),
+		"s3":    new(getter.S3Getter),
+		"http":  httpGetter,
+		"https": httpGetter,
+	}
+}
+
+// fetch downloads a file/directory from a given URL and loads them.
+func fetch(name string, url string, checksum string, kind int, header http.Header) (File, error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
 	}
-	defer os.RemoveAll(tempDir)
+	// TODO: We need to keep the temp dir to read the files and automatically generate the module
+	// documentation. This is not great, as over time we risk accumulating a lot of garbage.
+	// However, we ask the OS to give us a temp directory, which means the OS would handle
+	// its garbage collection. Unfortunately, this is not ideal, as for some OSes, the
+	// garbage collection of the tmp dir differs, some uses crons, some only does it on reboot,
+	// some never do it.
+	// Terralist runs as a server, so a reboot to clean the disk space is not a solution.
+	// Officially, Terralist is bundled on an Alpine distribution, and, in Alpine, by default
+	// the tmp directory is never cleaned.
+	// We can patch this by manually setting a cron to do it (also enable clean-up on boot might
+	// help), but definitely, that is not a fix. If Terralist is bundled in another OS, the entire
+	// process have to be handled by the user.
+	// We should implement an asynchronous worker that automatically cleans those files for
+	// Terralist, once in a while, so we get the same behavior on any OS we run.
+	// defer os.RemoveAll(tempDir)
 
 	dst := tempDir
 	if kind == file {
@@ -52,17 +87,19 @@ func fetch(name string, url string, checksum string, kind int) (*InMemoryFile, e
 
 	ctx, cancel := context.WithCancel(context.Background())
 	client := &getter.Client{
-		Ctx: ctx,
-		Src: u.String(),
-		Dst: dst,
-		Pwd: tempDir,
+		Ctx:     ctx,
+		Src:     u.String(),
+		Dst:     dst,
+		Pwd:     tempDir,
+		Getters: generateGetters(header),
 	}
 
-	if kind == file {
+	switch kind {
+	case file:
 		client.Mode = getter.ClientModeFile
-	} else if kind == dir {
+	case dir:
 		client.Mode = getter.ClientModeDir
-	} else if kind == any {
+	case unknown:
 		client.Mode = getter.ClientModeAny
 	}
 
@@ -117,11 +154,12 @@ func fetch(name string, url string, checksum string, kind int) (*InMemoryFile, e
 }
 
 // parseResult parses the download result and returns an
-// InMemoryFile
-func parseResult(name, src string, kind int) (*InMemoryFile, error) {
-	if kind == file {
+// File.
+func parseResult(name, src string, kind int) (File, error) {
+	switch kind {
+	case file:
 		return readFile(name, src)
-	} else if kind == dir {
+	case dir:
 		return archiveDir(name, src)
 	}
 
@@ -129,39 +167,16 @@ func parseResult(name, src string, kind int) (*InMemoryFile, error) {
 }
 
 // readFile reads a file from the disk and returns it
-// as an InMemoryFile
-func readFile(name, src string) (*InMemoryFile, error) {
-	// Open the file
-	f, err := os.Open(src)
-	if err != nil {
-		return nil, fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
-	}
-	defer f.Close()
-
-	// Fetch file headers
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("%w: cannot stat downloaded file: %v", ErrSystemFailure, err)
-	}
-
-	buffer := new(bytes.Buffer)
-
-	// Copy the file to the buffer
-	if _, err := io.Copy(buffer, f); err != nil {
-		return nil, err
-	}
-
-	return &InMemoryFile{
-		Name:     name,
-		FileInfo: fi,
-		Content:  buffer.Bytes(),
-	}, nil
+// as an File.
+func readFile(name, src string) (File, error) {
+	return LoadFromDisk(name, src)
 }
 
 // archiveDir reads a directory from the disk, archives it
-// and returns the archive file as an InMemoryFile
-func archiveDir(name, src string) (*InMemoryFile, error) {
-	dirFiles := []*InMemoryFile{}
+// and returns the archive file.
+func archiveDir(name, src string) (File, error) {
+	dirFiles := []File{}
+	var rootDir string
 
 	// Walk recursively through the given directory
 	if err := filepath.Walk(src, func(fpath string, info os.FileInfo, err error) error {
@@ -177,22 +192,58 @@ func archiveDir(name, src string) (*InMemoryFile, error) {
 
 		relPath, _ := filepath.Rel(src, fpath)
 		relPath = filepath.Clean(relPath)
-		relPath = strings.Replace(relPath, "\\", "/", -1)
+		relPath = strings.ReplaceAll(relPath, "\\", "/")
+
+		// Detect if all files are under a single root directory
+		// (common in GitHub archive downloads like terraform-aws-eks-21.15.1/)
+		if rootDir == "" {
+			parts := strings.Split(relPath, "/")
+			if len(parts) > 1 {
+				rootDir = parts[0]
+			}
+		}
 
 		file, err := readFile(relPath, fpath)
 		if err != nil {
 			return fmt.Errorf("%w: cannot read downloaded file: %v", ErrSystemFailure, err)
 		}
 
-		dirFiles = append(dirFiles, &InMemoryFile{
-			Name:     relPath,
-			FileInfo: file.FileInfo,
-			Content:  file.Content,
-		})
+		dirFiles = append(dirFiles, file)
 
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("%w: could not parse downloaded dir: %v", ErrSystemFailure, err)
+	}
+
+	// If all files share a common root directory, strip it to normalize the archive structure
+	// This handles GitHub archive downloads which include a version-specific root folder
+	if rootDir != "" {
+		allFilesInRoot := true
+		for _, f := range dirFiles {
+			if !strings.HasPrefix(f.Name(), rootDir+"/") {
+				allFilesInRoot = false
+				break
+			}
+		}
+
+		if allFilesInRoot {
+			// Strip the root directory from all file paths
+			strippedFiles := make([]File, len(dirFiles))
+			for i, f := range dirFiles {
+				originalName := f.Name()
+				strippedName := strings.TrimPrefix(originalName, rootDir+"/")
+
+				// Read the content from the original file
+				var buf bytes.Buffer
+				if _, err := io.Copy(&buf, f); err != nil {
+					return nil, fmt.Errorf("%w: failed to copy file content: %v", ErrSystemFailure, err)
+				}
+
+				// Create a new file with the stripped name
+				strippedFiles[i] = NewInMemoryFile(strippedName, buf.Bytes())
+			}
+			dirFiles = strippedFiles
+		}
 	}
 
 	archive, err := Archive(name, dirFiles)

@@ -15,19 +15,19 @@ var (
 	ErrApiKeyExpired = errors.New("api key expired")
 )
 
-// ApiKeyRepository describes a service that can interact with the API keys database
+// ApiKeyRepository describes a service that can interact with the API keys database.
 type ApiKeyRepository interface {
-	// Find searches for a specific ApiKey
+	// Find searches for a specific ApiKey.
 	Find(id uuid.UUID) (*authority.ApiKey, error)
 
-	// Create creates a new ApiKey
+	// Create creates a new ApiKey.
 	Create(*authority.ApiKey) (*authority.ApiKey, error)
 
-	// Delete removes an ApiKey from the database
+	// Delete removes an ApiKey from the database.
 	Delete(id uuid.UUID) error
 }
 
-// DefaultApiKeyRepository is a concrete implementation of ApiKeyRepository
+// DefaultApiKeyRepository is a concrete implementation of ApiKeyRepository.
 type DefaultApiKeyRepository struct {
 	Database database.Engine
 }

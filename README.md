@@ -21,7 +21,7 @@
 
 Terralist is a private Terraform registry for providers and modules that follows the published HashiCorp protocols. It provides:
 * A secure way to distribute your confidential modules and providers;
-* [_Soon_] A management interface to visualize documentation;
+* A management interface to visualize artifacts (including modules documentation);
 
 ## Highlights
 
@@ -37,12 +37,14 @@ Terralist is a private Terraform registry for providers and modules that follows
   Currently supported private storage:
   * AWS S3: uses a private S3 bucket
   * Azure Blob: uses a private Azure Storage Account
+  * GCS: uses a private Google Storage bucket
   * Proxy: forwards the URL received at creation
 
 * **Provider Registry**: ([docs](https://www.terraform.io/docs/internals/provider-registry-protocol.html)) Similar with modules registry.
   Currently supported private storage:
   * AWS S3: uses a private S3 bucket
   * Azure Blob: uses a private Azure Storage Account
+  * GCS: uses a private Google Storage bucket
   * Proxy: forwards the URL received at creation
 
 _Note_: For _Proxy_ storage mode, the URL management is up to you. If, for example, you are providing a git URL, then the same URL will be forwarded to the requester (Terraform).

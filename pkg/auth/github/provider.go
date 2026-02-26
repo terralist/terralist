@@ -7,24 +7,35 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/rs/zerolog/log"
+	"github.com/samber/lo"
+
 	"terralist/pkg/auth"
 )
 
-// Provider is the concrete implementation of oauth.Engine
+// Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
-	ClientID     string
-	ClientSecret string
-	Organization string
+	ClientID      string
+	ClientSecret  string
+	Organization  string
+	Teams         string
+	oauthEndpoint string
+	apiEndpoint   string
 }
 
 type tokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
+type Team struct {
+	Name       string
+	Id         int
+	Slug       string
+	Permission string
+}
+
 var (
-	oauthEndpoint = "https://github.com/login/oauth"
-	apiEndpoint   = "https://api.github.com"
-	httpClient    = &http.Client{}
+	httpClient = &http.Client{}
 )
 
 func (p *Provider) Name() string {
@@ -42,7 +53,7 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 
 	return fmt.Sprintf(
 		"%s/authorize?client_id=%s&state=%s&scope=%s",
-		oauthEndpoint,
+		p.oauthEndpoint,
 		p.ClientID,
 		state,
 		url.QueryEscape(scope),
@@ -65,14 +76,32 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 		return err
 	}
 
+	var teams []Team
+
 	if p.Organization != "" {
 		if err := p.PerformCheckUserMemberInOrganization(t); err != nil {
+			return err
+		}
+
+		userTeams, err := p.GetUserTeams(t)
+		if err != nil {
+			return err
+		}
+
+		teams = userTeams
+	}
+
+	if p.Teams != "" {
+		if err := p.PerformCheckUserMemberOfTeams(t, teams); err != nil {
 			return err
 		}
 	}
 
 	user.Name = name
 	user.Email = email
+	user.Groups = lo.Map(teams, func(t Team, _ int) string {
+		return t.Slug
+	})
 
 	return nil
 }
@@ -80,7 +109,7 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) error {
 	accessTokenUrl := fmt.Sprintf(
 		"%s/access_token?client_id=%s&client_secret=%s&code=%s",
-		oauthEndpoint,
+		p.oauthEndpoint,
 		p.ClientID,
 		p.ClientSecret,
 		code,
@@ -107,7 +136,7 @@ func (p *Provider) PerformAccessTokenRequest(code string, t *tokenResponse) erro
 }
 
 func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
-	userEndpoint := fmt.Sprintf("%s/user", apiEndpoint)
+	userEndpoint := fmt.Sprintf("%s/user", p.apiEndpoint)
 
 	req, err := http.NewRequest(http.MethodGet, userEndpoint, nil)
 	if err != nil {
@@ -144,7 +173,7 @@ func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
 }
 
 func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
-	emailsEndpoint := fmt.Sprintf("%s/user/emails", apiEndpoint)
+	emailsEndpoint := fmt.Sprintf("%s/user/emails", p.apiEndpoint)
 
 	req, err := http.NewRequest(http.MethodGet, emailsEndpoint, nil)
 	if err != nil {
@@ -169,10 +198,13 @@ func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
 		return "", err
 	}
 
-	var verifiedEmail string = ""
+	var verifiedEmail = ""
 	for _, e := range data {
-		if verifiedEmail == "" && e["primary"].(bool) {
-			verifiedEmail = e["email"].(string)
+		if isPrimary, ok := e["primary"].(bool); ok && isPrimary {
+			if email, ok := e["email"].(string); ok {
+				verifiedEmail = email
+				break
+			}
 		}
 	}
 
@@ -184,7 +216,7 @@ func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
 }
 
 func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
-	orgEndpoint := fmt.Sprintf("%s/user/memberships/orgs/%s", apiEndpoint, p.Organization)
+	orgEndpoint := fmt.Sprintf("%s/user/memberships/orgs/%s", p.apiEndpoint, p.Organization)
 
 	req, err := http.NewRequest(http.MethodGet, orgEndpoint, nil)
 	if err != nil {
@@ -205,4 +237,48 @@ func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
 	}
 
 	return nil
+}
+
+func (p *Provider) GetUserTeams(t tokenResponse) ([]Team, error) {
+	teamsEndpoint := fmt.Sprintf("%s/orgs/%s/teams", p.apiEndpoint, p.Organization)
+
+	req, err := http.NewRequest(http.MethodGet, teamsEndpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Authorization", fmt.Sprintf("token %s", t.AccessToken))
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return nil, fmt.Errorf("unable to list teams of %s", p.Organization)
+	}
+
+	var userTeams []Team
+	if err := json.NewDecoder(res.Body).Decode(&userTeams); err != nil {
+		return nil, fmt.Errorf("unable to parse teams of %s", p.Organization)
+	}
+
+	return userTeams, nil
+}
+
+func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse, userTeams []Team) error {
+	teams := strings.Split(p.Teams, ",")
+
+	for _, team := range userTeams {
+		for _, t := range teams {
+			if team.Slug == t {
+				log.Debug().Msgf("user is member of team: %s", t)
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("user is not a member of any of the teams: %s", p.Teams)
 }

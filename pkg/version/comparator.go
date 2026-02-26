@@ -3,9 +3,10 @@ package version
 import "strings"
 
 // Compare compares two versions and returns:
-// -1  if lhs < rhs
-//  0  if lhs = rhs
-//  1  if lhs > rhs
+//
+//   - -1  if lhs < rhs
+//   - 0   if lhs = rhs
+//   - 1   if lhs > rhs
 func Compare(lhs Version, rhs Version) int {
 	major := strings.Compare(lhs.Major(), rhs.Major())
 	if major != 0 {
