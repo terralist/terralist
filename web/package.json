@@ -27,5 +27,9 @@
     "uuid": "^10.0.0",
     "vite": "^4.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "github-markdown-css": "^5.9.0",
+    "node-emoji": "^2.2.0",
+    "svelte-markdown": "^0.2.3"
+  }
 }

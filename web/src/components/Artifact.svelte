@@ -1,23 +1,34 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { push } from 'svelte-spa-router';
+  import SvelteMarkdown from 'svelte-markdown';
 
-  import config from "@/config";
-  import { indent } from "@/lib/utils";
+  import 'github-markdown-css/github-markdown-light.css';
+  import 'github-markdown-css/github-markdown-dark.css';
+
+  import config from '@/config';
+  import { indent } from '@/lib/utils';
   import { useQuery } from '@/lib/hooks';
 
-  import Icon from "./Icon.svelte";
-  import Dropdown from "./Dropdown.svelte";
+  import Icon from './Icon.svelte';
+  import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
+  import { emojify } from 'node-emoji';
 
-  import { Artifacts, type ArtifactVersion } from '@/api/artifacts';
-  import { computeArtifactUrl } from '@/lib/artifact';
+  import {
+    Artifacts,
+    type ArtifactVersion,
+    type ArtifactVersionWithDocumentation,
+    type Submodule
+  } from '@/api/artifacts';
+  import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
 
-  export let type: "module" | "provider";
+  export let type: 'module' | 'provider';
   export let namespace: string;
   export let name: string;
-  export let provider: string = "";
-  export let version: string = "";
+  export let provider: string = '';
+  export let version: string = '';
 
   const moduleTemplate = `
     module "${name}" {
@@ -42,69 +53,164 @@
   `;
 
   const template = indent({
-    s: type === "module" ? moduleTemplate : providerTemplate,
+    s: type === 'module' ? moduleTemplate : providerTemplate,
     n: 4,
-    reverse: true,
+    reverse: true
   });
-  
+
   const onOptionSelect = (option: string) => {
     const url = computeArtifactUrl({
-      id: null,
-      fullName: null,
-      createdAt: null,
-      updatedAt: null,
+      type: type,
       namespace: namespace,
       name: name,
-      provider: provider,
-      versions: [option],
-      type: type,
-    });
+      provider: type == 'module' ? provider : undefined,
+      version: option
+    } as LocatableArtifact);
     push(url);
   };
 
   let label: string = version;
 
-  const {
-    data: versions,
-    isLoading: areVersionsLoading,
-    error: errorMessage,
-  } = useQuery<ArtifactVersion[]>(Artifacts.getAllVersionsForOne, namespace, name, provider);
+  const result = useQuery<ArtifactVersion[]>(
+    Artifacts.getAllVersionsForOne,
+    namespace,
+    name,
+    provider
+  );
 
-  versions.subscribe(() => {
-    if (($versions?.length ?? 0) > 0 && (!version || version === "latest")) {
-      version = $versions[0];
+  let versions: string[] = [];
+
+  const unsubscribe = result.subscribe(res => {
+    if (res.error || res.isLoading) {
+      return;
     }
 
-    if (($versions?.length ?? 0) > 0 && $versions[0] === version) {
-      label = `${version} (latest)`
+    versions = res.data ?? [];
+
+    if (versions.length == 0) {
+      return;
     }
+
+    // If there is no version, or user selected 'latest' version
+    if (!version || version == 'latest') {
+      version = versions[0];
+    }
+
+    // If the selected version is the latest, change the label
+    if (version == versions[0]) {
+      label = `${version} (latest)`;
+    }
+  });
+
+  let documentation: string | undefined;
+  let submodules: Submodule[] = [];
+  let selectedSubmodule: string | null = null;
+  let submoduleLabel: string = 'Select a submodule';
+  let submoduleDocumentation: string | undefined;
+
+  // Cache for submodule documentation to avoid redundant API calls
+  let submoduleDocsCache: Map<string, string> = new Map();
+
+  const versionUnsubscribe = useQuery<ArtifactVersionWithDocumentation>(
+    Artifacts.getOneVersion,
+    namespace,
+    name,
+    provider,
+    version
+  ).subscribe(res => {
+    if (res.isLoading) {
+      return;
+    }
+
+    if (res.error) {
+      console.error(
+        'Skipping module version display as it cannot be fetched:',
+        res.error
+      );
+      return;
+    }
+
+    if (res.data) {
+      documentation = emojify(res.data.documentation || '');
+      submodules = res.data.submodules || [];
+      // Reset submodule selection when version changes
+      selectedSubmodule = null;
+      submoduleLabel = 'Select a submodule';
+      submoduleDocumentation = undefined;
+      // Clear cache when version changes to avoid stale data
+      submoduleDocsCache.clear();
+    }
+  });
+
+  const onSubmoduleSelect = async (submodulePath: string) => {
+    if (type !== 'module') return;
+
+    selectedSubmodule = submodulePath;
+    submoduleLabel = submodulePath;
+
+    // Check cache first to avoid redundant API calls
+    if (submoduleDocsCache.has(submodulePath)) {
+      submoduleDocumentation = submoduleDocsCache.get(submodulePath);
+      return;
+    }
+
+    // Set to undefined to show loading state
+    submoduleDocumentation = undefined;
+
+    try {
+      const result = await Artifacts.getSubmoduleDocumentation(
+        namespace,
+        name,
+        provider,
+        version,
+        submodulePath
+      );
+
+      if (result.status === 'OK' && result.data) {
+        const docs = emojify(result.data.documentation || '');
+        // Cache the documentation for future use
+        submoduleDocsCache.set(submodulePath, docs);
+        submoduleDocumentation = docs;
+      }
+    } catch (error) {
+      console.error('Failed to load submodule documentation:', error);
+      submoduleDocumentation = undefined;
+    }
+  };
+
+  onDestroy(() => {
+    unsubscribe();
+    versionUnsubscribe();
   });
 </script>
 
-
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
-  {#if $areVersionsLoading}
+  {#if $result.isLoading}
     <LoadingScreen />
-  {:else if $errorMessage}
-    <FullPageError code={0} message={$errorMessage} />
-  {:else if !$versions.includes(version)}
-    <FullPageError code={404} message={"This artifact version does not currently exist on the server."} />
+  {:else if $result.error}
+    <FullPageError code={0} message={$result.error} />
+  {:else if !versions.includes(version)}
+    <FullPageError
+      code={404}
+      message="This artifact version does not currently exist on the server." />
   {:else}
     <section class="mt-20 lg:mx-20 flex flex-col gap-8">
-      <div class="flex flex-col lg:flex-row justify-between items-start gap-8 lg:items-center">
+      <div
+        class="flex flex-col lg:flex-row justify-between items-start gap-8 lg:items-center">
         <div class="flex justify-start items-center gap-10 mb-4">
-          <div class="flex flex-col justify-center items-center dark:text-white">
-            <Icon 
+          <div
+            class="flex flex-col justify-center items-center dark:text-white">
+            <Icon
               name={type === 'provider' ? 'cloud' : 'tools'}
               width="8rem"
-              height="8rem"
-            />
+              height="8rem" />
             <span class="text-xs text-zinc-800 dark:text-white">
               {`(${type})`}
             </span>
           </div>
           <div class="flex flex-col justify-center items-start">
-            <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white break-words">
+            <h2
+              class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white break-words">
               {name + (type === 'module' ? ` (${provider})` : '')}
             </h2>
             <h3 class="text-zinc-800 dark:text-zinc-100">
@@ -113,16 +219,57 @@
           </div>
         </div>
         <div class="w-full lg:w-auto">
-          <Dropdown label={label} options={$versions} onSelect={onOptionSelect} />
+          <Dropdown {label} options={versions} onSelect={onOptionSelect} />
         </div>
       </div>
-      <div class="bg-gray-100 dark:bg-gray-800 border border-teal-400 dark:border-teal-600 p-4 flex flex-col gap-4">
+      {#if type === 'module' && submodules && submodules.length > 0}
+        <div
+          class="mt-6 flex flex-col lg:flex-row items-start lg:items-center gap-4">
+          <div class="flex items-center gap-4">
+            <h2 class="text-lg font-bold">Submodules:</h2>
+            <div class="w-80">
+              <Dropdown
+                label={submoduleLabel}
+                options={submodules.map(sm => sm.path)}
+                onSelect={onSubmoduleSelect} />
+            </div>
+          </div>
+        </div>
+        {#if selectedSubmodule && submoduleDocumentation}
+          <div
+            class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
+            <h3 class="text-md font-bold mb-2">{selectedSubmodule}</h3>
+            <div class="markdown-body bg-slate-50">
+              <SvelteMarkdown source={submoduleDocumentation} />
+            </div>
+          </div>
+        {:else if selectedSubmodule}
+          <div
+            class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Loading documentation...
+            </p>
+          </div>
+        {/if}
+      {/if}
+      <div
+        class="bg-gray-100 dark:bg-gray-800 border border-teal-400 dark:border-teal-600 p-4 flex flex-col gap-4">
         <h2 class="text-lg font-bold">Usage</h2>
         <p class="text-xs">
-          Copy and paste into your Terraform configuration, insert the variables, and run <code>terraform init</code>:
+          Copy and paste into your Terraform configuration, insert the
+          variables, and run <code>terraform init</code>:
         </p>
-        <pre class="bg-gray-200 dark:bg-gray-700 border border-slate-400 dark:border-slate-600 p-3 text-xs overflow-y-auto">{template}</pre>
+        <pre
+          class="bg-gray-200 dark:bg-gray-700 border border-slate-400 dark:border-slate-600 p-3 text-xs overflow-y-auto">{template}</pre>
       </div>
+      {#if documentation}
+        <div class="m-6 p-4 flex flex-col gap-4">
+          <h2 class="text-lg font-bold">Readme</h2>
+          <div class="markdown-body bg-slate-50">
+            <SvelteMarkdown source={documentation} />
+          </div>
+        </div>
+      {/if}
     </section>
   {/if}
 </main>
