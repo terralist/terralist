@@ -137,8 +137,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
 
 	loginService := &services.DefaultLoginService{
-		Provider: config.Provider,
-		JWT:      jwtManager,
+		Provider:  config.Provider,
+		JWT:       jwtManager,
+		CodeStore: services.NewInMemoryOAuthCodeStore(2 * time.Minute),
 
 		EncryptSalt:         salt,
 		CodeExchangeKey:     exchangeKey,
@@ -237,9 +238,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			var userDetails auth.User
 			if err := loginService.Provider.GetUserDetails(samlResponse, &userDetails); err != nil {
 				userDetails = auth.User{
-					Name:   codeComponents.UserName,
-					Email:  codeComponents.UserEmail,
-					Groups: []string{},
+					Name:        codeComponents.UserName,
+					Email:       codeComponents.UserEmail,
+					Groups:      codeComponents.UserGroups,
+					Authority:   codeComponents.UserAuthority,
+					AuthorityID: codeComponents.UserAuthorityID,
 				}
 			}
 
@@ -265,9 +268,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 				}
 
 				sess.Set("user", &auth.User{
-					Name:   userDetails.Name,
-					Email:  userDetails.Email,
-					Groups: userDetails.Groups,
+					Name:        userDetails.Name,
+					Email:       userDetails.Email,
+					Groups:      userDetails.Groups,
+					Authority:   userDetails.Authority,
+					AuthorityID: userDetails.AuthorityID,
 				})
 
 				if err := config.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {
@@ -325,6 +330,14 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		Enforcer:         enforcer,
 	}
+
+	settingsCapabilityController := &controllers.DefaultSettingsCapabilityController{
+		Authentication:  authentication,
+		Authorization:   authorization,
+		AuthorizedUsers: userConfig.AuthorizedUsers,
+	}
+
+	apiV1Group.Register(settingsCapabilityController)
 
 	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,

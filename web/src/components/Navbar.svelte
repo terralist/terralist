@@ -14,6 +14,7 @@
   import context, { type Theme } from '@/context';
 
   import { useFlag } from '@/lib/hooks';
+  import { canAccessSettings } from '@/lib/settingsAccess';
 
   const [open, setOpen, resetOpen] = useFlag(false);
 
@@ -23,11 +24,14 @@
 
   let currentTheme: Theme | undefined;
   let themeUnsubscriber: Unsubscriber;
+  let settingsVisible = false;
 
-  onMount(() => {
+  onMount(async () => {
     themeUnsubscriber = context.theme.subscribe(value => {
       currentTheme = value;
     });
+
+    settingsVisible = await canAccessSettings();
   });
 
   onDestroy(() => {
@@ -37,6 +41,7 @@
   const toggleTheme = () => {
     context.setTheme(currentTheme === 'light' ? 'dark' : 'light');
   };
+
 </script>
 
 <header
@@ -89,7 +94,9 @@
     "
     use:clickOutside={resetOpen}>
     <NavbarAnchor title="Dashboard" href="/" icon="home" />
-    <NavbarAnchor title="Settings" href="/settings" icon="settings" />
+    {#if settingsVisible}
+      <NavbarAnchor title="Settings" href="/settings" icon="settings" />
+    {/if}
     <NavbarAnchor title="Sign Out" href="/logout" icon="logout" />
     {#if currentTheme === 'dark'}
       <NavbarButton

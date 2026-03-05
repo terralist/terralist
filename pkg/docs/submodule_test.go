@@ -102,6 +102,20 @@ func TestFindSubmodules(t *testing.T) {
 			expectedPaths: []string{"modules/networking/vpc", "modules/networking/subnet"},
 		},
 		{
+			name: "Submodules discovered under archive root directory",
+			fs: file.MustNewFS([]file.File{
+				file.NewInMemoryFile("terraform-aws-eks-21.15.1/README.md", []byte(`# Root Module`)),
+				file.NewInMemoryFile("terraform-aws-eks-21.15.1/modules/karpenter/main.tf", []byte(`
+					variable "name" {}
+				`)),
+				file.NewInMemoryFile("terraform-aws-eks-21.15.1/modules/fargate-profile/main.tf", []byte(`
+					variable "cluster_name" {}
+				`)),
+			}),
+			expectedCount: 2,
+			expectedPaths: []string{"modules/karpenter", "modules/fargate-profile"},
+		},
+		{
 			name: "Submodule without main.tf but with other tf files",
 			fs: file.MustNewFS([]file.File{
 				file.NewInMemoryFile("main.tf", []byte(`

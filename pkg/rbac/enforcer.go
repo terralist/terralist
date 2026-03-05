@@ -26,6 +26,7 @@ const (
 	ResourceModules     = "modules"
 	ResourceProviders   = "providers"
 	ResourceAuthorities = "authorities"
+	ResourceSettings    = "settings"
 
 	ActionGet    = "get"
 	ActionUpdate = "update"
@@ -42,6 +43,7 @@ var (
 		ResourceModules,
 		ResourceProviders,
 		ResourceAuthorities,
+		ResourceSettings,
 	}
 
 	Actions []string = []string{
@@ -138,7 +140,7 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 		return true
 	}
 
-	if action == ActionGet && slices.Contains(roles, SubjectReadonly) {
+	if action == ActionGet && resource != ResourceSettings && slices.Contains(roles, SubjectReadonly) {
 		logger.Debug().Msg("Read-only role detected, allowing 'get' action.")
 		return true
 	}

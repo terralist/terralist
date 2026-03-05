@@ -28,6 +28,24 @@ type DefaultFileServer struct {
 	JWT jwt.JWT
 }
 
+type downloadTokenPayload struct {
+	Key string `json:"key"`
+}
+
+func extractTokenKey(data jwt.Serializer) (string, bool) {
+	if payload, ok := data.(*downloadTokenPayload); ok && payload != nil && payload.Key != "" {
+		return payload.Key, true
+	}
+
+	if payload, ok := data.(map[string]any); ok {
+		if key, ok := payload["key"].(string); ok && key != "" {
+			return key, true
+		}
+	}
+
+	return "", false
+}
+
 func (c *DefaultFileServer) Paths() []string {
 	return []string{"/files"}
 }
@@ -46,8 +64,15 @@ func (c *DefaultFileServer) Subscribe(apis ...*gin.RouterGroup) {
 		}
 
 		token := ctx.Query("token")
-		if _, err := c.JWT.Extract(token); err != nil {
+		data, err := c.JWT.Extract(token)
+		if err != nil {
 			_ = ctx.AbortWithError(http.StatusUnauthorized, err)
+			return
+		}
+
+		tokenKey, ok := extractTokenKey(data)
+		if !ok || tokenKey != fileKey {
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 

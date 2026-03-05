@@ -3,7 +3,9 @@ package services
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
+	"path"
 	"strings"
 
 	"terralist/internal/server/models/module"
@@ -135,7 +137,27 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 	}
 
 	if s.Resolver == nil {
-		return "", fmt.Errorf("no resolver configured to fetch submodule documentation")
+		if s.Fetcher == nil {
+			return "", fmt.Errorf("no fetcher configured to fetch submodule documentation")
+		}
+
+		archive, err := s.Fetcher.Fetch(version, v.Location, nil)
+		if err != nil {
+			return "", fmt.Errorf("could not fetch module archive for submodule docs: %w", err)
+		}
+		defer archive.Close()
+
+		archiveFile, ok := archive.(*file.ArchiveFile)
+		if !ok {
+			return "", fmt.Errorf("fetched module is not an archive")
+		}
+
+		targetPath := submodulePath
+		if resolvedPath := resolveSubmodulePath(archiveFile.FS(), submodulePath); resolvedPath != "" {
+			targetPath = resolvedPath
+		}
+
+		return docs.GetModuleDocumentation(archiveFile.FS(), targetPath)
 	}
 
 	// Construct the documentation file path
@@ -180,6 +202,67 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 	}
 
 	return string(body), nil
+}
+
+func resolveSubmodulePath(moduleFS *file.FS, submodulePath string) string {
+	resolvedPath := ""
+	resolvedDepth := -1
+
+	_ = moduleFS.Walk("./", func(p string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		normalizedPath := strings.TrimPrefix(p, "./")
+		if !info.IsDir() {
+			normalizedPath = path.Dir(normalizedPath)
+		}
+		if normalizedPath == "" || normalizedPath == "." {
+			return nil
+		}
+
+		if normalizedPath == submodulePath || strings.HasSuffix(normalizedPath, "/"+submodulePath) {
+			depth := strings.Count(normalizedPath, "/")
+			if resolvedDepth == -1 || depth < resolvedDepth {
+				resolvedPath = normalizedPath
+				resolvedDepth = depth
+			}
+		}
+
+		return nil
+	})
+
+	if resolvedPath != "" {
+		return resolvedPath
+	}
+
+	// Fallback: discover any directory ending in the same submodule name.
+	submoduleName := path.Base(submodulePath)
+	_ = moduleFS.Walk("./", func(p string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		normalizedPath := strings.TrimPrefix(p, "./")
+		if !info.IsDir() {
+			normalizedPath = path.Dir(normalizedPath)
+		}
+		if normalizedPath == "" || normalizedPath == "." {
+			return nil
+		}
+
+		if path.Base(normalizedPath) == submoduleName && strings.Contains(normalizedPath, "/modules/") {
+			depth := strings.Count(normalizedPath, "/")
+			if resolvedDepth == -1 || depth < resolvedDepth {
+				resolvedPath = normalizedPath
+				resolvedDepth = depth
+			}
+		}
+
+		return nil
+	})
+
+	return resolvedPath
 }
 
 func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version string) (*string, error) {
@@ -268,6 +351,9 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 
 			for _, sm := range submodules {
 				submoduleDocs[sm.Path] = sm.Documentation
+				m.Versions[0].Submodules = append(m.Versions[0].Submodules, module.Submodule{
+					Path: sm.Path,
+				})
 			}
 		}
 	} else {
@@ -347,21 +433,6 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 					Err(err).
 					Msg("failed to store submodule documentation")
 				continue
-			}
-
-			// Find or create the submodule in the version
-			found := false
-			for i := range m.Versions[0].Submodules {
-				if m.Versions[0].Submodules[i].Path == submodulePath {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				m.Versions[0].Submodules = append(m.Versions[0].Submodules, module.Submodule{
-					Path: submodulePath,
-				})
 			}
 
 			log.Info().

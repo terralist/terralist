@@ -1,4 +1,5 @@
 import { Auth } from '@/api/auth';
+import { clearSettingsAccessCache } from './settingsAccess';
 import { defaultIfNull } from './utils';
 
 type Session = {
@@ -47,6 +48,7 @@ const actions = {
     Object.values(sessionKeys).forEach(value =>
       sessionStorage.removeItem(`_auth.session.${value}`)
     );
+    clearSettingsAccessCache();
   }
 };
 

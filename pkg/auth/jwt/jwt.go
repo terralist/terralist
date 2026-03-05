@@ -125,6 +125,13 @@ func (th *defaultJWT) Extract(t string) (Serializer, error) {
 		return &user, nil
 	}
 
+	// Fallback to generic map payload for non-user token use-cases
+	// (e.g. file-scoped local download tokens).
+	var payload map[string]any
+	if err := json.Unmarshal(claims.Data, &payload); err == nil && len(payload) > 0 {
+		return payload, nil
+	}
+
 	return NoData{}, nil
 }
 

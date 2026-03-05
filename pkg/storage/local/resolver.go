@@ -29,6 +29,10 @@ type Resolver struct {
 	JWT jwt.JWT
 }
 
+type downloadTokenPayload struct {
+	Key string `json:"key"`
+}
+
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	fileKey := path.Join(in.KeyPrefix, in.FileName)
 	filePath := path.Join(r.RegistryDir, fileKey)
@@ -107,7 +111,7 @@ func (r *Resolver) Find(key string) (string, error) {
 		return "", fmt.Errorf("could not generate URL for %v: %w", key, err)
 	}
 
-	token, err := r.JWT.Build(nil, r.LinkExpire)
+	token, err := r.JWT.Build(downloadTokenPayload{Key: key}, r.LinkExpire)
 	if err != nil {
 		return "", fmt.Errorf("could not generate a temporarily token: %w", err)
 	}

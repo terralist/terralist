@@ -4,8 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/url"
+	"strings"
 	"testing"
+	"time"
 
 	"terralist/internal/server/models/oauth"
 	"terralist/pkg/auth"
@@ -57,6 +60,14 @@ func TestUnpackCode(t *testing.T) {
 			Convey("If the code validates the user access", func() {
 				mockProvider.
 					On("GetUserDetails", code, mock.AnythingOfType("*auth.User")).
+					Run(func(args mock.Arguments) {
+						user := args.Get(1).(*auth.User)
+						user.Name = "alice"
+						user.Email = "alice@example.com"
+						user.Groups = []string{"engineering", "platform"}
+						user.Authority = "example-org"
+						user.AuthorityID = "authority-id-1"
+					}).
 					Return(nil)
 
 				Convey("When the service is queried", func() {
@@ -65,6 +76,11 @@ func TestUnpackCode(t *testing.T) {
 					Convey("The code components should be returned", func() {
 						So(cc, ShouldNotBeNil)
 						So(err, ShouldBeNil)
+						So(cc.UserName, ShouldEqual, "alice")
+						So(cc.UserEmail, ShouldEqual, "alice@example.com")
+						So(cc.UserGroups, ShouldResemble, []string{"engineering", "platform"})
+						So(cc.UserAuthority, ShouldEqual, "example-org")
+						So(cc.UserAuthorityID, ShouldEqual, "authority-id-1")
 					})
 				})
 			})
@@ -198,8 +214,24 @@ func TestValidateToken(t *testing.T) {
 
 					token, _ := random.String(16)
 					mockJWT.
-						On("Build", mock.AnythingOfType("auth.User"), mock.AnythingOfType("int")).
+						On(
+							"Build",
+							mock.MatchedBy(func(u auth.User) bool {
+								return u.Name == cc.UserName &&
+									u.Email == cc.UserEmail &&
+									u.Authority == cc.UserAuthority &&
+									u.AuthorityID == cc.UserAuthorityID &&
+									len(u.Groups) == len(cc.UserGroups)
+							}),
+							mock.AnythingOfType("int"),
+						).
 						Return(token, nil)
+
+					cc.UserName = "alice"
+					cc.UserEmail = "alice@example.com"
+					cc.UserGroups = []string{"engineering", "platform"}
+					cc.UserAuthority = "example-org"
+					cc.UserAuthorityID = "authority-id-1"
 
 					Convey("When the service is queried", func() {
 						tr, err := loginService.ValidateToken(&cc, verifier)
@@ -243,4 +275,184 @@ func TestValidateToken(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestRedirect_UsesOpaqueCodeStore(t *testing.T) {
+	salt, _ := random.String(16)
+	state, _ := random.String(16)
+
+	loginService := &DefaultLoginService{
+		EncryptSalt: salt,
+		CodeStore:   NewInMemoryOAuthCodeStore(2 * time.Minute),
+	}
+
+	cc := oauth.CodeComponents{
+		UserName:  "alice",
+		UserEmail: "alice@example.com",
+	}
+	req := oauth.Request{
+		RedirectURI: "http://localhost/callback",
+		State:       state,
+	}
+
+	redirectURL, oauthErr := loginService.Redirect(&cc, &req)
+	if oauthErr != nil {
+		t.Fatalf("expected redirect without error, got: %v", oauthErr)
+	}
+
+	parsedURL, err := url.Parse(redirectURL)
+	if err != nil {
+		t.Fatalf("failed to parse redirect url: %v", err)
+	}
+
+	code := parsedURL.Query().Get("code")
+	if code == "" {
+		t.Fatalf("expected opaque code in redirect url")
+	}
+	if strings.Contains(code, "{") {
+		t.Fatalf("expected opaque code, got JSON-like payload")
+	}
+
+	resolved, resolveErr := loginService.ResolveCode(code)
+	if resolveErr != nil {
+		t.Fatalf("expected opaque code to resolve, got: %v", resolveErr)
+	}
+
+	if resolved.UserEmail != "alice@example.com" {
+		t.Fatalf("unexpected resolved user email: %s", resolved.UserEmail)
+	}
+}
+
+func TestResolveCode_FallsBackToPayloadDecode(t *testing.T) {
+	salt, _ := random.String(16)
+	loginService := &DefaultLoginService{
+		EncryptSalt: salt,
+		CodeStore:   NewInMemoryOAuthCodeStore(2 * time.Minute),
+	}
+
+	expected := oauth.CodeComponents{
+		UserName:            "alice",
+		UserEmail:           "alice@example.com",
+		CodeChallenge:       "challenge",
+		CodeChallengeMethod: "S256",
+	}
+
+	payload, err := expected.ToPayload(salt)
+	if err != nil {
+		t.Fatalf("failed to create legacy payload: %v", err)
+	}
+
+	resolved, oauthErr := loginService.ResolveCode(payload.String())
+	if oauthErr != nil {
+		t.Fatalf("expected payload decode to still work, got: %v", oauthErr)
+	}
+
+	if resolved.UserName != expected.UserName || resolved.UserEmail != expected.UserEmail {
+		t.Fatalf("resolved payload mismatch: %+v", resolved)
+	}
+}
+
+func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
+	mockProvider := auth.NewMockProvider(t)
+	jwtManager, err := jwt.New("high-group-test-signing-secret")
+	if err != nil {
+		t.Fatalf("failed to create jwt manager: %v", err)
+	}
+
+	salt, _ := random.String(16)
+	exchangeKey, _ := random.String(16)
+
+	groupCount := 750
+	groups := make([]string, 0, groupCount)
+	for i := 0; i < groupCount; i++ {
+		groups = append(groups, fmt.Sprintf("TEAM_%04d", i))
+	}
+
+	providerCode := "provider-code"
+	verifier := "terraform-pkce-verifier"
+	hash := sha256.Sum256([]byte(verifier))
+	challenge := base64.RawURLEncoding.EncodeToString(hash[:])
+
+	mockProvider.
+		On("GetUserDetails", providerCode, mock.AnythingOfType("*auth.User")).
+		Run(func(args mock.Arguments) {
+			user := args.Get(1).(*auth.User)
+			user.Name = "alice"
+			user.Email = "alice@example.com"
+			user.Groups = groups
+			user.Authority = "example-org"
+			user.AuthorityID = "authority-id-1"
+		}).
+		Return(nil)
+
+	loginService := &DefaultLoginService{
+		Provider:            mockProvider,
+		JWT:                 jwtManager,
+		CodeStore:           NewInMemoryOAuthCodeStore(2 * time.Minute),
+		EncryptSalt:         salt,
+		CodeExchangeKey:     exchangeKey,
+		TokenExpirationSecs: 24 * 60 * 60,
+	}
+
+	request := oauth.Request{
+		CodeChallenge:       challenge,
+		CodeChallengeMethod: "S256",
+		RedirectURI:         "http://localhost/callback",
+		State:               "state-1",
+	}
+
+	codeComponents, oauthErr := loginService.UnpackCode(providerCode, &request)
+	if oauthErr != nil {
+		t.Fatalf("expected unpack code to succeed: %v", oauthErr)
+	}
+	if len(codeComponents.UserGroups) != groupCount {
+		t.Fatalf("expected %d unpacked groups, got %d", groupCount, len(codeComponents.UserGroups))
+	}
+
+	redirectURL, oauthErr := loginService.Redirect(codeComponents, &request)
+	if oauthErr != nil {
+		t.Fatalf("expected redirect to succeed: %v", oauthErr)
+	}
+
+	parsedURL, err := url.Parse(redirectURL)
+	if err != nil {
+		t.Fatalf("failed to parse redirect URL: %v", err)
+	}
+	opaqueCode := parsedURL.Query().Get("code")
+	if opaqueCode == "" {
+		t.Fatalf("expected opaque code in redirect query")
+	}
+	if len(opaqueCode) > 100 {
+		t.Fatalf("expected short opaque code, got length %d", len(opaqueCode))
+	}
+
+	resolvedComponents, oauthErr := loginService.ResolveCode(opaqueCode)
+	if oauthErr != nil {
+		t.Fatalf("expected opaque code to resolve: %v", oauthErr)
+	}
+	if len(resolvedComponents.UserGroups) != groupCount {
+		t.Fatalf("expected %d resolved groups, got %d", groupCount, len(resolvedComponents.UserGroups))
+	}
+
+	tokenResponse, oauthErr := loginService.ValidateToken(resolvedComponents, verifier)
+	if oauthErr != nil {
+		t.Fatalf("expected token validation to succeed: %v", oauthErr)
+	}
+
+	serializer, err := jwtManager.Extract(tokenResponse.AccessToken)
+	if err != nil {
+		t.Fatalf("failed to extract token payload: %v", err)
+	}
+
+	user, ok := serializer.(*auth.User)
+	if !ok {
+		t.Fatalf("expected auth.User payload, got %T", serializer)
+	}
+
+	if user.Email != "alice@example.com" {
+		t.Fatalf("unexpected email in jwt payload: %s", user.Email)
+	}
+	if len(user.Groups) != groupCount {
+		t.Fatalf("expected %d groups in jwt payload, got %d", groupCount, len(user.Groups))
+	}
 }
