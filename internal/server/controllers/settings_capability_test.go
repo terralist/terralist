@@ -29,8 +29,7 @@ p, alice@example.com, settings, get, page, allow
 			JWT:   jwtManager,
 			Store: store,
 		},
-		Authorization:   authz,
-		AuthorizedUsers: "admin@example.com",
+		Authorization: authz,
 	}
 
 	router := ginRouterWithController(controller)
@@ -73,8 +72,7 @@ func TestSettingsCapabilityController_DeniesReadonlyDefault(t *testing.T) {
 			JWT:   jwtManager,
 			Store: store,
 		},
-		Authorization:   authz,
-		AuthorizedUsers: "alice@example.com",
+		Authorization: authz,
 	}
 
 	router := ginRouterWithController(controller)
@@ -129,50 +127,6 @@ func TestSettingsCapabilityController_RequiresAuthentication(t *testing.T) {
 
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d", w.Code)
-	}
-}
-
-func TestSettingsCapabilityController_AllowsByAuthorizedUsers(t *testing.T) {
-	jwtManager, authz, store := testSettingsDeps(t, "")
-
-	controller := &DefaultSettingsCapabilityController{
-		Authentication: &handlers.Authentication{
-			JWT:   jwtManager,
-			Store: store,
-		},
-		Authorization:   authz,
-		AuthorizedUsers: "alice,alice@example.com",
-	}
-
-	router := ginRouterWithController(controller)
-
-	token, err := jwtManager.Build(auth.User{
-		Name:  "alice",
-		Email: "alice@example.com",
-	}, 3600)
-	if err != nil {
-		t.Fatalf("failed to build jwt token: %v", err)
-	}
-
-	req := httptest.NewRequest(http.MethodGet, "/v1/api/auth/capabilities/settings", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-
-	router.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", w.Code)
-	}
-
-	var body struct {
-		Allowed bool `json:"allowed"`
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
-		t.Fatalf("failed to parse body: %v", err)
-	}
-
-	if !body.Allowed {
-		t.Fatalf("expected allowed=true")
 	}
 }
 

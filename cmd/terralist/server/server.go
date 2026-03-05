@@ -188,7 +188,6 @@ func (s *Command) run() error {
 		ProvidersAnonymousRead:  flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 		LocalTokenSigningSecret: flags[LocalTokenSigningSecretFlag].(*cli.StringFlag).Value,
 		Home:                    flags[HomeFlag].(*cli.PathFlag).Value,
-		AuthorizedUsers:         flags[AuthorizedUsersFlag].(*cli.StringFlag).Value,
 		SamlDisplayName:         flags[SamlDisplayNameFlag].(*cli.StringFlag).Value,
 		RbacPolicyPath:          flags[RbacPolicyPathFlag].(*cli.StringFlag).Value,
 		RbacDefaultRole:         flags[RbacDefaultRoleFlag].(*cli.StringFlag).Value,

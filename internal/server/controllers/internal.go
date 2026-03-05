@@ -22,7 +22,6 @@ type DefaultInternalController struct {
 	AuthorizationEndpoint string
 	SessionDetailsRoute   string
 	ClearSessionRoute     string
-	AuthorizedUsers       string
 	SamlDisplayName       string
 }
 
@@ -40,7 +39,6 @@ func (c *DefaultInternalController) Subscribe(apis ...*gin.RouterGroup) {
 				"host":              c.HostURL,
 				"domain":            c.CanonicalDomain,
 				"company":           c.CustomCompanyName,
-				"authorized_users":  c.AuthorizedUsers,
 				"saml_display_name": c.SamlDisplayName,
 				"auth": gin.H{
 					"providers":              c.OauthProviders,

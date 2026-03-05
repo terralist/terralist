@@ -13,7 +13,6 @@ type UserConfig struct {
 	ModulesAnonymousRead    bool   `mapstructure:"modules-anonymous-read"`
 	ProvidersAnonymousRead  bool   `mapstructure:"providers-anonymous-read"`
 	LocalTokenSigningSecret string `mapstructure:"local-token-signing-secret"`
-	AuthorizedUsers         string `mapstructure:"authorized-users"`
 	SamlDisplayName         string `mapstructure:"saml-display-name"`
 	RbacPolicyPath          string `mapstructure:"rbac-policy-path"`
 	RbacDefaultRole         string `mapstructure:"rbac-default-role"`

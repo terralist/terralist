@@ -123,8 +123,6 @@ const (
 	RbacPolicyPathFlag  = "rbac-policy-path"
 	RbacDefaultRoleFlag = "rbac-default-role"
 
-	AuthorizedUsersFlag = "authorized-users"
-
 	AuthTokenExpirationFlag = "auth-token-expiration"
 )
 
@@ -473,10 +471,6 @@ var flags = map[string]cli.Flag{
 	RbacDefaultRoleFlag: &cli.StringFlag{
 		Description:  "The name of the RBAC role that should be assigned by default to all users.",
 		DefaultValue: "readonly",
-	},
-
-	AuthorizedUsersFlag: &cli.StringFlag{
-		Description: "The list of users that are authorized to access the Terralist instance (comma separated).",
 	},
 
 	AuthTokenExpirationFlag: &cli.StringFlag{

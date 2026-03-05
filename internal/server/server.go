@@ -51,8 +51,6 @@ type Server struct {
 	Resolver storage.Resolver
 
 	Readiness *atomic.Bool
-
-	AuthorizedUsers string
 }
 
 // Config holds the server configuration that isn't configurable by the user.
@@ -332,9 +330,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	settingsCapabilityController := &controllers.DefaultSettingsCapabilityController{
-		Authentication:  authentication,
-		Authorization:   authorization,
-		AuthorizedUsers: userConfig.AuthorizedUsers,
+		Authentication: authentication,
+		Authorization:  authorization,
 	}
 
 	apiV1Group.Register(settingsCapabilityController)
@@ -442,7 +439,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorizationEndpoint: apiV1Group.Prefix() + loginController.AuthorizationRoute(),
 		SessionDetailsRoute:   apiV1Group.Prefix() + loginController.SessionDetailsRoute(),
 		ClearSessionRoute:     apiV1Group.Prefix() + loginController.ClearSessionRoute(),
-		AuthorizedUsers:       userConfig.AuthorizedUsers,
 		SamlDisplayName:       userConfig.SamlDisplayName,
 	})
 

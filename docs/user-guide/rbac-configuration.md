@@ -52,7 +52,7 @@ Syntax: `p, <role/username/useremail/group>, <resource>, <action>, <object>, <ef
 - `<role/username/useremail/group>`: The entity to whom the policy will be assigned
 - `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `settings`. Supports glob matching (e.g. )
 - `<action>`<sup>*</sup>: The operation that is being performed on the resource. Can be one of: `get`, `create`, `update`, `delete`. Supports glob matching.
-- `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary. 
+- `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
 
 <sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all 3 resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
@@ -123,6 +123,10 @@ The Settings page capability endpoint checks RBAC permission:
 - `resource`: `settings`
 - `action`: `get`
 - `object`: `page`
+
+Settings page access and visibility are controlled only by RBAC policy.
+
+Migration note: if you previously used `--authorized-users`, convert that access list to RBAC `settings/get/page` policies and role mappings.
 
 Example policies:
 
