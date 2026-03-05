@@ -1,0 +1,7 @@
+[tools]
+python = "3.10"
+go = "1.25.2"
+task = "3.44.0"
+
+[env]
+_.python.venv = { path = ".venv", create = true }

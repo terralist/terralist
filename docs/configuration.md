@@ -173,7 +173,7 @@ The OAuth 2.0 provider.
 | Name | Value |
 | --- | --- |
 | type | select |
-| choices | `github`, `bitbucket`, `gitlab`, `oidc` |
+| choices | `github`, `bitbucket`, `gitlab`, `oidc`, `saml` |
 | required | yes |
 | default | `n/a` |
 | cli | `--oauth-provider` |
@@ -396,6 +396,106 @@ The OpenID Connect scope requested during authorization to ensure to get claims 
 | cli | `--oi-scope` |
 | env | `TERRALIST_OI_SCOPE` |
 
+### `saml-display-name`
+
+The label displayed on the login button when SAML is enabled.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `SSO` |
+| cli | `--saml-display-name` |
+| env | `TERRALIST_SAML_DISPLAY_NAME` |
+
+### `saml-idp-metadata-url`
+
+URL to fetch Identity Provider metadata XML. Either this, `saml-idp-metadata-file`, or both `saml-idp-entity-id` and `saml-idp-sso-url` are required.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | conditional |
+| default | `n/a` |
+| cli | `--saml-idp-metadata-url` |
+| env | `TERRALIST_SAML_IDP_METADATA_URL` |
+
+### `saml-idp-metadata-file`
+
+Path to a local Identity Provider metadata XML file. Either this, `saml-idp-metadata-url`, or both `saml-idp-entity-id` and `saml-idp-sso-url` are required.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | conditional |
+| default | `n/a` |
+| cli | `--saml-idp-metadata-file` |
+| env | `TERRALIST_SAML_IDP_METADATA_FILE` |
+
+### `saml-idp-entity-id`
+
+Identity Provider entity ID for direct SAML configuration (without metadata URL/file). Must be used with `saml-idp-sso-url`.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | conditional |
+| default | `n/a` |
+| cli | `--saml-idp-entity-id` |
+| env | `TERRALIST_SAML_IDP_ENTITY_ID` |
+
+### `saml-idp-sso-url`
+
+Identity Provider Single Sign-On URL for direct SAML configuration (without metadata URL/file). Must be used with `saml-idp-entity-id`.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | conditional |
+| default | `n/a` |
+| cli | `--saml-idp-sso-url` |
+| env | `TERRALIST_SAML_IDP_SSO_URL` |
+
+### `saml-idp-sso-certificate`
+
+Identity Provider signing certificate (PEM). Required if certificate is not present in metadata.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | conditional |
+| default | `n/a` |
+| cli | `--saml-idp-sso-certificate` |
+| env | `TERRALIST_SAML_IDP_SSO_CERTIFICATE` |
+
+### `saml-name-attribute`, `saml-email-attribute`, `saml-groups-attribute`
+
+SAML attribute names used to map user identity and RBAC groups.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `displayName` / `email` / `n/a` |
+| cli | `--saml-name-attribute`, `--saml-email-attribute`, `--saml-groups-attribute` |
+
+### `saml-cert-file`, `saml-key-file`, `saml-private-key-secret`
+
+Service Provider key material for signing requests and metadata.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--saml-cert-file`, `--saml-key-file`, `--saml-private-key-secret` |
+
+### SAML timing and security flags
+
+`saml-http-client-timeout`, `saml-assertion-clock-skew`, `saml-request-id-expiration`, `saml-request-id-cleanup-interval`, `saml-metadata-refresh-interval`, `saml-metadata-refresh-check-interval`, `saml-max-assertion-age`, `saml-allow-idp-initiated`, and `saml-disable-request-id-validation` control metadata refresh, replay protection, and assertion validity windows.
+
+Refer to the dedicated guide for end-to-end examples: `docs/user-guide/saml-configuration.md`.
+
 ### `database-backend`
 
 The database backend.
@@ -597,7 +697,7 @@ The modules storage resolver.
 | Name | Value |
 | --- | --- |
 | type | select |
-| choices | `proxy`, `local`, `s3`, `azure` |
+| choices | `proxy`, `local`, `s3`, `azure`, `gcs` |
 | required | no |
 | default | `proxy` |
 | cli | `--modules-storage-resolver` |
@@ -610,7 +710,7 @@ The providers storage resolver.
 | Name | Value |
 | --- | --- |
 | type | select |
-| choices | `proxy`, `local`, `s3`, `azure` |
+| choices | `proxy`, `local`, `s3`, `azure`, `gcs` |
 | required | no |
 | default | `proxy` |
 | cli | `--providers-storage-resolver` |
@@ -773,6 +873,42 @@ The path to a directory in which Terralist can store files.
 | default | `~/.terralist.d` |
 | cli | `--local-store` |
 | env | `TERRALIST_LOCAL_STORE` |
+
+### `local-registry`
+
+Directory where locally stored module/provider artifacts are written when using the `local` resolver.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `~/.terralist.d/registry` |
+| cli | `--local-registry` |
+| env | `TERRALIST_LOCAL_REGISTRY` |
+
+### `local-token-signing-secret`
+
+Secret used by local storage to sign JWT download tokens for `/v1/files/*`.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | yes when any storage resolver is `local` |
+| default | `n/a` |
+| cli | `--local-token-signing-secret` |
+| env | `TERRALIST_LOCAL_TOKEN_SIGNING_SECRET` |
+
+### `local-presign-expire`
+
+Number of minutes local download tokens remain valid.
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `15` |
+| cli | `--local-presign-expire` |
+| env | `TERRALIST_LOCAL_PRESIGN_EXPIRE` |
 
 ### `azure-account-name`
 

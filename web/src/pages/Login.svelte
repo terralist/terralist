@@ -22,7 +22,8 @@
     github: 'GitHub',
     gitlab: 'GitLab',
     google: 'Google',
-    oidc: 'OIDC'
+    oidc: 'OIDC',
+    saml: config.runtime.TERRALIST_SAML_DISPLAY_NAME
   };
 
   let loginDisabled: boolean = false;

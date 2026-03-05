@@ -6,6 +6,7 @@ type RuntimeVariables = {
   TERRALIST_AUTHORIZATION_ENDPOINT: string;
   TERRALIST_SESSION_ENDPOINT: string;
   TERRALIST_AUTHORIZED_USERS: string;
+  TERRALIST_SAML_DISPLAY_NAME: string;
 };
 
 type BuildVariables = {
@@ -16,11 +17,12 @@ const DEFAULT_RUNTIME_VARIABLES: RuntimeVariables = {
   TERRALIST_HOST_URL: 'http://localhost:5758',
   TERRALIST_CANONICAL_DOMAIN: 'localhost',
   TERRALIST_COMPANY_NAME: '',
-  TERRALIST_OAUTH_PROVIDERS: ['github', 'bitbucket', 'gitlab', 'google'],
+  TERRALIST_OAUTH_PROVIDERS: ['github', 'bitbucket', 'gitlab', 'saml'],
   // TODO: These should point to a mock endpoint for local development
   TERRALIST_AUTHORIZATION_ENDPOINT: '',
   TERRALIST_SESSION_ENDPOINT: '',
-  TERRALIST_AUTHORIZED_USERS: ''
+  TERRALIST_AUTHORIZED_USERS: '',
+  TERRALIST_SAML_DISPLAY_NAME: 'SSO'
 };
 
 class Configuration {
@@ -53,6 +55,8 @@ class Configuration {
       this.runtime.TERRALIST_CANONICAL_DOMAIN = data['domain'];
       this.runtime.TERRALIST_COMPANY_NAME = data['company'];
       this.runtime.TERRALIST_AUTHORIZED_USERS = data['authorized_users'];
+      this.runtime.TERRALIST_SAML_DISPLAY_NAME =
+        data['saml_display_name'] || 'SSO';
       this.runtime.TERRALIST_OAUTH_PROVIDERS = data['auth']['providers'];
       this.runtime.TERRALIST_AUTHORIZATION_ENDPOINT = data['auth']['endpoint'];
       this.runtime.TERRALIST_SESSION_ENDPOINT =

@@ -58,6 +58,28 @@ const (
 	OidcUserInfoUrlFlag  = "oi-userinfo-url"
 	OidcScopeFlag        = "oi-scope"
 
+	SamlDisplayNameFlag                  = "saml-display-name"
+	SamlIdPMetadataURLFlag               = "saml-idp-metadata-url"
+	SamlIdPMetadataFileFlag              = "saml-idp-metadata-file"
+	SamlIdPEntityIDFlag                  = "saml-idp-entity-id"
+	SamlIdPSSOURLFlag                    = "saml-idp-sso-url"
+	SamlIdPSSOCertificateFlag            = "saml-idp-sso-certificate"
+	SamlNameAttributeFlag                = "saml-name-attribute"
+	SamlEmailAttributeFlag               = "saml-email-attribute"
+	SamlGroupsAttributeFlag              = "saml-groups-attribute"
+	SamlCertFileFlag                     = "saml-cert-file"
+	SamlKeyFileFlag                      = "saml-key-file"
+	SamlPrivateKeySecretFlag             = "saml-private-key-secret"
+	SamlHTTPClientTimeoutFlag            = "saml-http-client-timeout"
+	SamlAssertionClockSkewFlag           = "saml-assertion-clock-skew"
+	SamlRequestIDExpirationFlag          = "saml-request-id-expiration"
+	SamlRequestIDCleanupIntervalFlag     = "saml-request-id-cleanup-interval"
+	SamlMetadataRefreshIntervalFlag      = "saml-metadata-refresh-interval"
+	SamlMetadataRefreshCheckIntervalFlag = "saml-metadata-refresh-check-interval"
+	SamlMaxAssertionAgeFlag              = "saml-max-assertion-age"
+	SamlAllowIdPInitiatedFlag            = "saml-allow-idp-initiated"
+	SamlDisableRequestIDValidationFlag   = "saml-disable-request-id-validation"
+
 	TokenSigningSecretFlag = "token-signing-secret"
 
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
@@ -87,7 +109,10 @@ const (
 	GcsSignExpireFlag                 = "gcs-sign-expire"
 	GcsServiceAccountCredFilePathFlag = "gcs-service-account-cred-file-path"
 
-	LocalStoreFlag = "local-store"
+	LocalStoreFlag              = "local-store"
+	LocalRegistryFlag           = "local-registry"
+	LocalTokenSigningSecretFlag = "local-token-signing-secret"
+	LocalPresignExpireFlag      = "local-presign-expire"
 
 	SessionStoreFlag = "session-store"
 
@@ -186,7 +211,7 @@ var flags = map[string]cli.Flag{
 
 	OAuthProviderFlag: &cli.StringFlag{
 		Description: "The OAuth 2.0 provider.",
-		Choices:     []string{"github", "bitbucket", "gitlab", "oidc"},
+		Choices:     []string{"github", "bitbucket", "gitlab", "oidc", "saml"},
 		Required:    true,
 	},
 	GitHubClientIDFlag: &cli.StringFlag{
@@ -247,6 +272,81 @@ var flags = map[string]cli.Flag{
 		Description:  "The scopes requested during OIDC authorization.",
 		DefaultValue: "openid email",
 	},
+	SamlDisplayNameFlag: &cli.StringFlag{
+		Description:  "The display name for SAML authentication in the UI.",
+		DefaultValue: "SSO",
+	},
+	SamlIdPMetadataURLFlag: &cli.StringFlag{
+		Description: "The URL where the IdP metadata can be fetched from. Either this, saml-idp-metadata-file, or both saml-idp-entity-id and saml-idp-sso-url must be provided.",
+	},
+	SamlIdPMetadataFileFlag: &cli.StringFlag{
+		Description: "The local file path to the IdP metadata XML file. Either this, saml-idp-metadata-url, or both saml-idp-entity-id and saml-idp-sso-url must be provided.",
+	},
+	SamlIdPEntityIDFlag: &cli.StringFlag{
+		Description: "The Identity Provider entity ID. Can be used instead of saml-idp-metadata-url/saml-idp-metadata-file if saml-idp-sso-url is also provided.",
+	},
+	SamlIdPSSOURLFlag: &cli.StringFlag{
+		Description: "The Identity Provider Single Sign-On URL. Can be used instead of saml-idp-metadata-url/saml-idp-metadata-file if saml-idp-entity-id is also provided.",
+	},
+	SamlIdPSSOCertificateFlag: &cli.StringFlag{
+		Description: "The Identity Provider SSO certificate (PEM format). Required if certificate cannot be extracted from IdP metadata.",
+	},
+	SamlNameAttributeFlag: &cli.StringFlag{
+		Description:  "The SAML attribute name that contains the user's name.",
+		DefaultValue: "displayName",
+	},
+	SamlEmailAttributeFlag: &cli.StringFlag{
+		Description:  "The SAML attribute name that contains the user's email.",
+		DefaultValue: "email",
+	},
+	SamlGroupsAttributeFlag: &cli.StringFlag{
+		Description: "The SAML attribute name that contains the user's groups. Used for RBAC group mapping.",
+	},
+	SamlCertFileFlag: &cli.StringFlag{
+		Description: "The path to the certificate file (PEM format) used for signing SAML requests. Optional but recommended for production.",
+	},
+	SamlKeyFileFlag: &cli.StringFlag{
+		Description: "The path to the private key file (PEM format) used for signing SAML requests. Optional but recommended for production.",
+	},
+	SamlPrivateKeySecretFlag: &cli.StringFlag{
+		Description: "The passphrase for the SAML private key if it is encrypted.",
+	},
+	SamlHTTPClientTimeoutFlag: &cli.StringFlag{
+		Description:  "The timeout for HTTP requests to fetch IdP metadata.",
+		DefaultValue: "30s",
+	},
+	SamlAssertionClockSkewFlag: &cli.StringFlag{
+		Description:  "The allowed time difference between SP and IdP clocks (SAML 2.0 spec recommends clock skew tolerance).",
+		DefaultValue: "5m",
+	},
+	SamlRequestIDExpirationFlag: &cli.StringFlag{
+		Description:  "How long SAML request IDs are kept to prevent replay attacks.",
+		DefaultValue: "1h",
+	},
+	SamlRequestIDCleanupIntervalFlag: &cli.StringFlag{
+		Description:  "How often expired SAML request IDs are cleaned up.",
+		DefaultValue: "15m",
+	},
+	SamlMetadataRefreshIntervalFlag: &cli.StringFlag{
+		Description:  "The interval for refreshing IdP metadata from URL.",
+		DefaultValue: "24h",
+	},
+	SamlMetadataRefreshCheckIntervalFlag: &cli.StringFlag{
+		Description:  "How often to check if IdP metadata needs refresh.",
+		DefaultValue: "1h",
+	},
+	SamlMaxAssertionAgeFlag: &cli.StringFlag{
+		Description:  "The maximum age of SAML assertions from IssueInstant.",
+		DefaultValue: "1h",
+	},
+	SamlAllowIdPInitiatedFlag: &cli.BoolFlag{
+		Description:  "Whether to allow IdP-initiated SSO (security best practice is to disable).",
+		DefaultValue: false,
+	},
+	SamlDisableRequestIDValidationFlag: &cli.BoolFlag{
+		Description:  "Disable SAML request ID validation (useful in Kubernetes environments with multiple pods).",
+		DefaultValue: false,
+	},
 
 	TokenSigningSecretFlag: &cli.StringFlag{
 		Description: "The secret to use when signing authorization tokens.",
@@ -256,6 +356,17 @@ var flags = map[string]cli.Flag{
 	LocalStoreFlag: &cli.StringFlag{
 		Description:  "The path to a directory in which Terralist can store files.",
 		DefaultValue: "~/.terralist.d",
+	},
+	LocalRegistryFlag: &cli.PathFlag{
+		Description:  "Directory where locally stored module/provider artifacts are written.",
+		DefaultValue: "~/.terralist.d/registry",
+	},
+	LocalTokenSigningSecretFlag: &cli.StringFlag{
+		Description: "Secret used by the local resolver to sign file download JWTs.",
+	},
+	LocalPresignExpireFlag: &cli.IntFlag{
+		Description:  "The number of minutes after which local presigned URLs should expire.",
+		DefaultValue: 15,
 	},
 
 	ModulesStorageResolverFlag: &cli.StringFlag{
