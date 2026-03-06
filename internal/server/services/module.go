@@ -210,7 +210,7 @@ func resolveSubmodulePath(moduleFS *file.FS, submodulePath string) string {
 
 	_ = moduleFS.Walk("./", func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 
 		normalizedPath := strings.TrimPrefix(p, "./")
@@ -240,7 +240,7 @@ func resolveSubmodulePath(moduleFS *file.FS, submodulePath string) string {
 	submoduleName := path.Base(submodulePath)
 	_ = moduleFS.Walk("./", func(p string, info fs.FileInfo, err error) error {
 		if err != nil {
-			return nil
+			return err
 		}
 
 		normalizedPath := strings.TrimPrefix(p, "./")

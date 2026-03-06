@@ -41,7 +41,6 @@
   const toggleTheme = () => {
     context.setTheme(currentTheme === 'light' ? 'dark' : 'light');
   };
-
 </script>
 
 <header

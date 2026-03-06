@@ -82,8 +82,8 @@ func TestProtect_SettingsRequiresExplicitPolicy(t *testing.T) {
 	}
 
 	adminUser := auth.User{
-		Name:   "alice",
-		Email:  "alice@example.com",
+		Name:  "alice",
+		Email: "alice@example.com",
 	}
 
 	if err := adminEnforcer.Protect(adminUser, ResourceSettings, ActionGet, "page"); err != nil {

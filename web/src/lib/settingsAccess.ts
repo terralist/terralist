@@ -2,7 +2,7 @@ import { Auth } from '@/api/auth';
 
 const settingsAccessCacheKey = '_auth.capabilities.settings';
 
-const clearSettingsAccessCache = () => {
+const clearSettingsAccessCache = (): void => {
   sessionStorage.removeItem(settingsAccessCacheKey);
 };
 

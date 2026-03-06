@@ -36,7 +36,10 @@ func TestInMemoryOAuthCodeStore_TakeSingleUse(t *testing.T) {
 
 func TestInMemoryOAuthCodeStore_Expires(t *testing.T) {
 	store := NewInMemoryOAuthCodeStore(1 * time.Second)
-	inMemoryStore := store.(*inMemoryOAuthCodeStore)
+	inMemoryStore, ok := store.(*inMemoryOAuthCodeStore)
+	if !ok {
+		t.Fatalf("expected *inMemoryOAuthCodeStore, got %T", store)
+	}
 
 	base := time.Unix(1000, 0)
 	inMemoryStore.now = func() time.Time {

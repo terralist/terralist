@@ -61,7 +61,10 @@ func TestUnpackCode(t *testing.T) {
 				mockProvider.
 					On("GetUserDetails", code, mock.AnythingOfType("*auth.User")).
 					Run(func(args mock.Arguments) {
-						user := args.Get(1).(*auth.User)
+						user, ok := args.Get(1).(*auth.User)
+						if !ok {
+							t.Fatalf("expected *auth.User, got %T", args.Get(1))
+						}
 						user.Name = "alice"
 						user.Email = "alice@example.com"
 						user.Groups = []string{"engineering", "platform"}
@@ -376,7 +379,10 @@ func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
 	mockProvider.
 		On("GetUserDetails", providerCode, mock.AnythingOfType("*auth.User")).
 		Run(func(args mock.Arguments) {
-			user := args.Get(1).(*auth.User)
+			user, ok := args.Get(1).(*auth.User)
+			if !ok {
+				t.Fatalf("expected *auth.User, got %T", args.Get(1))
+			}
 			user.Name = "alice"
 			user.Email = "alice@example.com"
 			user.Groups = groups
