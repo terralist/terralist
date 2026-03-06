@@ -384,7 +384,11 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		m.Versions[0].Location = location
 
 		// Upload the module documentation to the resolver datastore
-		docsFile := file.NewInMemoryFile(fmt.Sprintf("%s.md", d.Version), []byte(mdDocs))
+		docsFile := file.NewStreamingFile(
+			fmt.Sprintf("%s.md", d.Version),
+			strings.NewReader(mdDocs),
+			int64(len(mdDocs)),
+		)
 		docsLocation, err := s.Resolver.Store(&storage.StoreInput{
 			Reader:      docsFile,
 			Size:        docsFile.Metadata().Size(),
@@ -410,9 +414,10 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 				continue
 			}
 
-			submoduleDocsFile := file.NewInMemoryFile(
+			submoduleDocsFile := file.NewStreamingFile(
 				fmt.Sprintf("%s_%s.md", d.Version, strings.ReplaceAll(submodulePath, "/", "__")),
-				[]byte(submoduleDoc),
+				strings.NewReader(submoduleDoc),
+				int64(len(submoduleDoc)),
 			)
 			submoduleDocsLocation, err := s.Resolver.Store(&storage.StoreInput{
 				Reader:      submoduleDocsFile,

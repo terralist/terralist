@@ -103,7 +103,7 @@ Example:
 p, role:developer, authorities, *, *, deny
 
 # Grant read-only access to a specific authority for authority-reader role
-p, role:authority-reader, authorities, get, covered, allow
+p, role:authority-reader, authorities, get, example-authority, allow
 
 # Grant full authorities management to authority-admin role
 p, role:authority-admin, authorities, *, *, allow

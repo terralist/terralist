@@ -1,7 +1,6 @@
 package local
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -91,18 +90,7 @@ func (r *Resolver) GetObject(key string) (file.File, error) {
 		return nil, err
 	}
 
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read file: %w", err)
-	}
-	defer f.Close()
-
-	buffer := new(bytes.Buffer)
-	if _, err := io.Copy(buffer, f); err != nil {
-		return nil, err
-	}
-
-	return file.NewInMemoryFile(path.Base(filePath), buffer.Bytes()), nil
+	return file.LoadFromDisk(path.Base(filePath), filePath)
 }
 
 func (r *Resolver) Find(key string) (string, error) {
