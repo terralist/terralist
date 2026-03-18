@@ -21,7 +21,7 @@ func (t *Creator) New(config storage.Configurator) (storage.Resolver, error) {
 	var client *gcs.Client
 	var err error
 	if !cfg.DefaultCredentials {
-		client, err = gcs.NewClient(ctx, option.WithCredentialsFile(cfg.ServiceAccountCredFilePath))
+		client, err = gcs.NewClient(ctx, option.WithAuthCredentialsFile(option.ServiceAccount, cfg.ServiceAccountCredFilePath))
 		if err != nil {
 			return nil, fmt.Errorf("could not login with ServiceAccountCredFilePath %v", err)
 		}
