@@ -530,4 +530,3 @@ groups:
           summary: "High application error count ({{ $value }} in 5m)"
           description: "Application experiencing elevated error rates"
 ```
-

@@ -234,3 +234,9 @@ tmp-CHANGELOG.md
 ngrok.yml
 
 # End of Ngrok Config
+
+# Python VirtualEnv
+.venv/
+
+# MkDocs local build
+site/

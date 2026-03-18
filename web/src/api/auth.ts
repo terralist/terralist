@@ -9,6 +9,10 @@ type SessionDetails = {
   groups: string[];
 };
 
+type SettingsCapability = {
+  allowed: boolean;
+};
+
 const actions = {
   getSession: async () =>
     axios
@@ -20,12 +24,19 @@ const actions = {
     axios
       .delete<boolean>(config.runtime.TERRALIST_SESSION_ENDPOINT)
       .then(handleResponse<boolean>)
+      .catch(handleError),
+
+  getSettingsCapability: async () =>
+    axios
+      .get<SettingsCapability>('/v1/api/auth/capabilities/settings')
+      .then(handleResponse<SettingsCapability>)
       .catch(handleError)
 };
 
 const Auth = {
   getSession: async () => await actions.getSession(),
-  clearSession: async () => await actions.clearSession()
+  clearSession: async () => await actions.clearSession(),
+  getSettingsCapability: async () => await actions.getSettingsCapability()
 };
 
 export { Auth };

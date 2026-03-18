@@ -22,14 +22,18 @@ type LoginService interface {
 	// Redirect converts the code components into a redirect URL.
 	Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error)
 
+	// ResolveCode resolves code components from an opaque code.
+	ResolveCode(code string) (*oauth.CodeComponents, oauth.Error)
+
 	// ValidateToken is the method called on the third step from the OAUTH 2.0 protocol.
 	// It verifies the code components and generates the authorization token.
 	ValidateToken(components *oauth.CodeComponents, verifier string) (*oauth.TokenResponse, oauth.Error)
 }
 
 type DefaultLoginService struct {
-	Provider auth.Provider
-	JWT      jwt.JWT
+	Provider  auth.Provider
+	JWT       jwt.JWT
+	CodeStore OAuthCodeStore
 
 	EncryptSalt         string
 	CodeExchangeKey     string
@@ -70,16 +74,43 @@ func (s *DefaultLoginService) UnpackCode(code string, r *oauth.Request) (*oauth.
 		CodeChallengeMethod: r.CodeChallengeMethod,
 		UserName:            userDetails.Name,
 		UserEmail:           userDetails.Email,
+		UserGroups:          userDetails.Groups,
+		UserAuthority:       userDetails.Authority,
+		UserAuthorityID:     userDetails.AuthorityID,
 	}, nil
 }
 
 func (s *DefaultLoginService) Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error) {
+	if s.CodeStore != nil {
+		code, err := s.CodeStore.Put(*cc)
+		if err != nil {
+			return "", oauth.WrapError(err, oauth.ServerError)
+		}
+
+		return fmt.Sprintf("%s?state=%s&code=%s", r.RedirectURI, r.State, code), nil
+	}
+
 	payload, err := cc.ToPayload(s.EncryptSalt)
 	if err != nil {
 		return "", oauth.WrapError(err, oauth.InvalidRequest)
 	}
 
 	return fmt.Sprintf("%s?state=%s&code=%s", r.RedirectURI, r.State, payload), nil
+}
+
+func (s *DefaultLoginService) ResolveCode(code string) (*oauth.CodeComponents, oauth.Error) {
+	if s.CodeStore != nil {
+		if components, ok := s.CodeStore.Take(code); ok {
+			return components, nil
+		}
+	}
+
+	components, err := oauth.Payload(code).ToCodeComponents(s.EncryptSalt)
+	if err != nil {
+		return nil, oauth.WrapError(err, oauth.InvalidRequest)
+	}
+
+	return &components, nil
 }
 
 func (s *DefaultLoginService) ValidateToken(components *oauth.CodeComponents, verifier string) (*oauth.TokenResponse, oauth.Error) {
@@ -95,8 +126,11 @@ func (s *DefaultLoginService) ValidateToken(components *oauth.CodeComponents, ve
 	}
 
 	t, err := s.JWT.Build(auth.User{
-		Name:  components.UserName,
-		Email: components.UserEmail,
+		Name:        components.UserName,
+		Email:       components.UserEmail,
+		Authority:   components.UserAuthority,
+		AuthorityID: components.UserAuthorityID,
+		Groups:      components.UserGroups,
 	}, s.TokenExpirationSecs)
 	if err != nil {
 		return nil, oauth.WrapError(err, oauth.InvalidRequest)

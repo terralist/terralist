@@ -12,7 +12,7 @@ There are two main components where RBAC configuration can be defined:
 Terralist has three pre-defined roles. Not all of them support expansion, but you are free to define new roles as you please (see below).
 
 - `role:anonymous`: has access to no resources (unless specified otherwise in the server-side configuration);
-- `role:readonly`<sup>*</sup>: read-only access to all resources;
+- `role:readonly`<sup>*</sup>: read-only access to `modules`, `providers`, and `authorities`. Access to `settings` is policy-driven;
 - `role:admin`<sup>*</sup>: unrestricted access to all resources;
 
 <sup>*</sup> This role cannot be extended.
@@ -50,9 +50,9 @@ Below is a table that defines claims meaning for each OAuth provider.
 Syntax: `p, <role/username/useremail/group>, <resource>, <action>, <object>, <effect>`
 
 - `<role/username/useremail/group>`: The entity to whom the policy will be assigned
-- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`. Supports glob matching (e.g. )
+- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `settings`. Supports glob matching (e.g. )
 - `<action>`<sup>*</sup>: The operation that is being performed on the resource. Can be one of: `get`, `create`, `update`, `delete`. Supports glob matching.
-- `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary. 
+- `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
 
 <sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all 3 resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
@@ -64,6 +64,7 @@ Below is a table that defines the correct object syntax for each resource group.
 | `authorities`  | `<authority-name>`                               |
 | `modules`      | `<authority-name>/<module-name>/<provider-name>` |
 | `providers`    | `<authority-name>/<provider-name>`               |
+| `settings`     | `page`                                           |
 
  For example, an object c
 
@@ -78,7 +79,61 @@ When using API keys for authentication, Terralist enforces strict authority isol
 This is a security boundary that prevents API key privilege escalation in multi-tenant environments.
 
 **Example:**
+
 - API key issued by authority `my-org` can access `my-org/my-module/aws`
 - API key issued by authority `my-org` **cannot** access `other-org/their-module/aws`
 
-Note: This isolation only applies to API key authentication. Users authenticated via OAuth session can access resources based on their RBAC policies.
+Note: This isolation applies to `modules` and `providers`; `authorities` visibility is governed by RBAC policy.
+
+## API Keys and `authorities` Resource Visibility
+
+`authorities` visibility for API-key users is policy-driven through RBAC.
+
+- The built-in API-key authority isolation guard applies to `modules` and `providers`.
+- Access to `authorities` is evaluated by RBAC policies (subject mappings + `p` rules), not by an additional hard-coded namespace isolation check.
+
+### Recommended Pattern
+
+Use explicit deny/allow policies for `authorities` to avoid relying on defaults.
+
+Example:
+
+```csv
+# Deny broad authorities access by default for developer role
+p, role:developer, authorities, *, *, deny
+
+# Grant read-only access to a specific authority for authority-reader role
+p, role:authority-reader, authorities, get, example-authority, allow
+
+# Grant full authorities management to authority-admin role
+p, role:authority-admin, authorities, *, *, allow
+```
+
+Then map identity claims (user/group/email) to those roles:
+
+```csv
+g, SSOAWS_PLATFORM, role:authority-admin
+g, SSOAWS_ENGINEERING, role:authority-reader
+```
+
+## Settings Page Access With RBAC
+
+The Settings page capability endpoint checks RBAC permission:
+
+- `resource`: `settings`
+- `action`: `get`
+- `object`: `page`
+
+Settings page access and visibility are controlled only by RBAC policy.
+
+Migration note: if you previously used `--authorized-users`, convert that access list to RBAC `settings/get/page` policies and role mappings.
+
+Example policies:
+
+```csv
+# Explicitly deny settings page access for developer role
+p, role:developer, settings, get, page, deny
+
+# Allow settings page access for authority-admin role
+p, role:authority-admin, settings, get, page, allow
+```

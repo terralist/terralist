@@ -2,26 +2,32 @@ package server
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"sync/atomic"
 	"time"
 
 	"terralist/internal/server/controllers"
 	"terralist/internal/server/handlers"
+	"terralist/internal/server/models/oauth"
 	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
+	"terralist/pkg/auth/saml"
 	"terralist/pkg/database"
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
 	"terralist/pkg/rbac"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
+	"terralist/pkg/storage/local"
 	"terralist/web"
 
 	"github.com/gin-gonic/contrib/static"
@@ -45,8 +51,6 @@ type Server struct {
 	Resolver storage.Resolver
 
 	Readiness *atomic.Bool
-
-	AuthorizedUsers string
 }
 
 // Config holds the server configuration that isn't configurable by the user.
@@ -131,8 +135,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
 
 	loginService := &services.DefaultLoginService{
-		Provider: config.Provider,
-		JWT:      jwtManager,
+		Provider:  config.Provider,
+		JWT:       jwtManager,
+		CodeStore: services.NewInMemoryOAuthCodeStore(2 * time.Minute),
 
 		EncryptSalt:         salt,
 		CodeExchangeKey:     exchangeKey,
@@ -148,6 +153,148 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	apiV1Group.Register(loginController)
+
+	// Register SAML endpoints only when SAML is configured as the auth provider.
+	if samlProvider, ok := config.Provider.(interface {
+		GetSPMetadata() ([]byte, error)
+	}); ok {
+		acsRateLimiter := handlers.NewRateLimiter(10, 1*time.Minute)
+		samlEndpoints := apiV1Group.RouterGroup().Group("/api/auth/saml")
+
+		// Enforce HTTPS transport for SAML endpoints.
+		samlEndpoints.Use(func(ctx *gin.Context) {
+			scheme := ctx.GetHeader("X-Forwarded-Proto")
+			if scheme == "" {
+				if ctx.Request.TLS != nil {
+					scheme = "https"
+				} else {
+					scheme = "http"
+				}
+			}
+
+			if strings.ToLower(scheme) != "https" {
+				log.Error().
+					Str("scheme", scheme).
+					Str("path", ctx.Request.URL.Path).
+					Str("remote_addr", ctx.ClientIP()).
+					Msg("SAML endpoint accessed over non-HTTPS connection - rejecting request")
+				ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+					"error":             "forbidden",
+					"error_description": "SAML endpoints require HTTPS transport for security",
+				})
+				return
+			}
+
+			ctx.Next()
+		})
+
+		samlEndpoints.GET("/metadata", func(ctx *gin.Context) {
+			metadata, err := samlProvider.GetSPMetadata()
+			if err != nil {
+				log.Error().
+					AnErr("Error", err).
+					Msg("Failed to generate SAML metadata")
+				ctx.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+
+			ctx.Data(http.StatusOK, "application/xml; charset=utf-8", metadata)
+		})
+
+		samlEndpoints.POST("/acs", handlers.RateLimitMiddleware(acsRateLimiter), func(ctx *gin.Context) {
+			samlResponse := ctx.PostForm("SAMLResponse")
+			relayState := ctx.PostForm("RelayState")
+
+			if samlResponse == "" || relayState == "" {
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
+			if err := saml.ValidateRelayState(relayState); err != nil {
+				log.Warn().
+					AnErr("error", err).
+					Str("source", "relaystate_validation").
+					Int("relaystate_size", len(relayState)).
+					Str("client_ip", ctx.ClientIP()).
+					Msg("SAML ACS endpoint: invalid RelayState detected (potential CSRF attack)")
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
+			r, err := oauth.Payload(relayState).ToRequest(salt)
+			if err != nil {
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
+			codeComponents, erro := loginService.UnpackCode(samlResponse, &r)
+			if erro != nil {
+				ctx.Redirect(http.StatusFound, redirectWithError(r.RedirectURI, r.State, erro))
+				return
+			}
+
+			var userDetails auth.User
+			if err := loginService.Provider.GetUserDetails(samlResponse, &userDetails); err != nil {
+				userDetails = auth.User{
+					Name:        codeComponents.UserName,
+					Email:       codeComponents.UserEmail,
+					Groups:      codeComponents.UserGroups,
+					Authority:   codeComponents.UserAuthority,
+					AuthorityID: codeComponents.UserAuthorityID,
+				}
+			}
+
+			uri, err := url.Parse(r.RedirectURI)
+			if err != nil {
+				log.Warn().
+					AnErr("Error", err).
+					Str("RedirectURI", r.RedirectURI).
+					Msg("An invalid redirect URI was detected during the SAML callback.")
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
+			if uri.Host == hostURL.Host {
+				sess, err := config.Store.Get(ctx.Request)
+				if err != nil {
+					ctx.Redirect(http.StatusFound, redirectWithError(
+						uri.String(),
+						"",
+						oauth.WrapError(fmt.Errorf("could not fetch the session"), oauth.ServerError),
+					))
+					return
+				}
+
+				sess.Set("user", &auth.User{
+					Name:        userDetails.Name,
+					Email:       userDetails.Email,
+					Groups:      userDetails.Groups,
+					Authority:   userDetails.Authority,
+					AuthorityID: userDetails.AuthorityID,
+				})
+
+				if err := config.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {
+					ctx.Redirect(http.StatusFound, redirectWithError(
+						uri.String(),
+						"",
+						oauth.WrapError(fmt.Errorf("could not save session"), oauth.ServerError),
+					))
+					return
+				}
+
+				ctx.Redirect(http.StatusFound, uri.String())
+				return
+			}
+
+			redirectURL, erro := loginService.Redirect(codeComponents, &r)
+			if erro != nil {
+				ctx.Redirect(http.StatusFound, redirectWithError(r.RedirectURI, r.State, erro))
+				return
+			}
+
+			ctx.Redirect(http.StatusFound, redirectURL)
+		})
+	}
 
 	authorityRepository := &repositories.DefaultAuthorityRepository{
 		Database: config.Database,
@@ -181,6 +328,13 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		Enforcer:         enforcer,
 	}
+
+	settingsCapabilityController := &controllers.DefaultSettingsCapabilityController{
+		Authentication: authentication,
+		Authorization:  authorization,
+	}
+
+	apiV1Group.Register(settingsCapabilityController)
 
 	moduleRepository := &repositories.DefaultModuleRepository{
 		Database: config.Database,
@@ -245,6 +399,23 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(artifactController)
 
+	_, modulesLocal := config.ModulesResolver.(*local.Resolver)
+	_, providersLocal := config.ProvidersResolver.(*local.Resolver)
+	if modulesLocal || providersLocal {
+		localJWTManager, err := jwt.New(userConfig.LocalTokenSigningSecret)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create local JWT manager: %v", err)
+		}
+
+		filesController := &controllers.DefaultFileServer{
+			ModulesResolver:   config.ModulesResolver,
+			ProvidersResolver: config.ProvidersResolver,
+			JWT:               localJWTManager,
+		}
+
+		apiV1Group.Register(filesController)
+	}
+
 	wellKnownGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
 		Prefix: "/.well-known",
 	})
@@ -268,7 +439,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorizationEndpoint: apiV1Group.Prefix() + loginController.AuthorizationRoute(),
 		SessionDetailsRoute:   apiV1Group.Prefix() + loginController.SessionDetailsRoute(),
 		ClearSessionRoute:     apiV1Group.Prefix() + loginController.ClearSessionRoute(),
-		AuthorizedUsers:       userConfig.AuthorizedUsers,
+		SamlDisplayName:       userConfig.SamlDisplayName,
 	})
 
 	return &Server{
@@ -286,9 +457,38 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}, nil
 }
 
+// redirectWithError creates a redirect URL with OAuth error parameters.
+// Error messages are sanitized to prevent information leakage.
+func redirectWithError(uri string, state string, err oauth.Error) string {
+	stateQuery := ""
+	if state != "" {
+		stateQuery = fmt.Sprintf("&state=%s", state)
+	}
+
+	errorMsg := err.Error()
+	if sanitized := saml.SanitizeErrorForURL(errors.New(errorMsg)); sanitized != errorMsg {
+		errorMsg = sanitized
+	}
+
+	return fmt.Sprintf(
+		"%s?error=%s&error_description=%s%s",
+		uri,
+		err.Kind(),
+		url.QueryEscape(errorMsg),
+		stateQuery,
+	)
+}
+
 // Start initializes the routes and starts serving.
 func (s *Server) Start() error {
 	useTLS := s.CertFile != "" && s.KeyFile != ""
+
+	if _, ok := s.Provider.(interface {
+		GetSPMetadata() ([]byte, error)
+	}); ok && !useTLS {
+		log.Warn().
+			Msg("SAML authentication requires TLS/HTTPS transport for security. Please ensure your reverse proxy terminates TLS, or configure cert-file and key-file for direct TLS support.")
+	}
 
 	if !useTLS {
 		log.Warn().

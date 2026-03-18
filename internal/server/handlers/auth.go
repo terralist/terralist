@@ -55,9 +55,14 @@ func (a *Authentication) parseTerraformCLI(c *gin.Context) (*auth.User, error) {
 		return nil, fmt.Errorf("%w: api-key", ErrUnexpectedOrigin)
 	}
 
-	user, err := a.JWT.Extract(bearerToken)
+	data, err := a.JWT.Extract(bearerToken)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidValue, err)
+	}
+
+	user, ok := data.(*auth.User)
+	if !ok || user == nil {
+		return nil, fmt.Errorf("%w: unexpected token payload type %T", ErrInvalidValue, data)
 	}
 
 	return user, nil

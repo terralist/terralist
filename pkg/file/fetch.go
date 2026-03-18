@@ -1,7 +1,6 @@
 package file
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -233,14 +232,12 @@ func archiveDir(name, src string) (File, error) {
 				originalName := f.Name()
 				strippedName := strings.TrimPrefix(originalName, rootDir+"/")
 
-				// Read the content from the original file
-				var buf bytes.Buffer
-				if _, err := io.Copy(&buf, f); err != nil {
-					return nil, fmt.Errorf("%w: failed to copy file content: %v", ErrSystemFailure, err)
+				if _, err := f.Seek(0, io.SeekStart); err != nil {
+					return nil, fmt.Errorf("%w: failed to rewind file: %v", ErrSystemFailure, err)
 				}
 
-				// Create a new file with the stripped name
-				strippedFiles[i] = NewInMemoryFile(strippedName, buf.Bytes())
+				// Create a streaming view with the stripped name.
+				strippedFiles[i] = RenameStreamingFile(f, strippedName)
 			}
 			dirFiles = strippedFiles
 		}
