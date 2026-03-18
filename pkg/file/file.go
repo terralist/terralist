@@ -3,6 +3,7 @@ package file
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -206,9 +207,6 @@ func (f *OnDiskFile) Remove() error {
 // ContentType returns the http-compliant content-type of a File.
 func ContentType(f File) string {
 	data, err := bufio.NewReader(f).Peek(512)
-	if err != nil {
-		return "application/octet-stream"
-	}
 
 	// Rewind the reader
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
@@ -216,6 +214,10 @@ func ContentType(f File) string {
 			Err(err).
 			Str("name", f.Name()).
 			Msg("could not rewind the file")
+	}
+
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "application/octet-stream"
 	}
 
 	return http.DetectContentType(data)

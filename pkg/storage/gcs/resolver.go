@@ -26,6 +26,11 @@ type Resolver struct {
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
 
+	// Uploads should not depend on callers leaving the reader at offset 0.
+	if _, err := in.Reader.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not upload archive, file can't be rewinded: %w", err)
+	}
+
 	ctx := context.Background()
 
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*2)
