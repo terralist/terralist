@@ -2,13 +2,29 @@
 
 version: "3"
 
+vars:
+  TOOLS_DIR: "{{.ROOT_DIR}}/tools"
+  TOOLS_BIN_DIR: "{{.TOOLS_DIR}}/bin"
+
 tasks:
+  tool:build:
+    desc: "Build a Go tool from the tools module."
+    internal: true
+    requires:
+      vars: [TOOL_PKG, TOOL_NAME]
+    status:
+      - test -f {{.TOOLS_BIN_DIR}}/{{.TOOL_NAME}}
+      - test {{.TOOLS_BIN_DIR}}/{{.TOOL_NAME}} -nt {{.TOOLS_DIR}}/go.sum
+    cmds:
+      - go build -C {{.TOOLS_DIR}} -o bin/{{.TOOL_NAME}} {{.TOOL_PKG}}
+
   tidy:
     desc: "Install all Terralist dependencies and tools."
     silent: true
     cmds:
       - npm install -g yarn && yarn --cwd ./web install
       - go mod tidy
+      - cd {{.TOOLS_DIR}} && go mod tidy
 
   build:frontend:
     desc: "Build the web application."
@@ -21,7 +37,7 @@ tasks:
   build:backend:
     desc: |
       Build the backend application.
-      The build mode defaults to 'release'. Debug mode can be enabled 
+      The build mode defaults to 'release'. Debug mode can be enabled
       by passing the '--debug' CLI argument (as '-- --debug').
     silent: true
     vars:
@@ -76,7 +92,11 @@ tasks:
       SHOULD_FIX: '{{has "--fix" .CLI_ARGS_LIST}}'
     silent: true
     cmds:
-      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint run ./... {{ternary "--fix" "" (eq .SHOULD_FIX "true")}}
+      - task: tool:build
+        vars:
+          TOOL_PKG: github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+          TOOL_NAME: golangci-lint
+      - "{{.TOOLS_BIN_DIR}}/golangci-lint run ./... {{ternary \"--fix\" \"\" (eq .SHOULD_FIX \"true\")}}"
 
   lint:
     desc: |
@@ -96,12 +116,16 @@ tasks:
       MOCK_FILES:
         sh: find ./ -type f -name 'mocks.go'
     cmds:
+      - task: tool:build
+        vars:
+          TOOL_PKG: github.com/vektra/mockery/v3
+          TOOL_NAME: mockery
       - >-
         {{if eq .MOCK_FILES ""}}
-          go run github.com/vektra/mockery/v3
+          {{.TOOLS_BIN_DIR}}/mockery
         {{else if .CLI_FORCE}}
           echo "{{.MOCK_FILES}}" | xargs rm; \
-          go run github.com/vektra/mockery/v3
+          {{.TOOLS_BIN_DIR}}/mockery
         {{else}}
           echo 'Mocks are already created. Re-run with --force if you wish to overwrite them.'
         {{end}}
@@ -138,9 +162,13 @@ tasks:
           echo "{{$pkgs | join " "}}"
     cmds:
       - task: test:generate-mocks
+      - task: tool:build
+        vars:
+          TOOL_PKG: gotest.tools/gotestsum
+          TOOL_NAME: gotestsum
       - >-
         {{- if eq .WITH_SUMMARY "true" -}}
-        go run gotest.tools/gotestsum -f testname -- -count=1 {{.TEST_PACKAGES}}
+        {{.TOOLS_BIN_DIR}}/gotestsum -f testname -- -count=1 {{.TEST_PACKAGES}}
         {{- else -}}
         go test -count=1 {{.TEST_PACKAGES}}
         {{- end -}}
@@ -153,7 +181,11 @@ tasks:
       - echo 'WARNING! Make sure to have a Terralist server up-and-running for the tests to run against.'
       - cmd: rm -r ./reports
         ignore_error: true
-      - go run github.com/ovh/venom/cmd/venom run --html-report --output-dir="./reports" --var-from-file ./e2e/variables.yaml ./e2e/suites
+      - task: tool:build
+        vars:
+          TOOL_PKG: github.com/ovh/venom/cmd/venom
+          TOOL_NAME: venom
+      - "{{.TOOLS_BIN_DIR}}/venom run --html-report --output-dir=\"./reports\" --var-from-file ./e2e/variables.yaml ./e2e/suites"
 
   test:
     desc: "Run all tests."
