@@ -127,13 +127,13 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chainguard-dev/git-urls v1.0.2 // indirect
 	github.com/charithe/durationcheck v0.0.11 // indirect
-	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
+	github.com/charmbracelet/colorprofile v0.4.2 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
-	github.com/charmbracelet/x/ansi v0.10.1 // indirect
+	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13-0.20250311204145-2c3ea96c31dd // indirect
-	github.com/charmbracelet/x/term v0.2.1 // indirect
+	github.com/charmbracelet/x/term v0.2.2 // indirect
 	github.com/ckaznocha/intrange v0.3.1 // indirect
-	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
+	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
@@ -185,7 +185,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/go-task/task/v3 v3.45.5 // indirect
+	github.com/go-task/task/v3 v3.49.1 // indirect
 	github.com/go-task/template v0.2.0 // indirect
 	github.com/go-testfixtures/testfixtures/v3 v3.9.0 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
@@ -296,7 +296,7 @@ require (
 	github.com/leonklingele/grouper v1.1.2 // indirect
 	github.com/lib/pq v1.11.2 // indirect
 	github.com/linkedin/goavro/v2 v2.12.0 // indirect
-	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
+	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/macabu/inamedparam v0.2.0 // indirect
 	github.com/manuelarte/embeddedstructfieldcheck v0.4.0 // indirect
 	github.com/manuelarte/funcorder v0.5.0 // indirect
@@ -304,7 +304,7 @@ require (
 	github.com/maratori/testpackage v1.1.2 // indirect
 	github.com/matoous/godox v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-runewidth v0.0.19 // indirect
+	github.com/mattn/go-runewidth v0.0.20 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mattn/go-zglob v0.0.4 // indirect
@@ -381,7 +381,7 @@ require (
 	github.com/tomarrell/wrapcheck/v2 v2.12.0 // indirect
 	github.com/tommy-muehle/go-mnd/v2 v2.5.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
-	github.com/u-root/u-root v0.15.1-0.20251014130006-62f7144b33da // indirect
+	github.com/u-root/u-root v0.15.1-0.20251208185023-2f8c7e763cf8 // indirect
 	github.com/u-root/uio v0.0.0-20240224005618-d2acac8f3701 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/ultraware/funlen v0.2.0 // indirect
@@ -404,7 +404,7 @@ require (
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	github.com/zclconf/go-cty v1.14.4 // indirect
-	github.com/zeebo/xxh3 v1.0.2 // indirect
+	github.com/zeebo/xxh3 v1.1.0 // indirect
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.14.0 // indirect
 	go-simpler.org/sloglint v0.11.1 // indirect
@@ -455,8 +455,8 @@ require (
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
 	mvdan.cc/gofumpt v0.9.2 // indirect
-	mvdan.cc/sh/moreinterp v0.0.0-20251109230715-65adef8e2c5b // indirect
-	mvdan.cc/sh/v3 v3.12.0 // indirect
+	mvdan.cc/sh/moreinterp v0.0.0-20260120230322-19def062a997 // indirect
+	mvdan.cc/sh/v3 v3.12.1-0.20260124232039-e74afc18e65b // indirect
 	mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 // indirect
 )
 
