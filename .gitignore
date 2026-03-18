@@ -206,6 +206,7 @@ reports/
 # Binaries
 terralist
 terralist.exe
+tools/bin/
 
 # Docker Volumes
 .volumes
