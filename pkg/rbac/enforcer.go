@@ -65,12 +65,22 @@ var (
 //go:embed model.conf
 var defaultModel string
 
+// defaultPolicies are baked-in policies that provide sensible defaults for built-in roles.
+// User-provided policies are loaded on top of these.
+var defaultPolicies = [][]string{
+	{SubjectAdmin, "*", "*", "*", EffectAllow},
+	{SubjectReadonly, ResourceModules, ActionGet, "*", EffectAllow},
+	{SubjectReadonly, ResourceProviders, ActionGet, "*", EffectAllow},
+	{SubjectReadonly, ResourceAuthorities, ActionGet, "*", EffectAllow},
+}
+
 // Make sure that CasbinEnforcer interface properly wraps the casbin.Enforcer struct.
 var _ CasbinEnforcer = &casbin.Enforcer{}
 
 // CasbinEnforcer defines the methods we use from casbin.Enforcer, allowing for easier testing/mocking.
 type CasbinEnforcer interface {
 	AddFunction(name string, function govaluate.ExpressionFunction)
+	AddPolicy(params ...any) (bool, error)
 	GetRolesForUser(name string, domain ...string) ([]string, error)
 	BatchEnforce(rvals [][]any) ([]bool, error)
 }
@@ -81,13 +91,8 @@ type Enforcer struct {
 	defaultRole string
 }
 
-// NewEnforcer creates a new authorization manager.
+// NewEnforcer creates a new authorization manager with a file-based policy.
 func NewEnforcer(policyPath string, defaultRoleName string) (*Enforcer, error) {
-	m, err := model.NewModelFromString(defaultModel)
-	if err != nil {
-		return nil, err
-	}
-
 	var a persist.Adapter
 	if policyPath == "" {
 		a = stringadapter.NewAdapter("# empty policy")
@@ -95,12 +100,32 @@ func NewEnforcer(policyPath string, defaultRoleName string) (*Enforcer, error) {
 		a = fileadapter.NewAdapter(policyPath)
 	}
 
-	enforcer, err := casbin.NewEnforcer(m, a)
+	return newEnforcer(a, defaultRoleName)
+}
+
+// NewEnforcerFromString creates a new authorization manager with a string-based policy.
+func NewEnforcerFromString(policyCSV string, defaultRoleName string) (*Enforcer, error) {
+	return newEnforcer(stringadapter.NewAdapter(policyCSV), defaultRoleName)
+}
+
+func newEnforcer(adapter persist.Adapter, defaultRoleName string) (*Enforcer, error) {
+	m, err := model.NewModelFromString(defaultModel)
+	if err != nil {
+		return nil, err
+	}
+
+	enforcer, err := casbin.NewEnforcer(m, adapter)
 	if err != nil {
 		return nil, err
 	}
 
 	enforcer.AddFunction("glob_match", globMatch)
+
+	for _, policy := range defaultPolicies {
+		if _, err := enforcer.AddPolicy(lo.Map(policy, func(s string, _ int) any { return s })...); err != nil {
+			return nil, fmt.Errorf("failed to add default policy %v: %w", policy, err)
+		}
+	}
 
 	defaultRole := SubjectReadonly
 	if defaultRoleName != "" {
@@ -143,17 +168,9 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 		roles = []string{e.defaultRole}
 	}
 
-	if slices.Contains(roles, SubjectAdmin) {
-		logger.Debug().Msg("Administrator role detected, allowing any action.")
-		return true
-	}
-
-	if action == ActionGet && slices.Contains(roles, SubjectReadonly) {
-		logger.Debug().Msg("Read-only role detected, allowing 'get' action.")
-		return true
-	}
-
-	requests := lo.Map(subjects, func(subject string, _ int) []any {
+	// Evaluate all subjects and their roles against the policy.
+	allSubjects := lo.Uniq(append(subjects, roles...))
+	requests := lo.Map(allSubjects, func(subject string, _ int) []any {
 		return []any{subject, resource, action, object}
 	})
 
