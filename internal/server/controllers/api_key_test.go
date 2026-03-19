@@ -26,7 +26,7 @@ func setupApiKeyRouter(
 	t *testing.T,
 	user *auth.User,
 	policyCSV string,
-) (*gin.Engine, *services.MockStandaloneApiKeyService, *services.MockAuthorityService) {
+) (*gin.Engine, *services.MockStandaloneApiKeyService) {
 	t.Helper()
 
 	gin.SetMode(gin.TestMode)
@@ -96,7 +96,7 @@ func setupApiKeyRouter(
 
 	controller.Subscribe(groups...)
 
-	return router, mockService, mockAuthorityService
+	return router, mockService
 }
 
 func TestApiKeyController_List(t *testing.T) {
@@ -105,7 +105,7 @@ func TestApiKeyController_List(t *testing.T) {
 
 		Convey("Given an authenticated user with get permission on api-keys", func() {
 			policy := `p, test-user, api-keys, get, *, allow`
-			router, mockService, _ := setupApiKeyRouter(t, user, policy)
+			router, mockService := setupApiKeyRouter(t, user, policy)
 
 			mockService.On("List").Return([]apikey.ApiKeyDTO{
 				{ID: "key-1", Name: "ci-key", CreatedBy: "test@example.com"},
@@ -129,7 +129,7 @@ func TestApiKeyController_List(t *testing.T) {
 		})
 
 		Convey("Given an authenticated user with only readonly role (no explicit api-keys policy)", func() {
-			router, mockService, _ := setupApiKeyRouter(t, user, "")
+			router, mockService := setupApiKeyRouter(t, user, "")
 
 			mockService.On("List").Return([]apikey.ApiKeyDTO{
 				{ID: "key-1", Name: "ci-key", CreatedBy: "someone@example.com"},
@@ -159,7 +159,7 @@ func TestApiKeyController_Create(t *testing.T) {
 
 		Convey("Given an authenticated user with create permission", func() {
 			policy := `p, test-user, api-keys, create, *, allow`
-			router, mockService, _ := setupApiKeyRouter(t, user, policy)
+			router, mockService := setupApiKeyRouter(t, user, policy)
 
 			Convey("When POST /api/api-keys is called with valid body", func() {
 				body := apikey.CreateApiKeyDTO{
@@ -199,11 +199,11 @@ func TestApiKeyController_Create(t *testing.T) {
 
 		Convey("Given an authenticated user without create permission", func() {
 			// readonly role doesn't grant create
-			router, _, _ := setupApiKeyRouter(t, user, "")
+			router, _ := setupApiKeyRouter(t, user, "")
 
 			Convey("When POST /api/api-keys is called", func() {
 				body := apikey.CreateApiKeyDTO{
-					Name:     "ci-key",
+					Name: "ci-key",
 					Policies: []apikey.CreatePolicyDTO{
 						{Resource: "modules", Action: "get", Object: "*", Effect: "allow"},
 					},
@@ -222,7 +222,7 @@ func TestApiKeyController_Create(t *testing.T) {
 		})
 
 		Convey("Given an unauthenticated request", func() {
-			router, _, _ := setupApiKeyRouter(t, nil, "")
+			router, _ := setupApiKeyRouter(t, nil, "")
 
 			Convey("When POST /api/api-keys is called", func() {
 				body := `{"name":"ci-key","policies":[{"resource":"modules","action":"get","object":"*","effect":"allow"}]}`
@@ -245,7 +245,7 @@ func TestApiKeyController_Delete(t *testing.T) {
 
 		Convey("Given an authenticated user with delete permission", func() {
 			policy := `p, test-user, api-keys, delete, *, allow`
-			router, mockService, _ := setupApiKeyRouter(t, user, policy)
+			router, mockService := setupApiKeyRouter(t, user, policy)
 
 			mockService.On("Delete", "some-key-id").Return(nil)
 
@@ -261,7 +261,7 @@ func TestApiKeyController_Delete(t *testing.T) {
 		})
 
 		Convey("Given an authenticated user without delete permission", func() {
-			router, _, _ := setupApiKeyRouter(t, user, "")
+			router, _ := setupApiKeyRouter(t, user, "")
 
 			Convey("When DELETE /api/api-keys/:id is called", func() {
 				req := httptest.NewRequest(http.MethodDelete, "/v1/api/api-keys/some-key-id", nil)

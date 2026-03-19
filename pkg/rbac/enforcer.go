@@ -188,11 +188,15 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 func EvaluateInline(policies []auth.Policy, resource, action, object string) bool {
 	hasAllow := false
 	for _, p := range policies {
-		resMatch, _ := globMatch(resource, p.Resource)
-		actMatch, _ := globMatch(action, p.Action)
-		objMatch, _ := globMatch(object, p.Object)
+		resMatchVal, _ := globMatch(resource, p.Resource)
+		actMatchVal, _ := globMatch(action, p.Action)
+		objMatchVal, _ := globMatch(object, p.Object)
 
-		if resMatch.(bool) && actMatch.(bool) && objMatch.(bool) {
+		resMatch, _ := resMatchVal.(bool)
+		actMatch, _ := actMatchVal.(bool)
+		objMatch, _ := objMatchVal.(bool)
+
+		if resMatch && actMatch && objMatch {
 			if p.Effect == EffectDeny {
 				return false
 			}
