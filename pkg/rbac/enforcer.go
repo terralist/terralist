@@ -33,6 +33,9 @@ const (
 	ActionCreate = "create"
 	ActionDelete = "delete"
 
+	EffectAllow = "allow"
+	EffectDeny  = "deny"
+
 	SubjectAnonymous = "role:anonymous"
 	SubjectReadonly  = "role:readonly"
 	SubjectAdmin     = "role:admin"
@@ -51,6 +54,11 @@ var (
 		ActionUpdate,
 		ActionCreate,
 		ActionDelete,
+	}
+
+	Effects []string = []string{
+		EffectAllow,
+		EffectDeny,
 	}
 )
 
