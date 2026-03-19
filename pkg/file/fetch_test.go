@@ -7,6 +7,48 @@ import (
 	"testing"
 )
 
+func TestFetch_CleanupRemovesTempDir(t *testing.T) {
+	// Create a local file to fetch
+	tempFile, err := os.CreateTemp("", "test-fetch-cleanup-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	defer os.Remove(tempFile.Name())
+
+	if _, err := tempFile.WriteString("test content"); err != nil {
+		t.Fatalf("Failed to write temp file: %v", err)
+	}
+	tempFile.Close()
+
+	// Fetch the file
+	result, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil)
+	if err != nil {
+		t.Fatalf("fetch failed: %v", err)
+	}
+	defer result.Close()
+
+	// The cleanup function should be non-nil
+	if cleanup == nil {
+		t.Fatal("Expected non-nil cleanup function")
+	}
+
+	// Find the temp dir by checking that tl-fetch dirs exist
+	matches, _ := filepath.Glob(filepath.Join(os.TempDir(), "tl-fetch*"))
+	if len(matches) == 0 {
+		t.Fatal("Expected at least one tl-fetch temp dir to exist before cleanup")
+	}
+
+	// Run cleanup
+	cleanup()
+
+	// Verify temp dirs created by this test are gone
+	// (we can't be 100% sure which one is ours, but the count should decrease)
+	matchesAfter, _ := filepath.Glob(filepath.Join(os.TempDir(), "tl-fetch*"))
+	if len(matchesAfter) >= len(matches) {
+		t.Error("Expected cleanup to remove the temp dir")
+	}
+}
+
 func TestArchiveDir_StripRootFolder(t *testing.T) {
 	// Create a temporary directory structure that mimics a GitHub archive
 	tempDir, err := os.MkdirTemp("", "test-archive-*")

@@ -128,10 +128,11 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 
 	if s.Resolver != nil {
 		// Download provider files
-		files, err := s.downloadFiles(d)
+		files, cleanup, err := s.downloadFiles(d)
 		if err != nil {
 			return err
 		}
+		defer cleanup()
 
 		// Upload provider files
 		keys, err := s.uploadFiles(a.Name, p.Name, d.Version, files)
@@ -259,22 +260,34 @@ func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDT
 	return err
 }
 
-// downloadFiles fetches all provider files.
-func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]file.File, error) {
+// downloadFiles fetches all provider files and returns a cleanup function
+// that removes all temporary directories created during the download.
+func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (map[string]file.File, func(), error) {
 	prefix := fmt.Sprintf("terraform-provider-%s_%s", d.Name, d.Version)
 
 	headers := file.CreateHeader(d.Headers)
 
-	// Download provider files
-	shaSums, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
-	if err != nil {
-		return nil, fmt.Errorf("could not fetch shaSums file: %v", err)
+	var cleanups []func()
+	cleanupAll := func() {
+		for _, fn := range cleanups {
+			fn()
+		}
 	}
 
-	shaSumsSig, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
+	// Download provider files
+	shaSums, shaSumsCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
+		cleanupAll()
+		return nil, nil, fmt.Errorf("could not fetch shaSums file: %v", err)
 	}
+	cleanups = append(cleanups, shaSumsCleanup)
+
+	shaSumsSig, shaSumsSigCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
+	if err != nil {
+		cleanupAll()
+		return nil, nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
+	}
+	cleanups = append(cleanups, shaSumsSigCleanup)
 
 	files := map[string]file.File{
 		shaSumsKey:    shaSums,
@@ -285,15 +298,17 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		p := platform.ToPlatform()
 		osArch := p.String()
 
-		binary, err := s.Fetcher.FetchFileChecksum(fmt.Sprintf("%s_%s.zip", prefix, osArch), p.Location, p.ShaSum, headers)
+		binary, binaryCleanup, err := s.Fetcher.FetchFileChecksum(fmt.Sprintf("%s_%s.zip", prefix, osArch), p.Location, p.ShaSum, headers)
 		if err != nil {
-			return nil, fmt.Errorf("could not fetch %s file: %v", osArch, err)
+			cleanupAll()
+			return nil, nil, fmt.Errorf("could not fetch %s file: %v", osArch, err)
 		}
+		cleanups = append(cleanups, binaryCleanup)
 
 		files[osArch] = binary
 	}
 
-	return files, nil
+	return files, cleanupAll, nil
 }
 
 // uploadFiles uploads all stored provider files.

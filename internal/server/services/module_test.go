@@ -259,7 +259,7 @@ func TestUploadModule(t *testing.T) {
 
 								mockFetcher.
 									On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
-									Return(nil, expectedErr)
+									Return(nil, nil, expectedErr)
 
 								Convey("When the service is queried", func() {
 									err := moduleService.Upload(&dto, url, nil)
@@ -279,7 +279,7 @@ func TestUploadModule(t *testing.T) {
 
 								mockFetcher.
 									On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
-									Return(archive, nil)
+									Return(archive, func() {}, nil)
 
 								Convey("If the resolver is not set", func() {
 									moduleService.Resolver = nil
@@ -671,7 +671,7 @@ func TestUploadModuleDocumentation_MultibytePreserved(t *testing.T) {
 
 		mockFetcher.
 			On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
-			Return(arch, nil)
+			Return(arch, func() {}, nil)
 
 		// First store for archive (accept anything but the docs markdown filename)
 		mockResolver.

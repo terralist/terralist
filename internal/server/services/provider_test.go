@@ -365,7 +365,7 @@ func TestUploadProvider(t *testing.T) {
 											mock.AnythingOfType("string"),
 											mock.AnythingOfType("http.Header"),
 										).
-										Return(nil, errors.New(""))
+										Return(nil, nil, errors.New(""))
 
 									Convey("When the service is queried", func() {
 										err := providerService.Upload(&dto)
@@ -384,7 +384,7 @@ func TestUploadProvider(t *testing.T) {
 											mock.AnythingOfType("string"),
 											mock.AnythingOfType("http.Header"),
 										).
-										Return(file.NewEmptyFile("test.txt"), nil)
+										Return(file.NewEmptyFile("test.txt"), func() {}, nil)
 
 									mockFetcher.
 										On(
@@ -394,7 +394,7 @@ func TestUploadProvider(t *testing.T) {
 											mock.AnythingOfType("string"),
 											mock.AnythingOfType("http.Header"),
 										).
-										Return(file.NewEmptyFile("test-with-checksum.txt"), nil)
+										Return(file.NewEmptyFile("test-with-checksum.txt"), func() {}, nil)
 
 									Convey("If the resolver cannot store the provider files", func() {
 										mockResolver.
