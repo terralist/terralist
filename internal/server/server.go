@@ -182,6 +182,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	authentication := &handlers.Authentication{
 		ApiKeyService:           apiKeyService,
 		StandaloneApiKeyService: standaloneApiKeyService,
+		MasterApiKey:            userConfig.MasterApiKey,
 		JWT:                     jwtManager,
 		Store:                   config.Store,
 	}

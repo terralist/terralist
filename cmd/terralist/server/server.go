@@ -188,6 +188,7 @@ func (s *Command) run() error {
 		AuthorizedUsers:        flags[AuthorizedUsersFlag].(*cli.StringFlag).Value,
 		RbacPolicyPath:         flags[RbacPolicyPathFlag].(*cli.StringFlag).Value,
 		RbacDefaultRole:        flags[RbacDefaultRoleFlag].(*cli.StringFlag).Value,
+		MasterApiKey:           flags[MasterApiKeyFlag].(*cli.StringFlag).Value,
 		AuthTokenExpiration:    flags[AuthTokenExpirationFlag].(*cli.StringFlag).Value,
 	}
 

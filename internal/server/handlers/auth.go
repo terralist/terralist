@@ -28,6 +28,7 @@ var (
 type Authentication struct {
 	ApiKeyService           services.ApiKeyService
 	StandaloneApiKeyService services.StandaloneApiKeyService
+	MasterApiKey            string
 	JWT                     jwt.JWT
 	Store                   session.Store
 }
@@ -98,7 +99,18 @@ func (a *Authentication) parseApiKey(c *gin.Context) (*auth.User, error) {
 		apiKey = apiKeyHeader
 	}
 
-	// Try standalone API key first (RBAC-driven, no authority coupling).
+	// Check master API key (config-driven, full access).
+	if a.MasterApiKey != "" && apiKey == a.MasterApiKey {
+		return &auth.User{
+			Name:  "terralist-admin",
+			Email: "admin@terralist.io",
+			InlinePolicies: []auth.Policy{
+				{Resource: "*", Action: "*", Object: "*", Effect: "allow"},
+			},
+		}, nil
+	}
+
+	// Try standalone API key (RBAC-driven, no authority coupling).
 	if a.StandaloneApiKeyService != nil {
 		if user, err := a.StandaloneApiKeyService.Authenticate(apiKey); err == nil {
 			return user, nil
