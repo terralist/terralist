@@ -203,10 +203,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	moduleController := &controllers.DefaultModuleController{
-		ModuleService:  moduleService,
-		Authentication: authentication,
-		Authorization:  authorization,
-		AnonymousRead:  userConfig.ModulesAnonymousRead,
+		ModuleService:    moduleService,
+		AuthorityService: authorityService,
+		Authentication:   authentication,
+		Authorization:    authorization,
+		AnonymousRead:    userConfig.ModulesAnonymousRead,
 
 		HomeDir: userConfig.Home,
 	}
@@ -225,10 +226,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	providerController := &controllers.DefaultProviderController{
-		ProviderService: providerService,
-		Authentication:  authentication,
-		Authorization:   authorization,
-		AnonymousRead:   userConfig.ProvidersAnonymousRead,
+		ProviderService:  providerService,
+		AuthorityService: authorityService,
+		Authentication:   authentication,
+		Authorization:    authorization,
+		AnonymousRead:    userConfig.ProvidersAnonymousRead,
 	}
 
 	apiV1Group.Register(providerController)
