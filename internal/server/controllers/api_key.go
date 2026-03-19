@@ -45,9 +45,6 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 
 	api.GET(
 		"/",
-		requireAuthorization(rbac.ActionGet, func(_ *gin.Context) string {
-			return "*"
-		}),
 		func(ctx *gin.Context) {
 			keys, err := c.Service.List()
 			if err != nil {
@@ -56,6 +53,12 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 				})
 				return
 			}
+
+			user := handlers.MustGetFromContext[auth.User](ctx, "user")
+
+			keys = lo.Filter(keys, func(dto apikey.ApiKeyDTO, _ int) bool {
+				return c.Authorization.CanPerform(*user, rbac.ResourceApiKeys, rbac.ActionGet, dto.ID)
+			})
 
 			ctx.JSON(http.StatusOK, keys)
 		},

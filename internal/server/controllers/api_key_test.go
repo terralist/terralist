@@ -129,15 +129,24 @@ func TestApiKeyController_List(t *testing.T) {
 		})
 
 		Convey("Given an authenticated user with only readonly role (no explicit api-keys policy)", func() {
-			router, _, _ := setupApiKeyRouter(t, user, "")
+			router, mockService, _ := setupApiKeyRouter(t, user, "")
+
+			mockService.On("List").Return([]apikey.ApiKeyDTO{
+				{ID: "key-1", Name: "ci-key", CreatedBy: "someone@example.com"},
+			}, nil)
 
 			Convey("When GET /api/api-keys is called", func() {
 				req := httptest.NewRequest(http.MethodGet, "/v1/api/api-keys/", nil)
 				w := httptest.NewRecorder()
 				router.ServeHTTP(w, req)
 
-				Convey("Then it should return 403", func() {
-					So(w.Code, ShouldEqual, http.StatusForbidden)
+				Convey("Then it should return 200 with an empty list (all filtered out)", func() {
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					var body []apikey.ApiKeyDTO
+					err := json.Unmarshal(w.Body.Bytes(), &body)
+					So(err, ShouldBeNil)
+					So(body, ShouldHaveLength, 0)
 				})
 			})
 		})

@@ -6,6 +6,7 @@ type APIErrorsMap = {
 
 const apiErrorsMap: APIErrorsMap = {
   BAD_REQUEST: 'Your request was not formatted properly.',
+  FORBIDDEN: 'You do not have permission to access this resource.',
   NOT_FOUND: "The resource you're looking for was not found on the server.",
   INTERNAL_SERVER_ERROR:
     'Something went wrong internally. Please contact the platform administrator.',
@@ -16,6 +17,8 @@ const convertNumberCodeToString = (errorCode: number): string => {
   switch (errorCode) {
     case 400:
       return 'BAD_REQUEST';
+    case 403:
+      return 'FORBIDDEN';
     case 404:
       return 'NOT_FOUND';
     case 500:
@@ -33,4 +36,6 @@ const decodeError = (errorCode: ErrorCode): string => {
   return apiErrorsMap[errorCode] || apiErrorsMap['UNKNOWN_ERROR'];
 };
 
-export { type ErrorCode, decodeError };
+const FORBIDDEN_ERROR = apiErrorsMap['FORBIDDEN'];
+
+export { type ErrorCode, FORBIDDEN_ERROR, decodeError };

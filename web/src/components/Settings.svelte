@@ -8,8 +8,15 @@
   import ErrorModal from './ErrorModal.svelte';
 
   import Authority from './Authority.svelte';
+  import StandaloneApiKey from './StandaloneApiKey.svelte';
+  import StandaloneApiKeyForm from './StandaloneApiKeyForm.svelte';
 
   import { Authorities, type Authority as AuthorityT } from '@/api/authorities';
+  import {
+    StandaloneApiKeys,
+    type StandaloneApiKey as StandaloneApiKeyT,
+    type CreateStandaloneApiKeyDTO
+  } from '@/api/standaloneApiKeys';
 
   import config from '@/config';
 
@@ -17,13 +24,17 @@
     StringMinimumLengthValidation,
     URLValidation
   } from '@/lib/validation';
+  import { FORBIDDEN_ERROR } from '@/api/api.errors';
   import { useFlag, useQuery } from '@/lib/hooks';
   import { UserStore } from '@/lib/auth';
   import { defaultIfNull } from '@/lib/utils';
 
   const result = useQuery(Authorities.getAll);
+  const apiKeysResult = useQuery(StandaloneApiKeys.list);
 
   let authorities = writable<AuthorityT[]>([]);
+  let apiKeys = writable<StandaloneApiKeyT[]>([]);
+  let apiKeysAccessible = writable<boolean>(false);
   let errorMessage = writable<string>('');
 
   const user = defaultIfNull(UserStore.get(), {
@@ -45,7 +56,33 @@
     authorities.set(data ?? []);
   });
 
+  const unsubscribeApiKeys = apiKeysResult.subscribe(
+    ({ data, isLoading, error }) => {
+      if (isLoading) {
+        return;
+      }
+
+      if (error) {
+        // Hide the section if the user lacks permission
+        if (error === FORBIDDEN_ERROR) {
+          return;
+        }
+
+        errorMessage.set(error);
+        return;
+      }
+
+      apiKeysAccessible.set(true);
+      apiKeys.set(data ?? []);
+    }
+  );
+
   const [createModalEnabled, showCreateModal, hideCreateModal] = useFlag(false);
+  const [
+    createApiKeyModalEnabled,
+    showCreateApiKeyModal,
+    hideCreateApiKeyModal
+  ] = useFlag(false);
 
   const onAuthorityCreateSubmit = async (
     entries: Map<string, string | string[] | undefined>
@@ -101,8 +138,33 @@
     }
   };
 
+  const onApiKeyCreateSubmit = async (dto: CreateStandaloneApiKeyDTO) => {
+    let result = await StandaloneApiKeys.create(dto);
+
+    if (result.status === 'OK') {
+      // Refresh the list to get the full object with policies
+      let listResult = await StandaloneApiKeys.list();
+      if (listResult.status === 'OK') {
+        apiKeys.set(listResult.data);
+      }
+    } else {
+      errorMessage.set(result.message);
+    }
+  };
+
+  const onApiKeyDeleteSubmit = async (id: string) => {
+    let result = await StandaloneApiKeys.delete(id);
+
+    if (result.status === 'OK') {
+      apiKeys.set($apiKeys.filter(k => k.id !== id));
+    } else {
+      errorMessage.set(result.message);
+    }
+  };
+
   onDestroy(() => {
     unsubscribe();
+    unsubscribeApiKeys();
   });
 </script>
 
@@ -181,9 +243,45 @@
     </div>
   </section>
 
+  {#if $apiKeysAccessible}
+    <section class="mt-4 lg:mx-20">
+      <div
+        class="w-full flex justify-between items-center p-2 pr-6 text-md text-light uppercase text-zinc-500 dark:text-zinc-200">
+        <p>API Keys</p>
+        <span class="col-span-4 flex">
+          <button
+            on:click={showCreateApiKeyModal}
+            class="inline-flex justify-center items-center py-2 px-3 text-sm font-medium shadow text-center bg-teal-400 shadow rounded-lg hover:bg-teal-500 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-teal-700 dark:hover:bg-teal-800 dark:focus:ring-green-700">
+            <Icon name="plus" />
+            <span class="ml-2 text-sm text-light uppercase"> New API Key </span>
+          </button>
+        </span>
+      </div>
+      {#if $apiKeysResult.isLoading}
+        <p>Loading...</p>
+      {:else if ($apiKeys ?? []).length > 0}
+        <div
+          class="w-full p-2 px-6 grid grid-cols-4 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
+          <span class="col-span-2"> Name </span>
+          <span> Policies </span>
+          <span class="place-self-end"> Actions </span>
+        </div>
+        {#each $apiKeys as apiKey (apiKey.id)}
+          <StandaloneApiKey {apiKey} onDelete={onApiKeyDeleteSubmit} />
+        {/each}
+      {/if}
+    </section>
+  {/if}
+
   {#if $errorMessage}
     <ErrorModal message={$errorMessage} />
   {/if}
+
+  <StandaloneApiKeyForm
+    enabled={$createApiKeyModalEnabled}
+    onClose={hideCreateApiKeyModal}
+    onSubmit={onApiKeyCreateSubmit}
+    authorities={$authorities.map(a => a.name)} />
 
   <FormModal
     title="New authority"
