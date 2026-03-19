@@ -234,6 +234,22 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(authorityController)
 
+	standaloneApiKeyRepository := &repositories.DefaultStandaloneApiKeyRepository{
+		Database: config.Database,
+	}
+
+	standaloneApiKeyService := &services.DefaultStandaloneApiKeyService{
+		Repository: standaloneApiKeyRepository,
+	}
+
+	apiKeyController := &controllers.DefaultApiKeyController{
+		Service:        standaloneApiKeyService,
+		Authentication: authentication,
+		Authorization:  authorization,
+	}
+
+	apiV1Group.Register(apiKeyController)
+
 	artifactController := &controllers.DefaultArtifactController{
 		AuthorityService: authorityService,
 		ModuleService:    moduleService,

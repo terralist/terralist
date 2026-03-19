@@ -28,6 +28,12 @@ type ApiKeyDTO struct {
 	Policies   []PolicyDTO `json:"policies"`
 }
 
+type CreateApiKeyDTO struct {
+	Name     string             `json:"name" binding:"required"`
+	ExpireIn int                `json:"expire_in"`
+	Policies []CreatePolicyDTO  `json:"policies" binding:"required,min=1"`
+}
+
 func (a ApiKey) ToDTO() ApiKeyDTO {
 	var exp string
 	if a.Expiration != nil {

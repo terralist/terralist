@@ -36,3 +36,19 @@ func (p Policy) ToDTO() PolicyDTO {
 		Effect:   p.Effect,
 	}
 }
+
+type CreatePolicyDTO struct {
+	Resource string `json:"resource" binding:"required"`
+	Action   string `json:"action" binding:"required"`
+	Object   string `json:"object" binding:"required"`
+	Effect   string `json:"effect" binding:"required"`
+}
+
+func (p CreatePolicyDTO) ToModel() Policy {
+	return Policy{
+		Resource: p.Resource,
+		Action:   p.Action,
+		Object:   p.Object,
+		Effect:   p.Effect,
+	}
+}
