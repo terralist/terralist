@@ -219,7 +219,7 @@ curl -L \
 ## Upload a provider version
 
 ```
-POST /v1/api/providers/:name/:version/upload
+POST /v1/api/providers/:namespace/:name/:version/upload
 ```
 
 Upload a new provider version.
@@ -251,10 +251,8 @@ curl -L -X POST \
       }
     ]
   }' \
-  http://localhost:5758/v1/api/providers/NAME/VERSION/upload
+  http://localhost:5758/v1/api/providers/NAMESPACE/NAME/VERSION/upload
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 === "Status 200"
 
@@ -288,7 +286,7 @@ curl -L -X POST \
 ## Remove a provider
 
 ```
-DELETE /v1/api/providers/:name/remove
+DELETE /v1/api/providers/:namespace/:name/remove
 ```
 
 Remove a provider together with all its uploaded versions.
@@ -298,10 +296,8 @@ Remove a provider together with all its uploaded versions.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/providers/NAME/remove
+  http://localhost:5758/v1/api/providers/NAMESPACE/NAME/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -337,7 +333,7 @@ curl -L -X DELETE \
 ## Remove a provider version
 
 ```
-DELETE /v1/api/providers/:name/:version/remove
+DELETE /v1/api/providers/:namespace/:name/:version/remove
 ```
 
 Remove a specific provider version.
@@ -347,10 +343,8 @@ Remove a specific provider version.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/providers/NAME/VERSION/remove
+  http://localhost:5758/v1/api/providers/NAMESPACE/NAME/VERSION/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -495,7 +489,7 @@ curl -L \
 ## Upload a module version
 
 ```
-POST /v1/api/modules/:name/:provider/:version/upload
+POST /v1/api/modules/:namespace/:name/:provider/:version/upload
 ```
 
 Upload a new module version.
@@ -517,7 +511,7 @@ If the URL from which the module files should be downloaded is of types `http` o
             "X-GitHub-Api-Version": "2022-11-28"
         }
       }' \
-      http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
+      http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload
     ```
 
     !!! note "Notice the `archive=zip` query argument. If you want to instruct Terralist to download the asset from the API, you will also need to manually specify that the asset which is being downloaded is a zip archive."
@@ -534,12 +528,10 @@ If the URL from which the module files should be downloaded is of types `http` o
             "Authorization": "Basic {YOUR-GITHUB-BASE64ENC-USERNAME-TOKEN}"
         }
       }' \
-      http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
+      http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload
     ```
 
     !!! note "To obtain the basic auth token you can base64-encode the following string: `{your-github-username}:{your-github-pat-with-read-access-to-the-repository}`."
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -575,7 +567,7 @@ If the URL from which the module files should be downloaded is of types `http` o
 ## Upload a module version (with local files)
 
 ```
-POST /v1/api/modules/:name/:provider/:version/upload-files
+POST /v1/api/modules/:namespace/:name/:provider/:version/upload-files
 ```
 
 Upload a new module version (with local files).
@@ -586,10 +578,8 @@ Upload a new module version (with local files).
 curl -L -X POST \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   -F "module=@/path/to/your-module.zip"
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload-files
+  http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload-files
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -625,7 +615,7 @@ curl -L -X POST \
 ## Remove a module
 
 ```
-DELETE /v1/api/modules/:name/:provider/remove
+DELETE /v1/api/modules/:namespace/:name/:provider/remove
 ```
 
 Remove a module together with all its uploaded versions.
@@ -635,10 +625,8 @@ Remove a module together with all its uploaded versions.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/remove
+  http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 === "Status 200"
 
@@ -672,7 +660,7 @@ curl -L -X DELETE \
 ## Remove a module version
 
 ```
-DELETE /v1/api/modules/:name/:provider/:version/remove
+DELETE /v1/api/modules/:namespace/:name/:provider/:version/remove
 ```
 
 Remove a specific module version.
@@ -682,10 +670,8 @@ Remove a specific module version.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/remove
+  http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
