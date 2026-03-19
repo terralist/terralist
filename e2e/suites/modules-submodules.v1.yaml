@@ -16,7 +16,7 @@ testcases:
   - name: upload-module-with-submodules
     type: http
     method: POST
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
@@ -42,7 +42,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -57,7 +57,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath2}}
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath2}}
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -72,7 +72,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/modules/non-existent
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/modules/non-existent
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -84,7 +84,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -94,7 +94,7 @@ testcases:
   steps:
   - type: http
     method: GET
-    url: {{.url}}/v1/api/modules/non-existent-module/{{.provider}}/1.0.0/submodules/modules/test
+    url: {{.url}}/v1/api/modules/{{.namespace}}/non-existent-module/{{.provider}}/1.0.0/submodules/modules/test
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -107,7 +107,7 @@ testcases:
   - name: delete-module
     type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -121,7 +121,7 @@ testcases:
   - name: verify-submodule-deleted
     type: http
     method: GET
-    url: {{.url}}/v1/api/modules/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.moduleName}}/{{.provider}}/{{.versionWithSubmodules}}/submodules/{{.submodulePath1}}
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -136,7 +136,7 @@ testcases:
   - name: upload-test-module
     type: http
     method: POST
-    url: {{.url}}/v1/api/modules/test-nested/{{.provider}}/1.0.0/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/test-nested/{{.provider}}/1.0.0/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
@@ -153,7 +153,7 @@ testcases:
   - name: cleanup-test-module
     type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/test-nested/{{.provider}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/test-nested/{{.provider}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -167,7 +167,7 @@ testcases:
   - name: upload-for-performance-test
     type: http
     method: POST
-    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/1.0.0/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/perf-test/{{.provider}}/1.0.0/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
@@ -184,7 +184,7 @@ testcases:
   - name: concurrent-request-1
     type: http
     method: GET
-    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/1.0.0/submodules/{{.submodulePath1}}
+    url: {{.url}}/v1/api/modules/{{.namespace}}/perf-test/{{.provider}}/1.0.0/submodules/{{.submodulePath1}}
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -195,7 +195,7 @@ testcases:
   - name: concurrent-request-2
     type: http
     method: GET
-    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/1.0.0/submodules/{{.submodulePath2}}
+    url: {{.url}}/v1/api/modules/{{.namespace}}/perf-test/{{.provider}}/1.0.0/submodules/{{.submodulePath2}}
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -206,7 +206,7 @@ testcases:
   - name: cleanup-performance-test
     type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/perf-test/{{.provider}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/perf-test/{{.provider}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
