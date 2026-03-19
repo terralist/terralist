@@ -219,7 +219,7 @@
             </div>
 
             <div>
-              <label class="text-xs text-zinc-400">Object</label>
+              <span class="text-xs text-zinc-400">Object</span>
               {#if policy.resource === '*'}
                 <div class="grid grid-cols-1 gap-2">
                   <input
