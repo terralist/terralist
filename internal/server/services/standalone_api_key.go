@@ -19,8 +19,8 @@ var ErrInvalidPolicy = errors.New("invalid policy")
 
 // StandaloneApiKeyService describes a service that manages standalone API keys with RBAC policies.
 type StandaloneApiKeyService interface {
-	// Authenticate validates an API key and returns the associated user and policies.
-	Authenticate(key string) (*auth.User, []apikey.Policy, error)
+	// Authenticate validates an API key and returns the associated user with inline policies.
+	Authenticate(key string) (*auth.User, error)
 
 	// Create creates a new API key with the given policies.
 	Create(name, createdBy string, expireIn int, policies []apikey.Policy) (string, error)
@@ -37,23 +37,31 @@ type DefaultStandaloneApiKeyService struct {
 	Repository repositories.StandaloneApiKeyRepository
 }
 
-func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, []apikey.Policy, error) {
+func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, error) {
 	id, err := uuid.Parse(key)
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %v", ErrCannotParseID, err)
+		return nil, fmt.Errorf("%w: %v", ErrCannotParseID, err)
 	}
 
 	k, err := s.Repository.FindWithPolicies(id)
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}
 
 	user := &auth.User{
 		Name:  fmt.Sprintf("apikey:%s", k.ID.String()),
 		Email: k.CreatedBy,
+		InlinePolicies: lo.Map(k.Policies, func(p apikey.Policy, _ int) auth.Policy {
+			return auth.Policy{
+				Resource: p.Resource,
+				Action:   p.Action,
+				Object:   p.Object,
+				Effect:   p.Effect,
+			}
+		}),
 	}
 
-	return user, k.Policies, nil
+	return user, nil
 }
 
 func (s *DefaultStandaloneApiKeyService) Create(name, createdBy string, expireIn int, policies []apikey.Policy) (string, error) {

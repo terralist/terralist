@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+// Policy represents an inline authorization policy attached to a user (e.g. from a standalone API key).
+type Policy struct {
+	Resource string `json:"resource"`
+	Action   string `json:"action"`
+	Object   string `json:"object"`
+	Effect   string `json:"effect"`
+}
+
 // User holds the user authorized user data.
 type User struct {
 	Name        string   `json:"name"`
@@ -13,6 +21,10 @@ type User struct {
 	Authority   string   `json:"authority"`
 	AuthorityID string   `json:"authority_id"`
 	Groups      []string `json:"groups"`
+
+	// InlinePolicies are per-user policies evaluated directly, bypassing the global policy file.
+	// Used by standalone API keys whose permissions are self-contained.
+	InlinePolicies []Policy `json:"inline_policies,omitempty"`
 }
 
 func (u User) String() string {

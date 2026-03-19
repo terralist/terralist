@@ -182,6 +182,28 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 	return lo.SomeBy(results, func(r bool) bool { return r })
 }
 
+// EvaluateInline evaluates a set of inline policies against a request.
+// It follows the same semantics as the casbin model:
+// allowed if some policy allows AND no policy denies.
+func EvaluateInline(policies []auth.Policy, resource, action, object string) bool {
+	hasAllow := false
+	for _, p := range policies {
+		resMatch, _ := globMatch(resource, p.Resource)
+		actMatch, _ := globMatch(action, p.Action)
+		objMatch, _ := globMatch(object, p.Object)
+
+		if resMatch.(bool) && actMatch.(bool) && objMatch.(bool) {
+			if p.Effect == EffectDeny {
+				return false
+			}
+			if p.Effect == EffectAllow {
+				hasAllow = true
+			}
+		}
+	}
+	return hasAllow
+}
+
 // Protect checks if the user is authorized to perform the action on the resource and object,
 // considering their origin. It returns an error if the user is not authorized.
 func (e *Enforcer) Protect(subject auth.User, resource, action, object string) error {
@@ -191,6 +213,22 @@ func (e *Enforcer) Protect(subject auth.User, resource, action, object string) e
 
 	if !slices.Contains(Actions, action) {
 		return fmt.Errorf("%w: action %v", ErrUnsupported, action)
+	}
+
+	// If the user has inline policies (standalone API key), evaluate them directly.
+	if len(subject.InlinePolicies) > 0 {
+		if !EvaluateInline(subject.InlinePolicies, resource, action, object) {
+			log.Debug().
+				Str("user", subject.String()).
+				Str("resource", resource).
+				Str("action", action).
+				Str("object", object).
+				Msg("User not authorized by inline policies")
+
+			return ErrUnauthorizedSubject
+		}
+
+		return nil
 	}
 
 	subjects := lo.Uniq(

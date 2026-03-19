@@ -5,6 +5,7 @@ import (
 
 	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/auth"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -22,12 +23,11 @@ func TestAuthenticate(t *testing.T) {
 
 		Convey("Given an invalid API key", func() {
 			Convey("When the service is queried", func() {
-				user, policies, err := service.Authenticate("not-a-uuid")
+				user, err := service.Authenticate("not-a-uuid")
 
 				Convey("Then a parse error should be returned", func() {
 					So(err, ShouldNotBeNil)
 					So(user, ShouldBeNil)
-					So(policies, ShouldBeNil)
 					So(err.Error(), ShouldContainSubstring, "cannot parse")
 				})
 			})
@@ -39,12 +39,11 @@ func TestAuthenticate(t *testing.T) {
 			mockRepo.On("FindWithPolicies", keyID).Return(nil, repositories.ErrApiKeyExpired)
 
 			Convey("When the service is queried", func() {
-				user, policies, err := service.Authenticate(keyID.String())
+				user, err := service.Authenticate(keyID.String())
 
 				Convey("Then an invalid key error should be returned", func() {
 					So(err, ShouldNotBeNil)
 					So(user, ShouldBeNil)
-					So(policies, ShouldBeNil)
 					So(err.Error(), ShouldContainSubstring, "invalid key")
 				})
 			})
@@ -66,16 +65,18 @@ func TestAuthenticate(t *testing.T) {
 			}, nil)
 
 			Convey("When the service is queried", func() {
-				user, policies, err := service.Authenticate(keyID.String())
+				user, err := service.Authenticate(keyID.String())
 
-				Convey("Then the user and policies should be returned", func() {
+				Convey("Then the user with inline policies should be returned", func() {
 					So(err, ShouldBeNil)
 					So(user, ShouldNotBeNil)
 					So(user.Name, ShouldEqual, "apikey:"+keyID.String())
 					So(user.Email, ShouldEqual, createdBy)
 					So(user.Authority, ShouldBeEmpty)
 					So(user.AuthorityID, ShouldBeEmpty)
-					So(policies, ShouldResemble, expectedPolicies)
+					So(user.InlinePolicies, ShouldResemble, []auth.Policy{
+						{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
+					})
 				})
 			})
 		})

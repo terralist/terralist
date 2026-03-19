@@ -171,10 +171,19 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to create policy enforcer: %v", err)
 	}
 
+	standaloneApiKeyRepository := &repositories.DefaultStandaloneApiKeyRepository{
+		Database: config.Database,
+	}
+
+	standaloneApiKeyService := &services.DefaultStandaloneApiKeyService{
+		Repository: standaloneApiKeyRepository,
+	}
+
 	authentication := &handlers.Authentication{
-		ApiKeyService: apiKeyService,
-		JWT:           jwtManager,
-		Store:         config.Store,
+		ApiKeyService:           apiKeyService,
+		StandaloneApiKeyService: standaloneApiKeyService,
+		JWT:                     jwtManager,
+		Store:                   config.Store,
 	}
 
 	authorization := &handlers.Authorization{
@@ -233,14 +242,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	apiV1Group.Register(authorityController)
-
-	standaloneApiKeyRepository := &repositories.DefaultStandaloneApiKeyRepository{
-		Database: config.Database,
-	}
-
-	standaloneApiKeyService := &services.DefaultStandaloneApiKeyService{
-		Repository: standaloneApiKeyRepository,
-	}
 
 	apiKeyController := &controllers.DefaultApiKeyController{
 		Service:        standaloneApiKeyService,
