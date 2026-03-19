@@ -111,6 +111,10 @@ func (a *Authentication) parseApiKey(c *gin.Context) (*auth.User, error) {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidValue, err)
 	}
 
+	log.Warn().
+		Str("authority", user.Authority).
+		Msg("Authority-linked API keys are deprecated and will be removed in the next release. Please migrate to standalone API keys with RBAC policies.")
+
 	return user, nil
 }
 
