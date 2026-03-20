@@ -33,11 +33,12 @@ type ModuleController interface {
 
 // DefaultModuleController is a concrete implementation of ModuleController.
 type DefaultModuleController struct {
-	ModuleService  services.ModuleService
-	Authentication *handlers.Authentication
-	Authorization  *handlers.Authorization
-	AnonymousRead  bool
-	HomeDir        string
+	ModuleService    services.ModuleService
+	AuthorityService services.AuthorityService
+	Authentication   *handlers.Authentication
+	Authorization    *handlers.Authorization
+	AnonymousRead    bool
+	HomeDir          string
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -54,19 +55,12 @@ func (c *DefaultModuleController) Paths() []string {
 func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	requireAuthorization := c.Authorization.RequireAuthorization(rbac.ResourceModules)
 
-	fullSlugComposer := func(ctx *gin.Context) string {
+	slugComposer := func(ctx *gin.Context) string {
 		namespace := ctx.Param("namespace")
 		name := ctx.Param("name")
 		provider := ctx.Param("provider")
 
 		return fmt.Sprintf("%s/%s/%s", namespace, name, provider)
-	}
-
-	partialSlugComposer := func(ctx *gin.Context) string {
-		name := ctx.Param("name")
-		provider := ctx.Param("provider")
-
-		return fmt.Sprintf("%s/%s/%s", ctx.GetString("authorityName"), name, provider)
 	}
 
 	// tfApi should be compliant with the Terraform Registry Protocol for
@@ -75,7 +69,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	tfApi := apis[0]
 	if !c.AnonymousRead {
 		tfApi.Use(c.Authentication.AttemptAuthentication())
-		tfApi.Use(requireAuthorization(rbac.ActionGet, fullSlugComposer))
+		tfApi.Use(requireAuthorization(rbac.ActionGet, slugComposer))
 	}
 
 	tfApi.GET(
@@ -130,21 +124,17 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Upload a new module version
 	api.POST(
-		"/:name/:provider/:version/upload",
-		handlers.RequireAuthority(),
-		requireAuthorization(rbac.ActionCreate, partialSlugComposer),
+		"/:namespace/:name/:provider/:version/upload",
+		requireAuthorization(rbac.ActionCreate, slugComposer),
 		func(ctx *gin.Context) {
+			authorityID, ok := c.resolveAuthorityID(ctx)
+			if !ok {
+				return
+			}
+
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
-
-			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
-			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"errors": []string{"invalid authority"},
-				})
-				return
-			}
 
 			dto := module.CreateDTO{
 				AuthorityID: authorityID,
@@ -180,21 +170,17 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Upload a new module version (with files)
 	api.POST(
-		"/:name/:provider/:version/upload-files",
-		handlers.RequireAuthority(),
-		requireAuthorization(rbac.ActionCreate, partialSlugComposer),
+		"/:namespace/:name/:provider/:version/upload-files",
+		requireAuthorization(rbac.ActionCreate, slugComposer),
 		func(ctx *gin.Context) {
+			authorityID, ok := c.resolveAuthorityID(ctx)
+			if !ok {
+				return
+			}
+
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
-
-			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
-			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"errors": []string{"invalid authority"},
-				})
-				return
-			}
 
 			form, err := ctx.MultipartForm()
 			if err != nil {
@@ -283,18 +269,16 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// Get submodule documentation for a specific module version
 	api.GET(
-		"/:name/:provider/:version/submodules/*submodulePath",
-		handlers.RequireAuthority(),
-		requireAuthorization(rbac.ActionGet, partialSlugComposer),
+		"/:namespace/:name/:provider/:version/submodules/*submodulePath",
+		requireAuthorization(rbac.ActionGet, slugComposer),
 		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 			submodulePath := strings.TrimPrefix(ctx.Param("submodulePath"), "/")
 
-			authorityName := ctx.GetString("authorityName")
-
-			doc, err := c.ModuleService.GetSubmoduleDocumentation(authorityName, name, provider, version, submodulePath)
+			doc, err := c.ModuleService.GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -308,22 +292,18 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	// Delete a provider
+	// Delete a module
 	api.DELETE(
-		"/:name/:provider/remove",
-		handlers.RequireAuthority(),
-		requireAuthorization(rbac.ActionDelete, partialSlugComposer),
+		"/:namespace/:name/:provider/remove",
+		requireAuthorization(rbac.ActionDelete, slugComposer),
 		func(ctx *gin.Context) {
-			name := ctx.Param("name")
-			provider := ctx.Param("provider")
-
-			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
-			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"errors": []string{"invalid authority"},
-				})
+			authorityID, ok := c.resolveAuthorityID(ctx)
+			if !ok {
 				return
 			}
+
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
 
 			if err := c.ModuleService.Delete(authorityID, name, provider); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
@@ -338,23 +318,19 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	// Delete a provider version
+	// Delete a module version
 	api.DELETE(
-		"/:name/:provider/:version/remove",
-		handlers.RequireAuthority(),
-		requireAuthorization(rbac.ActionDelete, partialSlugComposer),
+		"/:namespace/:name/:provider/:version/remove",
+		requireAuthorization(rbac.ActionDelete, slugComposer),
 		func(ctx *gin.Context) {
+			authorityID, ok := c.resolveAuthorityID(ctx)
+			if !ok {
+				return
+			}
+
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
-
-			authorityID, err := uuid.Parse(ctx.GetString("authorityID"))
-			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"errors": []string{"invalid authority"},
-				})
-				return
-			}
 
 			if err := c.ModuleService.DeleteVersion(authorityID, name, provider, version); err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
@@ -368,4 +344,19 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			})
 		},
 	)
+}
+
+// resolveAuthorityID resolves the authority ID from the namespace URL parameter.
+func (c *DefaultModuleController) resolveAuthorityID(ctx *gin.Context) (uuid.UUID, bool) {
+	namespace := ctx.Param("namespace")
+
+	authority, err := c.AuthorityService.GetByName(namespace)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{
+			"errors": []string{fmt.Sprintf("authority %q not found", namespace)},
+		})
+		return uuid.UUID{}, false
+	}
+
+	return authority.ID, true
 }

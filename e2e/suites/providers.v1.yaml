@@ -105,7 +105,7 @@ testcases:
   steps:
   - type: http
     method: POST
-    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/{{.goodVersion}}/upload
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -114,7 +114,7 @@ testcases:
   steps:
   - type: http
     method: POST
-    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/{{.goodVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -125,7 +125,7 @@ testcases:
   steps:
   - type: http
     method: POST
-    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/upload
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/{{.goodVersion}}/upload
     body: >-
       {
         "protocols": ["5.0"],
@@ -155,7 +155,7 @@ testcases:
   - name: create-provider
     type: http
     method: POST
-    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.badVersion}}/upload
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/{{.badVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     body: >-
@@ -190,7 +190,7 @@ testcases:
         default: ""
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.badVersion}}/remove
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/{{.badVersion}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -204,7 +204,7 @@ testcases:
   - name: create-provider
     type: http
     method: POST
-    url: {{.url}}/v1/api/providers/{{.badName}}/{{.badVersion}}/upload
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.badName}}/{{.badVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     body: >-
@@ -235,7 +235,7 @@ testcases:
         default: ""
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/providers/{{.badName}}/remove
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.badName}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.providersApiKey}}
     timeout: 60
@@ -248,7 +248,7 @@ testcases:
   steps:
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/providers/{{.goodName}}/{{.goodVersion}}/remove
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/{{.goodVersion}}/remove
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -257,7 +257,7 @@ testcases:
   steps:
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/providers/{{.goodName}}/remove
+    url: {{.url}}/v1/api/providers/{{.namespace}}/{{.goodName}}/remove
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401

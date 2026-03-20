@@ -92,7 +92,7 @@ testcases:
   steps:
   - type: http
     method: POST
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -101,7 +101,7 @@ testcases:
   steps:
   - type: http
     method: POST
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -112,7 +112,7 @@ testcases:
   steps:
   - type: http
     method: POST
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.goodVersion}}/upload
     body: >-
       {
         "download_url": "https://github.com/terraform-aws-modules/terraform-aws-vpc/archive/refs/tags/v5.7.2.zip"
@@ -130,7 +130,7 @@ testcases:
   - name: create-module
     type: http
     method: POST
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.badVersion}}/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.badVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
@@ -153,7 +153,7 @@ testcases:
         default: ""
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.badVersion}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.badVersion}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -167,7 +167,7 @@ testcases:
   - name: create-module
     type: http
     method: POST
-    url: {{.url}}/v1/api/modules/{{.badName}}/{{.provider}}/{{.badVersion}}/upload
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.badName}}/{{.provider}}/{{.badVersion}}/upload
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     body: >-
@@ -186,7 +186,7 @@ testcases:
         default: ""
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/{{.badName}}/{{.provider}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.badName}}/{{.provider}}/remove
     headers:
       Authorization: Bearer x-api-key:{{.modulesApiKey}}
     timeout: 60
@@ -199,7 +199,7 @@ testcases:
   steps:
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/{{.goodVersion}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/{{.goodVersion}}/remove
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401
@@ -208,7 +208,7 @@ testcases:
   steps:
   - type: http
     method: DELETE
-    url: {{.url}}/v1/api/modules/{{.goodName}}/{{.provider}}/remove
+    url: {{.url}}/v1/api/modules/{{.namespace}}/{{.goodName}}/{{.provider}}/remove
     timeout: 60
     assertions:
     - result.statuscode ShouldEqual 401

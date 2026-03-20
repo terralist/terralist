@@ -219,7 +219,7 @@ curl -L \
 ## Upload a provider version
 
 ```
-POST /v1/api/providers/:name/:version/upload
+POST /v1/api/providers/:namespace/:name/:version/upload
 ```
 
 Upload a new provider version.
@@ -251,10 +251,8 @@ curl -L -X POST \
       }
     ]
   }' \
-  http://localhost:5758/v1/api/providers/NAME/VERSION/upload
+  http://localhost:5758/v1/api/providers/NAMESPACE/NAME/VERSION/upload
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 === "Status 200"
 
@@ -288,7 +286,7 @@ curl -L -X POST \
 ## Remove a provider
 
 ```
-DELETE /v1/api/providers/:name/remove
+DELETE /v1/api/providers/:namespace/:name/remove
 ```
 
 Remove a provider together with all its uploaded versions.
@@ -298,10 +296,8 @@ Remove a provider together with all its uploaded versions.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/providers/NAME/remove
+  http://localhost:5758/v1/api/providers/NAMESPACE/NAME/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -337,7 +333,7 @@ curl -L -X DELETE \
 ## Remove a provider version
 
 ```
-DELETE /v1/api/providers/:name/:version/remove
+DELETE /v1/api/providers/:namespace/:name/:version/remove
 ```
 
 Remove a specific provider version.
@@ -347,10 +343,8 @@ Remove a specific provider version.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/providers/NAME/VERSION/remove
+  http://localhost:5758/v1/api/providers/NAMESPACE/NAME/VERSION/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -495,7 +489,7 @@ curl -L \
 ## Upload a module version
 
 ```
-POST /v1/api/modules/:name/:provider/:version/upload
+POST /v1/api/modules/:namespace/:name/:provider/:version/upload
 ```
 
 Upload a new module version.
@@ -517,7 +511,7 @@ If the URL from which the module files should be downloaded is of types `http` o
             "X-GitHub-Api-Version": "2022-11-28"
         }
       }' \
-      http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
+      http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload
     ```
 
     !!! note "Notice the `archive=zip` query argument. If you want to instruct Terralist to download the asset from the API, you will also need to manually specify that the asset which is being downloaded is a zip archive."
@@ -534,12 +528,10 @@ If the URL from which the module files should be downloaded is of types `http` o
             "Authorization": "Basic {YOUR-GITHUB-BASE64ENC-USERNAME-TOKEN}"
         }
       }' \
-      http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload
+      http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload
     ```
 
     !!! note "To obtain the basic auth token you can base64-encode the following string: `{your-github-username}:{your-github-pat-with-read-access-to-the-repository}`."
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -575,7 +567,7 @@ If the URL from which the module files should be downloaded is of types `http` o
 ## Upload a module version (with local files)
 
 ```
-POST /v1/api/modules/:name/:provider/:version/upload-files
+POST /v1/api/modules/:namespace/:name/:provider/:version/upload-files
 ```
 
 Upload a new module version (with local files).
@@ -586,10 +578,8 @@ Upload a new module version (with local files).
 curl -L -X POST \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   -F "module=@/path/to/your-module.zip"
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/upload-files
+  http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload-files
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -625,7 +615,7 @@ curl -L -X POST \
 ## Remove a module
 
 ```
-DELETE /v1/api/modules/:name/:provider/remove
+DELETE /v1/api/modules/:namespace/:name/:provider/remove
 ```
 
 Remove a module together with all its uploaded versions.
@@ -635,10 +625,8 @@ Remove a module together with all its uploaded versions.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/remove
+  http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 === "Status 200"
 
@@ -672,7 +660,7 @@ curl -L -X DELETE \
 ## Remove a module version
 
 ```
-DELETE /v1/api/modules/:name/:provider/:version/remove
+DELETE /v1/api/modules/:namespace/:name/:provider/:version/remove
 ```
 
 Remove a specific module version.
@@ -682,10 +670,8 @@ Remove a specific module version.
 ``` shell
 curl -L -X DELETE \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/modules/NAME/PROVIDER/VERSION/remove
+  http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/remove
 ```
-
-!!! note "There is no need for you to specify the namespace, as Terralist will resolve it based on your API key."
 
 ### Example Response
 
@@ -714,6 +700,176 @@ curl -L -X DELETE \
     {
       "errors": [
         "...",
+      ]
+    }
+    ```
+
+## List API keys
+
+```
+GET /v1/api/api-keys/
+```
+
+List all standalone API keys visible to the authenticated user. Results are filtered based on the caller's RBAC policies — only keys for which the user has `get` permission on `api-keys` are returned.
+
+### Example Request
+
+``` shell
+curl -L \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  http://localhost:5758/v1/api/api-keys/
+```
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "ci-key",
+        "scope": "team-a",
+        "created_by": "admin@example.com",
+        "expiration": "",
+        "policies": [
+          {
+            "id": "660e8400-e29b-41d4-a716-446655440001",
+            "resource": "modules",
+            "action": "*",
+            "object": "my-authority/*/*",
+            "effect": "allow"
+          }
+        ]
+      }
+    ]
+    ```
+
+=== "Status 401"
+
+    ``` json
+    {
+      "errors": [
+        "Authorization: missing",
+        "X-API-Key: missing"
+      ]
+    }
+    ```
+
+## Create an API key
+
+```
+POST /v1/api/api-keys/
+```
+
+Create a standalone API key with RBAC policies. Requires `create` permission on `api-keys` for the specified scope.
+
+The `scope` field is required and determines who can manage the key via RBAC policies (see [API Key Scopes](/user-guide/rbac-configuration/#api-key-scopes)).
+
+The `expire_in` field is optional and specifies the expiration in hours. If omitted or set to `0`, the key does not expire.
+
+### Example Request
+
+``` shell
+curl -L -X POST \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -d '{
+    "name": "ci-deploy-key",
+    "scope": "team-a",
+    "expire_in": 720,
+    "policies": [
+      {
+        "resource": "modules",
+        "action": "create",
+        "object": "my-authority/*/*",
+        "effect": "allow"
+      },
+      {
+        "resource": "modules",
+        "action": "get",
+        "object": "my-authority/*/*",
+        "effect": "allow"
+      }
+    ]
+  }' \
+  http://localhost:5758/v1/api/api-keys/
+```
+
+### Example Response
+
+=== "Status 201"
+
+    ``` json
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "ci-deploy-key"
+    }
+    ```
+
+    !!! note "The `id` is the API key value. Store it securely — it cannot be retrieved again."
+
+=== "Status 400"
+
+    ``` json
+    {
+      "errors": [
+        "policy 0: invalid resource \"foo\"; must be one of: modules, providers, authorities, api-keys"
+      ]
+    }
+    ```
+
+=== "Status 401"
+
+    ``` json
+    {
+      "errors": [
+        "Authorization: missing",
+        "X-API-Key: missing"
+      ]
+    }
+    ```
+
+## Delete an API key
+
+```
+DELETE /v1/api/api-keys/:id
+```
+
+Delete a standalone API key. Requires `delete` permission on `api-keys`.
+
+### Example Request
+
+``` shell
+curl -L -X DELETE \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  http://localhost:5758/v1/api/api-keys/550e8400-e29b-41d4-a716-446655440000
+```
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    true
+    ```
+
+=== "Status 401"
+
+    ``` json
+    {
+      "errors": [
+        "Authorization: missing",
+        "X-API-Key: missing"
+      ]
+    }
+    ```
+
+=== "Status 404"
+
+    ``` json
+    {
+      "errors": [
+        "cannot parse api key"
       ]
     }
     ```

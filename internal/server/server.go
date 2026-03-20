@@ -171,10 +171,19 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to create policy enforcer: %v", err)
 	}
 
+	standaloneApiKeyRepository := &repositories.DefaultStandaloneApiKeyRepository{
+		Database: config.Database,
+	}
+
+	standaloneApiKeyService := &services.DefaultStandaloneApiKeyService{
+		Repository: standaloneApiKeyRepository,
+	}
+
 	authentication := &handlers.Authentication{
-		ApiKeyService: apiKeyService,
-		JWT:           jwtManager,
-		Store:         config.Store,
+		ApiKeyService:           apiKeyService,
+		StandaloneApiKeyService: standaloneApiKeyService,
+		JWT:                     jwtManager,
+		Store:                   config.Store,
 	}
 
 	authorization := &handlers.Authorization{
@@ -194,10 +203,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	moduleController := &controllers.DefaultModuleController{
-		ModuleService:  moduleService,
-		Authentication: authentication,
-		Authorization:  authorization,
-		AnonymousRead:  userConfig.ModulesAnonymousRead,
+		ModuleService:    moduleService,
+		AuthorityService: authorityService,
+		Authentication:   authentication,
+		Authorization:    authorization,
+		AnonymousRead:    userConfig.ModulesAnonymousRead,
 
 		HomeDir: userConfig.Home,
 	}
@@ -216,10 +226,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	providerController := &controllers.DefaultProviderController{
-		ProviderService: providerService,
-		Authentication:  authentication,
-		Authorization:   authorization,
-		AnonymousRead:   userConfig.ProvidersAnonymousRead,
+		ProviderService:  providerService,
+		AuthorityService: authorityService,
+		Authentication:   authentication,
+		Authorization:    authorization,
+		AnonymousRead:    userConfig.ProvidersAnonymousRead,
 	}
 
 	apiV1Group.Register(providerController)
@@ -233,6 +244,14 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	apiV1Group.Register(authorityController)
+
+	apiKeyController := &controllers.DefaultApiKeyController{
+		Service:        standaloneApiKeyService,
+		Authentication: authentication,
+		Authorization:  authorization,
+	}
+
+	apiV1Group.Register(apiKeyController)
 
 	artifactController := &controllers.DefaultArtifactController{
 		AuthorityService: authorityService,

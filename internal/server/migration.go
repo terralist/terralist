@@ -1,6 +1,7 @@
 package server
 
 import (
+	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
@@ -14,6 +15,8 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		&authority.Authority{},
 		&authority.Key{},
 		&authority.ApiKey{},
+		&apikey.ApiKey{},
+		&apikey.Policy{},
 		&provider.Provider{},
 		&provider.Version{},
 		&provider.Platform{},
