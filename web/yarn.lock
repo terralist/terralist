@@ -2187,10 +2187,10 @@ svelte-system-info@1.0.1:
   dependencies:
     tslib "^2.6.2"
 
-svelte-use-click-outside@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/svelte-use-click-outside/-/svelte-use-click-outside-1.0.0.tgz#9db6208c314b5cb9cc80a38284a89da176c8075d"
-  integrity sha512-tOWeMPxeIoW9RshS0WbogRhdYdbxcJV0ebkzSh1lwR7Ihl0hSZMmB4YyCHHoXJK4xcbxCCFh0AnQ1vkzGZfLVQ==
+svelte-use-click-outside@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/svelte-use-click-outside/-/svelte-use-click-outside-1.1.0.tgz#8bf6792d9e5eff06bcdedf44c4682cea58f0ce43"
+  integrity sha512-LYX0gvWitaWjLNdUVuUSjcSxS6oR4tq0b+ykjCKla71Ir7tKoQicBmX0JLlo7XojgtDnKcH27Imx90ayptIdEw==
 
 svelte@^4.2.19:
   version "4.2.20"
