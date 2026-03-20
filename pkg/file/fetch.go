@@ -42,26 +42,16 @@ func generateGetters(header http.Header) map[string]getter.Getter {
 }
 
 // fetch downloads a file/directory from a given URL and loads them.
-func fetch(name string, url string, checksum string, kind int, header http.Header) (File, error) {
+// It returns the downloaded file and a cleanup function that removes the temporary
+// directory used during the download. The caller must invoke the cleanup function
+// when the file is no longer needed.
+func fetch(name string, url string, checksum string, kind int, header http.Header) (File, func(), error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
-		return nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
+		return nil, nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
 	}
-	// TODO: We need to keep the temp dir to read the files and automatically generate the module
-	// documentation. This is not great, as over time we risk accumulating a lot of garbage.
-	// However, we ask the OS to give us a temp directory, which means the OS would handle
-	// its garbage collection. Unfortunately, this is not ideal, as for some OSes, the
-	// garbage collection of the tmp dir differs, some uses crons, some only does it on reboot,
-	// some never do it.
-	// Terralist runs as a server, so a reboot to clean the disk space is not a solution.
-	// Officially, Terralist is bundled on an Alpine distribution, and, in Alpine, by default
-	// the tmp directory is never cleaned.
-	// We can patch this by manually setting a cron to do it (also enable clean-up on boot might
-	// help), but definitely, that is not a fix. If Terralist is bundled in another OS, the entire
-	// process have to be handled by the user.
-	// We should implement an asynchronous worker that automatically cleans those files for
-	// Terralist, once in a while, so we get the same behavior on any OS we run.
-	// defer os.RemoveAll(tempDir)
+
+	cleanup := func() { os.RemoveAll(tempDir) }
 
 	dst := tempDir
 	if kind == file {
@@ -70,7 +60,8 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 
 	u, err := urlhelper.Parse(url)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
 	}
 
 	// Set extra arguments
@@ -126,30 +117,44 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		cancel()
 		wg.Wait()
 
-		return nil, fmt.Errorf("%w: signal %v received", ErrDownloadInterrupt, sig.String())
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: signal %v received", ErrDownloadInterrupt, sig.String())
 	case err := <-ech:
 		wg.Wait()
 
-		return nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
 	case <-ctx.Done():
 		wg.Wait()
 
-		// If we know the time, just parse it
+		// If we know the type, just parse it
 		if kind == file || kind == dir {
-			return parseResult(name, dst, kind)
+			f, err := parseResult(name, dst, kind)
+			if err != nil {
+				cleanup()
+				return nil, nil, err
+			}
+			return f, cleanup, nil
 		}
 
 		// We need to find out what we have downloaded
 		inf, err := os.Stat(dst)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
+			cleanup()
+			return nil, nil, fmt.Errorf("%w: %v", ErrSystemFailure, err)
 		}
 
+		resultKind := file
 		if inf.IsDir() {
-			return parseResult(name, dst, dir)
+			resultKind = dir
 		}
 
-		return parseResult(name, dst, file)
+		f, err := parseResult(name, dst, resultKind)
+		if err != nil {
+			cleanup()
+			return nil, nil, err
+		}
+		return f, cleanup, nil
 	}
 }
 
