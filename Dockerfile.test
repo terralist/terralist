@@ -44,4 +44,21 @@ RUN curl -sL https://dl.min.io/client/mc/release/${TARGETOS}-${TARGETARCH}/mc -o
   && mv mc /usr/local/bin \
   && chmod +x /usr/local/bin/mc
 
+# Install mkcert
+ARG MKCERT_VERSION=1.4.4
+RUN curl -sL https://dl.filippo.io/mkcert/v${MKCERT_VERSION}?os=${TARGETOS}&arch=${TARGETARCH} -o mkcert \
+  && mv mkcert /usr/local/bin \
+  && chmod +x /usr/local/bin/mkcert
+
+# Install Terraform
+ARG TERRAFORM_VERSION=1.12.1
+RUN curl -sL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_${TARGETOS}_${TARGETARCH}.zip -o terraform.zip \
+  && apt-get install -yq --no-install-recommends unzip \
+  && unzip terraform.zip -d /usr/local/bin \
+  && rm terraform.zip \
+  && terraform version
+
+# Install Playwright dependencies
+RUN npx playwright install --with-deps chromium
+
 ENTRYPOINT [ "/bin/bash" ]
