@@ -60,6 +60,7 @@ func TestAuthenticate(t *testing.T) {
 			mockRepo.On("FindWithPolicies", keyID).Return(&apikey.ApiKey{
 				Entity:    entity.Entity{ID: keyID},
 				Name:      "test-key",
+				Scope:     "team-a",
 				CreatedBy: createdBy,
 				Policies:  expectedPolicies,
 			}, nil)
@@ -103,7 +104,7 @@ func TestStandaloneCreate(t *testing.T) {
 				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
 
 			Convey("When the service is queried with no expiration", func() {
-				key, err := service.Create("ci-key", "test@example.com", 0, policies)
+				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a valid API key should be returned", func() {
 					So(err, ShouldBeNil)
@@ -112,7 +113,7 @@ func TestStandaloneCreate(t *testing.T) {
 			})
 
 			Convey("When the service is queried with expiration", func() {
-				key, err := service.Create("ci-key", "test@example.com", 24, policies)
+				key, err := service.Create("ci-key", "team-a", "test@example.com", 24, policies)
 
 				Convey("Then a valid API key should be returned", func() {
 					So(err, ShouldBeNil)
@@ -127,7 +128,7 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "test@example.com", 0, policies)
+				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -143,7 +144,7 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "test@example.com", 0, policies)
+				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -159,7 +160,7 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "test@example.com", 0, policies)
+				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -175,7 +176,7 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "test@example.com", 0, policies)
+				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -196,7 +197,7 @@ func TestStandaloneCreate(t *testing.T) {
 				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("admin-key", "admin@example.com", 0, policies)
+				key, err := service.Create("admin-key", "global", "admin@example.com", 0, policies)
 
 				Convey("Then a valid API key should be returned", func() {
 					So(err, ShouldBeNil)

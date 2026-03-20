@@ -729,6 +729,7 @@ curl -L \
       {
         "id": "550e8400-e29b-41d4-a716-446655440000",
         "name": "ci-key",
+        "scope": "team-a",
         "created_by": "admin@example.com",
         "expiration": "",
         "policies": [
@@ -761,7 +762,9 @@ curl -L \
 POST /v1/api/api-keys/
 ```
 
-Create a standalone API key with RBAC policies. Requires `create` permission on `api-keys`.
+Create a standalone API key with RBAC policies. Requires `create` permission on `api-keys` for the specified scope.
+
+The `scope` field is required and determines who can manage the key via RBAC policies (see [API Key Scopes](/user-guide/rbac-configuration/#api-key-scopes)).
 
 The `expire_in` field is optional and specifies the expiration in hours. If omitted or set to `0`, the key does not expire.
 
@@ -772,6 +775,7 @@ curl -L -X POST \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
   -d '{
     "name": "ci-deploy-key",
+    "scope": "team-a",
     "expire_in": 720,
     "policies": [
       {

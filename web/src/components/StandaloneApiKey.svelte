@@ -43,7 +43,8 @@
 <div class="mt-2">
   <div
     class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-4 place-items-start items-center">
-    <span class="col-span-2 truncate">{apiKey.name}</span>
+    <span class="truncate">{apiKey.name}</span>
+    <span class="text-xs truncate">{apiKey.scope}</span>
     <span class="text-xs">
       {apiKey.policies.length}
       {apiKey.policies.length === 1 ? 'policy' : 'policies'}
@@ -78,6 +79,11 @@
             </TransparentButton>
           {/key}
         </div>
+      </div>
+
+      <div>
+        <p class="text-xs uppercase text-zinc-400 mb-1">Scope</p>
+        <p class="text-sm">{apiKey.scope}</p>
       </div>
 
       <div>

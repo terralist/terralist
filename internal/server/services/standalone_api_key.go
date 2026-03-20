@@ -23,7 +23,10 @@ type StandaloneApiKeyService interface {
 	Authenticate(key string) (*auth.User, error)
 
 	// Create creates a new API key with the given policies.
-	Create(name, createdBy string, expireIn int, policies []apikey.Policy) (string, error)
+	Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (string, error)
+
+	// GetScope returns the scope of an API key.
+	GetScope(key string) (string, error)
 
 	// Delete removes an API key.
 	Delete(key string) error
@@ -64,13 +67,14 @@ func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, e
 	return user, nil
 }
 
-func (s *DefaultStandaloneApiKeyService) Create(name, createdBy string, expireIn int, policies []apikey.Policy) (string, error) {
+func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (string, error) {
 	if err := validatePolicies(policies); err != nil {
 		return "", err
 	}
 
 	key := &apikey.ApiKey{
 		Name:      name,
+		Scope:     scope,
 		CreatedBy: createdBy,
 		Policies:  policies,
 	}
@@ -86,6 +90,20 @@ func (s *DefaultStandaloneApiKeyService) Create(name, createdBy string, expireIn
 	}
 
 	return key.ID.String(), nil
+}
+
+func (s *DefaultStandaloneApiKeyService) GetScope(key string) (string, error) {
+	id, err := uuid.Parse(key)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrCannotParseID, err)
+	}
+
+	k, err := s.Repository.Find(id)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrInvalidKey, err)
+	}
+
+	return k.Scope, nil
 }
 
 func (s *DefaultStandaloneApiKeyService) Delete(key string) error {

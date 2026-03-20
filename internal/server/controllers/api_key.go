@@ -57,7 +57,7 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 			user := handlers.MustGetFromContext[auth.User](ctx, "user")
 
 			keys = lo.Filter(keys, func(dto apikey.ApiKeyDTO, _ int) bool {
-				return c.Authorization.CanPerform(*user, rbac.ResourceApiKeys, rbac.ActionGet, dto.ID)
+				return c.Authorization.CanPerform(*user, rbac.ResourceApiKeys, rbac.ActionGet, dto.Scope)
 			})
 
 			ctx.JSON(http.StatusOK, keys)
@@ -76,7 +76,7 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			ctx.Set("body", &body)
-			return "*"
+			return body.Scope
 		}),
 		func(ctx *gin.Context) {
 			body := handlers.MustGetFromContext[apikey.CreateApiKeyDTO](ctx, "body")
@@ -86,7 +86,7 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 				return p.ToModel()
 			})
 
-			id, err := c.Service.Create(body.Name, user.Email, body.ExpireIn, policies)
+			id, err := c.Service.Create(body.Name, body.Scope, user.Email, body.ExpireIn, policies)
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
@@ -103,8 +103,16 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 
 	api.DELETE(
 		"/:id",
-		requireAuthorization(rbac.ActionDelete, func(_ *gin.Context) string {
-			return "*"
+		requireAuthorization(rbac.ActionDelete, func(ctx *gin.Context) string {
+			id := ctx.Param("id")
+			scope, err := c.Service.GetScope(id)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return ""
+			}
+			return scope
 		}),
 		func(ctx *gin.Context) {
 			id := ctx.Param("id")

@@ -108,7 +108,7 @@ func TestApiKeyController_List(t *testing.T) {
 			router, mockService := setupApiKeyRouter(t, user, policy)
 
 			mockService.On("List").Return([]apikey.ApiKeyDTO{
-				{ID: "key-1", Name: "ci-key", CreatedBy: "test@example.com"},
+				{ID: "key-1", Name: "ci-key", Scope: "team-a", CreatedBy: "test@example.com"},
 			}, nil)
 
 			Convey("When GET /api/api-keys is called", func() {
@@ -132,7 +132,7 @@ func TestApiKeyController_List(t *testing.T) {
 			router, mockService := setupApiKeyRouter(t, user, "")
 
 			mockService.On("List").Return([]apikey.ApiKeyDTO{
-				{ID: "key-1", Name: "ci-key", CreatedBy: "someone@example.com"},
+				{ID: "key-1", Name: "ci-key", Scope: "team-b", CreatedBy: "someone@example.com"},
 			}, nil)
 
 			Convey("When GET /api/api-keys is called", func() {
@@ -158,12 +158,13 @@ func TestApiKeyController_Create(t *testing.T) {
 		user := &auth.User{Name: "test-user", Email: "test@example.com"}
 
 		Convey("Given an authenticated user with create permission", func() {
-			policy := `p, test-user, api-keys, create, *, allow`
+			policy := `p, test-user, api-keys, create, team-a, allow`
 			router, mockService := setupApiKeyRouter(t, user, policy)
 
 			Convey("When POST /api/api-keys is called with valid body", func() {
 				body := apikey.CreateApiKeyDTO{
 					Name:     "ci-key",
+					Scope:    "team-a",
 					ExpireIn: 24,
 					Policies: []apikey.CreatePolicyDTO{
 						{Resource: "modules", Action: "get", Object: "*", Effect: "allow"},
@@ -173,6 +174,7 @@ func TestApiKeyController_Create(t *testing.T) {
 
 				mockService.On("Create",
 					"ci-key",
+					"team-a",
 					"test@example.com",
 					24,
 					[]apikey.Policy{
@@ -203,7 +205,8 @@ func TestApiKeyController_Create(t *testing.T) {
 
 			Convey("When POST /api/api-keys is called", func() {
 				body := apikey.CreateApiKeyDTO{
-					Name: "ci-key",
+					Name:  "ci-key",
+					Scope: "team-a",
 					Policies: []apikey.CreatePolicyDTO{
 						{Resource: "modules", Action: "get", Object: "*", Effect: "allow"},
 					},
@@ -225,7 +228,7 @@ func TestApiKeyController_Create(t *testing.T) {
 			router, _ := setupApiKeyRouter(t, nil, "")
 
 			Convey("When POST /api/api-keys is called", func() {
-				body := `{"name":"ci-key","policies":[{"resource":"modules","action":"get","object":"*","effect":"allow"}]}`
+				body := `{"name":"ci-key","scope":"team-a","policies":[{"resource":"modules","action":"get","object":"*","effect":"allow"}]}`
 				req := httptest.NewRequest(http.MethodPost, "/v1/api/api-keys/", bytes.NewBufferString(body))
 				req.Header.Set("Content-Type", "application/json")
 				w := httptest.NewRecorder()
@@ -247,6 +250,7 @@ func TestApiKeyController_Delete(t *testing.T) {
 			policy := `p, test-user, api-keys, delete, *, allow`
 			router, mockService := setupApiKeyRouter(t, user, policy)
 
+			mockService.On("GetScope", "some-key-id").Return("team-a", nil)
 			mockService.On("Delete", "some-key-id").Return(nil)
 
 			Convey("When DELETE /api/api-keys/:id is called", func() {
@@ -261,7 +265,8 @@ func TestApiKeyController_Delete(t *testing.T) {
 		})
 
 		Convey("Given an authenticated user without delete permission", func() {
-			router, _ := setupApiKeyRouter(t, user, "")
+			router, mockService := setupApiKeyRouter(t, user, "")
+			mockService.On("GetScope", "some-key-id").Return("team-a", nil)
 
 			Convey("When DELETE /api/api-keys/:id is called", func() {
 				req := httptest.NewRequest(http.MethodDelete, "/v1/api/api-keys/some-key-id", nil)

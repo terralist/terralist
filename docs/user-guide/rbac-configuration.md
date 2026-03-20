@@ -64,7 +64,32 @@ Below is a table that defines the correct object syntax for each resource group.
 | `authorities`  | `<authority-name>`                               |
 | `modules`      | `<authority-name>/<module-name>/<provider-name>` |
 | `providers`    | `<authority-name>/<provider-name>`               |
-| `api-keys`     | `<api-key-id>`                                   |
+| `api-keys`     | `<scope>`                                        |
+
+## API Key Scopes
+
+Every standalone API key has a **scope** — a required label that determines who can manage the key via RBAC policies.
+
+Unlike modules or providers, API keys have no natural organizational hierarchy. The API key's UUID cannot be used in policies because it is the authentication secret itself. The scope solves this by providing a human-readable, non-sensitive identifier that can be referenced in the server-side RBAC policy.
+
+When evaluating RBAC permissions on the `api-keys` resource, the scope is used as the policy object. This means you can write policies such as:
+
+```
+p, team-a-manager@example.com, api-keys, *, team-a, allow
+p, team-b-manager@example.com, api-keys, *, team-b, allow
+```
+
+In this example, Team A's manager can create, view, and delete API keys scoped to `team-a`, but cannot touch keys scoped to `team-b`, and vice versa.
+
+Scopes support glob matching, which enables hierarchical delegation. For example, a lead who oversees multiple sub-teams can be granted access to all their keys with a single policy:
+
+```
+p, lead@example.com, api-keys, *, team-a*, allow
+```
+
+This matches `team-a`, `team-a-frontend`, `team-a-backend`, etc.
+
+The scope is purely organizational — it does not affect what the API key can access. A key scoped to `team-a` can still have policies that grant access to resources across multiple authorities. The scope only controls who can manage the key itself.
 
 ## API Key Policies
 

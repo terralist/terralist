@@ -12,6 +12,7 @@ type PolicyDTO = {
 type StandaloneApiKey = {
   id: string;
   name: string;
+  scope: string;
   createdBy: string;
   expiration: string;
   policies: PolicyDTO[];
@@ -26,6 +27,7 @@ type CreatePolicyDTO = {
 
 type CreateStandaloneApiKeyDTO = {
   name: string;
+  scope: string;
   expireIn: number;
   policies: CreatePolicyDTO[];
 };

@@ -29,6 +29,7 @@
   };
 
   let name = '';
+  let scope = '';
   let expireIn = 0;
   let policies: PolicyRow[] = [emptyPolicy()];
   let error = '';
@@ -72,6 +73,7 @@
 
   function reset() {
     name = '';
+    scope = '';
     expireIn = 0;
     policies = [emptyPolicy()];
     error = '';
@@ -91,6 +93,11 @@
       return;
     }
 
+    if (!scope) {
+      error = 'Scope is required.';
+      return;
+    }
+
     if (policies.length === 0) {
       error = 'At least one policy is required.';
       return;
@@ -98,6 +105,7 @@
 
     const dto: CreateStandaloneApiKeyDTO = {
       name,
+      scope,
       expireIn,
       policies: policies.map(
         (p): CreatePolicyDTO => ({
@@ -139,6 +147,19 @@
             class={inputClass}
             placeholder="e.g. ci-deploy-key"
             bind:value={name} />
+        </div>
+
+        <label for="ak-scope" class="text-sm">
+          Scope
+          <span class="text-red-700 dark:text-red-200 text-sm">*</span>
+        </label>
+        <div class="col-span-3">
+          <input
+            id="ak-scope"
+            type="text"
+            class={inputClass}
+            placeholder="e.g. team-a"
+            bind:value={scope} />
         </div>
 
         <label for="ak-expire" class="text-sm">Expires in (hours)</label>
