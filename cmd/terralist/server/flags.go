@@ -98,6 +98,8 @@ const (
 	RbacPolicyPathFlag  = "rbac-policy-path"
 	RbacDefaultRoleFlag = "rbac-default-role"
 
+	MasterApiKeyFlag = "master-api-key"
+
 	AuthorizedUsersFlag = "authorized-users"
 
 	AuthTokenExpirationFlag = "auth-token-expiration"
@@ -362,6 +364,10 @@ var flags = map[string]cli.Flag{
 	RbacDefaultRoleFlag: &cli.StringFlag{
 		Description:  "The name of the RBAC role that should be assigned by default to all users.",
 		DefaultValue: "readonly",
+	},
+
+	MasterApiKeyFlag: &cli.StringFlag{
+		Description: "A pre-shared API key with full access for bootstrapping. Use via X-API-Key header.",
 	},
 
 	AuthorizedUsersFlag: &cli.StringFlag{

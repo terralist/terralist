@@ -15,5 +15,6 @@ type UserConfig struct {
 	AuthorizedUsers        string `mapstructure:"authorized-users"`
 	RbacPolicyPath         string `mapstructure:"rbac-policy-path"`
 	RbacDefaultRole        string `mapstructure:"rbac-default-role"`
+	MasterApiKey           string `mapstructure:"master-api-key"`
 	AuthTokenExpiration    string `mapstructure:"auth-token-expiration"`
 }
