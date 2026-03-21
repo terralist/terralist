@@ -2174,9 +2174,9 @@ svelte-markdown@^0.4.1:
     marked "^5.1.2"
 
 svelte-spa-router@^4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/svelte-spa-router/-/svelte-spa-router-4.0.1.tgz#720ef0cc9a4af33b155812496545c7999483878c"
-  integrity sha512-2JkmUQ2f9jRluijL58LtdQBIpynSbem2eBGp4zXdi7aDY1znbR6yjw0KsonD0aq2QLwf4Yx4tBJQjxIjgjXHKg==
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/svelte-spa-router/-/svelte-spa-router-4.0.2.tgz#25d53120f27f48bd5ab3066ef42ea891ae0c235d"
+  integrity sha512-T1WYYk+ymwCr5m5U+n91k4dRAT6cw5HgmoPaI/TpKgAmuugymFoSBlfzkcKIK83QH4H8gUMn4tdQ0B9enFBM6g==
   dependencies:
     regexparam "2.0.2"
 
