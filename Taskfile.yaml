@@ -134,7 +134,7 @@ tasks:
     desc: "Generate an SQLite database ready for testing."
     silent: true
     vars:
-      DATABASE_NAME: 'test.db'
+      DATABASE_NAME: "test.db"
     cmds:
       - cmd: rm {{.DATABASE_NAME}}
         ignore_error: true
@@ -177,15 +177,8 @@ tasks:
     desc: "Run all E2E tests."
     silent: true
     cmds:
-      - task: test:prepare-database
       - echo 'WARNING! Make sure to have a Terralist server up-and-running for the tests to run against.'
-      - cmd: rm -r ./reports
-        ignore_error: true
-      - task: tool:build
-        vars:
-          TOOL_PKG: github.com/ovh/venom/cmd/venom
-          TOOL_NAME: venom
-      - "{{.TOOLS_BIN_DIR}}/venom run --html-report --output-dir=\"./reports\" --var-from-file ./e2e/variables.yaml ./e2e/suites"
+      - go test -v -count=1 ./e2e/...
 
   test:
     desc: "Run all tests."

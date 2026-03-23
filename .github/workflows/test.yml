@@ -241,12 +241,12 @@ jobs:
         with:
           run: terralist server --cert-file /tmp/terralist.pem --key-file /tmp/terralist-key.pem
           wait-on: |
-            https://localhost:${{ env.TERRALIST_PORT }}/check/readyz
+            https-get://localhost:${{ env.TERRALIST_PORT }}/check/readyz
           wait-for: 30s
           log-output-if: 'true'
 
       - name: Run API E2E Tests
-        run: venom run --var-from-file ./e2e/variables.yaml ./e2e/suites
+        run: go test -v -count=1 ./e2e/...
 
       - name: Run Playwright Frontend Tests
         run: |
