@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -104,8 +105,8 @@ func createAuthority(name string) (string, error) {
 }
 
 func uploadNullProvider() error {
-	// Fetch provider metadata from the Terraform registry.
-	registryURL := "https://registry.terraform.io/v1/providers/hashicorp/null/3.2.4/download/linux/amd64"
+	// Fetch provider metadata from the Terraform registry for the current platform.
+	registryURL := fmt.Sprintf("https://registry.terraform.io/v1/providers/hashicorp/null/3.2.4/download/%s/%s", runtime.GOOS, runtime.GOARCH)
 	resp, err := http.Get(registryURL)
 	if err != nil {
 		return fmt.Errorf("fetching provider metadata: %w", err)
@@ -156,8 +157,8 @@ func uploadNullProvider() error {
 		},
 		"platforms": []map[string]string{
 			{
-				"os":           "linux",
-				"arch":         "amd64",
+				"os":           runtime.GOOS,
+				"arch":         runtime.GOARCH,
 				"download_url": metadata["download_url"].(string),
 				"shasum":       metadata["shasum"].(string),
 			},

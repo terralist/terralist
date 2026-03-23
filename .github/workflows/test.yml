@@ -225,7 +225,7 @@ jobs:
       - name: Generate TLS certificate
         run: |
           mkcert -install
-          mkcert -cert-file /tmp/terralist.pem -key-file /tmp/terralist-key.pem localhost 127.0.0.1
+          mkcert -cert-file /tmp/terralist.pem -key-file /tmp/terralist-key.pem localhost 127.0.0.1 localhost.direct
 
       - name: Configure SQLite path
         if: matrix.database-backend == 'sqlite'
