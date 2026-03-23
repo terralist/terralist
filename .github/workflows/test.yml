@@ -147,7 +147,7 @@ jobs:
           SERVER_PORT: 8080
           JSON_CONFIG: >
             {
-              "interactiveLogin": true,
+              "interactiveLogin": false,
               "httpServer": "NettyWrapper",
               "tokenCallbacks": [
                 {
@@ -155,7 +155,7 @@ jobs:
                   "tokenExpiry": 3600,
                   "requestMappings": [
                     {
-                      "requestParam": "scope",
+                      "requestParam": "grant_type",
                       "match": "*",
                       "claims": {
                         "sub": "e2e-test-user",

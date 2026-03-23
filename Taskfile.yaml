@@ -179,6 +179,7 @@ tasks:
     cmds:
       - echo 'WARNING! Make sure to have a Terralist server up-and-running for the tests to run against.'
       - go test -v -count=1 ./e2e/...
+      - cd e2e/frontend && npx playwright test
 
   test:
     desc: "Run all tests."
