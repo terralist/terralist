@@ -129,19 +129,19 @@ jobs:
         ports:
           - 5432:5432
         env:
-          POSTGRES_USER: 'terralist'
-          POSTGRES_PASSWORD: 'terralist'
-          POSTGRES_DB: 'terralist'
+          POSTGRES_USER: "terralist"
+          POSTGRES_PASSWORD: "terralist"
+          POSTGRES_DB: "terralist"
       mysql:
         image: public.ecr.aws/docker/library/mysql:9.6
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
         ports:
           - 3306:3306
         env:
-          MYSQL_USER: 'terralist'
-          MYSQL_PASSWORD: 'terralist'
-          MYSQL_DATABASE: 'terralist'
-          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_USER: "terralist"
+          MYSQL_PASSWORD: "terralist"
+          MYSQL_DATABASE: "terralist"
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       rustfs:
         image: rustfs/rustfs:latest
         ports:
@@ -253,7 +253,7 @@ jobs:
           wait-on: |
             https-get://localhost:${{ env.TERRALIST_PORT }}/check/readyz
           wait-for: 30s
-          log-output-if: 'true'
+          log-output-if: "true"
 
       - name: Run API E2E Tests
         run: go test -v -count=1 ./e2e/...
@@ -262,12 +262,6 @@ jobs:
         run: |
           cd e2e/frontend
           npx playwright test
-
-      - name: Stop Terralist server
-        if: always() && matrix.database-backend == 'sqlite'
-        run: |
-          pkill -SIGINT terralist || true
-          sleep 2
 
       - name: Upload e2e coverage
         if: always() && matrix.database-backend == 'sqlite'
