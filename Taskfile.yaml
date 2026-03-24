@@ -41,7 +41,8 @@ tasks:
       by passing the '--debug' CLI argument (as '-- --debug').
     silent: true
     vars:
-      WITH_DEBUG_MODE: '{{has "--debug" .CLI_ARGS_LIST}}'
+      WITH_DEBUG_MODE: '{{or .WITH_DEBUG_MODE (has "--debug" .CLI_ARGS_LIST)}}'
+      WITH_COVER: '{{or .WITH_COVER (has "--cover" .CLI_ARGS_LIST)}}'
       MODE: '{{ternary "debug" "release" (eq .WITH_DEBUG_MODE "true")}}'
       BRANCH:
         sh: git rev-parse --abbrev-ref HEAD
@@ -58,7 +59,7 @@ tasks:
         ignore_error: true
       - go mod download
       - >-
-        go build \
+        go build {{if eq .WITH_COVER "true"}}-cover{{end}} \
           -o={{.BINARY_FILE_NAME}} \
           -v \
           -ldflags="-X 'main.Version={{.TERRALIST_VERSION}}' \
@@ -71,9 +72,15 @@ tasks:
   build:
     desc: "Build Terralist."
     silent: true
+    vars:
+      WITH_DEBUG_MODE: '{{or .WITH_DEBUG_MODE (has "--debug" .CLI_ARGS_LIST)}}'
+      WITH_COVER: '{{or .WITH_COVER (has "--cover" .CLI_ARGS_LIST)}}'
     cmds:
       - task: build:frontend
       - task: build:backend
+        vars:
+          WITH_DEBUG_MODE: "{{.WITH_DEBUG_MODE}}"
+          WITH_COVER: "{{.WITH_COVER}}"
 
   lint:frontend:
     desc: "Run frontend linters."
@@ -96,7 +103,7 @@ tasks:
         vars:
           TOOL_PKG: github.com/golangci/golangci-lint/v2/cmd/golangci-lint
           TOOL_NAME: golangci-lint
-      - "{{.TOOLS_BIN_DIR}}/golangci-lint run ./... {{ternary \"--fix\" \"\" (eq .SHOULD_FIX \"true\")}}"
+      - '{{.TOOLS_BIN_DIR}}/golangci-lint run ./... {{ternary "--fix" "" (eq .SHOULD_FIX "true")}}'
 
   lint:
     desc: |
@@ -130,32 +137,102 @@ tasks:
           echo 'Mocks are already created. Re-run with --force if you wish to overwrite them.'
         {{end}}
 
-  test:prepare-database:
-    desc: "Generate an SQLite database ready for testing."
+  test:server:
+    desc: "Start the Terralist server for E2E tests."
     silent: true
     vars:
-      DATABASE_NAME: "test.db"
+      BINARY_FILE_NAME: '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
+      TEST_RUN_ID: "{{randInt 10000000 99999999}}"
+    env:
+      TERRALIST_PORT: "5758"
+      TERRALIST_LOG_LEVEL: "debug"
+
+      TERRALIST_RBAC_POLICY_PATH: "{{.USER_WORKING_DIR}}/e2e/policy.csv"
+
+      TERRALIST_MASTER_API_KEY: "e2e-master-api-key-00000000-0000-0000-0000-000000000000"
+
+      TERRALIST_OAUTH_PROVIDER: "oidc"
+      TERRALIST_OI_CLIENT_ID: "e2e-test-client"
+      TERRALIST_OI_CLIENT_SECRET: "e2e-test-secret"
+      TERRALIST_OI_AUTHORIZE_URL: "http://localhost:8080/default/authorize"
+      TERRALIST_OI_TOKEN_URL: "http://localhost:8080/default/token"
+      TERRALIST_OI_USERINFO_URL: "http://localhost:8080/default/userinfo"
+
+      TERRALIST_TOKEN_SIGNING_SECRET: "e2e-test-secret"
+
+      TERRALIST_DATABASE_BACKEND: "sqlite"
+      TERRALIST_SQLITE_PATH: "test-run-{{.TEST_RUN_ID}}.db"
+
+      TERRALIST_SESSION_STORE: "cookie"
+      TERRALIST_COOKIE_SECRET: "e2e-test-secret-e2e-test-secret!"
+
+      TERRALIST_MODULES_STORAGE_RESOLVER: "s3"
+      TERRALIST_PROVIDERS_STORAGE_RESOLVER: "s3"
+      TERRALIST_S3_ENDPOINT: "http://localhost:9000"
+      TERRALIST_S3_BUCKET_NAME: "terralist"
+      TERRALIST_S3_BUCKET_REGION: "us-east-1"
+      TERRALIST_S3_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE"
+      TERRALIST_S3_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      TERRALIST_S3_USE_PATH_STYLE: "true"
+      TERRALIST_S3_SERVER_SIDE_ENCRYPTION: "none"
+
+      GOCOVERDIR: "{{.USER_WORKING_DIR}}/coverage/e2e"
     cmds:
-      - cmd: rm {{.DATABASE_NAME}}
+      - task: build
+        vars:
+          WITH_DEBUG_MODE: "true"
+          WITH_COVER: "true"
+      - >
+        docker run
+        --rm
+        --detach
+        --name=terralist-rustfs-e2e-{{.TEST_RUN_ID}}
+        --publish=9000:9000
+        --env=RUSTFS_ACCESS_KEY=$TERRALIST_S3_ACCESS_KEY_ID
+        --env=RUSTFS_SECRET_KEY=$TERRALIST_S3_SECRET_ACCESS_KEY
+        --health-cmd="curl -f http://localhost:9000/health"
+        --health-interval=10s
+        --health-timeout=5s
+        --health-retries=10
+        rustfs/rustfs:latest
+      - >
+        docker run
+        --rm
+        --detach
+        --name=terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
+        --publish=8080:8080
+        --env=SERVER_PORT=8080
+        --env='JSON_CONFIG={"interactiveLogin":false,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"default","tokenExpiry":3600,"requestMappings":[{"requestParam":"grant_type","match":"*","claims":{"sub":"e2e-test-user","email":"admin@terralist.io"}}]}]}'
+        ghcr.io/navikt/mock-oauth2-server:2.1.10
+      - >
+        until [ "$(docker inspect --format '{{ "{{" }}.State.Health.Status{{ "}}" }}' terralist-rustfs-e2e-{{.TEST_RUN_ID}} 2>/dev/null)" = "healthy" ]; do
+          sleep 1;
+        done
+      - mkdir -p $GOCOVERDIR
+      - ./{{.BINARY_FILE_NAME}} server &
+      - cmd: read -p "Press any key to stop..."
         ignore_error: true
-      - sqlite3 {{.DATABASE_NAME}} 'VACUUM;'
-      - sqlite3 {{.DATABASE_NAME}} < ./e2e/data/terralist.sqlite.sql
-      - echo "Test database file written at $PWD/{{.DATABASE_NAME}}."
+      - cmd: pkill -f "{{.BINARY_FILE_NAME}} server"
+        ignore_error: true
+      - docker stop terralist-rustfs-e2e-{{.TEST_RUN_ID}} terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
+      - rm -f $TERRALIST_SQLITE_PATH
 
   test:unit:
     desc: "Run all unit tests."
     silent: true
     vars:
       WITH_SUMMARY: '{{has "--summary" .CLI_ARGS_LIST}}'
+      WITH_COVER: '{{or .WITH_COVER (has "--cover" .CLI_ARGS_LIST)}}'
+      COVER_PROFILE: "coverage/unit.txt"
       ALL_PACKAGES:
         sh: go list ./...
-      TEST_EXCLUSIONS: '{{list "mocks" "cmd" "models" | join "|"}}'
+      TEST_EXCLUSIONS: '{{list "mocks" "cmd" "models" "e2e" | join "|"}}'
       TEST_PACKAGES:
         sh: >-
           {{- $excl := .TEST_EXCLUSIONS -}}
           {{- $pkgs := (list) -}}
           {{- range $i, $pkg := (splitList "\n" .ALL_PACKAGES) -}}
-            {{- if not (regexMatch (printf "[/]%s[/]" $excl) $pkg) -}}
+            {{- if not (regexMatch (printf "[/]%s[/]?" $excl) $pkg) -}}
               {{- $pkgs = append $pkgs $pkg -}}
             {{- end -}}
           {{- end -}}
@@ -166,18 +243,21 @@ tasks:
         vars:
           TOOL_PKG: gotest.tools/gotestsum
           TOOL_NAME: gotestsum
+      - cmd: mkdir -p coverage
+        ignore_error: true
       - >-
         {{- if eq .WITH_SUMMARY "true" -}}
-        {{.TOOLS_BIN_DIR}}/gotestsum -f testname -- -count=1 {{.TEST_PACKAGES}}
+        {{.TOOLS_BIN_DIR}}/gotestsum -f testname -- -count=1 {{if eq .WITH_COVER "true"}}-coverprofile={{.COVER_PROFILE}}{{end}} {{.TEST_PACKAGES}}
         {{- else -}}
-        go test -count=1 {{.TEST_PACKAGES}}
+        go test -count=1 {{if eq .WITH_COVER "true"}}-coverprofile={{.COVER_PROFILE}}{{end}} {{.TEST_PACKAGES}}
         {{- end -}}
 
   test:e2e:
     desc: "Run all E2E tests."
     silent: true
     cmds:
-      - echo 'WARNING! Make sure to have a Terralist server up-and-running for the tests to run against.'
+      - echo 'WARNING! Make sure to have a Terralist server up-and-running for the tests to run against. Use `task test:server` to start one.'
+      - curl -f "http://localhost:5758/check/readyz"
       - go test -v -count=1 ./e2e/...
       - cd e2e/frontend && npx playwright test
 
@@ -186,4 +266,21 @@ tasks:
     silent: true
     cmds:
       - task: test:unit
+        vars:
+          WITH_COVER: "true"
       - task: test:e2e
+
+  test:coverage:
+    desc: "Generate test coverage report."
+    silent: true
+    env:
+      GOCOVERDIR: "{{.USER_WORKING_DIR}}/coverage/e2e"
+      COVERAGE_EXCLUSIONS: '{{list "mocks" "e2e" | join "|"}}'
+    cmds:
+      - go tool covdata merge -i=./coverage/e2e -o=coverage
+      - go tool covdata textfmt -i=coverage/e2e -o coverage/e2e.txt
+      - 'echo "mode: set" > coverage/merged.txt'
+      - tail -n +2 coverage/unit.txt >> coverage/merged.txt
+      - tail -n +2 coverage/e2e.txt >> coverage/merged.txt
+      - grep -vE 'terralist\/(e2e|mocks)|\/mocks.go:' coverage/merged.txt > coverage/merged_filtered.txt
+      - go tool cover -func=coverage/merged_filtered.txt

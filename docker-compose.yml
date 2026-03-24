@@ -1,12 +1,11 @@
 services:
-  minio:
-    image: public.ecr.aws/bitnami/minio:2024.12.18
-    platform: linux/amd64
+  rustfs:
+    image: rustfs/rustfs:latest
     ports:
       - 9000:9000
     environment:
-      MINIO_ROOT_USER: AKIAIOSFODNN7EXAMPLE
-      MINIO_ROOT_PASSWORD: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+      RUSTFS_ACCESS_KEY: AKIAIOSFODNN7EXAMPLE
+      RUSTFS_SECRET_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
   mock-oauth2:
     image: ghcr.io/navikt/mock-oauth2-server:2.1.10

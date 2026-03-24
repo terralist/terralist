@@ -2,7 +2,9 @@ package e2e
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +12,11 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // bootstrapState holds data created during bootstrap that tests can reference.
@@ -54,6 +61,10 @@ func waitForServer() error {
 }
 
 func bootstrapEnvironment() error {
+	if err := createS3Bucket(); err != nil {
+		return fmt.Errorf("creating S3 bucket: %w", err)
+	}
+
 	if err := createAuthorities(); err != nil {
 		return fmt.Errorf("creating authorities: %w", err)
 	}
@@ -64,6 +75,41 @@ func bootstrapEnvironment() error {
 
 	if err := uploadModule(); err != nil {
 		return fmt.Errorf("uploading module: %w", err)
+	}
+
+	return nil
+}
+
+func createS3Bucket() error {
+	endpoint := envOrDefault("TERRALIST_S3_ENDPOINT", "http://localhost:9000")
+	bucket := envOrDefault("TERRALIST_S3_BUCKET_NAME", "terralist")
+	accessKey := envOrDefault("TERRALIST_S3_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+	secretKey := envOrDefault("TERRALIST_S3_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
+	region := envOrDefault("TERRALIST_S3_BUCKET_REGION", "us-east-1")
+
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKey, secretKey, "")),
+		awsconfig.WithRegion(region),
+	)
+	if err != nil {
+		return fmt.Errorf("loading AWS config: %w", err)
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = &endpoint
+		o.UsePathStyle = true
+	})
+
+	_, err = client.CreateBucket(context.Background(), &s3.CreateBucketInput{
+		Bucket: &bucket,
+	})
+	if err != nil {
+		// Ignore "bucket already exists" errors.
+		var bae *types.BucketAlreadyOwnedByYou
+		var bex *types.BucketAlreadyExists
+		if !errors.As(err, &bae) && !errors.As(err, &bex) {
+			return fmt.Errorf("creating bucket %q: %w", bucket, err)
+		}
 	}
 
 	return nil

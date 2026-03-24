@@ -39,11 +39,6 @@ RUN curl -sL https://github.com/ovh/venom/releases/download/v${VENOM_VERSION}/ve
 # Install task
 RUN npm install --global @go-task/cli
 
-# Install minio-client
-RUN curl -sL https://dl.min.io/client/mc/release/${TARGETOS}-${TARGETARCH}/mc -o mc \
-  && mv mc /usr/local/bin \
-  && chmod +x /usr/local/bin/mc
-
 # Install mkcert
 ARG MKCERT_VERSION=1.4.4
 RUN curl -sL https://dl.filippo.io/mkcert/v${MKCERT_VERSION}?os=${TARGETOS}&arch=${TARGETARCH} -o mkcert \
