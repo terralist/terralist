@@ -12,10 +12,22 @@
 
   let pagesToDisplay: number = 5;
   let pageCount: number = 10;
-  let itemsPerPage: number = 8;
   let pages: number[] = [];
   let currentPage: number = 0;
   let artifactsCount: number = 0;
+
+  // View mode: 'grid' or 'list'
+  let viewMode: 'grid' | 'list' =
+    (sessionStorage.getItem('viewMode') as 'grid' | 'list') ?? 'grid';
+
+  const toggleViewMode = (mode: 'grid' | 'list') => {
+    viewMode = mode;
+    sessionStorage.setItem('viewMode', mode);
+    initPages();
+    buildPages(0);
+  };
+
+  $: itemsPerPage = viewMode === 'grid' ? 12 : 20;
 
   let artifacts: Artifact[] = [];
   const result = useQuery(Artifacts.getAll);
@@ -128,7 +140,7 @@
 
 <main class="mt-36 lg:mt-20 mx-10">
   {#if !$result.isLoading && !$result.error}
-    <div class="flex justify-center items-center">
+    <div class="flex justify-center items-center gap-6">
       <div class="flex flex-row">
         <input
           id="modules-checkbox"
@@ -142,7 +154,7 @@
           Modules
         </label>
       </div>
-      <div class="ml-4 flex flex-row">
+      <div class="flex flex-row">
         <input
           id="providers-checkbox"
           type="checkbox"
@@ -154,6 +166,27 @@
           class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
           Providers
         </label>
+      </div>
+
+      <!-- View mode toggle -->
+      <div
+        class="flex flex-row gap-1 ml-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+        <button
+          class="p-1.5 rounded transition-colors {viewMode === 'grid'
+            ? 'bg-white dark:bg-gray-600 shadow-sm'
+            : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
+          on:click={() => toggleViewMode('grid')}
+          title="Grid view">
+          <Icon name="grid-view" width="1.25rem" height="1.25rem" />
+        </button>
+        <button
+          class="p-1.5 rounded transition-colors {viewMode === 'list'
+            ? 'bg-white dark:bg-gray-600 shadow-sm'
+            : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
+          on:click={() => toggleViewMode('list')}
+          title="List view">
+          <Icon name="list-view" width="1.25rem" height="1.25rem" />
+        </button>
       </div>
     </div>
   {/if}
@@ -172,12 +205,22 @@
     </div>
   {:else}
     {#if pageCount > 0}
-      <div
-        class="mt-4 flex flex-col justify-center items-center sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {#each filteredArtifacts as artifact (artifact.id)}
-          <ArtifactCard {artifact} />
-        {/each}
-      </div>
+      {#if viewMode === 'grid'}
+        <!-- Grid View -->
+        <div
+          class="mt-4 flex flex-col justify-center items-center sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {#each filteredArtifacts as artifact (artifact.id)}
+            <ArtifactCard {artifact} />
+          {/each}
+        </div>
+      {:else}
+        <!-- List View -->
+        <div class="mt-4 flex flex-col gap-2">
+          {#each filteredArtifacts as artifact (artifact.id)}
+            <ArtifactCard {artifact} variant="list" />
+          {/each}
+        </div>
+      {/if}
     {/if}
 
     {#if pageCount > 0}
