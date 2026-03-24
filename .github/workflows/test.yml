@@ -217,7 +217,8 @@ jobs:
       TERRALIST_RBAC_DEFAULT_ROLE: "readonly"
       TERRALIST_RBAC_POLICY_PATH: ${{ format('{0}/e2e/policy.csv', github.workspace)}}
 
-      TERRALIST_CERT_FILE: 
+      TERRALIST_CERT_FILE: "/tmp/terralist.pem"
+      TERRALIST_KEY_FILE: "/tmp/terralist-key.pem"
 
       GOCOVERDIR: ${{ format('{0}/coverage/e2e', github.workspace) }}
 
@@ -239,7 +240,7 @@ jobs:
       - name: Generate TLS certificate
         run: |
           mkcert -install
-          mkcert -cert-file /tmp/terralist.pem -key-file /tmp/terralist-key.pem localhost 127.0.0.1 localhost.direct
+          mkcert -cert-file $TERRALIST_CERT_FILE -key-file $TERRALIST_KEY_FILE localhost 127.0.0.1 localhost.direct
 
       - name: Configure SQLite path
         if: matrix.database-backend == 'sqlite'
@@ -251,7 +252,7 @@ jobs:
       - name: Spin up Terralist server
         uses: JarvusInnovations/background-action@v1.0.7
         with:
-          run: terralist server --cert-file /tmp/terralist.pem --key-file /tmp/terralist-key.pem
+          run: terralist server
           wait-on: |
             https-get://localhost:${{ env.TERRALIST_PORT }}/check/readyz
           wait-for: 30s
@@ -261,8 +262,8 @@ jobs:
         run: go test -v -count=1 ./e2e/...
 
       - name: Run Playwright Frontend Tests
+        working-directory: e2e/frontend
         run: |
-          cd e2e/frontend
           npm ci
           npx playwright install --with-deps chromium
           npx playwright test
