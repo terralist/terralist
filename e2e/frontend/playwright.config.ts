@@ -11,6 +11,7 @@ export default defineConfig({
   use: {
     baseURL: process.env.TERRALIST_URL || 'http://localhost:5758',
     headless: true,
+    ignoreHTTPSErrors: true,
     screenshot: 'only-on-failure',
   },
   projects: [
