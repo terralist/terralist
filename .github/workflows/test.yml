@@ -217,6 +217,8 @@ jobs:
       TERRALIST_RBAC_DEFAULT_ROLE: "readonly"
       TERRALIST_RBAC_POLICY_PATH: ${{ format('{0}/e2e/policy.csv', github.workspace)}}
 
+      TERRALIST_CERT_FILE: 
+
       GOCOVERDIR: ${{ format('{0}/coverage/e2e', github.workspace) }}
 
     steps:
@@ -261,6 +263,8 @@ jobs:
       - name: Run Playwright Frontend Tests
         run: |
           cd e2e/frontend
+          npm ci
+          npx playwright install --with-deps chromium
           npx playwright test
 
       - name: Upload e2e coverage
