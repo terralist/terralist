@@ -206,8 +206,8 @@ mocks/**
 reports/
 
 # Binaries
-terralist
-terralist.exe
+/terralist
+/terralist.exe
 tools/bin/
 
 # Docker Volumes
