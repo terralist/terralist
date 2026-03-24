@@ -275,7 +275,6 @@ tasks:
     silent: true
     env:
       GOCOVERDIR: "{{.USER_WORKING_DIR}}/coverage/e2e"
-      COVERAGE_EXCLUSIONS: '{{list "mocks" "e2e" | join "|"}}'
     cmds:
       - go tool covdata merge -i=./coverage/e2e -o=coverage
       - go tool covdata textfmt -i=coverage/e2e -o coverage/e2e.txt
