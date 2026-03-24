@@ -31,11 +31,20 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
 # Install yarn
 RUN npm install --global yarn
 
+## == TODO == Remove minio-client and venom as they are no longer needed
+
+# Install minio-client
+RUN curl -sL https://dl.min.io/client/mc/release/${TARGETOS}-${TARGETARCH}/mc -o mc \
+  && mv mc /usr/local/bin \
+  && chmod +x /usr/local/bin/mc
+
 # Install venom
 ARG VENOM_VERSION=1.2.0
 RUN curl -sL https://github.com/ovh/venom/releases/download/v${VENOM_VERSION}/venom.${TARGETOS}-${TARGETARCH} -o venom \
   && mv venom /usr/local/bin \
   && chmod +x /usr/local/bin/venom
+
+## == END TODO ==
 
 # Install task
 RUN npm install --global @go-task/cli
