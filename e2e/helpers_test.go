@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -83,18 +81,10 @@ func doAuthRequest(t *testing.T, method, url string, body any) *http.Response {
 	})
 }
 
-// doAPIKeyRequest executes an HTTP request authenticated with a specific API key.
-func doAPIKeyRequest(t *testing.T, method, url string, body any, apiKey string) *http.Response {
-	t.Helper()
-	return doRequest(t, method, url, body, map[string]string{
-		"Authorization": "Bearer x-api-key:" + apiKey,
-	})
-}
-
 // doUnauthRequest executes an unauthenticated HTTP request.
-func doUnauthRequest(t *testing.T, method, url string, body any) *http.Response {
+func doUnauthRequest(t *testing.T, method, url string) *http.Response {
 	t.Helper()
-	return doRequest(t, method, url, body, nil)
+	return doRequest(t, method, url, nil, nil)
 }
 
 // readJSON reads the response body and unmarshals it into a map.
@@ -112,54 +102,4 @@ func readJSON(t *testing.T, resp *http.Response) map[string]any {
 	var result map[string]any
 	require.NoError(t, json.Unmarshal(data, &result), "response body: %s", string(data))
 	return result
-}
-
-// readBody reads the response body as a string.
-func readBody(t *testing.T, resp *http.Response) string {
-	t.Helper()
-	defer resp.Body.Close()
-
-	data, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
-	return string(data)
-}
-
-// uploadFile sends a multipart form POST with a file attachment.
-func uploadFile(t *testing.T, url, fieldName, filePath string, headers map[string]string) *http.Response {
-	t.Helper()
-
-	file, err := os.Open(filePath)
-	require.NoError(t, err)
-	defer file.Close()
-
-	var buf bytes.Buffer
-	writer := multipart.NewWriter(&buf)
-
-	part, err := writer.CreateFormFile(fieldName, filepath.Base(filePath))
-	require.NoError(t, err)
-
-	_, err = io.Copy(part, file)
-	require.NoError(t, err)
-
-	require.NoError(t, writer.Close())
-
-	req, err := http.NewRequest(http.MethodPost, url, &buf)
-	require.NoError(t, err)
-
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	for k, v := range headers {
-		req.Header.Set(k, v)
-	}
-
-	resp, err := httpClient().Do(req)
-	require.NoError(t, err)
-	return resp
-}
-
-// uploadAuthFile sends an authenticated multipart form POST with a file attachment.
-func uploadAuthFile(t *testing.T, url, fieldName, filePath string) *http.Response {
-	t.Helper()
-	return uploadFile(t, url, fieldName, filePath, map[string]string{
-		"Authorization": "Bearer x-api-key:" + config.MasterAPIKey,
-	})
 }

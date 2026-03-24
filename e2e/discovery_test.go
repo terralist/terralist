@@ -9,7 +9,7 @@ import (
 )
 
 func TestTerraformServiceDiscovery(t *testing.T) {
-	resp := doUnauthRequest(t, http.MethodGet, apiURL("/.well-known/terraform.json"), nil)
+	resp := doUnauthRequest(t, http.MethodGet, apiURL("/.well-known/terraform.json"))
 	body := readJSON(t, resp)
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)

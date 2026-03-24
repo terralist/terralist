@@ -126,7 +126,7 @@ func createAuthorities() error {
 }
 
 func createAuthority(name string) (string, error) {
-	resp, err := doBootstrapRequest(http.MethodPost, apiURL("/v1/api/authorities"), map[string]string{"name": name})
+	resp, err := doBootstrapRequest(apiURL("/v1/api/authorities"), map[string]string{"name": name})
 	if err != nil {
 		return "", err
 	}
@@ -169,18 +169,29 @@ func uploadNullProvider() error {
 	}
 
 	// Upload the GPG signing key to the authority.
-	signingKeys := metadata["signing_keys"].(map[string]any)
-	gpgKeys := signingKeys["gpg_public_keys"].([]any)
-	gpgKey := gpgKeys[0].(map[string]any)
+	signingKeys, ok := metadata["signing_keys"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("missing signing_keys in registry response")
+	}
+	gpgKeys, ok := signingKeys["gpg_public_keys"].([]any)
+	if !ok || len(gpgKeys) == 0 {
+		return fmt.Errorf("missing gpg_public_keys in registry response")
+	}
+	gpgKey, ok := gpgKeys[0].(map[string]any)
+	if !ok {
+		return fmt.Errorf("invalid gpg key format in registry response")
+	}
+
+	keyID, _ := gpgKey["key_id"].(string)
+	asciiArmor, _ := gpgKey["ascii_armor"].(string)
 
 	gpgBody := map[string]string{
-		"key_id":          gpgKey["key_id"].(string),
-		"ascii_armor":     gpgKey["ascii_armor"].(string),
+		"key_id":          keyID,
+		"ascii_armor":     asciiArmor,
 		"trust_signature": "",
 	}
 
 	gpgResp, err := doBootstrapRequest(
-		http.MethodPost,
 		apiURL("/v1/api/authorities/%s/keys", bootstrap.HashicorpAuthorityID),
 		gpgBody,
 	)
@@ -195,24 +206,28 @@ func uploadNullProvider() error {
 	}
 
 	// Upload the provider version.
+	shaSumsURL, _ := metadata["shasums_url"].(string)
+	shaSumsSignatureURL, _ := metadata["shasums_signature_url"].(string)
+	downloadURL, _ := metadata["download_url"].(string)
+	shasum, _ := metadata["shasum"].(string)
+
 	providerBody := map[string]any{
 		"protocols": []string{"6.0"},
 		"shasums": map[string]string{
-			"url":           metadata["shasums_url"].(string),
-			"signature_url": metadata["shasums_signature_url"].(string),
+			"url":           shaSumsURL,
+			"signature_url": shaSumsSignatureURL,
 		},
 		"platforms": []map[string]string{
 			{
 				"os":           runtime.GOOS,
 				"arch":         runtime.GOARCH,
-				"download_url": metadata["download_url"].(string),
-				"shasum":       metadata["shasum"].(string),
+				"download_url": downloadURL,
+				"shasum":       shasum,
 			},
 		},
 	}
 
 	provResp, err := doBootstrapRequest(
-		http.MethodPost,
 		apiURL("/v1/api/providers/hashicorp/null/3.2.4/upload"),
 		providerBody,
 	)
@@ -235,7 +250,6 @@ func uploadModule() error {
 	}
 
 	resp, err := doBootstrapRequest(
-		http.MethodPost,
 		apiURL("/v1/api/modules/hashicorp/subnets/cidr/1.0.0/upload"),
 		moduleBody,
 	)
@@ -253,7 +267,7 @@ func uploadModule() error {
 }
 
 // doBootstrapRequest is a non-test helper for use in TestMain where *testing.T is unavailable.
-func doBootstrapRequest(method, url string, body any) (*http.Response, error) {
+func doBootstrapRequest(url string, body any) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		data, err := json.Marshal(body)
@@ -263,7 +277,7 @@ func doBootstrapRequest(method, url string, body any) (*http.Response, error) {
 		bodyReader = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequest(http.MethodPost, url, bodyReader)
 	if err != nil {
 		return nil, err
 	}

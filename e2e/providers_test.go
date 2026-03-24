@@ -11,7 +11,7 @@ import (
 
 func TestProviderListVersions(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/providers/hashicorp/null/versions"), nil)
+		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/providers/hashicorp/null/versions"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -31,16 +31,20 @@ func TestProviderListVersions(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Contains(t, body, "versions")
 
-		versions := body["versions"].([]any)
+		versions, ok := body["versions"].([]any)
+		require.True(t, ok)
 		require.Len(t, versions, 1)
 
-		version := versions[0].(map[string]any)
+		version, ok := versions[0].(map[string]any)
+		require.True(t, ok)
 		assert.Equal(t, "3.2.4", version["version"])
 
-		platforms := version["platforms"].([]any)
+		platforms, ok := version["platforms"].([]any)
+		require.True(t, ok)
 		require.Len(t, platforms, 1)
 
-		platform := platforms[0].(map[string]any)
+		platform, ok := platforms[0].(map[string]any)
+		require.True(t, ok)
 		assert.Equal(t, runtime.GOOS, platform["os"])
 		assert.Equal(t, runtime.GOARCH, platform["arch"])
 	})
@@ -48,7 +52,7 @@ func TestProviderListVersions(t *testing.T) {
 
 func TestProviderDownload(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/providers/hashicorp/null/3.2.4/download/%s/%s", runtime.GOOS, runtime.GOARCH), nil)
+		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/providers/hashicorp/null/3.2.4/download/%s/%s", runtime.GOOS, runtime.GOARCH))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -85,7 +89,7 @@ func TestProviderDownload(t *testing.T) {
 
 func TestProviderUpload(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodPost, apiURL("/v1/api/providers/hashicorp/null/4.0.0/upload"), nil)
+		resp := doUnauthRequest(t, http.MethodPost, apiURL("/v1/api/providers/hashicorp/null/4.0.0/upload"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -123,14 +127,14 @@ func TestProviderUpload(t *testing.T) {
 
 func TestProviderDeleteUnauthenticated(t *testing.T) {
 	t.Run("delete version", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodDelete, apiURL("/v1/api/providers/hashicorp/null/3.2.4/remove"), nil)
+		resp := doUnauthRequest(t, http.MethodDelete, apiURL("/v1/api/providers/hashicorp/null/3.2.4/remove"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
 	t.Run("delete provider", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodDelete, apiURL("/v1/api/providers/hashicorp/null/remove"), nil)
+		resp := doUnauthRequest(t, http.MethodDelete, apiURL("/v1/api/providers/hashicorp/null/remove"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)

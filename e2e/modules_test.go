@@ -10,7 +10,7 @@ import (
 
 func TestModuleListVersions(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/modules/hashicorp/subnets/cidr/versions"), nil)
+		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/modules/hashicorp/subnets/cidr/versions"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -30,18 +30,21 @@ func TestModuleListVersions(t *testing.T) {
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 		require.Contains(t, body, "modules")
 
-		modules := body["modules"].([]any)
+		modules, ok := body["modules"].([]any)
+		require.True(t, ok)
 		require.Len(t, modules, 1)
 
-		mod := modules[0].(map[string]any)
-		versions := mod["versions"].([]any)
+		mod, ok := modules[0].(map[string]any)
+		require.True(t, ok)
+		versions, ok := mod["versions"].([]any)
+		require.True(t, ok)
 		assert.Len(t, versions, 1)
 	})
 }
 
 func TestModuleDownload(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/modules/hashicorp/subnets/cidr/1.0.0/download"), nil)
+		resp := doUnauthRequest(t, http.MethodGet, apiURL("/v1/modules/hashicorp/subnets/cidr/1.0.0/download"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
@@ -72,7 +75,7 @@ func TestModuleDownload(t *testing.T) {
 
 func TestModuleUpload(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {
-		resp := doUnauthRequest(t, http.MethodPost, apiURL("/v1/api/modules/hashicorp/subnets/cidr/1.1.0/upload"), nil)
+		resp := doUnauthRequest(t, http.MethodPost, apiURL("/v1/api/modules/hashicorp/subnets/cidr/1.1.0/upload"))
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
@@ -112,9 +115,12 @@ func TestModuleCreateAndDelete(t *testing.T) {
 	versionsBody := readJSON(t, resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	modules := versionsBody["modules"].([]any)
-	mod := modules[0].(map[string]any)
-	versions := mod["versions"].([]any)
+	modules, ok := versionsBody["modules"].([]any)
+	require.True(t, ok)
+	mod, ok := modules[0].(map[string]any)
+	require.True(t, ok)
+	versions, ok := mod["versions"].([]any)
+	require.True(t, ok)
 	assert.Len(t, versions, 2)
 
 	// Delete the specific version.
@@ -127,14 +133,17 @@ func TestModuleCreateAndDelete(t *testing.T) {
 	versionsBody = readJSON(t, resp)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	modules = versionsBody["modules"].([]any)
-	mod = modules[0].(map[string]any)
-	versions = mod["versions"].([]any)
+	modules, ok = versionsBody["modules"].([]any)
+	require.True(t, ok)
+	mod, ok = modules[0].(map[string]any)
+	require.True(t, ok)
+	versions, ok = mod["versions"].([]any)
+	require.True(t, ok)
 	assert.Len(t, versions, 1)
 }
 
 func TestModuleDeleteUnauthenticated(t *testing.T) {
-	resp := doUnauthRequest(t, http.MethodDelete, apiURL("/v1/api/modules/hashicorp/subnets/cidr/1.0.0/remove"), nil)
+	resp := doUnauthRequest(t, http.MethodDelete, apiURL("/v1/api/modules/hashicorp/subnets/cidr/1.0.0/remove"))
 	defer resp.Body.Close()
 
 	assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
