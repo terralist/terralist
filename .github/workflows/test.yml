@@ -179,7 +179,7 @@ jobs:
 
     env:
       TERRALIST_PORT: 5758
-      TERRALIST_URL: "https://localhost:5758"
+      TERRALIST_URL: "https://localhost.direct:5758"
 
       TERRALIST_LOG_LEVEL: debug
 
@@ -254,7 +254,7 @@ jobs:
         with:
           run: terralist server
           wait-on: |
-            https-get://localhost:${{ env.TERRALIST_PORT }}/check/readyz
+            https-get://localhost.direct:${{ env.TERRALIST_PORT }}/check/readyz
           wait-for: 30s
           log-output-if: "true"
 
