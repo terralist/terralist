@@ -205,17 +205,19 @@ func (f *OnDiskFile) Remove() error {
 
 // ContentType returns the http-compliant content-type of a File.
 func ContentType(f File) string {
-	data, err := bufio.NewReader(f).Peek(512)
-	if err != nil {
-		return "application/octet-stream"
-	}
+	// Always rewind the reader
+	defer func() {
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			log.Error().
+				Err(err).
+				Str("name", f.Name()).
+				Msg("could not rewind the file")
+		}
+	}()
 
-	// Rewind the reader
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		log.Error().
-			Err(err).
-			Str("name", f.Name()).
-			Msg("could not rewind the file")
+	data, err := bufio.NewReader(f).Peek(512)
+	if err != nil && len(data) == 0 {
+		return "application/octet-stream"
 	}
 
 	return http.DetectContentType(data)
