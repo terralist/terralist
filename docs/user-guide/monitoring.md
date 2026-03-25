@@ -128,10 +128,10 @@ topk(5, sum by (authority) (rate(terralist_requests_by_authority_total[5m])))
 ### API Keys Metrics
 
 ```
-terralist_api_keys_total{authority="...", status="active|expired"}
+terralist_api_keys_total{scope="...", status="active|expired"}
 ```
 
-Current number of API keys by authority and status.
+Current number of API keys by scope and status.
 
 **Example queries:**
 ```promql
@@ -140,6 +140,9 @@ sum(terralist_api_keys_total{status="active"})
 
 # Expired keys that need cleanup
 terralist_api_keys_total{status="expired"} > 0
+
+# Active keys for a specific scope
+terralist_api_keys_total{scope="team-a", status="active"}
 ```
 
 ---

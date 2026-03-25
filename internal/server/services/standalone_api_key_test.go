@@ -102,6 +102,9 @@ func TestStandaloneCreate(t *testing.T) {
 			mockRepo.
 				On("Create", mock.AnythingOfType("*apikey.ApiKey")).
 				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
+			mockRepo.
+				On("List").
+				Return([]apikey.ApiKey{{Entity: entity.Entity{ID: keyID}, Scope: "team-a"}}, nil)
 
 			Convey("When the service is queried with no expiration", func() {
 				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
@@ -195,6 +198,9 @@ func TestStandaloneCreate(t *testing.T) {
 			mockRepo.
 				On("Create", mock.AnythingOfType("*apikey.ApiKey")).
 				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
+			mockRepo.
+				On("List").
+				Return([]apikey.ApiKey{{Entity: entity.Entity{ID: keyID}, Scope: "global"}}, nil)
 
 			Convey("When the service is queried", func() {
 				key, err := service.Create("admin-key", "global", "admin@example.com", 0, policies)
@@ -231,6 +237,7 @@ func TestStandaloneDelete(t *testing.T) {
 			keyID := uuid.Must(uuid.NewRandom())
 
 			mockRepo.On("Delete", keyID).Return(nil)
+			mockRepo.On("List").Return([]apikey.ApiKey{}, nil)
 
 			Convey("When the service is queried", func() {
 				err := service.Delete(keyID.String())
