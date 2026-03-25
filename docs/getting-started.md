@@ -26,14 +26,14 @@ While Terralist can be highly configured, the following settings are required an
 - `token-signing-secret`: a random string to protect the tokens;
 - `cookie-secret`: a random string to protect the cookies;
 
-
-``` yaml title="config.yaml"
+```yaml title="config.yaml"
 oauth-provider: github
 gh-client-id: ${GITHUB_OAUTH_CLIENT_ID:default}
 gh-client-secret: ${GITHUB_OAUTH_CLIENT_SECRET:default}
 token-signing-secret: secret
 cookie-secret: secret
 ```
+
 !!! warning "The command above will create a configuration file that is instructing Terralist to read the GitHub OAuth credentials from the `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` environment variables. If those variables are not set in your environment, Terralist will start, but it will be unusable (as you cannot login)."
 
 Then, you can start the Terralist server:
@@ -57,15 +57,20 @@ Then, you can start the Terralist server:
     ```
 
 If the server correctly started, you should see the following log line:
+
 ```json
-{"level":"info","time":"---","message":"Terralist started, listening on port 5758"}
+{
+  "level": "info",
+  "time": "---",
+  "message": "Terralist started, listening on port 5758"
+}
 ```
 
 ## Interacting with Terraform/OpenTofu
 
 Since the Terraform/OpenTofu CLI expects all responses to be from an HTTPS server, the standard `localhost:5758` will not work for registry interactions.
 
-In order to enable this, you should expose the Terralist server with an HTTPS endpoint. See [local development](./dev-guide/local-development.md) for the available options (mkcert is recommended for local development).
+In order to enable this, you should expose the Terralist server with an HTTPS endpoint. See [local development](./dev-guide/local-development.md) for the available options.
 
 ## CLI Authentication
 
@@ -107,7 +112,7 @@ To create a new authority, use the web dashboard. Access your Terralist instance
 
 ## Generate an API Key
 
-API keys in Terralist are standalone — they are not tied to a specific authority. Each API key carries its own RBAC policies that define which resources, actions, and objects it can access, and a scope for organizational grouping.
+API keys in Terralist are not tied to a specific authority. Each API key carries its own RBAC policies that define which resources, actions, and objects it can access, and a scope for organizational grouping. You can restrict it to a specific authority by using those policies.
 
 To create a new API key, navigate to the Settings page and use the API Keys section. You will need to provide:
 
@@ -123,7 +128,7 @@ To create a new API key, navigate to the Settings page and use the API Keys sect
 
 For automated setups (CI/CD pipelines, scripted deployments), you can configure a master API key that has full administrative access without requiring a web UI login:
 
-``` yaml title="config.yaml"
+```yaml title="config.yaml"
 master-api-key: "your-secret-master-key"
 ```
 
@@ -131,9 +136,9 @@ This key can be used via the `Authorization: Bearer x-api-key:<key>` header or t
 
 ## Upload a new module
 
-To upload a new module, use Terralist's API. The URL includes the authority namespace:
+To upload a new module, use Terralist's API:
 
-``` console
+```console
 curl -X POST http://localhost:5758/v1/api/modules/my-authority/my-module/provider/1.0.0/upload \
      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
      -d '{ "download_url": "/home/bob/terraform-modules/example-module" }'
@@ -141,9 +146,9 @@ curl -X POST http://localhost:5758/v1/api/modules/my-authority/my-module/provide
 
 !!! note "Terralist uses the same library Terraform uses to make downloads [go-getter](https://github.com/hashicorp/go-getter), so the above example takes advantage of the fact that Terralist runs on your local computer and uses the local getter to "download" the module. If your Terralist server is deployed remotely, the above command should not work (since that particular path cannot resolve on the remote server)."
 
-
 ### Use the module
-``` hcl
+
+```hcl
 module "example-module" {
   source  = "localhost:5758/my-authority/my-module/provider"
   version = "1.0.0"
@@ -156,12 +161,9 @@ module "example-module" {
 
 To upload a new provider, use Terralist's API. First, create a payload file:
 
-``` json title="random-2.0.0.json"
+```json title="random-2.0.0.json"
 {
-  "protocols": [
-    "4.0",
-    "5.1"
-  ],
+  "protocols": ["4.0", "5.1"],
   "shasums": {
     "url": "https://releases.hashicorp.com/terraform-provider-random/2.0.0/terraform-provider-random_2.0.0_SHA256SUMS",
     "signature_url": "https://releases.hashicorp.com/terraform-provider-random/2.0.0/terraform-provider-random_2.0.0_SHA256SUMS.sig"
@@ -183,9 +185,9 @@ To upload a new provider, use Terralist's API. First, create a payload file:
 }
 ```
 
-Then, call the API to upload it. The URL includes the authority namespace:
+Then, call the API to upload it:
 
-``` console
+```console
 curl -X POST localhost:5758/v1/api/providers/my-authority/random/2.0.0/upload \
      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
      -d "$(cat random-2.0.0.json)"
@@ -194,7 +196,8 @@ curl -X POST localhost:5758/v1/api/providers/my-authority/random/2.0.0/upload \
 !!! note "In order for this provider to be fully validated by Terraform/OpenTofu, you should add the public GPG key of the provider signer to your authority."
 
 ### Use the provider
-``` hcl
+
+```hcl
 terraform {
   required_providers {
     random = {
