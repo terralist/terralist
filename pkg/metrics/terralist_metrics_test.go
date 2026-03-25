@@ -13,26 +13,26 @@ func TestRecordArtifactUpload(t *testing.T) {
 	ArtifactsTotal.Reset()
 
 	// Record upload
-	RecordArtifactUpload("module", "test-authority")
+	RecordArtifactUpload("module", "test-scope")
 
 	// Check uploaded counter
-	if count := testutil.ToFloat64(ArtifactsUploadedTotal.WithLabelValues("module", "test-authority")); count != 1 {
+	if count := testutil.ToFloat64(ArtifactsUploadedTotal.WithLabelValues("module", "test-scope")); count != 1 {
 		t.Errorf("Expected ArtifactsUploadedTotal to be 1, got %f", count)
 	}
 
 	// Check total gauge
-	if count := testutil.ToFloat64(ArtifactsTotal.WithLabelValues("module", "test-authority")); count != 1 {
+	if count := testutil.ToFloat64(ArtifactsTotal.WithLabelValues("module", "test-scope")); count != 1 {
 		t.Errorf("Expected ArtifactsTotal to be 1, got %f", count)
 	}
 
 	// Record another upload
-	RecordArtifactUpload("module", "test-authority")
+	RecordArtifactUpload("module", "test-scope")
 
-	if count := testutil.ToFloat64(ArtifactsUploadedTotal.WithLabelValues("module", "test-authority")); count != 2 {
+	if count := testutil.ToFloat64(ArtifactsUploadedTotal.WithLabelValues("module", "test-scope")); count != 2 {
 		t.Errorf("Expected ArtifactsUploadedTotal to be 2, got %f", count)
 	}
 
-	if count := testutil.ToFloat64(ArtifactsTotal.WithLabelValues("module", "test-authority")); count != 2 {
+	if count := testutil.ToFloat64(ArtifactsTotal.WithLabelValues("module", "test-scope")); count != 2 {
 		t.Errorf("Expected ArtifactsTotal to be 2, got %f", count)
 	}
 }
@@ -42,17 +42,17 @@ func TestRecordArtifactDownload(t *testing.T) {
 	ArtifactsDownloadedTotal.Reset()
 
 	// Record download
-	RecordArtifactDownload("provider", "test-authority")
+	RecordArtifactDownload("provider", "test-scope")
 
-	if count := testutil.ToFloat64(ArtifactsDownloadedTotal.WithLabelValues("provider", "test-authority")); count != 1 {
+	if count := testutil.ToFloat64(ArtifactsDownloadedTotal.WithLabelValues("provider", "test-scope")); count != 1 {
 		t.Errorf("Expected ArtifactsDownloadedTotal to be 1, got %f", count)
 	}
 
 	// Record multiple downloads
-	RecordArtifactDownload("provider", "test-authority")
-	RecordArtifactDownload("provider", "test-authority")
+	RecordArtifactDownload("provider", "test-scope")
+	RecordArtifactDownload("provider", "test-scope")
 
-	if count := testutil.ToFloat64(ArtifactsDownloadedTotal.WithLabelValues("provider", "test-authority")); count != 3 {
+	if count := testutil.ToFloat64(ArtifactsDownloadedTotal.WithLabelValues("provider", "test-scope")); count != 3 {
 		t.Errorf("Expected ArtifactsDownloadedTotal to be 3, got %f", count)
 	}
 }
@@ -63,18 +63,18 @@ func TestRecordArtifactDeletion(t *testing.T) {
 	ArtifactsTotal.Reset()
 
 	// Set initial state
-	ArtifactsTotal.WithLabelValues("module", "test-authority").Set(5)
+	ArtifactsTotal.WithLabelValues("module", "test-scope").Set(5)
 
 	// Record deletion
-	RecordArtifactDeletion("module", "test-authority")
+	RecordArtifactDeletion("module", "test-scope")
 
 	// Check deleted counter
-	if count := testutil.ToFloat64(ArtifactsDeletedTotal.WithLabelValues("module", "test-authority")); count != 1 {
+	if count := testutil.ToFloat64(ArtifactsDeletedTotal.WithLabelValues("module", "test-scope")); count != 1 {
 		t.Errorf("Expected ArtifactsDeletedTotal to be 1, got %f", count)
 	}
 
 	// Check total gauge decreased
-	if count := testutil.ToFloat64(ArtifactsTotal.WithLabelValues("module", "test-authority")); count != 4 {
+	if count := testutil.ToFloat64(ArtifactsTotal.WithLabelValues("module", "test-scope")); count != 4 {
 		t.Errorf("Expected ArtifactsTotal to be 4, got %f", count)
 	}
 }
@@ -108,22 +108,22 @@ func TestSetApiKeysCount(t *testing.T) {
 	ApiKeysTotal.Reset()
 
 	// Set counts
-	SetApiKeysCount("test-authority", "active", 5)
-	SetApiKeysCount("test-authority", "expired", 2)
+	SetApiKeysCount("test-scope", "active", 5)
+	SetApiKeysCount("test-scope", "expired", 2)
 
 	// Check values
-	if count := testutil.ToFloat64(ApiKeysTotal.WithLabelValues("test-authority", "active")); count != 5 {
+	if count := testutil.ToFloat64(ApiKeysTotal.WithLabelValues("test-scope", "active")); count != 5 {
 		t.Errorf("Expected active keys to be 5, got %f", count)
 	}
 
-	if count := testutil.ToFloat64(ApiKeysTotal.WithLabelValues("test-authority", "expired")); count != 2 {
+	if count := testutil.ToFloat64(ApiKeysTotal.WithLabelValues("test-scope", "expired")); count != 2 {
 		t.Errorf("Expected expired keys to be 2, got %f", count)
 	}
 
 	// Update counts
-	SetApiKeysCount("test-authority", "active", 6)
+	SetApiKeysCount("test-scope", "active", 6)
 
-	if count := testutil.ToFloat64(ApiKeysTotal.WithLabelValues("test-authority", "active")); count != 6 {
+	if count := testutil.ToFloat64(ApiKeysTotal.WithLabelValues("test-scope", "active")); count != 6 {
 		t.Errorf("Expected active keys to be 6, got %f", count)
 	}
 }
