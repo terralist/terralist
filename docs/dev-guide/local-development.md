@@ -139,3 +139,15 @@ module "example" {
   version = "1.0.0"
 }
 ```
+
+## Quick development setup
+
+If you want a fully configured local environment for development and testing, you can use the `test:server` task:
+
+``` bash
+task test:server
+```
+
+This builds Terralist, starts RustFS (S3-compatible storage) and a mock OAuth2 server via Docker, and runs Terralist with all dependencies configured. Press any key to stop the server and clean up the containers.
+
+You can then run the test suite against it in a separate terminal. See [E2E Testing](./e2e-testing.md) for details.
