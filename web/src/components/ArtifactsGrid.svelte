@@ -140,53 +140,59 @@
 
 <main class="mt-36 lg:mt-20 mx-10">
   {#if !$result.isLoading && !$result.error}
-    <div class="flex justify-center items-center gap-6">
-      <div class="flex flex-row">
-        <input
-          id="modules-checkbox"
-          type="checkbox"
-          class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600"
-          value="module"
-          bind:checked={$filters.modulesEnabled} />
-        <label
-          for="modules-checkbox"
-          class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
-          Modules
-        </label>
-      </div>
-      <div class="flex flex-row">
-        <input
-          id="providers-checkbox"
-          type="checkbox"
-          class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600"
-          value="provider"
-          bind:checked={$filters.providersEnabled} />
-        <label
-          for="providers-checkbox"
-          class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
-          Providers
-        </label>
+    <div
+      class="w-full grid grid-cols-2 md:grid-cols-3 place-items-center gap-6">
+      <div class="col-span-2 hidden md:col-span-1 md:block"></div>
+      <div class="ml-8 md:ml-0 col-span-1 flex justify-center flex-row gap-2">
+        <div class="flex flex-row">
+          <input
+            id="modules-checkbox"
+            type="checkbox"
+            class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+            value="module"
+            bind:checked={$filters.modulesEnabled} />
+          <label
+            for="modules-checkbox"
+            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+            Modules
+          </label>
+        </div>
+        <div class="flex flex-row">
+          <input
+            id="providers-checkbox"
+            type="checkbox"
+            class="mt-0.5 w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+            value="provider"
+            bind:checked={$filters.providersEnabled} />
+          <label
+            for="providers-checkbox"
+            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+            Providers
+          </label>
+        </div>
       </div>
 
       <!-- View mode toggle -->
-      <div
-        class="flex flex-row gap-1 ml-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-        <button
-          class="p-1.5 rounded transition-colors {viewMode === 'grid'
-            ? 'bg-white dark:bg-gray-600 shadow-sm'
-            : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
-          on:click={() => toggleViewMode('grid')}
-          title="Grid view">
-          <Icon name="grid-view" width="1.25rem" height="1.25rem" />
-        </button>
-        <button
-          class="p-1.5 rounded transition-colors {viewMode === 'list'
-            ? 'bg-white dark:bg-gray-600 shadow-sm'
-            : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
-          on:click={() => toggleViewMode('list')}
-          title="List view">
-          <Icon name="list-view" width="1.25rem" height="1.25rem" />
-        </button>
+      <div class="col-span-1 w-full flex justify-end">
+        <div
+          class="flex flex-row gap-1 ml-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <button
+            class="p-1.5 rounded transition-colors {viewMode === 'grid'
+              ? 'bg-white dark:bg-gray-600 shadow-sm'
+              : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
+            on:click={() => toggleViewMode('grid')}
+            title="Grid view">
+            <Icon name="grid-view" width="1.25rem" height="1.25rem" />
+          </button>
+          <button
+            class="p-1.5 rounded transition-colors {viewMode === 'list'
+              ? 'bg-white dark:bg-gray-600 shadow-sm'
+              : 'hover:bg-gray-200 dark:hover:bg-gray-600'}"
+            on:click={() => toggleViewMode('list')}
+            title="List view">
+            <Icon name="list-view" width="1.25rem" height="1.25rem" />
+          </button>
+        </div>
       </div>
     </div>
   {/if}
