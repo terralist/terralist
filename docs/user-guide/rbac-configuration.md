@@ -68,7 +68,7 @@ Below is a table that defines the correct object syntax for each resource group.
 
 ## API Key Scopes
 
-Every standalone API key has a **scope** — a required label that determines who can manage the key via RBAC policies.
+Every API key has a **scope** — a required label that determines who can manage the key via RBAC policies.
 
 Unlike modules or providers, API keys have no natural organizational hierarchy. The API key's UUID cannot be used in policies because it is the authentication secret itself. The scope solves this by providing a human-readable, non-sensitive identifier that can be referenced in the server-side RBAC policy.
 
@@ -93,7 +93,7 @@ The scope is purely organizational — it does not affect what the API key can a
 
 ## API Key Policies
 
-Standalone API keys carry their own RBAC policies. When authenticating with a standalone API key, the key's inline policies are evaluated directly — the server-side policy file is not consulted.
+API keys carry their own RBAC policies. When authenticating with an API key, the key's inline policies are evaluated directly — the server-side policy file is not consulted.
 
 Each policy on an API key follows the same format as server-side policies:
 
