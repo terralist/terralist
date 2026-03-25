@@ -7,58 +7,90 @@
   "MD041": false
 } -->
 
-# Terralist
-
-[![Latest Release](https://img.shields.io/github/release/terralist/terralist.svg)](https://github.com/terralist/terralist/releases/latest)
-
-<div align="center" markdown="1">
-  <img alt="Terralist Logo" src="./static/terralist.png" />
-  <br/><br/>
-  <b>A <i>truly</i> private Terraform registry</b>
+<div align="center">
+  <img alt="Terralist Logo" src="./static/terralist.png" width="200" />
+  <h1>Terralist</h1>
+  <p>A private Terraform/OpenTofu registry for modules and providers</p>
 </div>
 
-## About
+---
 
-Terralist is a private Terraform registry for providers and modules that follows the published HashiCorp protocols. It provides:
-* A secure way to distribute your confidential modules and providers;
-* A management interface to visualize artifacts (including modules documentation);
+[![Latest Release](https://img.shields.io/github/release/terralist/terralist.svg)](https://github.com/terralist/terralist/releases/latest) [![CI](https://github.com/terralist/terralist/actions/workflows/test.yml/badge.svg)](https://github.com/terralist/terralist/actions/workflows/test.yml) [![Go Version](https://img.shields.io/github/go-mod/go-version/terralist/terralist)](https://go.dev/) [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0)
 
-## Highlights
+Terralist implements the [Terraform registry protocols](https://developer.hashicorp.com/terraform/internals/module-registry-protocol) and gives you a private, self-hosted registry with a web dashboard, RBAC, and support for multiple storage backends.
 
-* **Login Functionality** ([docs](https://www.terraform.io/docs/internals/login-protocol.html)): Require a token to access the data. It is integrated with Terraform, so you can authenticate to the registry directly through Terraform:
-  ```
-  terraform login registry.terralist.io
-  terraform logout registry.terralist.io
-  ```
-  It can also generate custom API keys for an authenticated user, which can be used in pipelines to upload and delete modules and in providers to fetch data.
+## Features
 
-* **Modules Registry**: ([docs](https://www.terraform.io/docs/internals/module-registry-protocol.html)) Stores modules data in a *private* storage (for example, an S3 bucket). When a download request is received, it calls the remote storage to generate a temporary public download URL and forwards it to the requester.
+- **Private module and provider registry**: upload, version, and distribute Terraform/OpenTofu modules and providers within your organization
+- **Web dashboard**: browse artifacts, view documentation, and manage authorities and API keys
+- **RBAC**: fine-grained access control with built-in roles (`admin`, `readonly`, `anonymous`) and custom policies via [Casbin](https://casbin.org/)
+- **Multiple OAuth providers**: authenticate via GitHub, GitLab, BitBucket, or any OIDC-compatible provider
+- **API keys with scoped policies**: create API keys for CI/CD with per-key RBAC policies and organizational scopes
+- **Storage backends**: store artifacts in AWS S3, Azure Blob, Google Cloud Storage, local filesystem, or proxy mode
+- **Prometheus metrics**: monitor uploads, downloads, API key usage, storage operations, and HTTP request latency
+- **Single binary**: no external dependencies, runs anywhere Go compiles to
 
-  Currently supported private storage:
-  * AWS S3: uses a private S3 bucket
-  * Azure Blob: uses a private Azure Storage Account
-  * GCS: uses a private Google Storage bucket
-  * Proxy: forwards the URL received at creation
+## Quick start
 
-* **Provider Registry**: ([docs](https://www.terraform.io/docs/internals/provider-registry-protocol.html)) Similar with modules registry.
-  Currently supported private storage:
-  * AWS S3: uses a private S3 bucket
-  * Azure Blob: uses a private Azure Storage Account
-  * GCS: uses a private Google Storage bucket
-  * Proxy: forwards the URL received at creation
+```bash
+# Download the latest release
+curl -sL "https://github.com/terralist/terralist/releases/latest/download/terralist_$(go env GOOS)_$(go env GOARCH).zip" -o terralist.zip
+unzip terralist.zip
 
-_Note_: For _Proxy_ storage mode, the URL management is up to you. If, for example, you are providing a git URL, then the same URL will be forwarded to the requester (Terraform).
+# Create a minimal config
+cat > config.yaml <<EOF
+oauth-provider: github
+gh-client-id: ${GITHUB_OAUTH_CLIENT_ID}
+gh-client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
+token-signing-secret: $(openssl rand -hex 16)
+cookie-secret: $(openssl rand -hex 16)
+EOF
 
-_Note_: Terralist uses the same library Terraform uses to make downloads ([go-getter](https://github.com/hashicorp/go-getter)), meaning that you can still use your [favorite protocols](https://github.com/hashicorp/go-getter#supported-protocols-and-detectors) while using Terralist. This is also an advantage for the _Proxy_ mode users, which can use the same source that they would normally put in Terraform.
+# Start the server
+./terralist server --config config.yaml
+```
 
-## Disclaimer
+Then open [http://localhost:5758](http://localhost:5758) in your browser.
 
-This project is not meant to replace the public Terraform Registry. Its purpose is to mimic the public registry in a private environment.
+See the [getting started guide](https://www.terralist.io/getting-started/) for detailed setup instructions including HTTPS configuration for Terraform CLI integration.
+
+## Usage
+
+```hcl
+# Use a module from your private registry
+module "vpc" {
+  source  = "registry.example.com/my-org/vpc/aws"
+  version = "1.0.0"
+}
+
+# Use a provider from your private registry
+terraform {
+  required_providers {
+    custom = {
+      source  = "registry.example.com/my-org/custom"
+      version = "2.0.0"
+    }
+  }
+}
+```
 
 ## Documentation
 
-Check the official documentation on [www.terralist.io](https://www.terralist.io/).
+Full documentation is available at [www.terralist.io](https://www.terralist.io/), including:
 
-## Contributions
+- [Installation](https://www.terralist.io/installation/)
+- [Configuration](https://www.terralist.io/configuration/)
+- [RBAC Configuration](https://www.terralist.io/user-guide/rbac-configuration/)
+- [API Reference](https://www.terralist.io/dev-guide/api-reference/)
+- [Local Development](https://www.terralist.io/dev-guide/local-development/)
 
-All contributions are welcome. If you want to contribute, open an issue or fork the repository and open a PR.
+## Contributing
+
+Contributions are welcome. All input is appreciated, whether it's a bug report, feature request, or pull request.
+
+- **Issues**: [github.com/terralist/terralist/issues](https://github.com/terralist/terralist/issues)
+- **Discussions**: [github.com/terralist/terralist/discussions](https://github.com/terralist/terralist/discussions)
+
+## License
+
+Terralist is licensed under the [Mozilla Public License 2.0](./LICENSE).

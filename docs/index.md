@@ -1,30 +1,35 @@
 # Terralist
 
-Terralist is a private Terraform registry for providers and modules that follows the published HashiCorp protocols.
+Terralist is a private Terraform/OpenTofu registry for modules and providers. It implements the [Terraform registry protocols](https://developer.hashicorp.com/terraform/internals/module-registry-protocol) and gives you full control over how your infrastructure code is distributed.
 
 ## Features
 
-### Fully private
+### Private by default
 
-Terralist's only way to operate is private<sup>*</sup>. It requires authentication for any module/provider operation, including fetching them.
-It is integrated with the terraform-cli and allows its users to authenticate with a simple `terraform login` command, via an Oauth provider.
-You can also generate API keys for programmatic access.
+Terralist requires authentication for all module and provider operations, including downloads. Users authenticate via `terraform login` through any supported OAuth provider (GitHub, GitLab, BitBucket, OIDC), or through API keys for programmatic access.
 
-<div style="font-size: 12px;"><sup>*</sup>If you plan to deploy Terralist in an isolated environment, there is also the option of allowing anonymous (unauthenticated) downloads.</div>
+Anonymous (unauthenticated) downloads can be optionally enabled for isolated environments.
 
-### Securely distributing your data
+### Role-based access control
 
-Terralist can host your modules code and providers binaries either locally or remotely in a private storage environment (e.g. a cloud bucket).
-If you opt for a remote storage environment, every time Terralist is asked for a download request, it will ask the cloud environment to generate a temporarily presigned URL, then forward that particular URL to the requester.
+Access to resources is governed by RBAC policies built on [Casbin](https://casbin.org/). Built-in roles (`admin`, `readonly`, `anonymous`) cover common scenarios, and custom policies allow fine-grained control over who can read, create, or delete specific modules and providers.
+
+API keys carry their own inline RBAC policies, so each CI/CD pipeline or integration can have precisely scoped access.
+
+### Secure artifact storage
+
+Modules and providers are stored in private storage backends. When a download is requested, Terralist generates a temporary presigned URL and forwards it to the requester. Supported backends include AWS S3, Azure Blob, Google Cloud Storage, and local filesystem.
+
+A proxy mode is also available, where Terralist forwards the original source URL directly. This lets you use `version` constraints while storing modules in a git mono-repository.
 
 ### Artifacts documentation
 
-Terralist analyses the artifacts you are pushing into it and automatically generates documentation for them. You can also bring your own documentation if you prefer handling it on your own. The documentation is then versioned and displayed in the web UI.
+Terralist analyses uploaded artifacts and generates versioned documentation, including submodule documentation for modules. The documentation is rendered in the web dashboard with syntax highlighting, Mermaid diagram support, and emoji rendering.
 
-### Proxy mode
+### Web dashboard
 
-Terralist can also operate in proxy mode, where Terralist will simply forward any URL that it receives from the creators. This means you can take advantage of the Terraform `version` attribute while storing your modules in a git mono-repository.
+A built-in web interface lets you browse modules and providers, view documentation, manage authorities and signing keys, and create API keys with scoped RBAC policies.
 
-### Web Dashboard
+### Observability
 
-Terralist exposes an SPA dashboard to the web, that you can use to control your modules, providers and authorities.
+Terralist exposes Prometheus metrics for artifact operations, API key usage, storage backend performance, and HTTP request latency.
