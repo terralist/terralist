@@ -9,6 +9,7 @@ import (
 	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
+	"terralist/pkg/metrics"
 	"terralist/pkg/rbac"
 
 	"github.com/google/uuid"
@@ -89,6 +90,8 @@ func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, e
 		return "", err
 	}
 
+	s.updateMetrics()
+
 	return key.ID.String(), nil
 }
 
@@ -112,7 +115,13 @@ func (s *DefaultStandaloneApiKeyService) Delete(key string) error {
 		return fmt.Errorf("%w: %v", ErrCannotParseID, err)
 	}
 
-	return s.Repository.Delete(id)
+	if err := s.Repository.Delete(id); err != nil {
+		return err
+	}
+
+	s.updateMetrics()
+
+	return nil
 }
 
 func (s *DefaultStandaloneApiKeyService) List() ([]apikey.ApiKeyDTO, error) {
@@ -124,6 +133,35 @@ func (s *DefaultStandaloneApiKeyService) List() ([]apikey.ApiKeyDTO, error) {
 	return lo.Map(keys, func(k apikey.ApiKey, _ int) apikey.ApiKeyDTO {
 		return k.ToDTO()
 	}), nil
+}
+
+func (s *DefaultStandaloneApiKeyService) updateMetrics() {
+	keys, err := s.Repository.List()
+	if err != nil {
+		return
+	}
+
+	now := time.Now()
+	active := make(map[string]float64)
+	expired := make(map[string]float64)
+
+	for _, k := range keys {
+		if k.Expiration == nil || k.Expiration.After(now) {
+			active[k.Scope]++
+		} else {
+			expired[k.Scope]++
+		}
+	}
+
+	// Reset to avoid stale scope labels from deleted keys.
+	metrics.ApiKeysTotal.Reset()
+
+	for scope, count := range active {
+		metrics.SetApiKeysCount(scope, "active", count)
+	}
+	for scope, count := range expired {
+		metrics.SetApiKeysCount(scope, "expired", count)
+	}
 }
 
 func validatePolicies(policies []apikey.Policy) error {

@@ -50,13 +50,13 @@ var (
 		[]string{"authority", "operation"},
 	)
 
-	// ApiKeysTotal tracks the number of API keys by authority and status.
+	// ApiKeysTotal tracks the number of API keys by scope and status.
 	ApiKeysTotal = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "terralist_api_keys_total",
-			Help: "Current number of API keys by authority and status",
+			Help: "Current number of API keys by scope and status",
 		},
-		[]string{"authority", "status"},
+		[]string{"scope", "status"},
 	)
 )
 
@@ -82,7 +82,7 @@ func RecordRequest(authority, operation string) {
 	RequestsByAuthorityTotal.WithLabelValues(authority, operation).Inc()
 }
 
-// SetApiKeysCount sets the number of API keys for an authority with a specific status.
-func SetApiKeysCount(authority, status string, count float64) {
-	ApiKeysTotal.WithLabelValues(authority, status).Set(count)
+// SetApiKeysCount sets the number of API keys for a scope with a specific status.
+func SetApiKeysCount(scope, status string, count float64) {
+	ApiKeysTotal.WithLabelValues(scope, status).Set(count)
 }

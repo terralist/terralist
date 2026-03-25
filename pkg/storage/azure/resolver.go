@@ -4,6 +4,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"terralist/pkg/storage"
@@ -31,6 +32,11 @@ type Resolver struct {
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	// Create a new block blob URL using the container URL and the specified key
 	key := fmt.Sprintf("%s/%s", in.KeyPrefix, in.FileName)
+
+	// Uploads should not depend on callers leaving the reader at offset 0.
+	if _, err := in.Reader.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("could not upload archive, file can't be rewinded: %w", err)
+	}
 
 	ctx := context.Background()
 

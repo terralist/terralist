@@ -710,7 +710,7 @@ curl -L -X DELETE \
 GET /v1/api/api-keys/
 ```
 
-List all standalone API keys visible to the authenticated user. Results are filtered based on the caller's RBAC policies — only keys for which the user has `get` permission on `api-keys` are returned.
+List all API keys visible to the authenticated user. Results are filtered based on the caller's RBAC policies — only keys for which the user has `get` permission on `api-keys` are returned.
 
 ### Example Request
 
@@ -762,7 +762,7 @@ curl -L \
 POST /v1/api/api-keys/
 ```
 
-Create a standalone API key with RBAC policies. Requires `create` permission on `api-keys` for the specified scope.
+Create a API key with RBAC policies. Requires `create` permission on `api-keys` for the specified scope.
 
 The `scope` field is required and determines who can manage the key via RBAC policies (see [API Key Scopes](/user-guide/rbac-configuration/#api-key-scopes)).
 
@@ -835,7 +835,7 @@ curl -L -X POST \
 DELETE /v1/api/api-keys/:id
 ```
 
-Delete a standalone API key. Requires `delete` permission on `api-keys`.
+Delete a API key. Requires `delete` permission on `api-keys`.
 
 ### Example Request
 
