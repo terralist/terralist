@@ -11,6 +11,18 @@ There are multiple options to expose Terralist over HTTPS:
 
 It's up to you which method you want to choose. Let's break them down.
 
+## Quick development setup
+
+If you want a fully configured local environment for development and testing, you can use the `test:server` task:
+
+``` bash
+task test:server
+```
+
+This builds Terralist, starts RustFS (S3-compatible storage) and a mock OAuth2 server via Docker, and runs Terralist with all dependencies configured. Press any key to stop the server and clean up the containers.
+
+You can then run the test suite against it in a separate terminal. See [E2E Testing](./e2e-testing.md) for details.
+
 ## Self-Signed Certificate
 
 For this method you need a self-signed certificate. There are plenty of resources over the internet that can teach you how to do it, for example, you can check [this blog post](https://devopscube.com/create-self-signed-certificates-openssl/).

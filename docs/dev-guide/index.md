@@ -4,3 +4,4 @@ The Terralist Developer Guide provides documentation for developers and contribu
 
 - [API Reference](./api-reference.md)
 - [Local Development](./local-development.md)
+- [E2E Testing](./e2e-testing.md)
