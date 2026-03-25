@@ -281,5 +281,5 @@ tasks:
       - 'echo "mode: set" > coverage/merged.txt'
       - tail -n +2 coverage/unit.txt >> coverage/merged.txt
       - tail -n +2 coverage/e2e.txt >> coverage/merged.txt
-      - grep -vE 'terralist\/(e2e|mocks)|\/mocks.go:' coverage/merged.txt > coverage/merged_filtered.txt
+      - grep -vE 'terralist\/(e2e|mocks)|\/mocks.go:|node_modules' coverage/merged.txt > coverage/merged_filtered.txt
       - go tool cover -func=coverage/merged_filtered.txt
