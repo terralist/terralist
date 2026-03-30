@@ -141,10 +141,11 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 			return "", fmt.Errorf("no fetcher configured to fetch submodule documentation")
 		}
 
-		archive, err := s.Fetcher.Fetch(version, v.Location, nil)
+		archive, cleanup, err := s.Fetcher.Fetch(version, v.Location, nil)
 		if err != nil {
 			return "", fmt.Errorf("could not fetch module archive for submodule docs: %w", err)
 		}
+		defer cleanup()
 		defer archive.Close()
 
 		archiveFile, ok := archive.(*file.ArchiveFile)
