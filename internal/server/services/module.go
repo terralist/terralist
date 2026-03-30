@@ -315,10 +315,11 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 	}
 
 	// Download module files
-	archive, err := s.Fetcher.Fetch(d.Version, url, header)
+	archive, cleanup, err := s.Fetcher.Fetch(d.Version, url, header)
 	if err != nil {
 		return err
 	}
+	defer cleanup()
 	defer archive.Close()
 
 	var mdDocs = ""

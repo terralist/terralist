@@ -184,6 +184,89 @@ func TestCanPerform_AuthorityIsolation(t *testing.T) {
 	})
 }
 
+func TestCanPerform_InlinePolicies(t *testing.T) {
+	Convey("Subject: CanPerform with standalone API key (inline policies)", t, func() {
+		mockAuthorityService := services.NewMockAuthorityService(t)
+
+		enforcer, err := rbac.NewEnforcer("", "readonly")
+		So(err, ShouldBeNil)
+
+		authorization := &Authorization{
+			Enforcer:         enforcer,
+			AuthorityService: mockAuthorityService,
+		}
+
+		Convey("Given a standalone API key user with module read access", func() {
+			user := auth.User{
+				Name:  "apikey:some-uuid",
+				Email: "creator@example.com",
+				InlinePolicies: []auth.Policy{
+					{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
+				},
+			}
+
+			Convey("When accessing modules in the allowed authority", func() {
+				mockAuthorityService.On("GetByName", "my-authority").
+					Return(&authority.Authority{Name: "my-authority", Public: false}, nil)
+
+				result := authorization.CanPerform(user, rbac.ResourceModules, rbac.ActionGet, "my-authority/my-module/aws")
+
+				Convey("Then access should be allowed", func() {
+					So(result, ShouldBeTrue)
+				})
+			})
+
+			Convey("When accessing modules in a different authority", func() {
+				mockAuthorityService.On("GetByName", "other-authority").
+					Return(&authority.Authority{Name: "other-authority", Public: false}, nil)
+
+				result := authorization.CanPerform(user, rbac.ResourceModules, rbac.ActionGet, "other-authority/my-module/aws")
+
+				Convey("Then access should be denied by inline policies", func() {
+					So(result, ShouldBeFalse)
+				})
+			})
+
+			Convey("When trying to create a module", func() {
+				result := authorization.CanPerform(user, rbac.ResourceModules, rbac.ActionCreate, "my-authority/my-module/aws")
+
+				Convey("Then access should be denied (only get is allowed)", func() {
+					So(result, ShouldBeFalse)
+				})
+			})
+
+			Convey("When accessing api-keys resource", func() {
+				result := authorization.CanPerform(user, rbac.ResourceApiKeys, rbac.ActionGet, "*")
+
+				Convey("Then access should be denied (not in inline policies)", func() {
+					So(result, ShouldBeFalse)
+				})
+			})
+		})
+
+		Convey("Given a standalone API key user accessing a public authority", func() {
+			user := auth.User{
+				Name:  "apikey:some-uuid",
+				Email: "creator@example.com",
+				InlinePolicies: []auth.Policy{
+					{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
+				},
+			}
+
+			Convey("When accessing a public authority not in their policies", func() {
+				mockAuthorityService.On("GetByName", "public-authority").
+					Return(&authority.Authority{Name: "public-authority", Public: true}, nil)
+
+				result := authorization.CanPerform(user, rbac.ResourceModules, rbac.ActionGet, "public-authority/some-module/aws")
+
+				Convey("Then access should be allowed (public authority bypass)", func() {
+					So(result, ShouldBeTrue)
+				})
+			})
+		})
+	})
+}
+
 func TestCanPerform_EdgeCases(t *testing.T) {
 	Convey("Subject: Edge cases for CanPerform authority isolation", t, func() {
 		mockAuthorityService := services.NewMockAuthorityService(t)

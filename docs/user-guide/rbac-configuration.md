@@ -5,19 +5,21 @@ The RBAC feature enables restrictions of access to Terralist resources. Terralis
 There are two main components where RBAC configuration can be defined:
 
 - The server-side (global) RBAC configuration;
-- The API Key RBAC configuration; (Not yet implemented)
+- The API Key RBAC configuration;
 
 ## Basic Built-in Roles
 
-Terralist has three pre-defined roles. Not all of them support expansion, but you are free to define new roles as you please (see below).
+Terralist has three pre-defined roles. All roles can be extended or overridden through the server-side policy configuration.
 
 - `role:anonymous`: has access to no resources (unless specified otherwise in the server-side configuration);
-- `role:readonly`<sup>*</sup>: read-only access to `modules`, `providers`, and `authorities`. Access to `settings` is policy-driven;
+- `role:readonly`<sup>*</sup>: read-only access to `modules`, `providers`, and `authorities` (but not API keys or settings). Access to `settings` is policy-driven;
 - `role:admin`<sup>*</sup>: unrestricted access to all resources;
 
 <sup>*</sup> This role cannot be extended.
 
 The `role:anonymous` is a special role that is assigned to unauthenticated users. This role can be customized from the server-side configuration and through those modifications users are able to expose (publicly) resources from the registry. By default, this role has no grant attached.
+
+The `role:readonly` and `role:admin` roles have baked-in default policies that are always loaded. User-provided policies are evaluated on top of these defaults.
 
 ## Default Policy for Authenticated Users
 
@@ -50,12 +52,12 @@ Below is a table that defines claims meaning for each OAuth provider.
 Syntax: `p, <role/username/useremail/group>, <resource>, <action>, <object>, <effect>`
 
 - `<role/username/useremail/group>`: The entity to whom the policy will be assigned
-- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `settings`. Supports glob matching (e.g. )
+- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `api-keys`, `settings`. Supports glob matching.
 - `<action>`<sup>*</sup>: The operation that is being performed on the resource. Can be one of: `get`, `create`, `update`, `delete`. Supports glob matching.
 - `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
 
-<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all 3 resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
+<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
 
 Below is a table that defines the correct object syntax for each resource group.
 
@@ -64,35 +66,50 @@ Below is a table that defines the correct object syntax for each resource group.
 | `authorities`  | `<authority-name>`                               |
 | `modules`      | `<authority-name>/<module-name>/<provider-name>` |
 | `providers`    | `<authority-name>/<provider-name>`               |
+| `api-keys`     | `<scope>`                                        |
 | `settings`     | `page`                                           |
 
- For example, an object c
+## API Key Scopes
 
-## API Key Authority Isolation
+Every API key has a **scope** — a required label that determines who can manage the key via RBAC policies.
 
-When using API keys for authentication, Terralist enforces strict authority isolation:
+Unlike modules or providers, API keys have no natural organizational hierarchy. The API key's UUID cannot be used in policies because it is the authentication secret itself. The scope solves this by providing a human-readable, non-sensitive identifier that can be referenced in the server-side RBAC policy.
 
-- **API keys are bound to their issuing authority**: An API key can only access modules and providers belonging to the authority that issued the key.
-- **Cross-authority access is denied**: API keys from one authority cannot access resources from other authorities.
-- **Case-insensitive matching**: Authority names are compared case-insensitively.
+When evaluating RBAC permissions on the `api-keys` resource, the scope is used as the policy object. This means you can write policies such as:
 
-This is a security boundary that prevents API key privilege escalation in multi-tenant environments.
+```
+p, team-a-manager@example.com, api-keys, *, team-a, allow
+p, team-b-manager@example.com, api-keys, *, team-b, allow
+```
 
-**Example:**
+In this example, Team A's manager can create, view, and delete API keys scoped to `team-a`, but cannot touch keys scoped to `team-b`, and vice versa.
 
-- API key issued by authority `my-org` can access `my-org/my-module/aws`
-- API key issued by authority `my-org` **cannot** access `other-org/their-module/aws`
+Scopes support glob matching, which enables hierarchical delegation. For example, a lead who oversees multiple sub-teams can be granted access to all their keys with a single policy:
 
-Note: This isolation applies to `modules` and `providers`; `authorities` visibility is governed by RBAC policy.
+```
+p, lead@example.com, api-keys, *, team-a*, allow
+```
 
-## API Keys and `authorities` Resource Visibility
+This matches `team-a`, `team-a-frontend`, `team-a-backend`, etc.
 
-`authorities` visibility for API-key users is policy-driven through RBAC.
+The scope is purely organizational -- it does not affect what the API key can access. A key scoped to `team-a` can still have policies that grant access to resources across multiple authorities. The scope only controls who can manage the key itself.
 
-- The built-in API-key authority isolation guard applies to `modules` and `providers`.
-- Access to `authorities` is evaluated by RBAC policies (subject mappings + `p` rules), not by an additional hard-coded namespace isolation check.
+## API Key Policies
 
-### Recommended Pattern
+API keys carry their own RBAC policies. When authenticating with an API key, the key's inline policies are evaluated directly -- the server-side policy file is not consulted.
+
+Each policy on an API key follows the same format as server-side policies:
+
+- `<resource>`: The resource type (`modules`, `providers`, `authorities`, `api-keys`, `settings`, or `*`)
+- `<action>`: The operation (`get`, `create`, `update`, `delete`, or `*`)
+- `<object>`: The object identifier (supports glob matching, same format as the table above)
+- `<effect>`: `allow` or `deny`
+
+API keys can be created and managed from the Settings page in the web UI, or via the `/v1/api/api-keys` API endpoints. The web UI provides a form that constructs valid policies with context-sensitive object fields based on the selected resource type.
+
+!!! note "The built-in `role:readonly` does not grant access to the `api-keys` resource. To allow a readonly user to view or manage API keys, add an explicit policy such as `p, <user>, api-keys, *, *, allow`. The `role:admin` role has full access to all resources, including API keys."
+
+## Authorities Access Policies
 
 Use explicit deny/allow policies for `authorities` to avoid relying on defaults.
 

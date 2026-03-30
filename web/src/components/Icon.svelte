@@ -225,6 +225,18 @@
       svg: `<path d="M1.44 0v7.575l6.561 3.79V3.787zm21.12 4.227l-6.561 3.791v7.574l6.56-3.787zM8.72 4.23v7.575l6.561 3.787V8.018zm0 8.405v7.575L15.28 24v-7.578z"/>`
     },
 
+    // View toggles
+    {
+      box: 24,
+      name: 'grid-view',
+      svg: `<path fill="none" d="M0 0h24v24H0z"/><path d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8zM5 5v4h4V5H5zm0 10v4h4v-4H5zm10-10v4h4V5h-4zm0 10v4h4v-4h-4z"/>`
+    },
+    {
+      box: 24,
+      name: 'list-view',
+      svg: `<path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/>`
+    },
+
     // Loaders
     {
       box: 38,

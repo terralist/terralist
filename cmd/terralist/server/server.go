@@ -175,7 +175,7 @@ func (s *Command) run() error {
 		}
 	}
 
-	userConfig := server.UserConfig{ //nolint:forcetypeassert
+	userConfig := server.UserConfig{ //nolint:
 		LogLevel:                flags[LogLevelFlag].(*cli.StringFlag).Value,
 		Port:                    flags[PortFlag].(*cli.IntFlag).Value,
 		URL:                     flags[URLFlag].(*cli.StringFlag).Value,
@@ -191,6 +191,7 @@ func (s *Command) run() error {
 		SamlDisplayName:         flags[SamlDisplayNameFlag].(*cli.StringFlag).Value,
 		RbacPolicyPath:          flags[RbacPolicyPathFlag].(*cli.StringFlag).Value,
 		RbacDefaultRole:         flags[RbacDefaultRoleFlag].(*cli.StringFlag).Value,
+		MasterApiKey:            flags[MasterApiKeyFlag].(*cli.StringFlag).Value,
 		AuthTokenExpiration:     flags[AuthTokenExpirationFlag].(*cli.StringFlag).Value,
 	}
 

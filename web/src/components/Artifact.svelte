@@ -14,7 +14,6 @@
   import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
-  import MarkdownCode from './MarkdownCode.svelte';
   import { emojify } from 'node-emoji';
 
   import {
@@ -241,11 +240,7 @@
             class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
             <h3 class="text-md font-bold mb-2">{selectedSubmodule}</h3>
             <div class="markdown-body bg-slate-50">
-              <SvelteMarkdown
-                source={submoduleDocumentation}
-                renderers={{
-                  code: MarkdownCode
-                }} />
+              <SvelteMarkdown source={submoduleDocumentation} />
             </div>
           </div>
         {:else if selectedSubmodule}
@@ -271,11 +266,7 @@
         <div class="m-6 p-4 flex flex-col gap-4">
           <h2 class="text-lg font-bold">Readme</h2>
           <div class="markdown-body bg-slate-50">
-            <SvelteMarkdown
-              source={documentation}
-              renderers={{
-                code: MarkdownCode
-              }} />
+            <SvelteMarkdown source={documentation} />
           </div>
         </div>
       {/if}

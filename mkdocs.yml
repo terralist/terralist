@@ -48,6 +48,7 @@ nav:
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md
     - Local Development: dev-guide/local-development.md
+    - E2E Testing: dev-guide/e2e-testing.md
 
 copyright: Made with ❤️ by Terralist contributors.
 

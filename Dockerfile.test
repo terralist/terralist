@@ -1,12 +1,13 @@
 FROM public.ecr.aws/docker/library/debian:13
 
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 
 RUN apt-get update && \
     apt-get install -yq --no-install-recommends \
       build-essential \
       ca-certificates \
+      libnss3-tools \
       curl \
       git \
       gnupg \
@@ -15,7 +16,7 @@ RUN apt-get update && \
       default-mysql-client
 
 # Install GoLang
-ARG GOLANG_VERSION=1.25.2
+ARG GOLANG_VERSION=1.25.8
 RUN curl -sL https://go.dev/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz -o golang.tar.gz \
   && tar -C /usr/local -xzf golang.tar.gz \
   && /usr/local/go/bin/go version
@@ -30,18 +31,39 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
 # Install yarn
 RUN npm install --global yarn
 
+## == TODO == Remove minio-client and venom as they are no longer needed
+
+# Install minio-client
+RUN curl -sL https://dl.min.io/client/mc/release/${TARGETOS}-${TARGETARCH}/mc -o mc \
+  && mv mc /usr/local/bin \
+  && chmod +x /usr/local/bin/mc
+
 # Install venom
 ARG VENOM_VERSION=1.2.0
 RUN curl -sL https://github.com/ovh/venom/releases/download/v${VENOM_VERSION}/venom.${TARGETOS}-${TARGETARCH} -o venom \
   && mv venom /usr/local/bin \
   && chmod +x /usr/local/bin/venom
 
+## == END TODO ==
+
 # Install task
 RUN npm install --global @go-task/cli
 
-# Install minio-client
-RUN curl -sL https://dl.min.io/client/mc/release/${TARGETOS}-${TARGETARCH}/mc -o mc \
-  && mv mc /usr/local/bin \
-  && chmod +x /usr/local/bin/mc
+# Install mkcert
+ARG MKCERT_VERSION=1.4.4
+RUN curl -sL "https://dl.filippo.io/mkcert/v${MKCERT_VERSION}?for=${TARGETOS}/${TARGETARCH}" -o mkcert \
+  && mv mkcert /usr/local/bin \
+  && chmod +x /usr/local/bin/mkcert
+
+# Install Terraform
+ARG TERRAFORM_VERSION=1.12.1
+RUN curl -sL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_${TARGETOS}_${TARGETARCH}.zip -o terraform.zip \
+  && apt-get install -yq --no-install-recommends unzip \
+  && unzip terraform.zip -d /usr/local/bin \
+  && rm terraform.zip \
+  && terraform version
+
+# Install Playwright dependencies
+RUN npx playwright install --with-deps chromium
 
 ENTRYPOINT [ "/bin/bash" ]

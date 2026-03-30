@@ -207,6 +207,7 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 						),
 					),
 				)
+				return
 			}
 
 			sess.Set("user", &auth.User{
@@ -229,6 +230,7 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 						),
 					),
 				)
+				return
 			}
 
 			// Redirect back

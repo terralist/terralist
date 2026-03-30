@@ -139,6 +139,18 @@ The name of the RBAC role that should be assigned by default to all users.
 | cli | `--rbac-default-role` |
 | env | `TERRALIST_RBAC_DEFAULT_ROLE` |
 
+### `master-api-key`
+
+A pre-shared API key with full administrative access for bootstrapping environments without requiring web UI login. When set, this key can be used via the `X-API-Key` header or the `Authorization: Bearer x-api-key:<key>` header to authenticate as an admin with unrestricted access to all resources and actions.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--master-api-key` |
+| env | `TERRALIST_MASTER_API_KEY` |
+
 ### `auth-token-expiration`
 
 The duration for which auth tokens remain valid.
