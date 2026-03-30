@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/debian:13
+FROM public.ecr.aws/docker/library/debian:trixie-20230725
 
 ARG TARGETOS
 ARG TARGETARCH
