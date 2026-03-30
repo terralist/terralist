@@ -38,7 +38,7 @@
     "semver-compare": "^1.0.0",
     "svelte": "^4.2.19",
     "svelte-check": "^4.1.4",
-    "svelte-eslint-parser": "^1.2.0",
+    "svelte-eslint-parser": "^1.6.0",
     "svelte-markdown": "^0.4.1",
     "svelte-spa-router": "^4.0.1",
     "svelte-system-info": "1.0.1",
