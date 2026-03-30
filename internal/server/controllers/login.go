@@ -134,16 +134,16 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			return
 		}
 
-		codeComponents, err := oauth.Payload(r.Code).ToCodeComponents(c.EncryptSalt)
+		codeComponents, err := c.LoginService.ResolveCode(r.Code)
 		if err != nil {
 			ctx.Redirect(
 				http.StatusFound,
-				c.redirectWithError(r.RedirectURI, "", oauth.WrapError(err, oauth.InvalidRequest)),
+				c.redirectWithError(r.RedirectURI, "", err),
 			)
 			return
 		}
 
-		resp, erro := c.LoginService.ValidateToken(&codeComponents, r.CodeVerifier)
+		resp, erro := c.LoginService.ValidateToken(codeComponents, r.CodeVerifier)
 		if erro != nil {
 			ctx.Redirect(http.StatusFound, c.redirectWithError(r.RedirectURI, "", erro))
 			return
@@ -211,8 +211,11 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			sess.Set("user", &auth.User{
-				Name:  codeComponents.UserName,
-				Email: codeComponents.UserEmail,
+				Name:        codeComponents.UserName,
+				Email:       codeComponents.UserEmail,
+				Groups:      codeComponents.UserGroups,
+				Authority:   codeComponents.UserAuthority,
+				AuthorityID: codeComponents.UserAuthorityID,
 			})
 
 			if err := c.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {

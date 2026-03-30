@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -25,6 +26,21 @@ type User struct {
 	// InlinePolicies are per-user policies evaluated directly, bypassing the global policy file.
 	// Used by standalone API keys whose permissions are self-contained.
 	InlinePolicies []Policy `json:"inline_policies,omitempty"`
+}
+
+func (u User) MarshalJSON() ([]byte, error) {
+	type userAlias User
+	return json.Marshal(userAlias(u))
+}
+
+func (u *User) UnmarshalJSON(data []byte) error {
+	type userAlias User
+	var aux userAlias
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	*u = User(aux)
+	return nil
 }
 
 func (u User) String() string {

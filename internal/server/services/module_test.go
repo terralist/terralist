@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"terralist/internal/server/models/authority"
@@ -153,6 +154,50 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 				})
 			})
 		})
+	})
+}
+
+func TestGetSubmoduleDocumentation_ProxyResolverWithArchiveRoot(t *testing.T) {
+	Convey("Subject: Get submodule docs in proxy mode with archive root folder", t, func() {
+		mockModuleRepository := repositories.NewMockModuleRepository(t)
+		mockFetcher := file.NewMockFetcher(t)
+
+		moduleService := &DefaultModuleService{
+			ModuleRepository: mockModuleRepository,
+			Fetcher:          mockFetcher,
+			Resolver:         nil,
+		}
+
+		namespace := "terraform-aws-modules"
+		name := "eks"
+		provider := "aws"
+		version := "21.15.1"
+		location := "https://example.invalid/module.zip"
+		submodulePath := "modules/karpenter"
+
+		mockModuleRepository.
+			On("FindVersion", namespace, name, provider, version).
+			Return(&module.Version{
+				Version:  version,
+				Location: location,
+				Submodules: []module.Submodule{
+					{Path: submodulePath},
+				},
+			}, nil)
+
+		archive, err := file.Archive("module.zip", []file.File{
+			file.NewInMemoryFile("terraform-aws-eks-21.15.1/README.md", []byte("# Root README")),
+			file.NewInMemoryFile("terraform-aws-eks-21.15.1/modules/karpenter/README.md", []byte("# Karpenter\n\nKarpenter module docs")),
+		})
+		So(err, ShouldBeNil)
+
+		mockFetcher.
+			On("Fetch", version, location, mock.Anything).
+			Return(archive, func() {}, nil)
+
+		doc, err := moduleService.GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath)
+		So(err, ShouldBeNil)
+		So(strings.Contains(doc, "Karpenter"), ShouldBeTrue)
 	})
 }
 

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"terralist/internal/server/models/authority"
@@ -320,6 +322,54 @@ func TestCanPerform_EdgeCases(t *testing.T) {
 				Convey("Then it should fall through to enforcer (readonly allows get)", func() {
 					So(result, ShouldBeTrue)
 				})
+			})
+		})
+	})
+}
+
+func TestCanPerform_ApiKeyAuthorityRbacPolicy(t *testing.T) {
+	Convey("Subject: API key authority is validated with RBAC policy", t, func() {
+		mockAuthorityService := services.NewMockAuthorityService(t)
+
+		policy := `
+p, owner@example.com, modules, create, my-authority/*/*, allow
+`
+
+		policyPath := filepath.Join(t.TempDir(), "policy.csv")
+		err := os.WriteFile(policyPath, []byte(policy), 0600)
+		So(err, ShouldBeNil)
+
+		enforcer, err := rbac.NewEnforcer(policyPath, "readonly")
+		So(err, ShouldBeNil)
+
+		authorization := &Authorization{
+			Enforcer:         enforcer,
+			AuthorityService: mockAuthorityService,
+		}
+
+		apiKeyUser := auth.User{
+			Email:       "owner@example.com",
+			Authority:   "my-authority",
+			AuthorityID: "authority-id-1",
+		}
+
+		Convey("When creating module under the key's authority", func() {
+			object := "my-authority/network/aws"
+
+			result := authorization.CanPerform(apiKeyUser, rbac.ResourceModules, rbac.ActionCreate, object)
+
+			Convey("Then access should be allowed by policy", func() {
+				So(result, ShouldBeTrue)
+			})
+		})
+
+		Convey("When creating module under a different authority", func() {
+			object := "other-authority/network/aws"
+
+			result := authorization.CanPerform(apiKeyUser, rbac.ResourceModules, rbac.ActionCreate, object)
+
+			Convey("Then access should be denied by authority isolation", func() {
+				So(result, ShouldBeFalse)
 			})
 		})
 	})

@@ -12,8 +12,10 @@ There are two main components where RBAC configuration can be defined:
 Terralist has three pre-defined roles. All roles can be extended or overridden through the server-side policy configuration.
 
 - `role:anonymous`: has access to no resources (unless specified otherwise in the server-side configuration);
-- `role:readonly`: read-only access to modules, providers, and authorities (but not API keys);
-- `role:admin`: unrestricted access to all resources;
+- `role:readonly`<sup>*</sup>: read-only access to `modules`, `providers`, and `authorities` (but not API keys or settings). Access to `settings` is policy-driven;
+- `role:admin`<sup>*</sup>: unrestricted access to all resources;
+
+<sup>*</sup> This role cannot be extended.
 
 The `role:anonymous` is a special role that is assigned to unauthenticated users. This role can be customized from the server-side configuration and through those modifications users are able to expose (publicly) resources from the registry. By default, this role has no grant attached.
 
@@ -50,12 +52,12 @@ Below is a table that defines claims meaning for each OAuth provider.
 Syntax: `p, <role/username/useremail/group>, <resource>, <action>, <object>, <effect>`
 
 - `<role/username/useremail/group>`: The entity to whom the policy will be assigned
-- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `api-keys`. Supports glob matching.
+- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `api-keys`, `settings`. Supports glob matching.
 - `<action>`<sup>*</sup>: The operation that is being performed on the resource. Can be one of: `get`, `create`, `update`, `delete`. Supports glob matching.
 - `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
 
-<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all 4 resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
+<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
 
 Below is a table that defines the correct object syntax for each resource group.
 
@@ -65,6 +67,7 @@ Below is a table that defines the correct object syntax for each resource group.
 | `modules`      | `<authority-name>/<module-name>/<provider-name>` |
 | `providers`    | `<authority-name>/<provider-name>`               |
 | `api-keys`     | `<scope>`                                        |
+| `settings`     | `page`                                           |
 
 ## API Key Scopes
 
@@ -89,15 +92,15 @@ p, lead@example.com, api-keys, *, team-a*, allow
 
 This matches `team-a`, `team-a-frontend`, `team-a-backend`, etc.
 
-The scope is purely organizational — it does not affect what the API key can access. A key scoped to `team-a` can still have policies that grant access to resources across multiple authorities. The scope only controls who can manage the key itself.
+The scope is purely organizational -- it does not affect what the API key can access. A key scoped to `team-a` can still have policies that grant access to resources across multiple authorities. The scope only controls who can manage the key itself.
 
 ## API Key Policies
 
-API keys carry their own RBAC policies. When authenticating with an API key, the key's inline policies are evaluated directly — the server-side policy file is not consulted.
+API keys carry their own RBAC policies. When authenticating with an API key, the key's inline policies are evaluated directly -- the server-side policy file is not consulted.
 
 Each policy on an API key follows the same format as server-side policies:
 
-- `<resource>`: The resource type (`modules`, `providers`, `authorities`, `api-keys`, or `*`)
+- `<resource>`: The resource type (`modules`, `providers`, `authorities`, `api-keys`, `settings`, or `*`)
 - `<action>`: The operation (`get`, `create`, `update`, `delete`, or `*`)
 - `<object>`: The object identifier (supports glob matching, same format as the table above)
 - `<effect>`: `allow` or `deny`
@@ -105,3 +108,49 @@ Each policy on an API key follows the same format as server-side policies:
 API keys can be created and managed from the Settings page in the web UI, or via the `/v1/api/api-keys` API endpoints. The web UI provides a form that constructs valid policies with context-sensitive object fields based on the selected resource type.
 
 !!! note "The built-in `role:readonly` does not grant access to the `api-keys` resource. To allow a readonly user to view or manage API keys, add an explicit policy such as `p, <user>, api-keys, *, *, allow`. The `role:admin` role has full access to all resources, including API keys."
+
+## Authorities Access Policies
+
+Use explicit deny/allow policies for `authorities` to avoid relying on defaults.
+
+Example:
+
+```csv
+# Deny broad authorities access by default for developer role
+p, role:developer, authorities, *, *, deny
+
+# Grant read-only access to a specific authority for authority-reader role
+p, role:authority-reader, authorities, get, example-authority, allow
+
+# Grant full authorities management to authority-admin role
+p, role:authority-admin, authorities, *, *, allow
+```
+
+Then map identity claims (user/group/email) to those roles:
+
+```csv
+g, SSOAWS_PLATFORM, role:authority-admin
+g, SSOAWS_ENGINEERING, role:authority-reader
+```
+
+## Settings Page Access With RBAC
+
+The Settings page capability endpoint checks RBAC permission:
+
+- `resource`: `settings`
+- `action`: `get`
+- `object`: `page`
+
+Settings page access and visibility are controlled only by RBAC policy.
+
+Migration note: if you previously used `--authorized-users`, convert that access list to RBAC `settings/get/page` policies and role mappings.
+
+Example policies:
+
+```csv
+# Explicitly deny settings page access for developer role
+p, role:developer, settings, get, page, deny
+
+# Allow settings page access for authority-admin role
+p, role:authority-admin, settings, get, page, allow
+```

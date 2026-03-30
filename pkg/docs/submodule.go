@@ -56,19 +56,21 @@ func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 		}
 
 		parts := strings.Split(normalizedPath, "/")
+		submoduleRootIndex := findSubmoduleRootIndex(parts)
 
 		// Check if this path is within a "modules" or "submodules" directory
-		if len(parts) < 2 {
+		if submoduleRootIndex == -1 {
 			return nil
 		}
 
-		if parts[0] != submodulesDir && parts[0] != submodulesAlt {
+		relativeParts := parts[submoduleRootIndex:]
+		if len(relativeParts) < 2 {
 			return nil
 		}
 
 		// If this is main.tf, mark the parent directory
 		if path.Base(p) == tfEntrypointFile {
-			dir := path.Dir(normalizedPath)
+			dir := strings.Join(relativeParts[:len(relativeParts)-1], "/")
 			if dirs[dir] == nil {
 				dirs[dir] = &dirInfo{depth: strings.Count(dir, "/")}
 			}
@@ -79,13 +81,14 @@ func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 		// For example, "modules/networking/vpc/main.tf" records:
 		// - modules/networking
 		// - modules/networking/vpc
-		for i := 2; i <= len(parts); i++ {
-			dirPath := strings.Join(parts[:i], "/")
-			// Only add if it's a directory (not the file itself)
-			if i < len(parts) {
-				if dirs[dirPath] == nil {
-					dirs[dirPath] = &dirInfo{depth: strings.Count(dirPath, "/")}
-				}
+		maxDirParts := len(relativeParts)
+		if !fi.IsDir() {
+			maxDirParts--
+		}
+		for i := 2; i <= maxDirParts; i++ {
+			dirPath := strings.Join(relativeParts[:i], "/")
+			if dirs[dirPath] == nil {
+				dirs[dirPath] = &dirInfo{depth: strings.Count(dirPath, "/")}
 			}
 		}
 
@@ -151,4 +154,13 @@ func FindSubmodules(moduleFS *file.FS) ([]SubmoduleInfo, error) {
 	}
 
 	return submodules, nil
+}
+
+func findSubmoduleRootIndex(parts []string) int {
+	for i, part := range parts {
+		if part == submodulesDir || part == submodulesAlt {
+			return i
+		}
+	}
+	return -1
 }

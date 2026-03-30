@@ -22,7 +22,7 @@ type DefaultInternalController struct {
 	AuthorizationEndpoint string
 	SessionDetailsRoute   string
 	ClearSessionRoute     string
-	AuthorizedUsers       string
+	SamlDisplayName       string
 }
 
 func (c *DefaultInternalController) Paths() []string {
@@ -36,10 +36,10 @@ func (c *DefaultInternalController) Subscribe(apis ...*gin.RouterGroup) {
 		"/runtime.json",
 		func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{
-				"host":             c.HostURL,
-				"domain":           c.CanonicalDomain,
-				"company":          c.CustomCompanyName,
-				"authorized_users": c.AuthorizedUsers,
+				"host":              c.HostURL,
+				"domain":            c.CanonicalDomain,
+				"company":           c.CustomCompanyName,
+				"saml_display_name": c.SamlDisplayName,
 				"auth": gin.H{
 					"providers":              c.OauthProviders,
 					"endpoint":               c.AuthorizationEndpoint,

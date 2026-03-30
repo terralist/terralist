@@ -73,11 +73,14 @@ func (r Request) ToPayload(salt string) (Payload, error) {
 }
 
 type CodeComponents struct {
-	Key                 string `json:"key"`
-	CodeChallenge       string `json:"code_challenge"`
-	CodeChallengeMethod string `json:"code_challenge_method"`
-	UserName            string `json:"user_name"`
-	UserEmail           string `json:"user_email"`
+	Key                 string   `json:"key"`
+	CodeChallenge       string   `json:"code_challenge"`
+	CodeChallengeMethod string   `json:"code_challenge_method"`
+	UserName            string   `json:"user_name"`
+	UserEmail           string   `json:"user_email"`
+	UserGroups          []string `json:"user_groups,omitempty"`
+	UserAuthority       string   `json:"user_authority,omitempty"`
+	UserAuthorityID     string   `json:"user_authority_id,omitempty"`
 }
 
 func (c CodeComponents) ToPayload(salt string) (Payload, error) {

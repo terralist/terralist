@@ -2,11 +2,11 @@ import type { RoutePrecondition } from 'svelte-spa-router';
 import { wrap } from 'svelte-spa-router/wrap';
 
 import config from '@/config';
-
 import Login from '@/pages/Login.svelte';
 import Loading from '@/pages/Loading.svelte';
 
 import { UserStore } from '@/lib/auth';
+import { canAccessSettings } from '@/lib/settingsAccess';
 
 type UserDataBase = {
   __isUserData: true;
@@ -46,17 +46,7 @@ const baseConditions: RoutePrecondition[] = [
 
 const isAuthorizedUser = () => {
   return async () => {
-    const user = UserStore.get();
-    if (user === null) {
-      return false;
-    }
-    const authorizedUsers =
-      config.runtime.TERRALIST_AUTHORIZED_USERS.split(',');
-    return (
-      authorizedUsers[0] === '' ||
-      authorizedUsers.includes(user.userName) ||
-      authorizedUsers.includes(user.userEmail)
-    );
+    return canAccessSettings();
   };
 };
 

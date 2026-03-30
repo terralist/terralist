@@ -16,6 +16,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type readSeekNopCloser struct {
+	io.ReadSeeker
+}
+
+func (readSeekNopCloser) Close() error { return nil }
+
 // File abstracts a type of file.
 type File interface {
 	io.Reader
@@ -305,6 +311,46 @@ func NewInMemoryFile(name string, content []byte) File {
 			modTime: time.Now(),
 		},
 		content: content,
+	}
+}
+
+// NewStreamingFile returns a streaming file backed by a ReadSeeker.
+func NewStreamingFile(name string, reader io.ReadSeeker, size int64) File {
+	return &StreamingFile{
+		name: name,
+		fileInfo: &BufferFileInfo{
+			name:    name,
+			size:    size,
+			mode:    0644,
+			modTime: time.Now(),
+		},
+		reader: readSeekNopCloser{
+			ReadSeeker: reader,
+		},
+	}
+}
+
+// RenameStreamingFile returns a streaming view over an existing file with a new name.
+func RenameStreamingFile(f File, name string) File {
+	meta := f.Metadata()
+	mode := fs.FileMode(0644)
+	modTime := time.Now()
+	size := int64(0)
+	if meta != nil {
+		mode = meta.Mode()
+		modTime = meta.ModTime()
+		size = meta.Size()
+	}
+
+	return &StreamingFile{
+		name: name,
+		fileInfo: &BufferFileInfo{
+			name:    name,
+			size:    size,
+			mode:    mode,
+			modTime: modTime,
+		},
+		reader: f,
 	}
 }
 

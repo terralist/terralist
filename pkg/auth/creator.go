@@ -5,6 +5,7 @@ const (
 	BITBUCKET
 	GITLAB
 	OIDC
+	SAML
 )
 
 type Backend = int
