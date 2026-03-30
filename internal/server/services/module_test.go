@@ -193,7 +193,7 @@ func TestGetSubmoduleDocumentation_ProxyResolverWithArchiveRoot(t *testing.T) {
 
 		mockFetcher.
 			On("Fetch", version, location, mock.Anything).
-			Return(archive, nil)
+			Return(archive, func() {}, nil)
 
 		doc, err := moduleService.GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath)
 		So(err, ShouldBeNil)
