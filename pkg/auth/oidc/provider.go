@@ -16,7 +16,6 @@ type Provider struct {
 	AuthorizeUrl string
 	TokenUrl     string
 	UserInfoUrl  string
-	Scope        string
 	RedirectUrl  string
 }
 
@@ -38,7 +37,7 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 		"state":         []string{state},
 		"response_type": []string{"code"},
 		"redirect_uri":  []string{p.RedirectUrl},
-		"scope":         []string{p.Scope},
+		"scope":         []string{strings.Join(requiredScopes, " ")},
 	}
 	return fmt.Sprintf(
 		"%s?%s",

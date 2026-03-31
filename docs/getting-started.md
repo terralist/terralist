@@ -36,6 +36,21 @@ cookie-secret: secret
 
 !!! warning "The command above will create a configuration file that is instructing Terralist to read the GitHub OAuth credentials from the `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` environment variables. If those variables are not set in your environment, Terralist will start, but it will be unusable (as you cannot login)."
 
+If you are using OpenID Connect, prefer discovery via `oi-host` instead of configuring the authorize, token, and userinfo endpoints manually:
+
+```yaml title="config.yaml"
+oauth-provider: oidc
+oi-client-id: ${OIDC_CLIENT_ID}
+oi-client-secret: ${OIDC_CLIENT_SECRET}
+oi-host: https://login.example.com/realms/platform
+token-signing-secret: secret
+cookie-secret: secret
+```
+
+!!! note "When `oi-host` is set, Terralist reads the OIDC discovery document from `/.well-known/openid-configuration`, derives the authorize/token/userinfo endpoints automatically, and verifies that the provider supports the required `openid` and `email` scopes."
+
+!!! note "The manual `oi-authorize-url`, `oi-token-url`, and `oi-userinfo-url` options still exist as a fallback for providers that do not expose OIDC discovery, but `oi-host` is the recommended format."
+
 Then, you can start the Terralist server:
 
 === "UNIX & UNIX-like"

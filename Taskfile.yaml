@@ -142,7 +142,7 @@ tasks:
     silent: true
     vars:
       BINARY_FILE_NAME: '{{printf "terralist%s" (ternary ".exe" "" (eq OS "windows"))}}'
-      TEST_RUN_ID: "{{randInt 10000000 99999999}}"
+      TEST_RUN_ID: '{{now | date "20060102150405"}}'
     env:
       TERRALIST_PORT: "5758"
       TERRALIST_LOG_LEVEL: "debug"

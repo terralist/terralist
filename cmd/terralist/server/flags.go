@@ -53,10 +53,10 @@ const (
 
 	OidcClientIDFlag     = "oi-client-id"
 	OidcClientSecretFlag = "oi-client-secret"
+	OidcHostFlag         = "oi-host"
 	OidcAuthorizeUrlFlag = "oi-authorize-url"
 	OidcTokenUrlFlag     = "oi-token-url"
 	OidcUserInfoUrlFlag  = "oi-userinfo-url"
-	OidcScopeFlag        = "oi-scope"
 
 	SamlDisplayNameFlag                  = "saml-display-name"
 	SamlIdPMetadataURLFlag               = "saml-idp-metadata-url"
@@ -259,18 +259,17 @@ var flags = map[string]cli.Flag{
 	OidcClientSecretFlag: &cli.StringFlag{
 		Description: "The OIDC Application client secret.",
 	},
+	OidcHostFlag: &cli.StringFlag{
+		Description: "The OIDC issuer URL used for discovery. Preferred over the manual OIDC endpoint flags.",
+	},
 	OidcAuthorizeUrlFlag: &cli.StringFlag{
-		Description: "The OIDC Provider authorization endpoint url.",
+		Description: "Deprecated manual OIDC authorization endpoint URL. Use oi-host instead.",
 	},
 	OidcTokenUrlFlag: &cli.StringFlag{
-		Description: "The OIDC Provider token endpoint url.",
+		Description: "Deprecated manual OIDC token endpoint URL. Use oi-host instead.",
 	},
 	OidcUserInfoUrlFlag: &cli.StringFlag{
-		Description: "The OIDC Provider userinfo endpoint url.",
-	},
-	OidcScopeFlag: &cli.StringFlag{
-		Description:  "The scopes requested during OIDC authorization.",
-		DefaultValue: "openid email",
+		Description: "Deprecated manual OIDC userinfo endpoint URL. Use oi-host instead.",
 	},
 	SamlDisplayNameFlag: &cli.StringFlag{
 		Description:  "The display name for SAML authentication in the UI.",
