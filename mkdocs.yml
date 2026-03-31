@@ -50,6 +50,11 @@ nav:
     - Local Development: dev-guide/local-development.md
     - E2E Testing: dev-guide/e2e-testing.md
 
+extra:
+  version:
+    provider: mike
+    default: latest
+
 copyright: Made with ❤️ by Terralist contributors.
 
 markdown_extensions:
