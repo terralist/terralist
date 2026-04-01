@@ -12,6 +12,37 @@ permissions:
   contents: write
 
 jobs:
+  publish-docs:
+    name: Publish Documentation
+    runs-on: ubuntu-24.04
+    if: (!contains(github.ref, '-pre.'))
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git Credentials
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install mkdocs-material mike
+
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages --depth=1
+
+      - name: Deploy versioned documentation
+        run: |
+          mike deploy ${GITHUB_REF#refs/tags/} latest --update-aliases --push
+          mike set-default latest --push
+
   goreleaser:
     name: GoReleaser
     runs-on: ubuntu-24.04

@@ -19,10 +19,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          sparse-checkout: |
-            docs
-            mkdocs.yml
 
       - name: Configure Git Credentials
         run: |
@@ -41,8 +37,11 @@ jobs:
           restore-keys: |
             ${{ runner.os}}-mkdocs-material-
 
-      - name: Install MkDocs Material
-        run: pip install mkdocs-material 
+      - name: Install dependencies
+        run: pip install mkdocs-material mike
 
-      - name: Deploy Documentation
-        run: mkdocs gh-deploy --force
+      - name: Fetch gh-pages branch
+        run: git fetch origin gh-pages --depth=1
+
+      - name: Deploy dev documentation
+        run: mike deploy dev --push
