@@ -2746,7 +2746,7 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-69-1"><a id="__codelineno-69-1" name="__codelineno-69-1" href="#__codelineno-69-1"></a>POST /v1/api/api-keys/
 </span></code></pre></div>
 <p>Create a API key with RBAC policies. Requires <code>create</code> permission on <code>api-keys</code> for the specified scope.</p>
-<p>The <code>scope</code> field is required and determines who can manage the key via RBAC policies (see <a href="/user-guide/rbac-configuration/#api-key-scopes">API Key Scopes</a>).</p>
+<p>The <code>scope</code> field is required and determines who can manage the key via RBAC policies (see <a href="../../user-guide/rbac-configuration/#api-key-scopes">API Key Scopes</a>).</p>
 <p>The <code>expire_in</code> field is optional and specifies the expiration in hours. If omitted or set to <code>0</code>, the key does not expire.</p>
 <h3 id="example-request_15">Example Request<a class="headerlink" href="#example-request_15" title="Permanent link">¶</a></h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-70-1"><a id="__codelineno-70-1" name="__codelineno-70-1" href="#__codelineno-70-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
