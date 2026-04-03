@@ -186,9 +186,7 @@ jobs:
       TERRALIST_OAUTH_PROVIDER: oidc
       TERRALIST_OI_CLIENT_ID: e2e-test-client
       TERRALIST_OI_CLIENT_SECRET: e2e-test-secret
-      TERRALIST_OI_AUTHORIZE_URL: "http://mock-oauth2:8080/default/authorize"
-      TERRALIST_OI_TOKEN_URL: "http://mock-oauth2:8080/default/token"
-      TERRALIST_OI_USERINFO_URL: "http://mock-oauth2:8080/default/userinfo"
+      TERRALIST_OI_HOST: "http://mock-oauth2:8080/default"
       TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
 
       TERRALIST_SESSION_STORE: "cookie"

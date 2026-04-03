@@ -47,29 +47,29 @@ token-signing-secret: secret
 cookie-secret: secret
 ```
 
-!!! note "When `oi-host` is set, Terralist reads the OIDC discovery document from `/.well-known/openid-configuration`, derives the authorize/token/userinfo endpoints automatically, and verifies that the provider supports the required `openid` and `email` scopes."
+!!! note "When `oi-host` is set, Terralist reads the OIDC discovery document from `/.well-known/openid-configuration` and derives the authorize/token/userinfo endpoints automatically. If discovery fails, or a required endpoint is missing from the discovery document, Terralist falls back to the corresponding manual OIDC endpoint flag when provided."
 
-!!! note "The manual `oi-authorize-url`, `oi-token-url`, and `oi-userinfo-url` options still exist as a fallback for providers that do not expose OIDC discovery, but `oi-host` is the recommended format."
+!!! note "The manual `oi-authorize-url`, `oi-token-url`, and `oi-userinfo-url` options still exist as fallback values for providers that do not expose OIDC discovery, or for cases where discovery does not return every endpoint Terralist needs. If discovery provides an endpoint, the discovered value takes precedence."
 
 Then, you can start the Terralist server:
 
 === "UNIX & UNIX-like"
 
-    ``` shell
-    ./terralist server --config config.yaml
-    ```
+``` shell
+./terralist server --config config.yaml
+```
 
 === "Windows"
 
-    ``` powershell
-    .\terralist.exe server --config config.yaml
-    ```
+``` powershell
+.\terralist.exe server --config config.yaml
+```
 
 === "Docker"
 
-    ``` shell
-    docker run --rm -it -p 5758:5758 -v ${PWD}:/app ghcr.io/terralist/terralist server --config /app/config.yaml
-    ```
+``` shell
+docker run --rm -it -p 5758:5758 -v ${PWD}:/app ghcr.io/terralist/terralist server --config /app/config.yaml
+```
 
 If the server correctly started, you should see the following log line:
 
@@ -93,15 +93,15 @@ You can authenticate in Terralist by using the `login` subcommand:
 
 === "Terraform"
 
-    ``` shell
-    terraform login localhost:5758
-    ```
+``` shell
+terraform login localhost:5758
+```
 
 === "OpenTofu"
 
-    ``` shell
-    tofu login localhost:5758
-    ```
+``` shell
+tofu login localhost:5758
+```
 
 ## Create an authority
 
@@ -111,17 +111,17 @@ To create a new authority, use the web dashboard. Access your Terralist instance
 
 === "Go to the settings page"
 
-    ![Access the settings page](./assets/create-authority-1.png)
+![Access the settings page](./assets/create-authority-1.png)
 
-    Open the settings page (step 1) and then press on the `New Authority` button (step 2).
+Open the settings page (step 1) and then press on the `New Authority` button (step 2).
 
 === "Fill the Authority form"
 
-    ![Create Authority Modal](./assets/create-authority-2.png)
+![Create Authority Modal](./assets/create-authority-2.png)
 
-    Fill in your authority details. Only the name is required (step 1). When you are done, press on the `Continue` button (step 2).
+Fill in your authority details. Only the name is required (step 1). When you are done, press on the `Continue` button (step 2).
 
-    !!! note "Terralist is case insensitive, so it doesn't matter if you choose to use upper-case letters here, but then you want to use lower-case letters in your TF files."
+!!! note "Terralist is case insensitive, so it doesn't matter if you choose to use upper-case letters here, but then you want to use lower-case letters in your TF files."
 
 !!! warning "Once you have your authority, if you're planning to use it to host custom providers, you should add a signing key. Providers are signed with a GPG key and Terraform/OpenTofu use this registry-provided signing key to validate the authenticity of the newly downloaded provider."
 

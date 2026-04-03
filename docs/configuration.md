@@ -347,7 +347,7 @@ The OpenID Connect client secret.
 
 ### `oi-host`
 
-The OpenID Connect issuer URL used for [OIDC discovery](https://auth0.com/docs/get-started/applications/configure-applications-with-oidc-discovery). Terralist fetches `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, and `supported_scopes` from `/.well-known/openid-configuration`, then validates that the required `openid` and `email` scopes are supported. Prefer this over the manual OIDC endpoint flags.
+The OpenID Connect issuer URL used for [OIDC discovery](https://auth0.com/docs/get-started/applications/configure-applications-with-oidc-discovery). Terralist fetches `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, and `supported_scopes` from `/.well-known/openid-configuration`. If discovery fails, or discovery does not provide one of the required endpoints, Terralist falls back to the corresponding manual OIDC endpoint flag when it is set. If the provider does not advertise scopes, or does not advertise all of Terralist's required scopes, Terralist logs a warning and continues. Prefer this over configuring all endpoints manually.
 
 Recommended OIDC configuration:
 
@@ -358,7 +358,7 @@ oi-client-secret: "${OIDC_CLIENT_SECRET}"
 oi-host: "https://login.example.com/realms/platform"
 ```
 
-Fallback manual configuration when discovery is unavailable:
+Manual fallback configuration:
 
 ```yaml
 oauth-provider: "oidc"
@@ -379,7 +379,7 @@ oi-userinfo-url: "https://login.example.com/realms/platform/protocol/openid-conn
 
 ### `oi-authorize-url`
 
-Deprecated manual override for the [OpenID Connect authorization endpoint](https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint). Use this only when OIDC discovery through `oi-host` is not available.
+Fallback manual value for the [OpenID Connect authorization endpoint](https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint). If discovery via `oi-host` provides this endpoint, the discovered value is used instead.
 
 | Name | Value |
 | --- | --- |
@@ -391,7 +391,7 @@ Deprecated manual override for the [OpenID Connect authorization endpoint](https
 
 ### `oi-token-url`
 
-Deprecated manual override for the [OpenID Connect token endpoint](https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint). Use this only when OIDC discovery through `oi-host` is not available.
+Fallback manual value for the [OpenID Connect token endpoint](https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint). If discovery via `oi-host` provides this endpoint, the discovered value is used instead.
 
 | Name | Value |
 | --- | --- |
@@ -403,7 +403,7 @@ Deprecated manual override for the [OpenID Connect token endpoint](https://openi
 
 ### `oi-userinfo-url`
 
-Deprecated manual override for the [OpenID Connect userinfo endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo). Use this only when OIDC discovery through `oi-host` is not available.
+Fallback manual value for the [OpenID Connect userinfo endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo). If discovery via `oi-host` provides this endpoint, the discovered value is used instead.
 
 | Name | Value |
 | --- | --- |

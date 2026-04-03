@@ -66,7 +66,158 @@ func TestConfigValidate_DiscoveryPopulatesEndpoints(t *testing.T) {
 	}
 }
 
-func TestConfigValidate_DiscoveryRequiresSupportedScopes(t *testing.T) {
+func TestConfigValidate_DiscoveryMissingEndpointUsesManualFallback(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"authorization_endpoint": "https://issuer.example.com/auth",
+			"token_endpoint": "https://issuer.example.com/token",
+			"supported_scopes": ["openid", "email", "profile"]
+		}`))
+	}))
+	defer server.Close()
+
+	originalClient := discoveryHTTPClient
+	discoveryHTTPClient = server.Client()
+	defer func() {
+		discoveryHTTPClient = originalClient
+	}()
+
+	cfg := &Config{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		Host:         server.URL,
+		UserInfoUrl:  "https://manual.example.com/userinfo",
+	}
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate returned error: %v", err)
+	}
+
+	if cfg.AuthorizeUrl != "https://issuer.example.com/auth" {
+		t.Fatalf("AuthorizeUrl = %q, want %q", cfg.AuthorizeUrl, "https://issuer.example.com/auth")
+	}
+
+	if cfg.TokenUrl != "https://issuer.example.com/token" {
+		t.Fatalf("TokenUrl = %q, want %q", cfg.TokenUrl, "https://issuer.example.com/token")
+	}
+
+	if cfg.UserInfoUrl != "https://manual.example.com/userinfo" {
+		t.Fatalf("UserInfoUrl = %q, want %q", cfg.UserInfoUrl, "https://manual.example.com/userinfo")
+	}
+}
+
+func TestConfigValidate_DiscoveryFailureUsesManualFallback(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "boom", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	originalClient := discoveryHTTPClient
+	discoveryHTTPClient = server.Client()
+	defer func() {
+		discoveryHTTPClient = originalClient
+	}()
+
+	cfg := &Config{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		Host:         server.URL,
+		AuthorizeUrl: "https://manual.example.com/auth",
+		TokenUrl:     "https://manual.example.com/token",
+		UserInfoUrl:  "https://manual.example.com/userinfo",
+	}
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate returned error: %v", err)
+	}
+
+	if cfg.AuthorizeUrl != "https://manual.example.com/auth" {
+		t.Fatalf("AuthorizeUrl = %q, want %q", cfg.AuthorizeUrl, "https://manual.example.com/auth")
+	}
+
+	if cfg.TokenUrl != "https://manual.example.com/token" {
+		t.Fatalf("TokenUrl = %q, want %q", cfg.TokenUrl, "https://manual.example.com/token")
+	}
+
+	if cfg.UserInfoUrl != "https://manual.example.com/userinfo" {
+		t.Fatalf("UserInfoUrl = %q, want %q", cfg.UserInfoUrl, "https://manual.example.com/userinfo")
+	}
+}
+
+func TestConfigValidate_DiscoveryTakesPrecedenceOverManualEndpoints(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"authorization_endpoint": "https://issuer.example.com/auth",
+			"token_endpoint": "https://issuer.example.com/token",
+			"userinfo_endpoint": "https://issuer.example.com/userinfo",
+			"supported_scopes": ["openid", "email", "profile"]
+		}`))
+	}))
+	defer server.Close()
+
+	originalClient := discoveryHTTPClient
+	discoveryHTTPClient = server.Client()
+	defer func() {
+		discoveryHTTPClient = originalClient
+	}()
+
+	cfg := &Config{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		Host:         server.URL,
+		AuthorizeUrl: "https://manual.example.com/auth",
+		TokenUrl:     "https://manual.example.com/token",
+		UserInfoUrl:  "https://manual.example.com/userinfo",
+	}
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate returned error: %v", err)
+	}
+
+	if cfg.AuthorizeUrl != "https://issuer.example.com/auth" {
+		t.Fatalf("AuthorizeUrl = %q, want %q", cfg.AuthorizeUrl, "https://issuer.example.com/auth")
+	}
+
+	if cfg.TokenUrl != "https://issuer.example.com/token" {
+		t.Fatalf("TokenUrl = %q, want %q", cfg.TokenUrl, "https://issuer.example.com/token")
+	}
+
+	if cfg.UserInfoUrl != "https://issuer.example.com/userinfo" {
+		t.Fatalf("UserInfoUrl = %q, want %q", cfg.UserInfoUrl, "https://issuer.example.com/userinfo")
+	}
+}
+
+func TestConfigValidate_DiscoveryAllowsMissingSupportedScopes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"authorization_endpoint": "https://issuer.example.com/auth",
+			"token_endpoint": "https://issuer.example.com/token",
+			"userinfo_endpoint": "https://issuer.example.com/userinfo"
+		}`))
+	}))
+	defer server.Close()
+
+	originalClient := discoveryHTTPClient
+	discoveryHTTPClient = server.Client()
+	defer func() {
+		discoveryHTTPClient = originalClient
+	}()
+
+	cfg := &Config{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		Host:         server.URL,
+	}
+
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate returned error: %v", err)
+	}
+}
+
+func TestConfigValidate_DiscoveryAllowsIncompleteSupportedScopes(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
@@ -90,8 +241,8 @@ func TestConfigValidate_DiscoveryRequiresSupportedScopes(t *testing.T) {
 		Host:         server.URL,
 	}
 
-	if err := cfg.Validate(); err == nil {
-		t.Fatal("Validate should have failed when required OIDC scopes are not supported")
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate returned error: %v", err)
 	}
 }
 

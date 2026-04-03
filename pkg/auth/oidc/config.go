@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+
+	"github.com/rs/zerolog/log"
 )
 
 const wellKnownConfigurationPath = "/.well-known/openid-configuration"
@@ -47,13 +49,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Host != "" {
-		if c.AuthorizeUrl != "" || c.TokenUrl != "" || c.UserInfoUrl != "" {
-			return fmt.Errorf("configure either oi-host or the manual OIDC endpoint URLs")
-		}
-
-		if err := c.discoverConfiguration(); err != nil {
-			return err
-		}
+		c.applyDiscoveredConfiguration()
 	}
 
 	if c.AuthorizeUrl == "" {
@@ -71,61 +67,90 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-func (c *Config) discoverConfiguration() error {
+func (c *Config) applyDiscoveredConfiguration() {
+	document, err := c.discoverConfiguration()
+	if err != nil {
+		log.Warn().
+			Str("oidc_host", c.Host).
+			Err(err).
+			Msg("OIDC discovery failed; falling back to manual endpoint configuration")
+		return
+	}
+
+	c.applyDiscoveredEndpoint("authorization_endpoint", document.AuthorizationEndpoint, &c.AuthorizeUrl)
+	c.applyDiscoveredEndpoint("token_endpoint", document.TokenEndpoint, &c.TokenUrl)
+	c.applyDiscoveredEndpoint("userinfo_endpoint", document.UserInfoEndpoint, &c.UserInfoUrl)
+
+	c.warnOnScopeAdvertisement(document)
+}
+
+func (c *Config) discoverConfiguration() (*discoveryDocument, error) {
 	discoveryURL, err := buildDiscoveryURL(c.Host)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, discoveryURL, nil)
 	if err != nil {
-		return fmt.Errorf("create OIDC discovery request: %w", err)
+		return nil, fmt.Errorf("create OIDC discovery request: %w", err)
 	}
 
 	req.Header.Set("Accept", "application/json")
 
 	res, err := discoveryHTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("oidc discovery request failed: %w", err)
+		return nil, fmt.Errorf("oidc discovery request failed: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("oidc discovery request responded with status %d", res.StatusCode)
+		return nil, fmt.Errorf("oidc discovery request responded with status %d", res.StatusCode)
 	}
 
 	var document discoveryDocument
 	if err := json.NewDecoder(res.Body).Decode(&document); err != nil {
-		return fmt.Errorf("decode OIDC discovery response: %w", err)
+		return nil, fmt.Errorf("decode OIDC discovery response: %w", err)
 	}
 
-	if document.AuthorizationEndpoint == "" {
-		return fmt.Errorf("oidc discovery response missing authorization_endpoint")
+	return &document, nil
+}
+
+func (c *Config) applyDiscoveredEndpoint(endpointName string, discoveredValue string, manualValue *string) {
+	if discoveredValue == "" {
+		return
 	}
 
-	if document.TokenEndpoint == "" {
-		return fmt.Errorf("oidc discovery response missing token_endpoint")
+	if *manualValue != "" {
+		log.Warn().
+			Str("oidc_host", c.Host).
+			Str("endpoint", endpointName).
+			Msg("OIDC discovery provided an endpoint; ignoring the manual override")
 	}
 
-	if document.UserInfoEndpoint == "" {
-		return fmt.Errorf("oidc discovery response missing userinfo_endpoint")
-	}
+	*manualValue = discoveredValue
+}
 
+func (c *Config) warnOnScopeAdvertisement(document *discoveryDocument) {
 	if len(document.SupportedScopes) == 0 {
-		return fmt.Errorf("oidc discovery response missing supported_scopes")
+		log.Warn().
+			Str("oidc_host", c.Host).
+			Msg("OIDC provider does not advertise supported scopes; authentication may not work as expected")
+		return
 	}
 
+	missingScopes := []string{}
 	for _, requiredScope := range requiredScopes {
 		if !slices.Contains(document.SupportedScopes, requiredScope) {
-			return fmt.Errorf("oidc provider does not support required scope %q", requiredScope)
+			missingScopes = append(missingScopes, requiredScope)
 		}
 	}
 
-	c.AuthorizeUrl = document.AuthorizationEndpoint
-	c.TokenUrl = document.TokenEndpoint
-	c.UserInfoUrl = document.UserInfoEndpoint
-
-	return nil
+	if len(missingScopes) > 0 {
+		log.Warn().
+			Str("oidc_host", c.Host).
+			Strs("missing_scopes", missingScopes).
+			Msg("OIDC provider does not advertise all required scopes; authentication may not work as expected")
+	}
 }
 
 func buildDiscoveryURL(host string) (string, error) {

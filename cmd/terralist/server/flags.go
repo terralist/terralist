@@ -263,13 +263,13 @@ var flags = map[string]cli.Flag{
 		Description: "The OIDC issuer URL used for discovery. Preferred over the manual OIDC endpoint flags.",
 	},
 	OidcAuthorizeUrlFlag: &cli.StringFlag{
-		Description: "Deprecated manual OIDC authorization endpoint URL. Use oi-host instead.",
+		Description: "Fallback manual OIDC authorization endpoint URL used when discovery does not provide it.",
 	},
 	OidcTokenUrlFlag: &cli.StringFlag{
-		Description: "Deprecated manual OIDC token endpoint URL. Use oi-host instead.",
+		Description: "Fallback manual OIDC token endpoint URL used when discovery does not provide it.",
 	},
 	OidcUserInfoUrlFlag: &cli.StringFlag{
-		Description: "Deprecated manual OIDC userinfo endpoint URL. Use oi-host instead.",
+		Description: "Fallback manual OIDC userinfo endpoint URL used when discovery does not provide it.",
 	},
 	SamlDisplayNameFlag: &cli.StringFlag{
 		Description:  "The display name for SAML authentication in the UI.",
