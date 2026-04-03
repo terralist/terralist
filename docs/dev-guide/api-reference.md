@@ -764,7 +764,7 @@ POST /v1/api/api-keys/
 
 Create a API key with RBAC policies. Requires `create` permission on `api-keys` for the specified scope.
 
-The `scope` field is required and determines who can manage the key via RBAC policies (see [API Key Scopes](/user-guide/rbac-configuration/#api-key-scopes)).
+The `scope` field is required and determines who can manage the key via RBAC policies (see [API Key Scopes](../user-guide/rbac-configuration.md#api-key-scopes)).
 
 The `expire_in` field is optional and specifies the expiration in hours. If omitted or set to `0`, the key does not expire.
 
