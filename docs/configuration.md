@@ -321,7 +321,6 @@ The GitLab groups names the user must be member of. It must be comma separated w
 | cli | `--gl-groups` |
 | env | `TERRALIST_GL_GROUPS` |
 
-
 ### `oi-client-id`
 
 The OpenID Connect client ID.
@@ -346,9 +345,41 @@ The OpenID Connect client secret.
 | cli | `--oi-client-secret` |
 | env | `TERRALIST_OI_CLIENT_SECRET` |
 
+### `oi-host`
+
+The OpenID Connect issuer URL used for [OIDC discovery](https://auth0.com/docs/get-started/applications/configure-applications-with-oidc-discovery). Terralist fetches `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, and `supported_scopes` from `/.well-known/openid-configuration`. If discovery fails, or discovery does not provide one of the required endpoints, Terralist falls back to the corresponding manual OIDC endpoint flag when it is set. If the provider does not advertise scopes, or does not advertise all of Terralist's required scopes, Terralist logs a warning and continues. Prefer this over configuring all endpoints manually.
+
+Recommended OIDC configuration:
+
+```yaml
+oauth-provider: "oidc"
+oi-client-id: "${OIDC_CLIENT_ID}"
+oi-client-secret: "${OIDC_CLIENT_SECRET}"
+oi-host: "https://login.example.com/realms/platform"
+```
+
+Manual fallback configuration:
+
+```yaml
+oauth-provider: "oidc"
+oi-client-id: "${OIDC_CLIENT_ID}"
+oi-client-secret: "${OIDC_CLIENT_SECRET}"
+oi-authorize-url: "https://login.example.com/realms/platform/protocol/openid-connect/auth"
+oi-token-url: "https://login.example.com/realms/platform/protocol/openid-connect/token"
+oi-userinfo-url: "https://login.example.com/realms/platform/protocol/openid-connect/userinfo"
+```
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--oi-host` |
+| env | `TERRALIST_OI_HOST` |
+
 ### `oi-authorize-url`
 
-The url to [OpenID Connect authorization endpoint](https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint). E.g. `https://login.mycompany.com/auth/realms/developer/protocol/openid-connect/auth`
+Fallback manual value for the [OpenID Connect authorization endpoint](https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint). If discovery via `oi-host` provides this endpoint, the discovered value is used instead.
 
 | Name | Value |
 | --- | --- |
@@ -360,7 +391,7 @@ The url to [OpenID Connect authorization endpoint](https://openid.net/specs/open
 
 ### `oi-token-url`
 
-The url to [OpenID Connect token endpoint](https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint). E.g. `https://login.mycompany.com/auth/realms/developer/protocol/openid-connect/token`
+Fallback manual value for the [OpenID Connect token endpoint](https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint). If discovery via `oi-host` provides this endpoint, the discovered value is used instead.
 
 | Name | Value |
 | --- | --- |
@@ -372,7 +403,7 @@ The url to [OpenID Connect token endpoint](https://openid.net/specs/openid-conne
 
 ### `oi-userinfo-url`
 
-The url to [OpenID Connect userinfo endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo). E.g. `https://login.mycompany.com/auth/realms/developer/protocol/openid-connect/userinfo`
+Fallback manual value for the [OpenID Connect userinfo endpoint](https://openid.net/specs/openid-connect-core-1_0.html#UserInfo). If discovery via `oi-host` provides this endpoint, the discovered value is used instead.
 
 | Name | Value |
 | --- | --- |
@@ -381,18 +412,6 @@ The url to [OpenID Connect userinfo endpoint](https://openid.net/specs/openid-co
 | default | `n/a` |
 | cli | `--oi-userinfo-url` |
 | env | `TERRALIST_OI_USERINFO_URL` |
-
-### `oi-scope`
-
-The OpenID Connect scope requested during authorization to ensure to get claims `sub` and `email`.
-
-| Name | Value |
-| --- | --- |
-| type | string |
-| required | no |
-| default | `openid email` |
-| cli | `--oi-scope` |
-| env | `TERRALIST_OI_SCOPE` |
 
 ### `saml-display-name`
 

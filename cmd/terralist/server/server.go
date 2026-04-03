@@ -274,10 +274,10 @@ func (s *Command) run() error {
 		provider, err = authFactory.NewProvider(auth.OIDC, &oidc.Config{ //nolint:forcetypeassert
 			ClientID:                   flags[OidcClientIDFlag].(*cli.StringFlag).Value,
 			ClientSecret:               flags[OidcClientSecretFlag].(*cli.StringFlag).Value,
+			Host:                       flags[OidcHostFlag].(*cli.StringFlag).Value,
 			AuthorizeUrl:               flags[OidcAuthorizeUrlFlag].(*cli.StringFlag).Value,
 			TokenUrl:                   flags[OidcTokenUrlFlag].(*cli.StringFlag).Value,
 			UserInfoUrl:                flags[OidcUserInfoUrlFlag].(*cli.StringFlag).Value,
-			Scope:                      flags[OidcScopeFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
 		})
 	case "saml":
