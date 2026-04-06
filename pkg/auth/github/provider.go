@@ -240,32 +240,62 @@ func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
 }
 
 func (p *Provider) GetUserTeams(t tokenResponse) ([]Team, error) {
-	teamsEndpoint := fmt.Sprintf("%s/orgs/%s/teams", p.apiEndpoint, p.Organization)
+	var allTeams []Team
 
-	req, err := http.NewRequest(http.MethodGet, teamsEndpoint, nil)
-	if err != nil {
-		return nil, err
+	url := fmt.Sprintf("%s/orgs/%s/teams?per_page=100", p.apiEndpoint, p.Organization)
+
+	for url != "" {
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Accept", "application/vnd.github.v3+json")
+		req.Header.Set("Authorization", fmt.Sprintf("token %s", t.AccessToken))
+
+		res, err := httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if res.StatusCode != 200 {
+			res.Body.Close()
+			return nil, fmt.Errorf("unable to list teams of %s", p.Organization)
+		}
+
+		var teams []Team
+		if err := json.NewDecoder(res.Body).Decode(&teams); err != nil {
+			res.Body.Close()
+			return nil, fmt.Errorf("unable to parse teams of %s", p.Organization)
+		}
+		res.Body.Close()
+
+		allTeams = append(allTeams, teams...)
+		url = nextPageURL(res.Header.Get("Link"))
 	}
 
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	req.Header.Set("Authorization", fmt.Sprintf("token %s", t.AccessToken))
+	return allTeams, nil
+}
 
-	res, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		return nil, fmt.Errorf("unable to list teams of %s", p.Organization)
+// nextPageURL parses the GitHub Link header and returns the URL for the
+// next page, or empty string if there is no next page.
+func nextPageURL(linkHeader string) string {
+	if linkHeader == "" {
+		return ""
 	}
 
-	var userTeams []Team
-	if err := json.NewDecoder(res.Body).Decode(&userTeams); err != nil {
-		return nil, fmt.Errorf("unable to parse teams of %s", p.Organization)
+	for _, part := range strings.Split(linkHeader, ",") {
+		part = strings.TrimSpace(part)
+		if strings.Contains(part, `rel="next"`) {
+			start := strings.Index(part, "<")
+			end := strings.Index(part, ">")
+			if start >= 0 && end > start {
+				return part[start+1 : end]
+			}
+		}
 	}
 
-	return userTeams, nil
+	return ""
 }
 
 func (p *Provider) PerformCheckUserMemberOfTeams(t tokenResponse, userTeams []Team) error {
