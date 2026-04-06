@@ -15,8 +15,9 @@ func (t *Creator) New(config auth.Configurator) (auth.Provider, error) {
 	}
 
 	return &Provider{
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-		Workspace:    cfg.Workspace,
+		ClientID:             cfg.ClientID,
+		ClientSecret:         cfg.ClientSecret,
+		Workspace:            cfg.Workspace,
+		PreferredEmailDomain: cfg.PreferredEmailDomain,
 	}, nil
 }

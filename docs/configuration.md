@@ -177,6 +177,18 @@ The OAuth 2.0 provider.
 | cli | `--oauth-provider` |
 | env | `TERRALIST_OAUTH_PROVIDER` |
 
+### `oauth-preferred-email-domain`
+
+Preferred email domain for authentication. When set, providers that return multiple email addresses (GitHub, BitBucket) will select an email matching this domain instead of the primary email. Falls back to the primary email if no match is found.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--oauth-preferred-email-domain` |
+| env | `TERRALIST_OAUTH_PREFERRED_EMAIL_DOMAIN` |
+
 ### `gh-client-id`
 
 The GitHub OAuth Application client ID.

@@ -7,9 +7,10 @@ import (
 // Config implements auth.Configurator interface and
 // handles the configuration parameters for bitbucket authentication.
 type Config struct {
-	ClientID     string
-	ClientSecret string
-	Workspace    string
+	ClientID             string
+	ClientSecret         string
+	Workspace            string
+	PreferredEmailDomain string
 }
 
 func (c *Config) SetDefaults() {}
