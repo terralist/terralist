@@ -1994,7 +1994,7 @@ readdirp@~3.6.0:
 
 regexparam@2.0.2:
   version "2.0.2"
-  resolved "https://registry.npmjs.org/regexparam/-/regexparam-2.0.2.tgz"
+  resolved "https://registry.yarnpkg.com/regexparam/-/regexparam-2.0.2.tgz#a0f6aa057c67b1c9c09508c45823c0755b1f6e58"
   integrity sha512-A1PeDEYMrkLrfyOwv2jwihXbo9qxdGD3atBYQA9JJgreAx8/7rC6IUkWOw2NQlOxLp2wL0ifQbh1HuidDfYA6w==
 
 require-relative@^0.8.7:
@@ -2174,10 +2174,10 @@ svelte-markdown@^0.4.1:
     "@types/marked" "^5.0.1"
     marked "^5.1.2"
 
-svelte-spa-router@^4.0.1:
-  version "4.0.1"
-  resolved "https://registry.npmjs.org/svelte-spa-router/-/svelte-spa-router-4.0.1.tgz"
-  integrity sha512-2JkmUQ2f9jRluijL58LtdQBIpynSbem2eBGp4zXdi7aDY1znbR6yjw0KsonD0aq2QLwf4Yx4tBJQjxIjgjXHKg==
+svelte-spa-router@^4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/svelte-spa-router/-/svelte-spa-router-4.0.2.tgz#25d53120f27f48bd5ab3066ef42ea891ae0c235d"
+  integrity sha512-T1WYYk+ymwCr5m5U+n91k4dRAT6cw5HgmoPaI/TpKgAmuugymFoSBlfzkcKIK83QH4H8gUMn4tdQ0B9enFBM6g==
   dependencies:
     regexparam "2.0.2"
 
