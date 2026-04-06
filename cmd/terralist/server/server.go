@@ -25,6 +25,7 @@ import (
 	"terralist/pkg/metrics"
 	"terralist/pkg/session"
 	"terralist/pkg/session/cookie"
+	dbSession "terralist/pkg/session/database"
 	sessionFactory "terralist/pkg/session/factory"
 	"terralist/pkg/storage"
 	"terralist/pkg/storage/azure"
@@ -489,6 +490,11 @@ func (s *Command) run() error {
 	case "cookie":
 		store, err = sessionFactory.NewStore(session.COOKIE, &cookie.Config{ //nolint:forcetypeassert
 			Secret: flags[CookieSecretFlag].(*cli.StringFlag).Value,
+		})
+	case "database":
+		store, err = sessionFactory.NewStore(session.DATABASE, &dbSession.Config{ //nolint:forcetypeassert
+			Database: db,
+			Secret:   flags[CookieSecretFlag].(*cli.StringFlag).Value,
 		})
 	}
 	if err != nil {

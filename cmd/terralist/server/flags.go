@@ -460,7 +460,7 @@ var flags = map[string]cli.Flag{
 	},
 	SessionStoreFlag: &cli.StringFlag{
 		Description:  "The session store backend.",
-		Choices:      []string{"cookie"},
+		Choices:      []string{"cookie", "database"},
 		DefaultValue: "cookie",
 	},
 

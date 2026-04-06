@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"terralist/pkg/session"
 	"terralist/pkg/session/cookie"
+	"terralist/pkg/session/database"
 )
 
 func NewStore(backend session.Backend, config session.Configurator) (session.Store, error) {
@@ -18,6 +19,8 @@ func NewStore(backend session.Backend, config session.Configurator) (session.Sto
 	switch backend {
 	case session.COOKIE:
 		creator = &cookie.Creator{}
+	case session.DATABASE:
+		creator = &database.Creator{}
 	default:
 		return nil, fmt.Errorf("unrecognized backend type")
 	}
