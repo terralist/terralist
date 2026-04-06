@@ -196,6 +196,11 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			// Save user session and redirect back
 			sess, err := c.Store.Get(ctx.Request)
 			if err != nil {
+				log.Error().
+					Err(err).
+					Str("user", codeComponents.UserEmail).
+					Msg("Failed to fetch session")
+
 				ctx.Redirect(
 					http.StatusFound,
 					c.redirectWithError(
@@ -219,6 +224,12 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			})
 
 			if err := c.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {
+				log.Error().
+					Err(err).
+					Str("user", codeComponents.UserEmail).
+					Int("groups_count", len(codeComponents.UserGroups)).
+					Msg("Failed to save session")
+
 				ctx.Redirect(
 					http.StatusFound,
 					c.redirectWithError(
