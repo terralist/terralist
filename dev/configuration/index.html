@@ -560,6 +560,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#oauth-preferred-email-domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oauth-preferred-email-domain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#gh-client-id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1910,6 +1921,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#oauth-preferred-email-domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oauth-preferred-email-domain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#gh-client-id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3159,6 +3181,38 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_OAUTH_PROVIDER</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="oauth-preferred-email-domain"><code>oauth-preferred-email-domain</code><a class="headerlink" href="#oauth-preferred-email-domain" title="Permanent link">¶</a></h3>
+<p>Preferred email domain for authentication. When set, providers that return multiple email addresses (GitHub, BitBucket) will select an email matching this domain instead of the primary email. Falls back to the primary email if no match is found.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--oauth-preferred-email-domain</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_OAUTH_PREFERRED_EMAIL_DOMAIN</code></td>
 </tr>
 </tbody>
 </table>
