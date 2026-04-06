@@ -257,6 +257,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			if uri.Host == hostURL.Host {
 				sess, err := config.Store.Get(ctx.Request)
 				if err != nil {
+					log.Error().
+						Err(err).
+						Str("user", userDetails.Email).
+						Msg("SAML ACS: failed to fetch session")
+
 					ctx.Redirect(http.StatusFound, redirectWithError(
 						uri.String(),
 						"",
@@ -274,6 +279,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 				})
 
 				if err := config.Store.Save(ctx.Request, ctx.Writer, sess); err != nil {
+					log.Error().
+						Err(err).
+						Str("user", userDetails.Email).
+						Int("groups_count", len(userDetails.Groups)).
+						Msg("SAML ACS: failed to save session")
+
 					ctx.Redirect(http.StatusFound, redirectWithError(
 						uri.String(),
 						"",
