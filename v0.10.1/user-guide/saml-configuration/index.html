@@ -1,0 +1,2396 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Terraform/OpenTofu Private Registry for modules and providers manageable from a REST API">
+      
+      
+        <meta name="author" content="Valentin Deaconu">
+      
+      
+        <link rel="canonical" href="https://www.terralist.io/v0.10.1/user-guide/saml-configuration/">
+      
+      
+        <link rel="prev" href="../rbac-configuration/">
+      
+      
+        <link rel="next" href="../monitoring/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/terralist.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>SAML Configuration - Terralist</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#saml-20-configuration" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Terralist" class="md-header__button md-logo" aria-label="Terralist" data-md-component="logo">
+      
+  <img src="../../assets/terralist.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Terralist
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SAML Configuration
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/terralist/terralist/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Terralist" class="md-nav__button md-logo" aria-label="Terralist" data-md-component="logo">
+      
+  <img src="../../assets/terralist.svg" alt="logo">
+
+    </a>
+    Terralist
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/terralist/terralist/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../artifacts-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Artifacts Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-s3-bucket-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS S3 Bucket Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAML Configuration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAML Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Basic Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#idp-metadata-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IdP Metadata Sources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="IdP Metadata Sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-metadata-url-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 1: Metadata URL (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-metadata-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 2: Metadata File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-3-direct-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 3: Direct Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#service-provider-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Provider Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificate-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificate Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-attribute-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Attribute Mapping
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Attribute Mapping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribute-templating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Templating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group-based-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group-based Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-workspace-saml-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Workspace SAML Example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Google Workspace SAML Example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-1-configure-terralist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Configure Terralist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-get-google-workspace-saml-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Get Google Workspace SAML Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-configure-terralist-with-google-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Configure Terralist with Google Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-configure-google-workspace-saml-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Configure Google Workspace SAML App
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 4: Configure Google Workspace SAML App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#google-identity-provider-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Identity Provider details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-provider-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Provider details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribute-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-enable-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Enable the App
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-test-the-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Test the Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-google-workspace-saml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting Google Workspace SAML
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-id-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request ID Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-balancer-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load Balancer Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pod-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pod Resources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata Refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RBAC Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debugging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-saml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing SAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../dev-guide/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/local-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/e2e-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E2E Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#basic-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Basic Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#required-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#idp-metadata-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IdP Metadata Sources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="IdP Metadata Sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-1-metadata-url-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 1: Metadata URL (Recommended)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-2-metadata-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 2: Metadata File
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-3-direct-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option 3: Direct Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        YAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#service-provider-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Provider Metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#certificate-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Certificate Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#user-attribute-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        User Attribute Mapping
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User Attribute Mapping">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribute-templating" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Templating
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#group-based-authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Group-based Authorization
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#google-workspace-saml-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Workspace SAML Example
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Google Workspace SAML Example">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-1-configure-terralist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Configure Terralist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-get-google-workspace-saml-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Get Google Workspace SAML Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-configure-terralist-with-google-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Configure Terralist with Google Metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-configure-google-workspace-saml-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Configure Google Workspace SAML App
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 4: Configure Google Workspace SAML App">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#google-identity-provider-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Identity Provider details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-provider-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Service Provider details
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribute-mapping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribute Mapping
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-enable-the-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Enable the App
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-test-the-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Test the Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#troubleshooting-google-workspace-saml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting Google Workspace SAML
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#kubernetes-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes Deployment
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Kubernetes Deployment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#request-id-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Request ID Validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-balancer-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Load Balancer Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pod-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pod Resources
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secrets-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Secrets Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Advanced Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Settings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata-refresh" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata Refresh
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment Variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RBAC Integration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#common-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#debugging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#testing-saml-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing SAML Configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-considerations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Considerations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#support" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Support
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="saml-20-configuration">SAML 2.0 Configuration<a class="headerlink" href="#saml-20-configuration" title="Permanent link">¶</a></h1>
+<p>Terralist supports SAML 2.0 authentication through the <code>saml</code> OAuth provider. This guide covers configuring SAML authentication with your Identity Provider (IdP), including basic setup and specific examples for popular providers.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">¶</a></h2>
+<p>SAML 2.0 authentication in Terralist works through the following flow:</p>
+<ol>
+<li><strong>SP-Initiated SSO</strong>: User clicks login, Terralist generates SAML AuthnRequest and redirects to IdP</li>
+<li><strong>Authentication</strong>: User authenticates with the IdP</li>
+<li><strong>Response</strong>: IdP sends SAML Assertion back to Terralist's Assertion Consumer Service (ACS) endpoint</li>
+<li><strong>Validation</strong>: Terralist validates the SAML response and extracts user information</li>
+<li><strong>Authorization</strong>: User is granted access based on SAML attributes and RBAC configuration</li>
+</ol>
+<h2 id="basic-configuration">Basic Configuration<a class="headerlink" href="#basic-configuration" title="Permanent link">¶</a></h2>
+<p>The minimum required configuration for SAML authentication includes:</p>
+<ul>
+<li><code>oauth-provider</code>: Set to <code>saml</code></li>
+<li>Either <code>saml-idp-metadata-url</code>, <code>saml-idp-metadata-file</code>, or <code>saml-idp-entity-id</code> and <code>saml-idp-sso-url</code> and <code>saml-idp-sso-certificate</code></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Service Provider Entity ID</p>
+<p>The Service Provider (SP) entity ID is automatically generated as the SP metadata URL: <code>https://your-terralist-instance.com/v1/api/auth/saml/metadata</code>. This is the standard SAML convention and ensures proper integration with Identity Providers.</p>
+</div>
+<h3 id="required-configuration">Required Configuration<a class="headerlink" href="#required-configuration" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>oauth-provider</code></td>
+<td>Set to <code>saml</code></td>
+<td><code>saml</code></td>
+</tr>
+<tr>
+<td><code>saml-idp-metadata-url</code></td>
+<td>URL to fetch IdP metadata</td>
+<td><code>https://idp.example.com/metadata</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="optional-configuration">Optional Configuration<a class="headerlink" href="#optional-configuration" title="Permanent link">¶</a></h3>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>saml-name-attribute</code></td>
+<td><code>displayName</code></td>
+<td>SAML attribute containing user's display name</td>
+</tr>
+<tr>
+<td><code>saml-email-attribute</code></td>
+<td><code>email</code></td>
+<td>SAML attribute containing user's email</td>
+</tr>
+<tr>
+<td><code>saml-groups-attribute</code></td>
+<td>-</td>
+<td>SAML attribute containing user's groups</td>
+</tr>
+<tr>
+<td><code>saml-http-client-timeout</code></td>
+<td><code>30s</code></td>
+<td>Timeout for metadata HTTP requests</td>
+</tr>
+<tr>
+<td><code>saml-assertion-clock-skew</code></td>
+<td><code>5m</code></td>
+<td>Allowed clock difference between SP and IdP</td>
+</tr>
+<tr>
+<td><code>saml-max-assertion-age</code></td>
+<td><code>1h</code></td>
+<td>Maximum age of SAML assertions</td>
+</tr>
+<tr>
+<td><code>saml-allow-idp-initiated</code></td>
+<td><code>false</code></td>
+<td>Whether to allow IdP-initiated SSO</td>
+</tr>
+</tbody>
+</table>
+<h3 id="idp-metadata-sources">IdP Metadata Sources<a class="headerlink" href="#idp-metadata-sources" title="Permanent link">¶</a></h3>
+<p>Terralist supports three ways to configure IdP information:</p>
+<h4 id="option-1-metadata-url-recommended">Option 1: Metadata URL (Recommended)<a class="headerlink" href="#option-1-metadata-url-recommended" title="Permanent link">¶</a></h4>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--oauth-provider<span class="w"> </span>saml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--saml-idp-metadata-url<span class="w"> </span><span class="s2">&quot;https://idp.example.com/saml/metadata&quot;</span>
+</span></code></pre></div>
+<h4 id="option-2-metadata-file">Option 2: Metadata File<a class="headerlink" href="#option-2-metadata-file" title="Permanent link">¶</a></h4>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--oauth-provider<span class="w"> </span>saml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>--saml-idp-metadata-file<span class="w"> </span><span class="s2">&quot;/path/to/idp-metadata.xml&quot;</span>
+</span></code></pre></div>
+<h4 id="option-3-direct-configuration">Option 3: Direct Configuration<a class="headerlink" href="#option-3-direct-configuration" title="Permanent link">¶</a></h4>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--oauth-provider<span class="w"> </span>saml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>--saml-idp-entity-id<span class="w"> </span><span class="s2">&quot;https://idp.example.com&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>--saml-idp-sso-url<span class="w"> </span><span class="s2">&quot;https://idp.example.com/saml/sso&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>--saml-idp-sso-certificate<span class="w"> </span><span class="s2">&quot;-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----&quot;</span>
+</span></code></pre></div>
+<h4 id="yaml-configuration">YAML Configuration<a class="headerlink" href="#yaml-configuration" title="Permanent link">¶</a></h4>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">saml</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">saml-idp-metadata-url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://idp.example.com/saml/metadata&quot;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">saml-name-attribute</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;displayName&quot;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">saml-email-attribute</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;email&quot;</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-signing-secret&quot;</span>
+</span></code></pre></div>
+<p>For direct IdP configuration:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">saml</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">saml-idp-entity-id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://idp.example.com&quot;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">saml-idp-sso-url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://idp.example.com/saml/sso&quot;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nt">saml-idp-sso-certificate</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span><span class="no">-----BEGIN CERTIFICATE-----</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="no">MIICiTCCAg+gAwIBAgIJAJ8l4HnPq7F1MAOGA1UEBhMCVVMxCzAJBgNVBAgTAkNB</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="no">...</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="no">-----END CERTIFICATE-----</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-signing-secret&quot;</span>
+</span></code></pre></div>
+<h2 id="service-provider-metadata">Service Provider Metadata<a class="headerlink" href="#service-provider-metadata" title="Permanent link">¶</a></h2>
+<p>Terralist automatically generates Service Provider (SP) metadata and serves it at:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>https://your-terralist-instance.com/v1/api/auth/saml/metadata
+</span></code></pre></div>
+<p>This URL should be provided to your IdP administrator for SP registration. The metadata includes:</p>
+<ul>
+<li>Entity ID (automatically set to the metadata URL)</li>
+<li>Assertion Consumer Service (ACS) URL</li>
+<li>Single Logout Service (SLS) URL (if configured)</li>
+<li>SP certificate (if configured)</li>
+</ul>
+<h2 id="certificate-configuration">Certificate Configuration<a class="headerlink" href="#certificate-configuration" title="Permanent link">¶</a></h2>
+<p>For production deployments, it's recommended to configure SP certificates for request signing:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--saml-cert-file<span class="w"> </span><span class="s2">&quot;/path/to/sp-cert.pem&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--saml-key-file<span class="w"> </span><span class="s2">&quot;/path/to/sp-key.pem&quot;</span>
+</span></code></pre></div>
+<p>If your private key is encrypted:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--saml-cert-file<span class="w"> </span><span class="s2">&quot;/path/to/sp-cert.pem&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--saml-key-file<span class="w"> </span><span class="s2">&quot;/path/to/sp-key.pem&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>--saml-private-key-secret<span class="w"> </span><span class="s2">&quot;your-key-password&quot;</span>
+</span></code></pre></div>
+<h2 id="user-attribute-mapping">User Attribute Mapping<a class="headerlink" href="#user-attribute-mapping" title="Permanent link">¶</a></h2>
+<p>Terralist extracts user information from SAML assertions using configurable attribute names:</p>
+<h3 id="basic-attributes">Basic Attributes<a class="headerlink" href="#basic-attributes" title="Permanent link">¶</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>--saml-name-attribute<span class="w"> </span><span class="s2">&quot;displayName&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>--saml-email-attribute<span class="w"> </span><span class="s2">&quot;email&quot;</span>
+</span></code></pre></div>
+<h3 id="attribute-templating">Attribute Templating<a class="headerlink" href="#attribute-templating" title="Permanent link">¶</a></h3>
+<p>You can combine multiple SAML attributes into a single field using Go template syntax:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span>--saml-name-attribute<span class="w"> </span><span class="s2">&quot;{{.givenName}} {{.sn}}&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span>--saml-email-attribute<span class="w"> </span><span class="s2">&quot;email&quot;</span>
+</span></code></pre></div>
+<p>This example combines <code>givenName</code> and <code>sn</code> (surname) attributes into a full name like "John Doe".</p>
+<p><strong>Template Syntax:</strong></p>
+<ul>
+<li>Use <code>{{.attributeName}}</code> to reference SAML attributes</li>
+<li>Templates support all standard Go template functions</li>
+<li>If a referenced attribute doesn't exist, the template falls back to standard attribute lookup</li>
+<li>Invalid templates will log an error and fall back to standard lookup</li>
+</ul>
+<p><strong>Examples:</strong></p>
+<ul>
+<li><code>"{{.givenName}} {{.sn}}"</code> - Combine first and last name</li>
+<li><code>"{{.displayName}} ({{.department}})"</code> - Add department info</li>
+<li><code>"Dr. {{.givenName}} {{.sn}}"</code> - Add title prefix</li>
+</ul>
+<h3 id="group-based-authorization">Group-based Authorization<a class="headerlink" href="#group-based-authorization" title="Permanent link">¶</a></h3>
+<p>For RBAC with groups, configure the groups attribute:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>--saml-groups-attribute<span class="w"> </span><span class="s2">&quot;memberOf&quot;</span>
+</span></code></pre></div>
+<p>The groups attribute should contain a list of group names or identifiers that will be used for RBAC policy matching.</p>
+<h2 id="google-workspace-saml-example">Google Workspace SAML Example<a class="headerlink" href="#google-workspace-saml-example" title="Permanent link">¶</a></h2>
+<p>This section provides a complete example of configuring SAML authentication with Google Workspace as the Identity Provider.</p>
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>Google Workspace Admin Access</strong>: You need admin access to configure SAML applications</li>
+<li><strong>Custom Domain</strong>: Your Google Workspace should be configured with a custom domain</li>
+<li><strong>HTTPS Transport</strong>: SAML requires secure HTTPS transport. Ensure Terralist is accessible over HTTPS either through application-level TLS certificates or a TLS-terminating reverse proxy</li>
+</ol>
+<h3 id="step-1-configure-terralist">Step 1: Configure Terralist<a class="headerlink" href="#step-1-configure-terralist" title="Permanent link">¶</a></h3>
+<p>First, configure Terralist with basic SAML settings:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>--url<span class="w"> </span><span class="s2">&quot;https://terralist.example.com&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>--oauth-provider<span class="w"> </span>saml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>--saml-name-attribute<span class="w"> </span><span class="s2">&quot;displayName&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>--saml-email-attribute<span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>--saml-groups-attribute<span class="w"> </span><span class="s2">&quot;groups&quot;</span>
+</span></code></pre></div>
+<h3 id="step-2-get-google-workspace-saml-metadata">Step 2: Get Google Workspace SAML Metadata<a class="headerlink" href="#step-2-get-google-workspace-saml-metadata" title="Permanent link">¶</a></h3>
+<ol>
+<li>Go to <a href="https://admin.google.com">Google Admin Console</a></li>
+<li>Navigate to <strong>Apps</strong> → <strong>Web and mobile apps</strong></li>
+<li>Click <strong>Add app</strong> → <strong>Add custom SAML app</strong></li>
+<li>Enter app name: "Terralist"</li>
+<li>Download the <strong>IdP metadata</strong> file</li>
+</ol>
+<h3 id="step-3-configure-terralist-with-google-metadata">Step 3: Configure Terralist with Google Metadata<a class="headerlink" href="#step-3-configure-terralist-with-google-metadata" title="Permanent link">¶</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>--url<span class="w"> </span><span class="s2">&quot;https://terralist.example.com&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span>--oauth-provider<span class="w"> </span>saml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span>--saml-idp-metadata-file<span class="w"> </span><span class="s2">&quot;/path/to/GoogleIDPMetadata.xml&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span>--saml-name-attribute<span class="w"> </span><span class="s2">&quot;displayName&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span>--saml-email-attribute<span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">  </span>--saml-groups-attribute<span class="w"> </span><span class="s2">&quot;groups&quot;</span>
+</span></code></pre></div>
+<h3 id="step-4-configure-google-workspace-saml-app">Step 4: Configure Google Workspace SAML App<a class="headerlink" href="#step-4-configure-google-workspace-saml-app" title="Permanent link">¶</a></h3>
+<p>In the Google Admin Console SAML app configuration:</p>
+<h4 id="basic-settings">Basic Settings<a class="headerlink" href="#basic-settings" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>App name</strong>: Terralist</li>
+<li><strong>Description</strong>: Terraform Module Registry</li>
+</ul>
+<h4 id="google-identity-provider-details">Google Identity Provider details<a class="headerlink" href="#google-identity-provider-details" title="Permanent link">¶</a></h4>
+<p>These are automatically filled from the metadata file you downloaded.</p>
+<h4 id="service-provider-details">Service Provider details<a class="headerlink" href="#service-provider-details" title="Permanent link">¶</a></h4>
+<ul>
+<li><strong>ACS URL</strong>: <code>https://terralist.example.com/v1/api/auth/saml/acs</code></li>
+<li><strong>Entity ID</strong>: <code>https://terralist.example.com/v1/api/auth/saml/metadata</code></li>
+<li><strong>Start URL</strong>: <code>https://terralist.example.com</code> (optional)</li>
+<li><strong>Signed Response</strong>: Enabled</li>
+<li><strong>Name ID format</strong>: EMAIL</li>
+</ul>
+<h4 id="attribute-mapping">Attribute Mapping<a class="headerlink" href="#attribute-mapping" title="Permanent link">¶</a></h4>
+<p>Configure these attribute mappings:</p>
+<table>
+<thead>
+<tr>
+<th>Google Directory attribute</th>
+<th>App attribute</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary email</td>
+<td>email</td>
+</tr>
+<tr>
+<td>Display name</td>
+<td>displayName</td>
+</tr>
+<tr>
+<td>Groups</td>
+<td>groups</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Google Workspace groups attribute requires additional configuration. You may need to contact Google support to enable group information in SAML assertions.</p>
+</div>
+<h3 id="step-5-enable-the-app">Step 5: Enable the App<a class="headerlink" href="#step-5-enable-the-app" title="Permanent link">¶</a></h3>
+<ol>
+<li>In Google Admin Console, go to the SAML app</li>
+<li>Click <strong>User access</strong> and enable the app for your users or groups</li>
+<li>Save the configuration</li>
+</ol>
+<h3 id="step-6-test-the-configuration">Step 6: Test the Configuration<a class="headerlink" href="#step-6-test-the-configuration" title="Permanent link">¶</a></h3>
+<ol>
+<li>Access your Terralist instance</li>
+<li>Click the login button</li>
+<li>You should be redirected to Google for authentication</li>
+<li>After successful authentication, you should be redirected back to Terralist</li>
+</ol>
+<h3 id="troubleshooting-google-workspace-saml">Troubleshooting Google Workspace SAML<a class="headerlink" href="#troubleshooting-google-workspace-saml" title="Permanent link">¶</a></h3>
+<p><strong>Common Issues:</strong></p>
+<ol>
+<li><strong>"App not configured for user"</strong>: Ensure the SAML app is enabled for the user's account in Google Admin Console.</li>
+<li><strong>"Invalid SAML response"</strong>: Check the following:<ul>
+<li>ACS URL is correct: <code>https://terralist.example.com/v1/api/auth/saml/acs</code></li>
+<li>Entity ID matches: <code>https://terralist.example.com/v1/api/auth/saml/metadata</code></li>
+<li>HTTPS is properly configured</li>
+</ul>
+</li>
+<li><strong>"Groups not working"</strong>: Google Workspace may not include groups in SAML assertions by default. Contact Google support to enable this feature.</li>
+<li><strong>Certificate issues</strong>: Ensure Google's IdP certificate is properly loaded. You can extract it from the metadata file or use the direct certificate configuration option.</li>
+</ol>
+<h2 id="kubernetes-deployment">Kubernetes Deployment<a class="headerlink" href="#kubernetes-deployment" title="Permanent link">¶</a></h2>
+<p>When deploying Terralist with SAML authentication in Kubernetes environments, consider these additional configuration requirements:</p>
+<h3 id="request-id-validation">Request ID Validation<a class="headerlink" href="#request-id-validation" title="Permanent link">¶</a></h3>
+<p>In multi-pod Kubernetes deployments, SAML request ID validation may fail because the in-memory request tracker doesn't persist across pods. To resolve this, disable request ID validation:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>--oauth-provider<span class="w"> </span>saml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--saml-idp-metadata-file<span class="w"> </span><span class="s2">&quot;/path/to/metadata.xml&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>--saml-disable-request-id-validation
+</span></code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Security Trade-off</p>
+<p>Disabling request ID validation removes protection against SAML replay attacks. Ensure other security measures are in place, such as:
+- Short assertion validity periods (<code>--saml-max-assertion-age</code>)
+- Proper TLS/HTTPS configuration
+- Regular certificate rotation</p>
+</div>
+<h3 id="load-balancer-configuration">Load Balancer Configuration<a class="headerlink" href="#load-balancer-configuration" title="Permanent link">¶</a></h3>
+<p>Ensure your load balancer or ingress controller:</p>
+<ul>
+<li><strong>HTTPS Termination</strong>: Properly terminates TLS if Terralist isn't handling certificates directly</li>
+<li><strong>Session Affinity</strong>: Consider sticky sessions for SAML flows (optional, not required with request ID validation disabled)</li>
+<li><strong>Header Forwarding</strong>: Forward original client IPs for security logging</li>
+</ul>
+<h3 id="pod-resources">Pod Resources<a class="headerlink" href="#pod-resources" title="Permanent link">¶</a></h3>
+<p>SAML processing can be CPU-intensive due to XML parsing and cryptographic operations. Consider:</p>
+<ul>
+<li><strong>CPU Requests</strong>: At least 100m CPU per pod</li>
+<li><strong>Memory Limits</strong>: At least 256Mi per pod</li>
+<li><strong>Readiness Probes</strong>: Include SAML metadata endpoint checks</li>
+</ul>
+<h3 id="secrets-management">Secrets Management<a class="headerlink" href="#secrets-management" title="Permanent link">¶</a></h3>
+<p>Store SAML certificates and secrets securely:</p>
+<ul>
+<li>Use Kubernetes secrets for certificates and private keys</li>
+<li>Mount secrets as files rather than environment variables for certificates</li>
+<li>Rotate secrets regularly according to your security policy</li>
+</ul>
+<h2 id="advanced-configuration">Advanced Configuration<a class="headerlink" href="#advanced-configuration" title="Permanent link">¶</a></h2>
+<h3 id="security-settings">Security Settings<a class="headerlink" href="#security-settings" title="Permanent link">¶</a></h3>
+<p>For enhanced security, consider these configuration options:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--saml-assertion-clock-skew<span class="w"> </span><span class="s2">&quot;3m&quot;</span><span class="w"> </span><span class="se">\ </span><span class="w">       </span><span class="c1"># Tighter clock skew tolerance</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--saml-max-assertion-age<span class="w"> </span><span class="s2">&quot;30m&quot;</span><span class="w"> </span><span class="se">\ </span><span class="w">        </span><span class="c1"># Shorter assertion validity</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--saml-allow-idp-initiated<span class="w"> </span><span class="nb">false</span><span class="w"> </span><span class="se">\ </span><span class="w">      </span><span class="c1"># Disable IdP-initiated SSO</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--saml-request-id-expiration<span class="w"> </span><span class="s2">&quot;30m&quot;</span><span class="w">       </span><span class="c1"># Shorter request ID lifetime</span>
+</span></code></pre></div>
+<h3 id="metadata-refresh">Metadata Refresh<a class="headerlink" href="#metadata-refresh" title="Permanent link">¶</a></h3>
+<p>For production environments with metadata URLs:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>terralist<span class="w"> </span>server<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>--saml-idp-metadata-url<span class="w"> </span><span class="s2">&quot;https://idp.example.com/metadata&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--saml-metadata-refresh-interval<span class="w"> </span><span class="s2">&quot;12h&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--saml-metadata-refresh-check-interval<span class="w"> </span><span class="s2">&quot;1h&quot;</span>
+</span></code></pre></div>
+<p>This ensures certificate updates are automatically picked up without service restart.</p>
+<h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">¶</a></h3>
+<p>All SAML configuration can also be set via environment variables:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_OAUTH_PROVIDER</span><span class="o">=</span><span class="s2">&quot;saml&quot;</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_SAML_IDP_METADATA_URL</span><span class="o">=</span><span class="s2">&quot;https://idp.example.com/metadata&quot;</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_SAML_NAME_ATTRIBUTE</span><span class="o">=</span><span class="s2">&quot;displayName&quot;</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_SAML_EMAIL_ATTRIBUTE</span><span class="o">=</span><span class="s2">&quot;email&quot;</span>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_SAML_HTTP_CLIENT_TIMEOUT</span><span class="o">=</span><span class="s2">&quot;45s&quot;</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_SAML_ASSERTION_CLOCK_SKEW</span><span class="o">=</span><span class="s2">&quot;5m&quot;</span>
+</span></code></pre></div>
+<h2 id="rbac-integration">RBAC Integration<a class="headerlink" href="#rbac-integration" title="Permanent link">¶</a></h2>
+<p>SAML integrates with Terralist's RBAC system. Configure user roles based on SAML groups:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># In your RBAC policy file</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>g,<span class="w"> </span>engineering@company.com,<span class="w"> </span>role:admin
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>g,<span class="w"> </span>developers@company.com,<span class="w"> </span>role:contributor
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>g,<span class="w"> </span>viewers@company.com,<span class="w"> </span>role:readonly
+</span></code></pre></div>
+<p>The <code>saml-groups-attribute</code> configuration determines which SAML attribute contains the group information.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">¶</a></h2>
+<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">¶</a></h3>
+<ol>
+<li><strong>"SAML authentication failed: invalid SAML response"</strong>:<ul>
+<li>Check ACS URL configuration</li>
+<li>Verify HTTPS is enabled</li>
+<li>Ensure IdP metadata is correct and up-to-date</li>
+</ul>
+</li>
+<li><strong>"Certificate validation failed"</strong>:<ul>
+<li>Verify IdP certificate is correctly configured</li>
+<li>Check certificate format (should be PEM)</li>
+<li>Ensure certificate hasn't expired</li>
+</ul>
+</li>
+<li><strong>"User attributes not found"</strong>:<ul>
+<li>Check attribute names in SAML assertion</li>
+<li>Verify attribute mapping configuration</li>
+<li>Enable SAML response debugging if needed</li>
+</ul>
+</li>
+<li><strong>"Clock skew errors"</strong>:<ul>
+<li>Increase <code>saml-assertion-clock-skew</code> value</li>
+<li>Ensure system clocks are synchronized</li>
+</ul>
+</li>
+<li><strong>"SAML authentication failed: invalid or replayed request ID"</strong> (Kubernetes):<ul>
+<li>This occurs in multi-pod Kubernetes deployments where request state isn't shared</li>
+<li>Solution: Set <code>--saml-disable-request-id-validation</code> or <code>TERRALIST_SAML_DISABLE_REQUEST_ID_VALIDATION=true</code></li>
+<li>Note: This disables replay attack protection but allows SAML to work in distributed environments</li>
+</ul>
+</li>
+</ol>
+<h3 id="debugging">Debugging<a class="headerlink" href="#debugging" title="Permanent link">¶</a></h3>
+<p>Enable detailed SAML logging by setting log level to debug:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>terralist<span class="w"> </span>server<span class="w"> </span>--log-level<span class="w"> </span>debug
+</span></code></pre></div>
+<p>When debug logging is enabled, Terralist will log:</p>
+<ul>
+<li><strong>Extracted Attributes</strong>: All attributes found in the SAML assertion with their values</li>
+<li><strong>User Groups</strong>: Final groups assigned to the user after attribute mapping</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Security Note</p>
+<p>Debug logs contain sensitive SAML response data. Only enable debug logging temporarily for troubleshooting and disable it in production environments.</p>
+</div>
+<p>Example debug output:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span><span class="nt">&quot;saml_attributes&quot;</span><span class="p">:{</span><span class="nt">&quot;email&quot;</span><span class="p">:[</span><span class="s2">&quot;user@example.com&quot;</span><span class="p">],</span><span class="nt">&quot;groups&quot;</span><span class="p">:[</span><span class="s2">&quot;developers&quot;</span><span class="p">,</span><span class="s2">&quot;admins&quot;</span><span class="p">]},</span><span class="nt">&quot;attribute_count&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="s2">&quot;Extracted SAML attributes from assertion&quot;</span><span class="p">}</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="p">{</span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span><span class="nt">&quot;user_groups&quot;</span><span class="p">:[</span><span class="s2">&quot;developers&quot;</span><span class="p">,</span><span class="s2">&quot;admins&quot;</span><span class="p">],</span><span class="nt">&quot;groups_count&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="s2">&quot;Final user groups after SAML authentication&quot;</span><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="testing-saml-configuration">Testing SAML Configuration<a class="headerlink" href="#testing-saml-configuration" title="Permanent link">¶</a></h3>
+<p>You can test SAML configuration without affecting production:</p>
+<ol>
+<li>Use a test/staging Terralist instance</li>
+<li>Configure with test IdP credentials</li>
+<li>Verify login flow works end-to-end</li>
+<li>Check that user attributes are correctly extracted</li>
+<li>Test RBAC policies with SAML groups</li>
+</ol>
+<h2 id="security-considerations">Security Considerations<a class="headerlink" href="#security-considerations" title="Permanent link">¶</a></h2>
+<ul>
+<li><strong>Always use HTTPS</strong>: SAML requires secure TLS/HTTPS transport (can be provided by reverse proxy or application certificates)</li>
+<li><strong>Validate certificates</strong>: Ensure IdP certificates are valid and up-to-date</li>
+<li><strong>Monitor assertions</strong>: Regularly review SAML assertion logs for anomalies</li>
+<li><strong>Limit IdP-initiated SSO</strong>: Keep <code>saml-allow-idp-initiated</code> disabled unless required</li>
+<li><strong>Regular metadata refresh</strong>: Use metadata refresh for automatic certificate updates</li>
+<li><strong>Short assertion validity</strong>: Use reasonable <code>saml-max-assertion-age</code> values</li>
+</ul>
+<h2 id="support">Support<a class="headerlink" href="#support" title="Permanent link">¶</a></h2>
+<p>For additional help with SAML configuration:</p>
+<ul>
+<li>Check the <a href="../../configuration/">configuration reference</a> for all SAML options</li>
+<li>Review the SAML implementation analysis for technical details</li>
+<li>Contact your IdP administrator for IdP-specific configuration help</li>
+<li>Check Terralist logs for detailed error information</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Made with ❤️ by Terralist contributors.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
