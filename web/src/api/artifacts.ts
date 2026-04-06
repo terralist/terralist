@@ -15,7 +15,7 @@ type Submodule = {
 
 type ArtifactVersionWithDocumentation = {
   version: ArtifactVersion;
-  documentation: string;
+  documentation?: string;
   submodules?: Submodule[];
 };
 

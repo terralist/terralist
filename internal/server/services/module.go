@@ -77,8 +77,8 @@ func (s *DefaultModuleService) GetVersion(namespace, name, provider, version str
 
 	dto := &module.VersionDTO{Version: v.Version}
 
-	if s.Resolver != nil {
-		url, err := s.Resolver.Find(v.Documentation)
+	if s.Resolver != nil && v.Documentation != nil && *v.Documentation != "" {
+		url, err := s.Resolver.Find(*v.Documentation)
 		if err != nil {
 			log.Warn().
 				Str("moduleSlug", fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)).
@@ -111,7 +111,10 @@ func (s *DefaultModuleService) GetVersion(namespace, name, provider, version str
 			return dto, nil
 		}
 
-		dto.Documentation = string(body)
+		bodyStr := string(body)
+		if bodyStr != "" {
+			dto.Documentation = &bodyStr
+		}
 	}
 
 	return dto, nil
@@ -408,7 +411,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		}
 
 		// Update the module documentation location
-		m.Versions[0].Documentation = docsLocation
+		m.Versions[0].Documentation = &docsLocation
 
 		// Upload submodule documentation to the resolver datastore
 		for submodulePath, submoduleDoc := range submoduleDocs {
@@ -558,13 +561,13 @@ func (s *DefaultModuleService) deleteVersion(namespace string, v *module.Version
 	}
 
 	// Delete the module documentation
-	if v.Documentation != "" {
-		if err := s.Resolver.Purge(v.Documentation); err != nil {
+	if v.Documentation != nil && *v.Documentation != "" {
+		if err := s.Resolver.Purge(*v.Documentation); err != nil {
 			log.Warn().
 				AnErr("Error", err).
 				Str("Module", v.Module.String()).
 				Str("Version", v.Version).
-				Str("Key", v.Documentation).
+				Str("Key", *v.Documentation).
 				Msg("Could not purge module documentation, require manual clean-up")
 		}
 	}
