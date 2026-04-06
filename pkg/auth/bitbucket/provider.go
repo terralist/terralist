@@ -11,9 +11,10 @@ import (
 
 // Provider is the concrete implementation of oauth.Engine.
 type Provider struct {
-	ClientID     string
-	ClientSecret string
-	Workspace    string
+	ClientID             string
+	ClientSecret         string
+	Workspace            string
+	PreferredEmailDomain string
 }
 
 type tokenResponse struct {
@@ -168,18 +169,28 @@ func (p *Provider) PerformUserEmailRequest(t tokenResponse) (string, error) {
 		return "", err
 	}
 
-	var verifiedEmail string
+	var primaryEmail string
+	var preferredEmail string
+
 	for _, e := range data.Values {
-		if verifiedEmail == "" && e.IsPrimary {
-			verifiedEmail = e.Email
+		if e.IsPrimary && primaryEmail == "" {
+			primaryEmail = e.Email
+		}
+
+		if p.PreferredEmailDomain != "" && strings.HasSuffix(e.Email, "@"+p.PreferredEmailDomain) && preferredEmail == "" {
+			preferredEmail = e.Email
 		}
 	}
 
-	if verifiedEmail == "" {
-		return "", fmt.Errorf("access could not be granted, no email information found")
+	if preferredEmail != "" {
+		return preferredEmail, nil
 	}
 
-	return verifiedEmail, nil
+	if primaryEmail != "" {
+		return primaryEmail, nil
+	}
+
+	return "", fmt.Errorf("access could not be granted, no email information found")
 }
 
 func (p *Provider) PerformCheckUserMemberInWorkspace(t tokenResponse) error {

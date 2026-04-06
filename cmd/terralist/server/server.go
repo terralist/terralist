@@ -250,17 +250,19 @@ func (s *Command) run() error {
 	switch flags[OAuthProviderFlag].(*cli.StringFlag).Value { //nolint:forcetypeassert
 	case "github":
 		provider, err = authFactory.NewProvider(auth.GITHUB, &github.Config{ //nolint:forcetypeassert
-			ClientID:     flags[GitHubClientIDFlag].(*cli.StringFlag).Value,
-			ClientSecret: flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
-			Organization: flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
-			Teams:        flags[GitHubTeamsFlag].(*cli.StringFlag).Value,
-			Domain:       flags[GitHubDomainFlag].(*cli.StringFlag).Value,
+			ClientID:             flags[GitHubClientIDFlag].(*cli.StringFlag).Value,
+			ClientSecret:         flags[GitHubClientSecretFlag].(*cli.StringFlag).Value,
+			Organization:         flags[GitHubOrganizationFlag].(*cli.StringFlag).Value,
+			Teams:                flags[GitHubTeamsFlag].(*cli.StringFlag).Value,
+			Domain:               flags[GitHubDomainFlag].(*cli.StringFlag).Value,
+			PreferredEmailDomain: flags[PreferredEmailDomainFlag].(*cli.StringFlag).Value,
 		})
 	case "bitbucket":
 		provider, err = authFactory.NewProvider(auth.BITBUCKET, &bitbucket.Config{ //nolint:forcetypeassert
-			ClientID:     flags[BitBucketClientIDFlag].(*cli.StringFlag).Value,
-			ClientSecret: flags[BitBucketClientSecretFlag].(*cli.StringFlag).Value,
-			Workspace:    flags[BitBucketWorkspaceFlag].(*cli.StringFlag).Value,
+			ClientID:             flags[BitBucketClientIDFlag].(*cli.StringFlag).Value,
+			ClientSecret:         flags[BitBucketClientSecretFlag].(*cli.StringFlag).Value,
+			Workspace:            flags[BitBucketWorkspaceFlag].(*cli.StringFlag).Value,
+			PreferredEmailDomain: flags[PreferredEmailDomainFlag].(*cli.StringFlag).Value,
 		})
 	case "gitlab":
 		provider, err = authFactory.NewProvider(auth.GITLAB, &gitlab.Config{ //nolint:forcetypeassert

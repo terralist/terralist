@@ -82,6 +82,8 @@ const (
 
 	TokenSigningSecretFlag = "token-signing-secret"
 
+	PreferredEmailDomainFlag = "oauth-preferred-email-domain"
+
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
 	ProvidersStorageResolverFlag = "providers-storage-resolver"
 
@@ -350,6 +352,10 @@ var flags = map[string]cli.Flag{
 	TokenSigningSecretFlag: &cli.StringFlag{
 		Description: "The secret to use when signing authorization tokens.",
 		Required:    true,
+	},
+
+	PreferredEmailDomainFlag: &cli.StringFlag{
+		Description: "Preferred email domain for authentication. When set, the provider selects an email matching this domain if available (e.g. 'company.com'). Applies to GitHub and BitBucket.",
 	},
 
 	LocalStoreFlag: &cli.StringFlag{

@@ -7,11 +7,12 @@ import (
 // Config implements auth.Configurator interface and
 // handles the configuration parameters of the sqlite database.
 type Config struct {
-	ClientID     string
-	ClientSecret string
-	Organization string
-	Teams        string
-	Domain       string
+	ClientID             string
+	ClientSecret         string
+	Organization         string
+	Teams                string
+	Domain               string
+	PreferredEmailDomain string
 }
 
 func (c *Config) SetDefaults() {}
