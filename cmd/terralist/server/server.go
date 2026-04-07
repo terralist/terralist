@@ -190,7 +190,6 @@ func (s *Command) run() error {
 		ModulesAnonymousRead:    flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
 		ProvidersAnonymousRead:  flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
 		LocalTokenSigningSecret: flags[LocalTokenSigningSecretFlag].(*cli.StringFlag).Value,
-		Home:                    flags[HomeFlag].(*cli.PathFlag).Value,
 		SamlDisplayName:         flags[SamlDisplayNameFlag].(*cli.StringFlag).Value,
 		RbacPolicyPath:          flags[RbacPolicyPathFlag].(*cli.StringFlag).Value,
 		RbacDefaultRole:         flags[RbacDefaultRoleFlag].(*cli.StringFlag).Value,
@@ -222,7 +221,6 @@ func (s *Command) run() error {
 	case "sqlite":
 		db, err = dbFactory.NewDatabase(database.SQLITE, &sqlite.Config{ //nolint:forcetypeassert
 			Path: flags[SQLitePathFlag].(*cli.StringFlag).Value,
-			Home: userConfig.Home,
 		})
 	case "postgresql":
 		db, err = dbFactory.NewDatabase(database.POSTGRESQL, &postgresql.Config{ //nolint:forcetypeassert

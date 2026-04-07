@@ -11,8 +11,6 @@ const (
 
 	URLFlag = "url"
 
-	HomeFlag = "home"
-
 	CertFileFlag = "cert-file"
 	KeyFileFlag  = "key-file"
 
@@ -149,11 +147,6 @@ var flags = map[string]cli.Flag{
 	URLFlag: &cli.StringFlag{
 		Description:  "The URL that Terralist is accessible from.",
 		DefaultValue: "http://localhost:5758",
-	},
-
-	HomeFlag: &cli.PathFlag{
-		Description:  "The path to the directory where Terralist can store files.",
-		DefaultValue: "~/.terralist.d",
 	},
 
 	CertFileFlag: &cli.StringFlag{
