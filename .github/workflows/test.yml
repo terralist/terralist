@@ -189,7 +189,7 @@ jobs:
       TERRALIST_OI_HOST: "http://mock-oauth2:8080/default"
       TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
 
-      TERRALIST_SESSION_STORE: "cookie"
+      TERRALIST_SESSION_STORE: "database"
       TERRALIST_COOKIE_SECRET: "someotherrandomvalue"
 
       TERRALIST_MASTER_API_KEY: "e2e-master-api-key-00000000-0000-0000-0000-000000000000"

@@ -27,7 +27,7 @@ func init() {
 // SessionRecord is the GORM model for a database-backed session.
 type SessionRecord struct {
 	ID        string `gorm:"primaryKey"`
-	Data      []byte `gorm:"type:blob"`
+	Data      []byte
 	ExpiresAt time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time

@@ -161,7 +161,7 @@ tasks:
       TERRALIST_DATABASE_BACKEND: "sqlite"
       TERRALIST_SQLITE_PATH: "test-run-{{.TEST_RUN_ID}}.db"
 
-      TERRALIST_SESSION_STORE: "cookie"
+      TERRALIST_SESSION_STORE: "database"
       TERRALIST_COOKIE_SECRET: "e2e-test-secret-e2e-test-secret!"
 
       TERRALIST_MODULES_STORAGE_RESOLVER: "s3"
