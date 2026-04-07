@@ -11,9 +11,9 @@ type Version struct {
 	entity.Entity
 	ModuleID      uuid.UUID
 	Module        Module
-	Version       string       `gorm:"not null"`
-	Location      string       `gorm:"not null"`
-	Documentation string       `gorm:"not null;default:''"` // TODO: This adds backwards-compatibility, we should remove it in future versions
+	Version       string `gorm:"not null"`
+	Location      string `gorm:"not null"`
+	Documentation *string
 	Providers     []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Dependencies  []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Submodules    []Submodule  `gorm:"foreignKey:VersionID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -29,9 +29,15 @@ func (v Version) ToDTO() VersionDTO {
 		submodulesDTO = append(submodulesDTO, sm.ToDTO())
 	}
 
+	var doc *string
+	if v.Documentation != nil && *v.Documentation != "" {
+		s := *v.Documentation
+		doc = &s
+	}
+
 	return VersionDTO{
 		Version:       v.Version,
-		Documentation: v.Documentation,
+		Documentation: doc,
 		Submodules:    submodulesDTO,
 	}
 }
@@ -43,14 +49,18 @@ type RootDTO struct {
 
 type VersionDTO struct {
 	Version       string                 `json:"version"`
-	Documentation string                 `json:"documentation"`
+	Documentation *string                `json:"documentation,omitempty"`
 	Submodules    []SubmoduleResponseDTO `json:"submodules,omitempty"`
 }
 
 func (v VersionDTO) ToArtifactVersion() artifact.Version {
+	doc := ""
+	if v.Documentation != nil {
+		doc = *v.Documentation
+	}
 	return artifact.Version{
 		Tag:           v.Version,
-		Documentation: v.Documentation,
+		Documentation: doc,
 	}
 }
 

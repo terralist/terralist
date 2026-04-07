@@ -29,5 +29,10 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		return err
 	}
 
+	// Remove default empty string column in Version.Documentation
+	if err := db.Migrator().AlterColumn(&module.Version{}, "Documentation"); err != nil {
+		return err
+	}
+
 	return nil
 }
