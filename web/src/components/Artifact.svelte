@@ -3,8 +3,12 @@
   import { push } from 'svelte-spa-router';
   import SvelteMarkdown from 'svelte-markdown';
 
-  import 'github-markdown-css/github-markdown-light.css';
-  import 'github-markdown-css/github-markdown-dark.css';
+  import context, { type Theme } from '@/context';
+
+  let currentTheme: Theme = 'light';
+  const unsubscribeTheme = context.theme.subscribe(t => {
+    currentTheme = t;
+  });
 
   import config from '@/config';
   import { indent } from '@/lib/utils';
@@ -14,6 +18,7 @@
   import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
+  import MarkdownCode from './MarkdownCode.svelte';
   import { emojify } from 'node-emoji';
 
   import {
@@ -181,8 +186,18 @@
   onDestroy(() => {
     unsubscribe();
     versionUnsubscribe();
+    unsubscribeTheme();
   });
+
+  import lightCssUrl from 'github-markdown-css/github-markdown-light.css?url';
+  import darkCssUrl from 'github-markdown-css/github-markdown-dark.css?url';
+
+  $: markdownCssHref = currentTheme === 'dark' ? darkCssUrl : lightCssUrl;
 </script>
+
+<svelte:head>
+  <link rel="stylesheet" href={markdownCssHref} />
+</svelte:head>
 
 <main class="mt-36 mx-4 lg:mt-14 lg:mx-10 text-slate-600 dark:text-slate-200">
   {#if $result.isLoading}
@@ -239,8 +254,12 @@
           <div
             class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
             <h3 class="text-md font-bold mb-2">{selectedSubmodule}</h3>
-            <div class="markdown-body bg-slate-50">
-              <SvelteMarkdown source={submoduleDocumentation} />
+            <div class="markdown-body">
+              <SvelteMarkdown
+                source={submoduleDocumentation}
+                renderers={{
+                  code: MarkdownCode
+                }} />
             </div>
           </div>
         {:else if selectedSubmodule}
@@ -265,8 +284,12 @@
       {#if documentation}
         <div class="m-6 p-4 flex flex-col gap-4">
           <h2 class="text-lg font-bold">Readme</h2>
-          <div class="markdown-body bg-slate-50">
-            <SvelteMarkdown source={documentation} />
+          <div class="markdown-body">
+            <SvelteMarkdown
+              source={documentation}
+              renderers={{
+                code: MarkdownCode
+              }} />
           </div>
         </div>
       {/if}
