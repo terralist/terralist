@@ -11,19 +11,15 @@ import (
 // handles the default configuration parameters of the sqlite database.
 type Config struct {
 	Path string
-	Home string
 }
 
-func (c *Config) SetDefaults() {
-	if c.Path != "" {
-		return
-	}
-
-	c.Path = filepath.Join(c.Home, "data", "storage.db")
-}
+func (c *Config) SetDefaults() {}
 
 func (c *Config) Validate() error {
-	// Check if the directory exists and create it if it doesn't
+	if c.Path == "" {
+		return fmt.Errorf("sqlite-path is required when using SQLite")
+	}
+
 	if err := os.MkdirAll(filepath.Dir(c.Path), os.ModePerm); err != nil {
 		return fmt.Errorf("could not prepare sqlite directory: %w", err)
 	}

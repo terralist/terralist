@@ -66,19 +66,6 @@ The URL that Terralist is accessible from.
 | cli | `--url` |
 | env | `TERRALIST_URL` |
 
-### `home`
-
-The path to the directory where Terralist can store files.
-
-| Name | Value |
-| --- | --- |
-| type | string |
-| required | no |
-| default | `$HOME/.terralist.d` |
-| cli | `--home` |
-| env | `TERRALIST_HOME` |
-
-
 ### `cert-file`
 
 The path to the certificate file (pem format).

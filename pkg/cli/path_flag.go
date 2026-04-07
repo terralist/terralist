@@ -35,16 +35,11 @@ func (t *PathFlag) Set(value any) error {
 	} else {
 		v, ok := value.(string)
 		if !ok {
-			s, ok := value.(string)
-			if !ok {
-				return fmt.Errorf("unsupported type %T for path flag", value)
-			}
+			return fmt.Errorf("unsupported type %T for path flag", value)
+		}
 
-			if env, ok := environmentLookup(s); ok {
-				s = env
-			}
-
-			v = s
+		if env, ok := environmentLookup(v); ok {
+			v = env
 		}
 
 		if v == "" {
