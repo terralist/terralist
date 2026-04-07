@@ -103,6 +103,18 @@ The path to the certificate key file (pem format).
 | cli | `--key-file` |
 | env | `TERRALIST_KEY_FILE` |
 
+### `metrics-port`
+
+Serve Prometheus metrics on a separate port. When set, `/metrics` is not exposed on the main port, preventing public access to metrics data. Set to `0` to serve metrics on the main port (not recommended for production).
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `9090` |
+| cli | `--metrics-port` |
+| env | `TERRALIST_METRICS_PORT` |
+
 ### `token-signing-secret`
 
 The secret to use when signing authorization tokens.

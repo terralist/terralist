@@ -16,11 +16,13 @@ import (
 // config holds the e2e test configuration, populated from environment variables.
 var config struct {
 	URL          string
+	MetricsURL   string
 	MasterAPIKey string
 }
 
 func initConfig() {
 	config.URL = envOrDefault("TERRALIST_URL", "http://localhost:5758")
+	config.MetricsURL = envOrDefault("TERRALIST_METRICS_URL", "http://localhost:9090")
 	config.MasterAPIKey = envOrDefault("TERRALIST_MASTER_API_KEY", "e2e-master-api-key-00000000-0000-0000-0000-000000000000")
 }
 

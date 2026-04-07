@@ -179,6 +179,7 @@ func (s *Command) run() error {
 	userConfig := server.UserConfig{ //nolint:forcetypeassert
 		LogLevel:                flags[LogLevelFlag].(*cli.StringFlag).Value,
 		Port:                    flags[PortFlag].(*cli.IntFlag).Value,
+		MetricsPort:             flags[MetricsPortFlag].(*cli.IntFlag).Value,
 		URL:                     flags[URLFlag].(*cli.StringFlag).Value,
 		CertFile:                flags[CertFileFlag].(*cli.StringFlag).Value,
 		KeyFile:                 flags[KeyFileFlag].(*cli.StringFlag).Value,
