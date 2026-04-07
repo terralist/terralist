@@ -75,7 +75,8 @@ func (s *DefaultModuleService) GetVersion(namespace, name, provider, version str
 		return nil, err
 	}
 
-	dto := &module.VersionDTO{Version: v.Version}
+	result := v.ToDTO()
+	dto := &result
 
 	if s.Resolver != nil && v.Documentation != nil && *v.Documentation != "" {
 		url, err := s.Resolver.Find(*v.Documentation)
