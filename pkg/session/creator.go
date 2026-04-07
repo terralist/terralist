@@ -2,6 +2,7 @@ package session
 
 const (
 	COOKIE = iota
+	DATABASE
 )
 
 type Backend = int

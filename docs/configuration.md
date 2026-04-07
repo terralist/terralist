@@ -696,20 +696,22 @@ The path to the SQLite database.
 
 ### `session-store`
 
-The session store backend.
+The session store backend. The `cookie` backend stores all session data in the browser cookie (subject to the 4KB cookie size limit). The `database` backend stores session data in the configured database and only places a session ID in the cookie, removing the size limit.
 
 | Name | Value |
 | --- | --- |
 | type | select |
-| choices | `cookie` |
+| choices | `cookie`, `database` |
 | required | no |
 | default | `cookie` |
 | cli | `--session-store` |
 | env | `TERRALIST_SESSION_STORE` |
 
+!!! note "If your users belong to many groups (e.g. large GitHub organizations with 100+ teams), use the `database` backend to avoid cookie size limits that cause authentication failures."
+
 ### `cookie-secret`
 
-The secret to use for cookie encryption.
+The secret used for cookie signing. When using the `cookie` session store, this also encrypts the session data. When using the `database` session store, this signs the session ID cookie.
 
 | Name | Value |
 | --- | --- |
