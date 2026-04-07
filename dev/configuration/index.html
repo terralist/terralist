@@ -494,6 +494,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metrics-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics-port
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#token-signing-secret" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1855,6 +1866,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#metrics-port" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics-port
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#token-signing-secret" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2981,6 +3003,38 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_KEY_FILE</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="metrics-port"><code>metrics-port</code><a class="headerlink" href="#metrics-port" title="Permanent link">¶</a></h3>
+<p>Serve Prometheus metrics on a separate port. When set, <code>/metrics</code> is not exposed on the main port, preventing public access to metrics data. Set to <code>0</code> to serve metrics on the main port (not recommended for production).</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>int</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>9090</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--metrics-port</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_METRICS_PORT</code></td>
 </tr>
 </tbody>
 </table>
