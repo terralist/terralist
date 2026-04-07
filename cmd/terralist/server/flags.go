@@ -16,6 +16,8 @@ const (
 	CertFileFlag = "cert-file"
 	KeyFileFlag  = "key-file"
 
+	MetricsPortFlag = "metrics-port"
+
 	DatabaseBackendFlag = "database-backend"
 
 	SQLitePathFlag = "sqlite-path"
@@ -161,6 +163,11 @@ var flags = map[string]cli.Flag{
 	},
 	KeyFileFlag: &cli.StringFlag{
 		Description: "The path to the certificate key file (pem format).",
+	},
+
+	MetricsPortFlag: &cli.IntFlag{
+		Description:  "Serve Prometheus metrics on a separate port. When set, /metrics is not exposed on the main port. Set to 0 to serve metrics on the main port (not recommended for production).",
+		DefaultValue: 9090,
 	},
 
 	DatabaseBackendFlag: &cli.StringFlag{

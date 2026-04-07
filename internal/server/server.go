@@ -39,11 +39,13 @@ import (
 
 // Server represents the Terralist server.
 type Server struct {
-	Port     int
-	CertFile string
-	KeyFile  string
+	Port        int
+	MetricsPort int
+	CertFile    string
+	KeyFile     string
 
-	Router *gin.Engine
+	Router        *gin.Engine
+	MetricsRouter *http.ServeMux
 
 	JWT      jwt.JWT
 	Provider auth.Provider
@@ -104,10 +106,13 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	router.Use(static.Serve("/", web.StaticFS()))
 
 	// Prometheus metrics endpoint
-	router.GET("/metrics", gin.WrapH(promhttp.HandlerFor(
-		metricsRegistry,
-		promhttp.HandlerOpts{},
-	)))
+	var metricsRouter *http.ServeMux
+	if userConfig.MetricsPort > 0 {
+		metricsRouter = http.NewServeMux()
+		metricsRouter.Handle("/metrics", promhttp.HandlerFor(metricsRegistry, promhttp.HandlerOpts{}))
+	} else {
+		router.GET("/metrics", gin.WrapH(promhttp.HandlerFor(metricsRegistry, promhttp.HandlerOpts{})))
+	}
 
 	probeGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
 		Prefix: "/check",
@@ -474,11 +479,13 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	})
 
 	return &Server{
-		Port:     userConfig.Port,
-		CertFile: userConfig.CertFile,
-		KeyFile:  userConfig.KeyFile,
+		Port:        userConfig.Port,
+		MetricsPort: userConfig.MetricsPort,
+		CertFile:    userConfig.CertFile,
+		KeyFile:     userConfig.KeyFile,
 
-		Router: router,
+		Router:        router,
+		MetricsRouter: metricsRouter,
 
 		JWT:      jwtManager,
 		Provider: config.Provider,
@@ -533,6 +540,17 @@ func (s *Server) Start() error {
 	// Ensure server gracefully drains connections when stopped
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
+
+	// Start metrics server on a separate port if configured.
+	if s.MetricsRouter != nil && s.MetricsPort > 0 {
+		go func() {
+			addr := fmt.Sprintf(":%d", s.MetricsPort)
+			log.Info().Msgf("Metrics server listening on port %v", s.MetricsPort)
+			if err := http.ListenAndServe(addr, s.MetricsRouter); err != nil {
+				log.Error().Err(err).Msg("Metrics server failed")
+			}
+		}()
+	}
 
 	go func() {
 		// Mark the service as available
