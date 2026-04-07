@@ -4510,7 +4510,7 @@
 </tbody>
 </table>
 <h3 id="session-store"><code>session-store</code><a class="headerlink" href="#session-store" title="Permanent link">¶</a></h3>
-<p>The session store backend.</p>
+<p>The session store backend. The <code>cookie</code> backend stores all session data in the browser cookie (subject to the 4KB cookie size limit). The <code>database</code> backend stores session data in the configured database and only places a session ID in the cookie, removing the size limit.</p>
 <table>
 <thead>
 <tr>
@@ -4525,7 +4525,7 @@
 </tr>
 <tr>
 <td>choices</td>
-<td><code>cookie</code></td>
+<td><code>cookie</code>, <code>database</code></td>
 </tr>
 <tr>
 <td>required</td>
@@ -4545,8 +4545,11 @@
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">If your users belong to many groups (e.g. large GitHub organizations with 100+ teams), use the <code>database</code> backend to avoid cookie size limits that cause authentication failures.</p>
+</div>
 <h3 id="cookie-secret"><code>cookie-secret</code><a class="headerlink" href="#cookie-secret" title="Permanent link">¶</a></h3>
-<p>The secret to use for cookie encryption.</p>
+<p>The secret used for cookie signing. When using the <code>cookie</code> session store, this also encrypts the session data. When using the <code>database</code> session store, this signs the session ID cookie.</p>
 <table>
 <thead>
 <tr>
