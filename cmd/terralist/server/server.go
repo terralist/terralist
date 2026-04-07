@@ -109,6 +109,8 @@ func (s *Command) Init() *cobra.Command {
 			c.Flags().Int(name, fg.DefaultValue, usage)
 		} else if fg, ok := f.(*cli.BoolFlag); ok {
 			c.Flags().Bool(name, fg.DefaultValue, usage)
+		} else if fg, ok := f.(*cli.PathFlag); ok {
+			c.Flags().String(name, fg.DefaultValue, usage)
 		}
 
 		if f.IsHidden() {

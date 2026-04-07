@@ -374,8 +374,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ModulesAnonymousRead,
-
-		HomeDir: userConfig.Home,
 	}
 
 	apiV1Group.Register(moduleController)

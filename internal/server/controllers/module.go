@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"terralist/internal/server/handlers"
@@ -38,7 +39,6 @@ type DefaultModuleController struct {
 	Authentication   *handlers.Authentication
 	Authorization    *handlers.Authorization
 	AnonymousRead    bool
-	HomeDir          string
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -200,7 +200,16 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			// Create a temp file
-			onDiskFile, err := file.SaveToDisk(file.NewFromMultipartFileHeader(moduleFiles[0]), c.HomeDir)
+			tempDir, err := os.MkdirTemp("", "terralist-upload-*")
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{"cannot create temp directory", err.Error()},
+				})
+				return
+			}
+			defer os.RemoveAll(tempDir)
+
+			onDiskFile, err := file.SaveToDisk(file.NewFromMultipartFileHeader(moduleFiles[0]), tempDir)
 			if err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{
 					"errors": []string{"cannot allocate a new file", err.Error()},
