@@ -175,7 +175,7 @@ const actions = {
   ) =>
     client
       .get<{ documentation: string }>(
-        `/modules/${name}/${provider}/${version}/submodules/${submodulePath}`,
+        `/modules/${namespace}/${name}/${provider}/${version}/submodules/${submodulePath}`,
         {
           baseURL: '/v1/api'
         }
