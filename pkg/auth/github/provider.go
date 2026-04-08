@@ -29,10 +29,15 @@ type tokenResponse struct {
 }
 
 type Team struct {
-	Name       string
-	Id         int
-	Slug       string
-	Permission string
+	Name         string  `json:"name"`
+	Id           int     `json:"id"`
+	Slug         string  `json:"slug"`
+	Permission   string  `json:"permission"`
+	Organization TeamOrg `json:"organization"`
+}
+
+type TeamOrg struct {
+	Login string `json:"login"`
 }
 
 var (
@@ -255,7 +260,7 @@ func (p *Provider) PerformCheckUserMemberInOrganization(t tokenResponse) error {
 func (p *Provider) GetUserTeams(t tokenResponse) ([]Team, error) {
 	var allTeams []Team
 
-	url := fmt.Sprintf("%s/orgs/%s/teams?per_page=100", p.apiEndpoint, p.Organization)
+	url := fmt.Sprintf("%s/user/teams?per_page=100", p.apiEndpoint)
 
 	for url != "" {
 		req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -285,6 +290,17 @@ func (p *Provider) GetUserTeams(t tokenResponse) ([]Team, error) {
 
 		allTeams = append(allTeams, teams...)
 		url = nextPageURL(res.Header.Get("Link"))
+	}
+
+	// Filter to only include teams from the configured organization.
+	if p.Organization != "" {
+		var filtered []Team
+		for _, team := range allTeams {
+			if strings.EqualFold(team.Organization.Login, p.Organization) {
+				filtered = append(filtered, team)
+			}
+		}
+		allTeams = filtered
 	}
 
 	return allTeams, nil
