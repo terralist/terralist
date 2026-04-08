@@ -191,6 +191,8 @@ Preferred email domain for authentication. When set, providers that return multi
 ### `gh-client-id`
 
 The GitHub OAuth Application client ID.
+When using environment variables, `TERRALIST_GH_CLIENT_ID` is the first-class env var.
+You can also set `TERRALIST_GH_CLIENT_ID_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_GH_CLIENT_ID`.
 
 | Name | Value |
 | --- | --- |
@@ -203,6 +205,8 @@ The GitHub OAuth Application client ID.
 ### `gh-client-secret`
 
 The GitHub OAuth Application client secret.
+When using environment variables, `TERRALIST_GH_CLIENT_SECRET` is the first-class env var.
+You can also set `TERRALIST_GH_CLIENT_SECRET_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_GH_CLIENT_SECRET`.
 
 | Name | Value |
 | --- | --- |
@@ -251,6 +255,8 @@ The GitHub base domain if you are using GitHub Enterprise.
 ### `bb-client-id`
 
 The BitBucket OAuth Application client ID.
+When using environment variables, `TERRALIST_BB_CLIENT_ID` is the first-class env var.
+You can also set `TERRALIST_BB_CLIENT_ID_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_BB_CLIENT_ID`.
 
 | Name | Value |
 | --- | --- |
@@ -263,6 +269,8 @@ The BitBucket OAuth Application client ID.
 ### `bb-client-secret`
 
 The BitBucket OAuth Application client secret.
+When using environment variables, `TERRALIST_BB_CLIENT_SECRET` is the first-class env var.
+You can also set `TERRALIST_BB_CLIENT_SECRET_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_BB_CLIENT_SECRET`.
 
 | Name | Value |
 | --- | --- |
@@ -287,6 +295,8 @@ The BitBucket workspace to use for user validation.
 ### `gl-client-id`
 
 The GitLab OAuth Application client ID.
+When using environment variables, `TERRALIST_GL_CLIENT_ID` is the first-class env var.
+You can also set `TERRALIST_GL_CLIENT_ID_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_GL_CLIENT_ID`.
 
 | Name | Value |
 | --- | --- |
@@ -299,6 +309,8 @@ The GitLab OAuth Application client ID.
 ### `gl-client-secret`
 
 The Gitlab OAuth Application client secret.
+When using environment variables, `TERRALIST_GL_CLIENT_SECRET` is the first-class env var.
+You can also set `TERRALIST_GL_CLIENT_SECRET_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_GL_CLIENT_SECRET`.
 
 | Name | Value |
 | --- | --- |
@@ -335,6 +347,8 @@ The GitLab groups names the user must be member of. It must be comma separated w
 ### `oi-client-id`
 
 The OpenID Connect client ID.
+When using environment variables, `TERRALIST_OI_CLIENT_ID` is the first-class env var.
+You can also set `TERRALIST_OI_CLIENT_ID_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_OI_CLIENT_ID`.
 
 | Name | Value |
 | --- | --- |
@@ -347,6 +361,8 @@ The OpenID Connect client ID.
 ### `oi-client-secret`
 
 The OpenID Connect client secret.
+When using environment variables, `TERRALIST_OI_CLIENT_SECRET` is the first-class env var.
+You can also set `TERRALIST_OI_CLIENT_SECRET_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_OI_CLIENT_SECRET`.
 
 | Name | Value |
 | --- | --- |

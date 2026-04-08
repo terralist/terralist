@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"terralist/cmd/terralist/server"
 	"terralist/cmd/terralist/version"
+	"terralist/pkg/cli"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,6 +21,20 @@ var (
 )
 
 func main() {
+	if err := cli.LoadEnvFiles(
+		"TERRALIST_GH_CLIENT_ID",
+		"TERRALIST_GH_CLIENT_SECRET",
+		"TERRALIST_BB_CLIENT_ID",
+		"TERRALIST_BB_CLIENT_SECRET",
+		"TERRALIST_GL_CLIENT_ID",
+		"TERRALIST_GL_CLIENT_SECRET",
+		"TERRALIST_OI_CLIENT_ID",
+		"TERRALIST_OI_CLIENT_SECRET",
+	); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "load env files: %v\n", err)
+		os.Exit(1)
+	}
+
 	// rootCmd is the base command onto which other commands are added
 	rootCmd := &cobra.Command{
 		Use:   "terralist",
