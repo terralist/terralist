@@ -105,6 +105,8 @@ Serve Prometheus metrics on a separate port. When set, `/metrics` is not exposed
 ### `token-signing-secret`
 
 The secret to use when signing authorization tokens.
+When using environment variables, `TERRALIST_TOKEN_SIGNING_SECRET` is the first-class env var.
+You can also set `TERRALIST_TOKEN_SIGNING_SECRET_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_TOKEN_SIGNING_SECRET`.
 
 | Name | Value |
 | --- | --- |
@@ -556,6 +558,8 @@ The database backend.
 ### `postgres-url`
 
 The URL that can be used to connect to PostgreSQL database.
+When using environment variables, `TERRALIST_POSTGRES_URL` is the first-class env var.
+You can also set `TERRALIST_POSTGRES_URL_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_POSTGRES_URL`.
 
 | Name | Value |
 | --- | --- |
@@ -727,6 +731,8 @@ The session store backend. The `cookie` backend stores all session data in the b
 ### `cookie-secret`
 
 The secret used for cookie signing. When using the `cookie` session store, this also encrypts the session data. When using the `database` session store, this signs the session ID cookie.
+When using environment variables, `TERRALIST_COOKIE_SECRET` is the first-class env var.
+You can also set `TERRALIST_COOKIE_SECRET_FILE` to a file path, and Terralist will read that file at startup and assign its contents to `TERRALIST_COOKIE_SECRET`.
 
 | Name | Value |
 | --- | --- |

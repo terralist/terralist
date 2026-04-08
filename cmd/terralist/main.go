@@ -22,6 +22,7 @@ var (
 
 func main() {
 	if err := cli.LoadEnvFiles(
+		"TERRALIST_TOKEN_SIGNING_SECRET",
 		"TERRALIST_GH_CLIENT_ID",
 		"TERRALIST_GH_CLIENT_SECRET",
 		"TERRALIST_BB_CLIENT_ID",
@@ -30,6 +31,8 @@ func main() {
 		"TERRALIST_GL_CLIENT_SECRET",
 		"TERRALIST_OI_CLIENT_ID",
 		"TERRALIST_OI_CLIENT_SECRET",
+		"TERRALIST_POSTGRES_URL",
+		"TERRALIST_COOKIE_SECRET",
 	); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "load env files: %v\n", err)
 		os.Exit(1)
