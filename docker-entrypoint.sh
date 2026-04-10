@@ -3,6 +3,44 @@ set -e
 
 # Modified: https://github.com/runatlantis/atlantis/blob/bbb0ed2f0041844dc4abfddef2d1fe2f25340249/docker-entrypoint.sh
 
+file_env() {
+  var="$1"
+  file_var="${var}_FILE"
+
+  eval "var_value=\${$var:-}"
+  eval "file_var_value=\${$file_var:-}"
+
+  if [ -n "$var_value" ] && [ -n "$file_var_value" ]; then
+    echo >&2 "warning: both $var and $file_var are set; using $var and ignoring $file_var"
+    unset "$file_var"
+    return
+  fi
+
+  if [ -n "$file_var_value" ]; then
+    export "$var=$(cat "$file_var_value")"
+    unset "$file_var"
+  fi
+}
+
+for var in \
+  TERRALIST_GH_CLIENT_ID \
+  TERRALIST_GH_CLIENT_SECRET \
+  TERRALIST_BB_CLIENT_ID \
+  TERRALIST_BB_CLIENT_SECRET \
+  TERRALIST_GL_CLIENT_ID \
+  TERRALIST_GL_CLIENT_SECRET \
+  TERRALIST_OI_CLIENT_ID \
+  TERRALIST_OI_CLIENT_SECRET \
+  TERRALIST_TOKEN_SIGNING_SECRET \
+  TERRALIST_COOKIE_SECRET \
+  TERRALIST_POSTGRES_PASSWORD \
+  TERRALIST_POSTGRES_URL \
+  TERRALIST_MYSQL_PASSWORD \
+  TERRALIST_MYSQL_URL
+do
+  file_env "$var"
+done
+
 # If arguments are received directly, then pass them to the Terralist command
 if [ "$(echo "${1}" | cut -c1)" = "-" ]; then
   set -- terralist "$@"
