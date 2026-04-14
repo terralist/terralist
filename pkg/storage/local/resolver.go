@@ -119,3 +119,14 @@ func (r *Resolver) Purge(key string) error {
 
 	return os.Remove(filePath)
 }
+
+func UnwrapResolver(resolver storage.Resolver) *Resolver {
+	switch r := resolver.(type) {
+	case *Resolver:
+		return r
+	case *storage.MetricsResolver:
+		return UnwrapResolver(r.Resolver)
+	default:
+		return nil
+	}
+}

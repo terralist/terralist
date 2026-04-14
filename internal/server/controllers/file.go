@@ -53,8 +53,8 @@ func (c *DefaultFileServer) Paths() []string {
 func (c *DefaultFileServer) Subscribe(apis ...*gin.RouterGroup) {
 	api := apis[0]
 
-	localModulesResolver := unwrapLocalResolver(c.ModulesResolver)
-	localProvidersResolver := unwrapLocalResolver(c.ProvidersResolver)
+	localModulesResolver := local.UnwrapResolver(c.ModulesResolver)
+	localProvidersResolver := local.UnwrapResolver(c.ProvidersResolver)
 
 	api.GET("/*filepath", func(ctx *gin.Context) {
 		fileKey := strings.TrimPrefix(ctx.Param("filepath"), "/")
@@ -113,15 +113,4 @@ func (c *DefaultFileServer) Subscribe(apis ...*gin.RouterGroup) {
 
 		ctx.Status(http.StatusOK)
 	})
-}
-
-func unwrapLocalResolver(resolver storage.Resolver) *local.Resolver {
-	switch r := resolver.(type) {
-	case *local.Resolver:
-		return r
-	case *storage.MetricsResolver:
-		return unwrapLocalResolver(r.Resolver)
-	default:
-		return nil
-	}
 }

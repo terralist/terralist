@@ -433,9 +433,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(artifactController)
 
-	_, modulesLocal := config.ModulesResolver.(*local.Resolver)
-	_, providersLocal := config.ProvidersResolver.(*local.Resolver)
-	if modulesLocal || providersLocal {
+	modulesLocal := local.UnwrapResolver(config.ModulesResolver)
+	providersLocal := local.UnwrapResolver(config.ProvidersResolver)
+	if modulesLocal != nil || providersLocal != nil {
 		localJWTManager, err := jwt.New(userConfig.LocalTokenSigningSecret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create local JWT manager: %v", err)
