@@ -1,5 +1,5 @@
 [tools]
-python = "3.10"
+python = "3.14.4"
 go = "1.25.8"
 task = "3.44.0"
 
