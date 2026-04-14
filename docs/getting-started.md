@@ -149,6 +149,26 @@ master-api-key: "your-secret-master-key"
 
 This key can be used via the `Authorization: Bearer x-api-key:<key>` header or the `X-API-Key` header to create authorities, upload modules/providers, and manage API keys programmatically.
 
+### Using API keys with Terraform/OpenTofu CLI
+
+To use an API key with the Terraform or OpenTofu CLI (for `terraform init`, `terraform plan`, etc.), you need to prefix the key with `x-api-key:` when setting the token. Terraform sends tokens as plain Bearer tokens, and Terralist uses the prefix to distinguish API keys from OAuth JWT tokens.
+
+Set the token as an environment variable using the `TF_TOKEN_` prefix followed by the registry hostname (with dots and dashes replaced by underscores):
+
+```bash
+export TF_TOKEN_registry_example_com="x-api-key:your-api-key-here"
+```
+
+Or in a `.terraformrc` file:
+
+```hcl
+credentials "registry.example.com" {
+  token = "x-api-key:your-api-key-here"
+}
+```
+
+!!! warning "The `x-api-key:` prefix is required. Without it, Terraform will send the raw key as a JWT token, and Terralist will reject it with a 403 error."
+
 ## Upload a new module
 
 To upload a new module, use Terralist's API:
