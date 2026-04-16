@@ -358,7 +358,7 @@ The OpenID Connect client secret.
 
 ### `oi-host`
 
-The OpenID Connect issuer URL used for [OIDC discovery](https://auth0.com/docs/get-started/applications/configure-applications-with-oidc-discovery). Terralist fetches `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, and `supported_scopes` from `/.well-known/openid-configuration`. If discovery fails, or discovery does not provide one of the required endpoints, Terralist falls back to the corresponding manual OIDC endpoint flag when it is set. If the provider does not advertise scopes, or does not advertise all of Terralist's required scopes, Terralist logs a warning and continues. Prefer this over configuring all endpoints manually.
+The OpenID Connect issuer URL used for [OIDC discovery](https://auth0.com/docs/get-started/applications/configure-applications-with-oidc-discovery). Terralist fetches `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, and `scopes_supported` from `/.well-known/openid-configuration`. If discovery fails, or discovery does not provide one of the required endpoints, Terralist falls back to the corresponding manual OIDC endpoint flag when it is set. If the provider does not advertise scopes, or does not advertise all of Terralist's required scopes, Terralist logs a warning and continues. Prefer this over configuring all endpoints manually.
 
 Recommended OIDC configuration:
 
