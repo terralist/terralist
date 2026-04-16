@@ -32,7 +32,7 @@ func TestConfigValidate_DiscoveryPopulatesEndpoints(t *testing.T) {
 			"authorization_endpoint": "https://issuer.example.com/auth",
 			"token_endpoint": "https://issuer.example.com/token",
 			"userinfo_endpoint": "https://issuer.example.com/userinfo",
-			"supported_scopes": ["openid", "email", "profile"]
+			"scopes_supported": ["openid", "email", "profile"]
 		}`))
 	}))
 	defer server.Close()
@@ -72,7 +72,7 @@ func TestConfigValidate_DiscoveryMissingEndpointUsesManualFallback(t *testing.T)
 		_, _ = w.Write([]byte(`{
 			"authorization_endpoint": "https://issuer.example.com/auth",
 			"token_endpoint": "https://issuer.example.com/token",
-			"supported_scopes": ["openid", "email", "profile"]
+			"scopes_supported": ["openid", "email", "profile"]
 		}`))
 	}))
 	defer server.Close()
@@ -152,7 +152,7 @@ func TestConfigValidate_DiscoveryTakesPrecedenceOverManualEndpoints(t *testing.T
 			"authorization_endpoint": "https://issuer.example.com/auth",
 			"token_endpoint": "https://issuer.example.com/token",
 			"userinfo_endpoint": "https://issuer.example.com/userinfo",
-			"supported_scopes": ["openid", "email", "profile"]
+			"scopes_supported": ["openid", "email", "profile"]
 		}`))
 	}))
 	defer server.Close()
@@ -189,7 +189,7 @@ func TestConfigValidate_DiscoveryTakesPrecedenceOverManualEndpoints(t *testing.T
 	}
 }
 
-func TestConfigValidate_DiscoveryAllowsMissingSupportedScopes(t *testing.T) {
+func TestConfigValidate_DiscoveryAllowsMissingScopesSupported(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
@@ -217,14 +217,14 @@ func TestConfigValidate_DiscoveryAllowsMissingSupportedScopes(t *testing.T) {
 	}
 }
 
-func TestConfigValidate_DiscoveryAllowsIncompleteSupportedScopes(t *testing.T) {
+func TestConfigValidate_DiscoveryAllowsIncompleteScopesSupported(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"authorization_endpoint": "https://issuer.example.com/auth",
 			"token_endpoint": "https://issuer.example.com/token",
 			"userinfo_endpoint": "https://issuer.example.com/userinfo",
-			"supported_scopes": ["openid"]
+			"scopes_supported": ["openid"]
 		}`))
 	}))
 	defer server.Close()
