@@ -2,58 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://www.terralist.io/dev/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/artifacts-documentation/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/configuration/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/getting-started/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/installation/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/dev-guide/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/dev-guide/api-reference/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/dev-guide/e2e-testing/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/dev-guide/local-development/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/user-guide/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/user-guide/aws-s3-bucket-configuration/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/user-guide/monitoring/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/user-guide/rbac-configuration/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
     <url>
          <loc>https://www.terralist.io/dev/user-guide/saml-configuration/</loc>
-         <lastmod>2026-04-14</lastmod>
+         <lastmod>2026-04-20</lastmod>
     </url>
 </urlset>
