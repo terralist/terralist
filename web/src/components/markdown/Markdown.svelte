@@ -1,10 +1,13 @@
 <script lang="ts">
   import { onDestroy, tick } from 'svelte';
+  import { get } from 'svelte/store';
+  import { location, querystring } from 'svelte-spa-router';
 
   import MarkdownCode from '@/components/MarkdownCode.svelte';
   import {
     CODE_PLACEHOLDER_CLASS,
     decodeBase64Utf8,
+    MD_ANCHOR_QUERY,
     render
   } from '@/lib/markdown/render';
 
@@ -12,6 +15,82 @@
 
   let container: HTMLElement | null = null;
   let mounted: Array<{ $destroy: () => void }> = [];
+  /** Skip tearing down Shiki/Mermaid when only `?md-anchor=` changed. */
+  let lastMountedHtml: string | null = null;
+  let highlightedForAnchor: Element | null = null;
+  /** Cancels in-flight deep-link scroll when the component tears down or deps change. */
+  let anchorScrollGeneration = 0;
+  const anchorFollowUpTimers: ReturnType<typeof setTimeout>[] = [];
+
+  const clearAnchorFollowUpTimers = (): void => {
+    for (const t of anchorFollowUpTimers) {
+      clearTimeout(t);
+    }
+    anchorFollowUpTimers.length = 0;
+  };
+
+  const clearMdAnchorHighlight = (): void => {
+    highlightedForAnchor?.classList.remove('md-anchor-target');
+    highlightedForAnchor = null;
+  };
+
+  const scrollElToView = (el: HTMLElement): void => {
+    el.scrollIntoView({ behavior: 'auto', block: 'start' });
+  };
+
+  /**
+   * After a cold open, headings exist in `{@html}` but the target may not be
+   * in the DOM yet (async route), or layout shifts once Shiki/Mermaid paint.
+   * Retry until the id appears, then nudge scroll a few times as layout settles.
+   */
+  const scrollToMdAnchorFromQuery = async (): Promise<void> => {
+    const generation = ++anchorScrollGeneration;
+    clearAnchorFollowUpTimers();
+    clearMdAnchorHighlight();
+
+    let id: string | null = null;
+    try {
+      id = new URLSearchParams(get(querystring) ?? '').get(MD_ANCHOR_QUERY);
+      if (id) id = decodeURIComponent(id);
+    } catch {
+      id = null;
+    }
+    if (!id) return;
+
+    const maxWaitMs = 4000;
+    const stepMs = 32;
+    const deadline = Date.now() + maxWaitMs;
+
+    let el: HTMLElement | null = null;
+    while (Date.now() < deadline && generation === anchorScrollGeneration) {
+      await tick();
+      el = document.getElementById(id);
+      if (el) break;
+      await new Promise<void>(r => setTimeout(r, stepMs));
+    }
+
+    if (generation !== anchorScrollGeneration || !el) return;
+
+    const anchorId = id;
+    highlightedForAnchor = el;
+    el.classList.add('md-anchor-target');
+
+    const nudgeScroll = (): void => {
+      if (generation !== anchorScrollGeneration) return;
+      const node = document.getElementById(anchorId);
+      if (!node) return;
+      scrollElToView(node);
+    };
+
+    nudgeScroll();
+    requestAnimationFrame(nudgeScroll);
+    requestAnimationFrame(() => requestAnimationFrame(nudgeScroll));
+    for (const delay of [120, 320, 720]) {
+      anchorFollowUpTimers.push(
+        setTimeout(nudgeScroll, delay)
+      );
+    }
+  };
 
   /**
    * svelte-spa-router keeps the app path in `location.hash` as `#/route`.
@@ -49,7 +128,7 @@
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  $: html = render(source ?? '');
+  $: html = render(source ?? '', { routePath: $location ?? '' });
 
   // Replace each `<div class="md-code-placeholder">` emitted by the marked
   // renderer with a `MarkdownCode` Svelte component instance, so Shiki and
@@ -60,41 +139,53 @@
     await tick();
     if (!container) return;
 
-    for (const instance of mounted) {
-      instance.$destroy();
-    }
-    mounted = [];
+    const htmlChanged = lastMountedHtml !== html;
+    if (htmlChanged) {
+      lastMountedHtml = html;
+      for (const instance of mounted) {
+        instance.$destroy();
+      }
+      mounted = [];
 
-    const placeholders = container.querySelectorAll<HTMLElement>(
-      `.${CODE_PLACEHOLDER_CLASS}`
-    );
-    placeholders.forEach(placeholder => {
-      const lang = placeholder.dataset.mdLang || undefined;
-      const text = decodeBase64Utf8(placeholder.dataset.mdCode ?? '');
-
-      const target = document.createElement('div');
-      target.className = 'md-code-mount';
-      placeholder.replaceWith(target);
-
-      mounted.push(
-        new MarkdownCode({
-          target,
-          props: { lang, text }
-        })
+      const placeholders = container.querySelectorAll<HTMLElement>(
+        `.${CODE_PLACEHOLDER_CLASS}`
       );
-    });
+      placeholders.forEach(placeholder => {
+        const lang = placeholder.dataset.mdLang || undefined;
+        const text = decodeBase64Utf8(placeholder.dataset.mdCode ?? '');
+
+        const target = document.createElement('div');
+        target.className = 'md-code-mount';
+        placeholder.replaceWith(target);
+
+        mounted.push(
+          new MarkdownCode({
+            target,
+            props: { lang, text }
+          })
+        );
+      });
+    }
+
+    await tick();
+    void scrollToMdAnchorFromQuery();
   };
 
   $: {
     void html;
+    void $querystring;
     void mountCodeBlocks();
   }
 
   onDestroy(() => {
+    anchorScrollGeneration += 1;
+    clearAnchorFollowUpTimers();
+    clearMdAnchorHighlight();
     for (const instance of mounted) {
       instance.$destroy();
     }
     mounted = [];
+    lastMountedHtml = null;
   });
 </script>
 

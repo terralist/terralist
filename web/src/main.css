@@ -106,7 +106,8 @@
   scroll-margin-top: 5rem;
 }
 
-.markdown-body .footnotes li:target {
+.markdown-body .footnotes li:target,
+.markdown-body .footnotes li.md-anchor-target {
   background-color: rgba(255, 211, 61, 0.2);
 }
 

@@ -95,6 +95,41 @@ export const decodeBase64Utf8 = (encoded: string): string => {
 export const CODE_PLACEHOLDER_CLASS = 'md-code-placeholder';
 
 /**
+ * Query key used with svelte-spa-router's hash URLs (`#/path?...`) so
+ * in-document anchors are shareable. HTML only allows one `#fragment`; the
+ * app route already occupies the hash (`#/markdown-test`), so heading and
+ * footnote links are rewritten to `#/current/path?md-anchor=<id>`.
+ */
+export const MD_ANCHOR_QUERY = 'md-anchor';
+
+export type RenderOptions = {
+  /** SPA path from `location` (e.g. `/markdown-test`). When set, `href="#id"` links become shareable hash+query URLs. */
+  routePath?: string | null;
+};
+
+const normalizeRoutePath = (routePath: string): string =>
+  routePath.startsWith('/') ? routePath : `/${routePath}`;
+
+/**
+ * Rewrite `<a href="#fragment">` (not `#/…` routes) to
+ * `#<routePath>?md-anchor=<encoded-fragment>` so links survive hash routing.
+ */
+const rewriteFragmentLinksForSpaHash = (
+  html: string,
+  routePath: string
+): string => {
+  const path = normalizeRoutePath(routePath.trim());
+  const prefix = `#${path}?${MD_ANCHOR_QUERY}=`;
+  return html.replace(
+    /href="#(?!\/)([^"#]*)"/gi,
+    (_m, fragment: string) =>
+      fragment
+        ? `href="${prefix}${encodeURIComponent(fragment)}"`
+        : 'href="#"'
+  );
+};
+
+/**
  * Render Markdown to HTML using the full GitHub Flavored Markdown feature
  * set:
  *
@@ -114,8 +149,13 @@ export const CODE_PLACEHOLDER_CLASS = 'md-code-placeholder';
  * A fresh `Marked` instance and `Slugger` are created on every call so that
  * heading IDs and footnote numbering are scoped to a single document and do
  * not leak across renders.
+ *
+ * @param options.routePath When set (typically `$location` from svelte-spa-router),
+ *   same-document anchors become `#/path?md-anchor=id` so shared URLs open the
+ *   correct route and scroll to the target.
  */
-export const render = (source: string): string => {
+export const render = (source: string, options?: RenderOptions): string => {
+  const routePath = options?.routePath?.trim() ?? '';
   const slugger = new Slugger();
   const marked = new Marked({ gfm: true, breaks: false });
 
@@ -127,7 +167,11 @@ export const render = (source: string): string => {
   marked.use({
     hooks: {
       postprocess(html: string): string {
-        return stripDisallowedRawHtml(html);
+        let out = stripDisallowedRawHtml(html);
+        if (routePath) {
+          out = rewriteFragmentLinksForSpaHash(out, routePath);
+        }
+        return out;
       }
     },
     renderer: {
