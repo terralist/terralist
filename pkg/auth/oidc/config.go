@@ -22,7 +22,7 @@ type discoveryDocument struct {
 	AuthorizationEndpoint string   `json:"authorization_endpoint"`
 	TokenEndpoint         string   `json:"token_endpoint"`
 	UserInfoEndpoint      string   `json:"userinfo_endpoint"`
-	SupportedScopes       []string `json:"supported_scopes"`
+	ScopesSupported       []string `json:"scopes_supported"`
 }
 
 // Config implements auth.Configurator interface and
@@ -131,7 +131,7 @@ func (c *Config) applyDiscoveredEndpoint(endpointName string, discoveredValue st
 }
 
 func (c *Config) warnOnScopeAdvertisement(document *discoveryDocument) {
-	if len(document.SupportedScopes) == 0 {
+	if len(document.ScopesSupported) == 0 {
 		log.Warn().
 			Str("oidc_host", c.Host).
 			Msg("OIDC provider does not advertise supported scopes; authentication may not work as expected")
@@ -140,7 +140,7 @@ func (c *Config) warnOnScopeAdvertisement(document *discoveryDocument) {
 
 	missingScopes := []string{}
 	for _, requiredScope := range requiredScopes {
-		if !slices.Contains(document.SupportedScopes, requiredScope) {
+		if !slices.Contains(document.ScopesSupported, requiredScope) {
 			missingScopes = append(missingScopes, requiredScope)
 		}
 	}
