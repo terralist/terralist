@@ -1,3 +1,325 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * GitHub Flavored Markdown overrides.
+ *
+ * github-markdown-css ships most of the GitHub look, but we still need to
+ * fill a few gaps:
+ *
+ *   1. Tailwind's preflight resets `ul`/`ol` to `list-style: none; padding:
+ *      0`, and github-markdown-css does not re-assert disc/decimal at the top
+ *      level, so list bullets disappear without these rules.
+ *   2. Heading anchor link icon (rendered by our marked heading renderer).
+ *   3. Footnotes (rendered by `marked-footnote`).
+ *   4. GFM alerts (rendered by `marked-alert`).
+ *   5. Internal padding so the heading anchor (positioned at `left: -1.25em`
+ *      of the heading) and other edge-aligned content sit inside the panel
+ *      that github-markdown-css's background paints.
+ */
+.markdown-body {
+  padding: 1.5rem 2rem;
+  border-radius: 0.25rem;
+}
+
+.markdown-body ul {
+  list-style: disc outside;
+  padding-left: 2em;
+}
+
+.markdown-body ol {
+  list-style: decimal outside;
+  padding-left: 2em;
+}
+
+.markdown-body ul ul,
+.markdown-body ol ul {
+  list-style-type: circle;
+}
+
+.markdown-body ul ul ul,
+.markdown-body ol ul ul,
+.markdown-body ul ol ul,
+.markdown-body ol ol ul {
+  list-style-type: square;
+}
+
+.markdown-body li + li {
+  margin-top: 0.25em;
+}
+
+.markdown-body .task-list-item {
+  list-style-type: none;
+  margin-left: -1.5em;
+}
+
+.markdown-body .task-list-item input[type='checkbox'] {
+  margin: 0 0.4em 0.25em -1.4em;
+  vertical-align: middle;
+}
+
+/* Heading anchor link icon, shown on hover/focus like github.com renders. */
+.markdown-body .markdown-heading {
+  position: relative;
+  scroll-margin-top: 5rem;
+}
+
+.markdown-body .markdown-heading .heading-anchor {
+  position: absolute;
+  left: -1.25em;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.markdown-body .markdown-heading:hover .heading-anchor,
+.markdown-body .markdown-heading .heading-anchor:focus {
+  opacity: 0.6;
+}
+
+.markdown-body .markdown-heading .heading-anchor:hover {
+  opacity: 1;
+}
+
+/* Footnotes (marked-footnote). */
+.markdown-body .footnotes {
+  font-size: 0.875em;
+  border-top: 1px solid var(--color-border-default, #d0d7de);
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+
+.markdown-body .footnotes ol {
+  padding-left: 1.5em;
+}
+
+.markdown-body .footnotes li {
+  scroll-margin-top: 5rem;
+}
+
+.markdown-body .footnotes li:target,
+.markdown-body .footnotes li.md-anchor-target {
+  background-color: rgba(255, 211, 61, 0.2);
+}
+
+.markdown-body sup [data-footnote-ref]::before {
+  content: '[';
+}
+
+.markdown-body sup [data-footnote-ref]::after {
+  content: ']';
+}
+
+/* GFM alerts (marked-alert). Defaults match github.com's color tokens for
+ * both light and dark themes. */
+.markdown-body .markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  border-left: 0.25em solid;
+  color: inherit;
+  background-color: transparent;
+}
+
+.markdown-body .markdown-alert > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body .markdown-alert .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  line-height: 1;
+}
+
+.markdown-body .markdown-alert-note {
+  border-left-color: #0969da;
+}
+
+.markdown-body .markdown-alert-tip {
+  border-left-color: #1a7f37;
+}
+
+.markdown-body .markdown-alert-important {
+  border-left-color: #8250df;
+}
+
+.markdown-body .markdown-alert-warning {
+  border-left-color: #9a6700;
+}
+
+.markdown-body .markdown-alert-caution {
+  border-left-color: #d1242f;
+}
+
+.markdown-body .markdown-alert-note .markdown-alert-title {
+  color: #0969da;
+}
+
+.markdown-body .markdown-alert-tip .markdown-alert-title {
+  color: #1a7f37;
+}
+
+.markdown-body .markdown-alert-important .markdown-alert-title {
+  color: #8250df;
+}
+
+.markdown-body .markdown-alert-warning .markdown-alert-title {
+  color: #9a6700;
+}
+
+.markdown-body .markdown-alert-caution .markdown-alert-title {
+  color: #d1242f;
+}
+
+/* Dark mode tweaks. github-markdown-dark.css drives the page palette; tune
+ * alert colors so they read against dark backgrounds. */
+.dark .markdown-body .markdown-alert-note {
+  border-left-color: #4493f8;
+}
+.dark .markdown-body .markdown-alert-tip {
+  border-left-color: #3fb950;
+}
+.dark .markdown-body .markdown-alert-important {
+  border-left-color: #ab7df8;
+}
+.dark .markdown-body .markdown-alert-warning {
+  border-left-color: #d29922;
+}
+.dark .markdown-body .markdown-alert-caution {
+  border-left-color: #f85149;
+}
+.dark .markdown-body .markdown-alert-note .markdown-alert-title {
+  color: #4493f8;
+}
+.dark .markdown-body .markdown-alert-tip .markdown-alert-title {
+  color: #3fb950;
+}
+.dark .markdown-body .markdown-alert-important .markdown-alert-title {
+  color: #ab7df8;
+}
+.dark .markdown-body .markdown-alert-warning .markdown-alert-title {
+  color: #d29922;
+}
+.dark .markdown-body .markdown-alert-caution .markdown-alert-title {
+  color: #f85149;
+}
+
+/*
+ * Code blocks (Shiki output wrapped for the copy button) and Mermaid
+ * diagrams. The wrapper is the single `<div>` we replace each placeholder
+ * with — no Svelte component scaffolding around it, so the resulting tree
+ * matches what GitHub renders for README code blocks.
+ */
+.markdown-body .md-code-block {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+/*
+ * Strip the github-markdown-css `pre` styling (background, padding, margin,
+ * 85% font size) from the Shiki-rendered `pre`. We need `!important` because
+ * github-markdown-css is injected via `<svelte:head>` after main.css and
+ * therefore wins on equal specificity, and Shiki sets the background via an
+ * inline `style` attribute which can only be defeated with `!important`.
+ */
+.markdown-body .md-code-block pre,
+.markdown-body .md-code-block pre code,
+.markdown-body .md-code-block .md-code-content,
+.markdown-body .md-code-block .md-code-content > pre {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.markdown-body code,
+.markdown-body pre,
+.markdown-body pre code {
+  /* In GitHub, code block fint size almost same as document's body font size */
+  font-size: 0.9em !important;
+}
+
+/* Copy-to-clipboard button. Always visible (matches current github.com
+ * behavior on rendered READMEs); subtle background that lifts on hover. */
+.markdown-body .md-copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(31, 35, 40, 0.15);
+  background-color: #f6f8fa;
+  color: #57606a;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out,
+    border-color 0.15s ease-in-out;
+  z-index: 1;
+}
+
+.markdown-body .md-copy-btn:hover {
+  background-color: #eaeef2;
+  border-color: rgba(31, 35, 40, 0.25);
+  color: #1f2328;
+}
+
+.markdown-body .md-copy-btn:focus-visible {
+  outline: 2px solid #0969da;
+  outline-offset: 2px;
+}
+
+.markdown-body .md-copy-btn.is-copied {
+  color: #1a7f37;
+}
+
+.dark .markdown-body .md-copy-btn {
+  background-color: #21262d;
+  border-color: rgba(240, 246, 252, 0.1);
+  color: #8b949e;
+}
+
+.dark .markdown-body .md-copy-btn:hover {
+  background-color: #30363d;
+  border-color: rgba(240, 246, 252, 0.2);
+  color: #c9d1d9;
+}
+
+.dark .markdown-body .md-copy-btn:focus-visible {
+  outline-color: #4493f8;
+}
+
+.dark .markdown-body .md-copy-btn.is-copied {
+  color: #3fb950;
+}
+
+/* Mermaid diagrams — center horizontally inside the doc panel. */
+.markdown-body .md-mermaid {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.markdown-body .md-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

@@ -120,6 +120,14 @@ const routes = {
       onFailureRedirectTo: '/login'
     })
   }),
+  '/markdown-test': wrap({
+    asyncComponent: async () => import('@/pages/MarkdownTest.svelte'),
+    loadingComponent: Loading,
+    conditions: baseConditions.concat([isAuthenticatedCondition()]),
+    userData: newUserData({
+      onFailureRedirectTo: '/login'
+    })
+  }),
   '*': wrap({
     asyncComponent: async () => import('@/pages/Error404.svelte'),
     loadingComponent: Loading,

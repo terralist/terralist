@@ -44,7 +44,7 @@
 </script>
 
 <header
-  class="fixed z-1 top-0 left-0 flex flex-col lg:flex-row items-center justify-center lg:justify-start lg:pl-4 w-full h-32 lg:h-16 bg-teal-400 dark:bg-teal-700 text-slate-600 dark:text-slate-200 box-border shadow">
+  class="fixed z-10 top-0 left-0 flex flex-col lg:flex-row items-center justify-center lg:justify-start lg:pl-4 w-full h-32 lg:h-16 bg-teal-400 dark:bg-teal-700 text-slate-600 dark:text-slate-200 box-border shadow">
   <button
     class="absolute top-0 left-0 grid place-items-center w-16 h-16 lg:hidden"
     on:click={toggle}>
@@ -63,7 +63,7 @@
   <nav
     class="
       fixed
-      z-3
+      z-30
       top-0
       left-0
       w-48

@@ -26,6 +26,12 @@ tasks:
       - go mod tidy
       - cd {{.TOOLS_DIR}} && go mod tidy
 
+  server:clean:
+    desc: "Remove web build output, web/node_modules, and the Go build cache."
+    cmds:
+      - rm -rf web/dist web/node_modules
+      - go clean -cache
+
   build:frontend:
     desc: "Build the web application."
     silent: true
@@ -180,6 +186,20 @@ tasks:
         vars:
           WITH_DEBUG_MODE: "true"
           WITH_COVER: "true"
+      # Stop any lingering e2e containers from a prior run that was killed
+      # before its cleanup could run. Without this, port 9000/8080 may be
+      # held by an orphan and the subsequent `docker run` will fail.
+      - cmd: |
+          ids=$(docker ps -q --filter 'name=^terralist-(rustfs|mock-oauth2)-e2e-')
+          [ -n "$ids" ] && docker stop $ids || true
+        ignore_error: true
+      - defer: rm -f $TERRALIST_SQLITE_PATH
+      - defer:
+          cmd: docker stop terralist-rustfs-e2e-{{.TEST_RUN_ID}} terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
+          ignore_error: true
+      - defer:
+          cmd: pkill -f "{{.BINARY_FILE_NAME}} server"
+          ignore_error: true
       - >
         docker run
         --rm
@@ -210,10 +230,6 @@ tasks:
       - ./{{.BINARY_FILE_NAME}} server &
       - cmd: read -p "Press any key to stop..."
         ignore_error: true
-      - cmd: pkill -f "{{.BINARY_FILE_NAME}} server"
-        ignore_error: true
-      - docker stop terralist-rustfs-e2e-{{.TEST_RUN_ID}} terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
-      - rm -f $TERRALIST_SQLITE_PATH
 
   test:unit:
     desc: "Run all unit tests."

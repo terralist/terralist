@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import { push } from 'svelte-spa-router';
-  import SvelteMarkdown from 'svelte-markdown';
 
   import context, { type Theme } from '@/context';
 
@@ -18,7 +17,7 @@
   import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
-  import MarkdownCode from './MarkdownCode.svelte';
+  import Markdown from './markdown/Markdown.svelte';
   import { emojify } from 'node-emoji';
 
   import {
@@ -254,13 +253,7 @@
           <div
             class="mt-6 p-4 border border-gray-300 dark:border-gray-600 rounded">
             <h3 class="text-md font-bold mb-2">{selectedSubmodule}</h3>
-            <div class="markdown-body">
-              <SvelteMarkdown
-                source={submoduleDocumentation}
-                renderers={{
-                  code: MarkdownCode
-                }} />
-            </div>
+            <Markdown source={submoduleDocumentation} />
           </div>
         {:else if selectedSubmodule}
           <div
@@ -282,15 +275,9 @@
           class="bg-gray-200 dark:bg-gray-700 border border-slate-400 dark:border-slate-600 p-3 text-xs overflow-y-auto">{template}</pre>
       </div>
       {#if documentation}
-        <div class="m-6 p-4 flex flex-col gap-4">
+        <div class="flex flex-col gap-4">
           <h2 class="text-lg font-bold">Readme</h2>
-          <div class="markdown-body">
-            <SvelteMarkdown
-              source={documentation}
-              renderers={{
-                code: MarkdownCode
-              }} />
-          </div>
+          <Markdown source={documentation} />
         </div>
       {/if}
     </section>
