@@ -86,9 +86,7 @@
     requestAnimationFrame(nudgeScroll);
     requestAnimationFrame(() => requestAnimationFrame(nudgeScroll));
     for (const delay of [120, 320, 720]) {
-      anchorFollowUpTimers.push(
-        setTimeout(nudgeScroll, delay)
-      );
+      anchorFollowUpTimers.push(setTimeout(nudgeScroll, delay));
     }
   };
 

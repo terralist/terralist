@@ -120,12 +120,8 @@ const rewriteFragmentLinksForSpaHash = (
 ): string => {
   const path = normalizeRoutePath(routePath.trim());
   const prefix = `#${path}?${MD_ANCHOR_QUERY}=`;
-  return html.replace(
-    /href="#(?!\/)([^"#]*)"/gi,
-    (_m, fragment: string) =>
-      fragment
-        ? `href="${prefix}${encodeURIComponent(fragment)}"`
-        : 'href="#"'
+  return html.replace(/href="#(?!\/)([^"#]*)"/gi, (_m, fragment: string) =>
+    fragment ? `href="${prefix}${encodeURIComponent(fragment)}"` : 'href="#"'
   );
 };
 
