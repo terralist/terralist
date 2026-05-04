@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test:unit": "vitest run",
     "format:write": "prettier --write **/*.ts",
     "format:check": "prettier --check **/*.ts",
     "lint:fix": "yarn exec eslint . -c eslint.config.mjs --fix",
@@ -39,7 +40,6 @@
     "svelte": "^4.2.19",
     "svelte-check": "^4.1.4",
     "svelte-eslint-parser": "^1.6.0",
-    "svelte-markdown": "^0.4.1",
     "svelte-spa-router": "^4.0.1",
     "svelte-system-info": "1.0.1",
     "svelte-use-click-outside": "1.0.0",
@@ -48,9 +48,14 @@
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.33.1",
     "uuid": "^13.0.0",
-    "vite": "^4.0.0"
+    "vite": "^4.0.0",
+    "vitest": "^0.34.6"
   },
   "dependencies": {
+    "marked": "^15",
+    "marked-alert": "^2",
+    "marked-footnote": "^1",
+    "marked-gfm-heading-id": "^4",
     "node-emoji": "^2.2.0"
   }
 }

@@ -25,7 +25,7 @@ export default defineConfig({
     },
     {
       name: 'authenticated',
-      testMatch: ['dashboard.spec.ts', 'settings.spec.ts'],
+      testMatch: ['dashboard.spec.ts', 'settings.spec.ts', 'markdown.spec.ts'],
       dependencies: ['setup'],
       use: {
         storageState: AUTH_STATE_PATH,
