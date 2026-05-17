@@ -28,6 +28,7 @@ import (
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/pkg/storage/local"
+	"terralist/pkg/vcs"
 	"terralist/web"
 
 	"github.com/gin-gonic/contrib/static"
@@ -63,6 +64,7 @@ type Config struct {
 	Provider          auth.Provider
 	ModulesResolver   storage.Resolver
 	ProvidersResolver storage.Resolver
+	VcsProvider       vcs.Provider
 	Store             session.Store
 }
 
@@ -366,6 +368,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Database: config.Database,
 	}
 
+	vcsService := &services.DefaultVcsService{
+		Provider: config.VcsProvider,
+		Fetcher:  file.NewFetcher(),
+	}
+
 	moduleService := &services.DefaultModuleService{
 		ModuleRepository: moduleRepository,
 		AuthorityService: authorityService,
@@ -376,6 +383,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	moduleController := &controllers.DefaultModuleController{
 		ModuleService:    moduleService,
 		AuthorityService: authorityService,
+		VcsService:       vcsService,
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ModulesAnonymousRead,
@@ -397,6 +405,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	providerController := &controllers.DefaultProviderController{
 		ProviderService:  providerService,
 		AuthorityService: authorityService,
+		VcsService:       vcsService,
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,

@@ -242,14 +242,18 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 func (s *DefaultProviderService) resolveLocations(d *provider.DownloadPlatformDTO) error {
 	var err error
 
-	d.ShaSumsUrl, err = s.Resolver.Find(d.ShaSumsUrl)
-	if err != nil {
-		return fmt.Errorf("could not resolve shasums location: %v", err)
+	if d.ShaSumsUrl != "" {
+		d.ShaSumsUrl, err = s.Resolver.Find(d.ShaSumsUrl)
+		if err != nil {
+			return fmt.Errorf("could not resolve shasums location: %v", err)
+		}
 	}
 
-	d.ShaSumsSignatureUrl, err = s.Resolver.Find(d.ShaSumsSignatureUrl)
-	if err != nil {
-		return fmt.Errorf("could not resolve shasums signature location: %v", err)
+	if d.ShaSumsSignatureUrl != "" {
+		d.ShaSumsSignatureUrl, err = s.Resolver.Find(d.ShaSumsSignatureUrl)
+		if err != nil {
+			return fmt.Errorf("could not resolve shasums signature location: %v", err)
+		}
 	}
 
 	d.DownloadUrl, err = s.Resolver.Find(d.DownloadUrl)
@@ -275,23 +279,26 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 	}
 
 	// Download provider files
-	shaSums, shaSumsCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
-	if err != nil {
-		cleanupAll()
-		return nil, nil, fmt.Errorf("could not fetch shaSums file: %v", err)
-	}
-	cleanups = append(cleanups, shaSumsCleanup)
+	files := map[string]file.File{}
 
-	shaSumsSig, shaSumsSigCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
-	if err != nil {
-		cleanupAll()
-		return nil, nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
+	if d.ShaSums.URL != "" {
+		shaSums, shaSumsCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
+		if err != nil {
+			cleanupAll()
+			return nil, nil, fmt.Errorf("could not fetch shaSums file: %v", err)
+		}
+		cleanups = append(cleanups, shaSumsCleanup)
+		files[shaSumsKey] = shaSums
 	}
-	cleanups = append(cleanups, shaSumsSigCleanup)
 
-	files := map[string]file.File{
-		shaSumsKey:    shaSums,
-		shaSumsSigKey: shaSumsSig,
+	if d.ShaSums.SignatureURL != "" {
+		shaSumsSig, shaSumsSigCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
+		if err != nil {
+			cleanupAll()
+			return nil, nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
+		}
+		cleanups = append(cleanups, shaSumsSigCleanup)
+		files[shaSumsSigKey] = shaSumsSig
 	}
 
 	for _, platform := range d.Platforms {
@@ -353,21 +360,25 @@ func (s *DefaultProviderService) deleteVersion(v *provider.Version) {
 		}
 	}
 
-	if err := s.Resolver.Purge(v.ShaSumsUrl); err != nil {
-		log.Warn().
-			AnErr("Error", err).
-			Str("Provider", v.Provider.Name).
-			Str("Version", v.Version).
-			Str("Key", v.ShaSumsUrl).
-			Msg("Could not purge, require manual clean-up")
+	if v.ShaSumsUrl != "" {
+		if err := s.Resolver.Purge(v.ShaSumsUrl); err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("Provider", v.Provider.Name).
+				Str("Version", v.Version).
+				Str("Key", v.ShaSumsUrl).
+				Msg("Could not purge, require manual clean-up")
+		}
 	}
 
-	if err := s.Resolver.Purge(v.ShaSumsSignatureUrl); err != nil {
-		log.Warn().
-			AnErr("Error", err).
-			Str("Provider", v.Provider.Name).
-			Str("Version", v.Version).
-			Str("Key", v.ShaSumsSignatureUrl).
-			Msg("Could not purge, require manual clean-up")
+	if v.ShaSumsSignatureUrl != "" {
+		if err := s.Resolver.Purge(v.ShaSumsSignatureUrl); err != nil {
+			log.Warn().
+				AnErr("Error", err).
+				Str("Provider", v.Provider.Name).
+				Str("Version", v.Version).
+				Str("Key", v.ShaSumsSignatureUrl).
+				Msg("Could not purge, require manual clean-up")
+		}
 	}
 }

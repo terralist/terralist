@@ -7,6 +7,7 @@ If you're following this documentation as a step-by-step guide, it is recommende
 Terraform authenticates users with [OAuth 2.0](https://oauth.net/2/). You will need credentials of an OAuth Application from one of the supported providers:
 
 - [GitHub](https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app)
+  <br/>The `email` account permission and device flow must be granted to the GitHub OAuth App
 - [BitBucket](https://developer.atlassian.com/cloud/bitbucket/oauth-2/)
 - [GitLab](https://docs.gitlab.com/ee/integration/oauth_provider.html#create-an-instance-wide-application)
   <br/>The `email` and `openid` scopes must be assigned for the GitLab OAuth application
