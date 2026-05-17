@@ -138,6 +138,28 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 				Convey("If the resolver is set", func() {
 					// Set by default
 
+					Convey("If shasums URLs are empty", func() {
+						mockProviderPlatform.Version.ShaSumsUrl = ""
+						mockProviderPlatform.Version.ShaSumsSignatureUrl = ""
+						binaryLocation, _ := random.String(16)
+
+						mockResolver.
+							On("Find", binaryKey).
+							Return(binaryLocation, nil)
+
+						Convey("When the service is queried", func() {
+							info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+
+							Convey("A response with download info should be returned", func() {
+								So(info, ShouldNotBeNil)
+								So(err, ShouldBeNil)
+								So(info.ShaSumsUrl, ShouldEqual, "")
+								So(info.ShaSumsSignatureUrl, ShouldEqual, "")
+								So(info.DownloadUrl, ShouldEqual, binaryLocation)
+							})
+						})
+					})
+
 					Convey("If the shasum location cannot be resolved", func() {
 						mockResolver.
 							On("Find", shaSumsKey).
@@ -425,6 +447,39 @@ func TestUploadProvider(t *testing.T) {
 											Convey("No error should be returned", func() {
 												So(err, ShouldBeNil)
 											})
+										})
+									})
+								})
+
+								Convey("If shasums manifest files are omitted", func() {
+									dto.ShaSums = provider.CreateProviderShaSumsDTO{}
+									dto.Platforms = []provider.CreatePlatformDTO{
+										{Location: binaryURL},
+									}
+
+									mockFetcher.
+										On(
+											"FetchFileChecksum",
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("http.Header"),
+										).
+										Return(file.NewEmptyFile("test-with-checksum.txt"), func() {}, nil)
+
+									mockResolver.
+										On("Store", mock.AnythingOfType("*storage.StoreInput")).
+										Return("", nil)
+
+									mockProviderRepository.
+										On("Upsert", mock.AnythingOfType("provider.Provider")).
+										Return(&provider.Provider{}, nil)
+
+									Convey("When the service is queried", func() {
+										err := providerService.Upload(&dto)
+
+										Convey("No error should be returned", func() {
+											So(err, ShouldBeNil)
 										})
 									})
 								})

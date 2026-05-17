@@ -128,6 +128,15 @@ const (
 	MasterApiKeyFlag = "master-api-key"
 
 	AuthTokenExpirationFlag = "auth-token-expiration"
+
+	VcsProviderFlag = "vcs-provider"
+
+	GitHubWebhookSecretFlag     = "gh-webhook-secret"
+	GitHubAccessTokenFlag       = "gh-access-token"
+	GitHubAppIDFlag             = "gh-app-id"
+	GitHubAppInstallationIDFlag = "gh-app-installation-id"
+	GitHubAppPrivateKeyPathFlag = "gh-app-private-key-path"
+	GitHubBaseURLFlag           = "gh-base-url"
 )
 
 var flags = map[string]cli.Flag{
@@ -488,5 +497,30 @@ var flags = map[string]cli.Flag{
 		Description:  "The duration for which auth tokens remain valid.",
 		Choices:      []string{"1d", "1w", "1m", "1y", "never"},
 		DefaultValue: "1d",
+	},
+
+	VcsProviderFlag: &cli.StringFlag{
+		Description: "The VCS provider.",
+		Choices:     []string{"github"},
+	},
+
+	GitHubWebhookSecretFlag: &cli.StringFlag{
+		Description: "Optional shared secret to verify GitHub release webhooks (X-Hub-Signature-256). If empty, signatures are not verified.",
+	},
+	GitHubAccessTokenFlag: &cli.StringFlag{
+		Description: "Optional bearer token for outbound GitHub downloads (e.g. PAT). Not required when gh-app-id, gh-app-installation-id, and gh-app-private-key-path are all set.",
+	},
+	GitHubAppIDFlag: &cli.IntFlag{
+		Description: "Optional GitHub App ID. When set with gh-app-private-key-path and gh-app-installation-id, installation access tokens are used for outbound GitHub downloads.",
+	},
+	GitHubAppInstallationIDFlag: &cli.IntFlag{
+		Description: "Default GitHub App installation ID when the webhook payload does not include installation (e.g. repository webhooks).",
+	},
+	GitHubAppPrivateKeyPathFlag: &cli.StringFlag{
+		Description: "Path to the GitHub App private key PEM file (PKCS#1 or PKCS#8).",
+	},
+	GitHubBaseURLFlag: &cli.StringFlag{
+		Description:  "The GitHub base domain if you are using GitHub Enterprise. (default: 'github.com')",
+		DefaultValue: "github.com",
 	},
 }

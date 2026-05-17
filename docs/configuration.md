@@ -19,7 +19,7 @@ Terralist also supports reading the environment at run-time. For example, if you
 
 ### `config`
 
-Path to YAML config file where flag values are set.
+Path to the configuration file where flag values are set (same formats as described in the introduction).
 
 | Name | Value |
 | --- | --- |
@@ -1048,6 +1048,91 @@ A small NIT branding of Terralist. The name of the company set by this variable 
 | default | `n/a` |
 | cli | `--custom-company-name` |
 | env | `TERRALIST_CUSTOM_COMPANY_NAME` |
+
+### `vcs-provider`
+
+VCS integration used for [release webhooks](../user-guide/webhook-vcs-releases.md). When empty, no VCS provider is initialized (webhook routes must not be used). Today only GitHub is implemented.
+
+| Name | Value |
+| --- | --- |
+| type | select |
+| choices | `github` |
+| required | no |
+| default | `n/a` (empty) |
+| cli | `--vcs-provider` |
+| env | `TERRALIST_VCS_PROVIDER` |
+
+### `gh-webhook-secret`
+
+Optional shared secret to verify GitHub release webhooks (`X-Hub-Signature-256`, HMAC-SHA256 of the raw body). If empty, signatures are not verified. See the [VCS release webhooks](../user-guide/webhook-vcs-releases.md) guide.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gh-webhook-secret` |
+| env | `TERRALIST_GH_WEBHOOK_SECRET` |
+
+### `gh-access-token`
+
+Optional bearer token for outbound GitHub downloads (for example a personal access token). Sent as `Authorization: Bearer` on fetches. Startup validation requires **either** this token **or** all of `gh-app-id`, `gh-app-installation-id`, and `gh-app-private-key-path` (GitHub App installation token flow).
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gh-access-token` |
+| env | `TERRALIST_GH_ACCESS_TOKEN` |
+
+### `gh-app-id`
+
+Optional GitHub App ID. Used with `gh-app-installation-id` and `gh-app-private-key-path` for installation access tokens on outbound GitHub API and asset downloads.
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `0` |
+| cli | `--gh-app-id` |
+| env | `TERRALIST_GH_APP_ID` |
+
+### `gh-app-installation-id`
+
+GitHub App installation ID used when minting installation tokens (for example repository-level webhooks). The App must be installed on the account that owns the target repositories.
+
+| Name | Value |
+| --- | --- |
+| type | int |
+| required | no |
+| default | `0` |
+| cli | `--gh-app-installation-id` |
+| env | `TERRALIST_GH_APP_INSTALLATION_ID` |
+
+### `gh-app-private-key-path`
+
+Path to the GitHub App private key PEM file (PKCS#1 or PKCS#8). Required together with `gh-app-id` and `gh-app-installation-id` when not using `gh-access-token`.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--gh-app-private-key-path` |
+| env | `TERRALIST_GH_APP_PRIVATE_KEY_PATH` |
+
+### `gh-base-url`
+
+Hostname (no scheme) for GitHub Enterprise Server-style hosts, for example `github.mycompany.com`. Defaults to `github.com`. This is separate from OAuth’s [`gh-domain`](#gh-domain). Webhook asset URLs built from release payloads still use `https://api.github.com` where the implementation constructs those links.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `github.com` |
+| cli | `--gh-base-url` |
+| env | `TERRALIST_GH_BASE_URL` |
 
 ## Example YAML configuration file
 

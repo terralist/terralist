@@ -10,6 +10,9 @@ import (
 	"terralist/pkg/auth/gitlab"
 	"terralist/pkg/auth/oidc"
 	"terralist/pkg/auth/saml"
+	"terralist/pkg/vcs"
+	vcsFactory "terralist/pkg/vcs/factory"
+	vcsGithub "terralist/pkg/vcs/github"
 	"time"
 
 	"terralist/internal/server"
@@ -485,6 +488,28 @@ func (s *Command) run() error {
 		}
 	}
 
+	// Initialize vcs providers
+	var vcsProvider vcs.Provider
+	switch flags[VcsProviderFlag].(*cli.StringFlag).Value { //nolint:forcetypeassert
+	case "github":
+		vcsProvider, err = vcsFactory.NewProvider(vcs.GITHUB, &vcsGithub.Config{ //nolint:forcetypeassert
+			WebhookSecret:     flags[GitHubWebhookSecretFlag].(*cli.StringFlag).Value,
+			AccessToken:       flags[GitHubAccessTokenFlag].(*cli.StringFlag).Value,
+			AppID:             flags[GitHubAppIDFlag].(*cli.IntFlag).Value,
+			AppInstallationID: flags[GitHubAppInstallationIDFlag].(*cli.IntFlag).Value,
+			AppPrivateKeyPath: flags[GitHubAppPrivateKeyPathFlag].(*cli.StringFlag).Value,
+			BaseURL:           flags[GitHubBaseURLFlag].(*cli.StringFlag).Value,
+		})
+	default:
+		raw := flags[VcsProviderFlag].(*cli.StringFlag).Value //nolint:forcetypeassert
+		if raw != "" {
+			return fmt.Errorf("invalid VCS provider: %s", raw)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
 	// Initialize session store
 	var store session.Store
 	switch flags[SessionStoreFlag].(*cli.StringFlag).Value { //nolint:forcetypeassert
@@ -510,6 +535,7 @@ func (s *Command) run() error {
 		Provider:          provider,
 		ModulesResolver:   resolvers["modules"],
 		ProvidersResolver: resolvers["providers"],
+		VcsProvider:       vcsProvider,
 		Store:             store,
 		RunningMode:       s.RunningMode,
 	})

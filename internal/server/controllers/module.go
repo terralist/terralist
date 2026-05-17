@@ -36,9 +36,11 @@ type ModuleController interface {
 type DefaultModuleController struct {
 	ModuleService    services.ModuleService
 	AuthorityService services.AuthorityService
+	VcsService       services.VcsService
 	Authentication   *handlers.Authentication
 	Authorization    *handlers.Authorization
-	AnonymousRead    bool
+
+	AnonymousRead bool
 }
 
 func (c *DefaultModuleController) TerraformApi() string {
@@ -117,6 +119,52 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
+	api.POST(
+		"/:namespace/:name/:provider/webhook/:vcs",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			vcs := ctx.Param("vcs")
+
+			ev, err := c.VcsService.ParseModuleReleaseWebhook(ctx, vcs, namespace, name, provider)
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{"errors": []string{err.Error()}})
+				return
+			}
+			if ev == nil {
+				ctx.JSON(http.StatusOK, gin.H{"errors": []string{}})
+				return
+			}
+
+			authority, err := c.AuthorityService.GetByName(namespace)
+			if err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{"errors": []string{fmt.Sprintf("authority %q not found", namespace)}})
+				return
+			}
+
+			dto := module.CreateDTO{
+				AuthorityID: authority.ID,
+				Name:        name,
+				Provider:    provider,
+				VersionCreateDTO: module.VersionCreateDTO{
+					Version: ev.SemVer,
+				},
+			}
+
+			headers := c.VcsService.GetHeaders()
+			header := file.CreateHeader(headers)
+			if err := c.ModuleService.Upload(&dto, ev.ModuleArchiveURL, header); err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{"errors": []string{err.Error()}})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
+			})
+		},
+	)
+
 	api.Use(c.Authentication.AttemptAuthentication())
 
 	// This is a protected endpoint, every request should be authenticated.
