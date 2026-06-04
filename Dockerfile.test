@@ -63,7 +63,14 @@ RUN curl -sL https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terra
   && rm terraform.zip \
   && terraform version
 
-# Install Playwright dependencies
-RUN npx playwright install --with-deps chromium
+# Install the Playwright browser pinned to the frontend e2e suite, at a
+# HOME-independent location so the CI job (which runs with HOME=/github/home)
+# finds it instead of re-downloading.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+COPY e2e/frontend/package.json e2e/frontend/package-lock.json /opt/playwright/
+RUN cd /opt/playwright \
+  && npm ci \
+  && npx playwright install --with-deps chromium \
+  && rm -rf /opt/playwright
 
 ENTRYPOINT [ "/bin/bash" ]

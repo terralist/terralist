@@ -221,6 +221,11 @@ jobs:
 
       GOCOVERDIR: ${{ format('{0}/coverage/e2e', github.workspace) }}
 
+      # Resolve browsers from the location baked into the test-base image
+      # rather than HOME, which GitHub overrides to /github/home for container
+      # jobs. Keep this in sync with Dockerfile.test.
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+
     steps:
       - name: Download terralist binary
         uses: actions/download-artifact@v7
