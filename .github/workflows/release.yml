@@ -90,7 +90,7 @@ jobs:
         run: touch web/dist/.gitkeep
 
       - name: Release stable
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         if: (!contains(github.ref, '-pre.'))
         with:
           version: v2.4.8
@@ -113,7 +113,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Release pre-release
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         if: contains(github.ref, '-pre.')
         with:
           version: v2.4.8
