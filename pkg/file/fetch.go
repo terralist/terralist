@@ -30,7 +30,6 @@ func generateGetters(header http.Header) map[string]getter.Getter {
 	}
 
 	return map[string]getter.Getter{
-		"file":  new(getter.FileGetter),
 		"git":   new(getter.GitGetter),
 		"gcs":   new(getter.GCSGetter),
 		"hg":    new(getter.HgGetter),
@@ -125,6 +124,16 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
 	case <-ctx.Done():
 		wg.Wait()
+
+		// The download goroutine cancels the context as it exits, so reaching
+		// here can also mean the download finished with an error. Surface that
+		// error instead of treating the download as successful.
+		select {
+		case err := <-ech:
+			cleanup()
+			return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+		default:
+		}
 
 		// If we know the type, just parse it
 		if kind == file || kind == dir {

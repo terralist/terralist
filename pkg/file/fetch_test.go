@@ -1,27 +1,52 @@
 package file
 
 import (
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestFetch_CleanupRemovesTempDir(t *testing.T) {
-	// Create a local file to fetch
-	tempFile, err := os.CreateTemp("", "test-fetch-cleanup-*")
+func TestFetch_RejectsFileScheme(t *testing.T) {
+	// Create a local file to read
+	tempFile, err := os.CreateTemp("", "test-fetch-file-scheme-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tempFile.Name())
 
-	if _, err := tempFile.WriteString("test content"); err != nil {
+	if _, err := tempFile.WriteString("sensitive content"); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
 	}
 	tempFile.Close()
 
+	// Fetching through the file:// scheme must not be allowed
+	_, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil)
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if err == nil {
+		t.Fatal("Expected fetch to reject the file:// scheme, but it succeeded")
+	}
+
+	if !errors.Is(err, ErrDownloadFailure) {
+		t.Errorf("Expected ErrDownloadFailure, got: %v", err)
+	}
+}
+
+func TestFetch_CleanupRemovesTempDir(t *testing.T) {
+	// Serve a file over HTTP to fetch
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("test content"))
+	}))
+	defer server.Close()
+
 	// Fetch the file
-	result, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil)
+	result, cleanup, err := fetch("test.txt", server.URL, "", file, nil)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
