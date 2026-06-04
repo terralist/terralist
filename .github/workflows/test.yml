@@ -284,7 +284,10 @@ jobs:
           # Only download the browser if Playwright's expected build is missing,
           # so a normal run never reaches out to the browser CDN.
           cache="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
-          if compgen -G "$cache/chromium_headless_shell-*" > /dev/null; then
+          # POSIX glob check: set -- expands the pattern, leaving it literal
+          # (a non-existent path) when nothing matches.
+          set -- "$cache"/chromium_headless_shell-*
+          if [ -e "$1" ]; then
             echo "Chromium headless shell already present in $cache; skipping install"
           else
             echo "Chromium headless shell not found; installing"
