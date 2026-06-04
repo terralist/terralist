@@ -19,10 +19,7 @@ type UserData = {
 type UserDataWrapper = UserDataBase & UserData;
 
 function newUserData(data: UserData): UserDataWrapper {
-  return {
-    __isUserData: true,
-    ...data
-  } as UserDataWrapper;
+  return { __isUserData: true, ...data };
 }
 
 function isUserData(arg: unknown): arg is UserData {
