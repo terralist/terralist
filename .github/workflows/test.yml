@@ -33,7 +33,7 @@ jobs:
             tools/go.sum
 
       - name: Install task
-        uses: arduino/setup-task@v2.0.0
+        uses: go-task/setup-task@v2
 
       - name: Install dependencies
         run: task --verbose tidy
@@ -248,13 +248,21 @@ jobs:
         run: mkdir -p coverage/e2e
 
       - name: Spin up Terralist server
-        uses: JarvusInnovations/background-action@v1.0.7
-        with:
-          run: terralist server
-          wait-on: |
-            https-get://localhost.direct:${{ env.TERRALIST_PORT }}/check/readyz
-          wait-for: 30s
-          log-output-if: "true"
+        run: |
+          nohup terralist server > /tmp/terralist-server.log 2>&1 &
+          echo "TERRALIST_SERVER_PID=$!" >> "$GITHUB_ENV"
+
+          for i in $(seq 1 30); do
+            if curl -ksf "https://localhost.direct:${TERRALIST_PORT}/check/readyz" >/dev/null; then
+              echo "Terralist is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::Terralist did not become ready within 30s" >&2
+          cat /tmp/terralist-server.log >&2
+          exit 1
 
       - name: Run API E2E Tests
         run: go test -v -count=1 ./e2e/...
@@ -265,6 +273,19 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           npx playwright test
+
+      - name: Stop Terralist server
+        if: always()
+        run: |
+          if [ -n "$TERRALIST_SERVER_PID" ]; then
+            kill -INT "$TERRALIST_SERVER_PID" 2>/dev/null || true
+            for i in $(seq 1 15); do
+              kill -0 "$TERRALIST_SERVER_PID" 2>/dev/null || break
+              sleep 1
+            done
+          fi
+
+          cat /tmp/terralist-server.log || true
 
       - name: Upload e2e coverage
         if: always() && matrix.database-backend == 'sqlite'
