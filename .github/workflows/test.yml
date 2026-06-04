@@ -113,6 +113,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     needs: [build-terralist-binary]
 
@@ -267,12 +268,27 @@ jobs:
       - name: Run API E2E Tests
         run: go test -v -count=1 ./e2e/...
 
-      - name: Run Playwright Frontend Tests
+      - name: Install frontend test dependencies
+        working-directory: e2e/frontend
+        run: npm ci
+
+      - name: Install Playwright browser
         working-directory: e2e/frontend
         run: |
-          npm ci
-          npx playwright install --with-deps chromium
-          npx playwright test
+          # The test-base image already ships the browser and OS dependencies.
+          # Only download the browser if Playwright's expected build is missing,
+          # so a normal run never reaches out to the browser CDN.
+          cache="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+          if compgen -G "$cache/chromium_headless_shell-*" > /dev/null; then
+            echo "Chromium headless shell already present in $cache; skipping install"
+          else
+            echo "Chromium headless shell not found; installing"
+            npx playwright install chromium
+          fi
+
+      - name: Run Playwright Frontend Tests
+        working-directory: e2e/frontend
+        run: npx playwright test
 
       - name: Stop Terralist server
         if: always()
