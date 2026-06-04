@@ -370,7 +370,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ModuleRepository: moduleRepository,
 		AuthorityService: authorityService,
 		Resolver:         config.ModulesResolver,
-		Fetcher:          file.NewFetcher(),
+		Fetcher:          file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
 	}
 
 	moduleController := &controllers.DefaultModuleController{
@@ -391,7 +391,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
 		Resolver:           config.ProvidersResolver,
-		Fetcher:            file.NewFetcher(),
+		Fetcher:            file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
 	}
 
 	providerController := &controllers.DefaultProviderController{

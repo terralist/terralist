@@ -90,6 +90,8 @@ const (
 	ModulesAnonymousReadFlag   = "modules-anonymous-read"
 	ProvidersAnonymousReadFlag = "providers-anonymous-read"
 
+	FetchAllowPrivateAddressesFlag = "fetch-allow-private-addresses"
+
 	S3EndpointFlag             = "s3-endpoint"
 	S3BucketNameFlag           = "s3-bucket-name"
 	S3BucketRegionFlag         = "s3-bucket-region"
@@ -393,6 +395,11 @@ var flags = map[string]cli.Flag{
 
 	ProvidersAnonymousReadFlag: &cli.BoolFlag{
 		Description:  "Allow anonymous read to providers.",
+		DefaultValue: false,
+	},
+
+	FetchAllowPrivateAddressesFlag: &cli.BoolFlag{
+		Description:  "Allow fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. Enable only if your artifacts are served from a host on a private network.",
 		DefaultValue: false,
 	},
 

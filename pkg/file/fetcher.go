@@ -36,30 +36,37 @@ const (
 	unknown
 )
 
-type defaultFetcher struct{}
-
-func NewFetcher() Fetcher {
-	return &defaultFetcher{}
+type defaultFetcher struct {
+	allowPrivateAddresses bool
 }
 
-func (*defaultFetcher) Fetch(name string, url string, header http.Header) (File, func(), error) {
-	return fetch(name, url, "", unknown, header)
+// NewFetcher creates a Fetcher. Unless allowPrivateAddresses is true, fetches
+// over HTTP(S) refuse to connect to private, loopback, link-local and
+// unspecified addresses.
+func NewFetcher(allowPrivateAddresses bool) Fetcher {
+	return &defaultFetcher{
+		allowPrivateAddresses: allowPrivateAddresses,
+	}
 }
 
-func (*defaultFetcher) FetchFile(name string, url string, header http.Header) (File, func(), error) {
-	return fetch(name, url, "", file, header)
+func (f *defaultFetcher) Fetch(name string, url string, header http.Header) (File, func(), error) {
+	return fetch(name, url, "", unknown, header, f.allowPrivateAddresses)
 }
 
-func (*defaultFetcher) FetchFileChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
-	return fetch(name, url, checksum, file, header)
+func (f *defaultFetcher) FetchFile(name string, url string, header http.Header) (File, func(), error) {
+	return fetch(name, url, "", file, header, f.allowPrivateAddresses)
 }
 
-func (*defaultFetcher) FetchDir(name string, url string, header http.Header) (File, func(), error) {
-	return fetch(name, url, "", dir, header)
+func (f *defaultFetcher) FetchFileChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
+	return fetch(name, url, checksum, file, header, f.allowPrivateAddresses)
 }
 
-func (*defaultFetcher) FetchDirChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
-	return fetch(name, url, checksum, dir, header)
+func (f *defaultFetcher) FetchDir(name string, url string, header http.Header) (File, func(), error) {
+	return fetch(name, url, "", dir, header, f.allowPrivateAddresses)
+}
+
+func (f *defaultFetcher) FetchDirChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
+	return fetch(name, url, checksum, dir, header, f.allowPrivateAddresses)
 }
 
 // CreateHeader creates an http.Header from a map of key-value strings.

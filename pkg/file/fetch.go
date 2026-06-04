@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 
 	getter "github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
@@ -20,13 +23,53 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
+// isPrivateAddress reports whether the given IP belongs to a range that
+// must not be reachable from a user-supplied download URL: loopback,
+// private (RFC 1918 and IPv6 ULA), link-local (including the cloud
+// metadata address 169.254.169.254) and the unspecified address.
+func isPrivateAddress(ip netip.Addr) bool {
+	return ip.IsLoopback() ||
+		ip.IsPrivate() ||
+		ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() ||
+		ip.IsUnspecified()
+}
+
+// privateAddressGuard is a dial control function that refuses to connect to
+// private addresses. It runs after DNS resolution against the actual IP being
+// dialed, so it covers redirects and is not bypassable through DNS rebinding.
+func privateAddressGuard(network, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("could not parse address %q: %w", address, err)
+	}
+
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return fmt.Errorf("could not parse IP %q: %w", host, err)
+	}
+
+	if isPrivateAddress(ip) {
+		return fmt.Errorf("refusing to connect to non-public address %s", ip)
+	}
+
+	return nil
+}
+
 // generateGetters returns the map of getters.
 // Modified version of https://github.com/hashicorp/go-getter/blob/f7836fb97529673f24dac0aaa140762ee05c847f/get.go#L65
 // to add support for custom http headers.
-func generateGetters(header http.Header) map[string]getter.Getter {
+func generateGetters(header http.Header, allowPrivateAddresses bool) map[string]getter.Getter {
 	httpGetter := &getter.HttpGetter{
 		Netrc:  true,
 		Header: header,
+	}
+
+	if !allowPrivateAddresses {
+		defaultTransport, _ := http.DefaultTransport.(*http.Transport)
+		transport := defaultTransport.Clone()
+		transport.DialContext = (&net.Dialer{Control: privateAddressGuard}).DialContext
+		httpGetter.Client = &http.Client{Transport: transport}
 	}
 
 	return map[string]getter.Getter{
@@ -43,7 +86,7 @@ func generateGetters(header http.Header) map[string]getter.Getter {
 // It returns the downloaded file and a cleanup function that removes the temporary
 // directory used during the download. The caller must invoke the cleanup function
 // when the file is no longer needed.
-func fetch(name string, url string, checksum string, kind int, header http.Header) (File, func(), error) {
+func fetch(name string, url string, checksum string, kind int, header http.Header, allowPrivateAddresses bool) (File, func(), error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -80,7 +123,7 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		Src:     u.String(),
 		Dst:     dst,
 		Pwd:     tempDir,
-		Getters: generateGetters(header),
+		Getters: generateGetters(header, allowPrivateAddresses),
 	}
 
 	switch kind {

@@ -44,6 +44,7 @@ nav:
     - RBAC Configuration: user-guide/rbac-configuration.md
     - SAML Configuration: user-guide/saml-configuration.md
     - Monitoring and Observability: user-guide/monitoring.md
+    - Security: user-guide/security.md
   - Developer Guide: 
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md

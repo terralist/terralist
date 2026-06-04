@@ -770,6 +770,18 @@ Allows anonymous read and download of providers.
 | cli | `--providers-anonymous-read` |
 | env | `TERRALIST_PROVIDERS_ANONYMOUS_READ` |
 
+### `fetch-allow-private-addresses`
+
+Allows fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. By default Terralist refuses to connect to these addresses. The check runs against the resolved IP at connection time, so it also applies to redirect targets. Enable this only if your artifacts are served from a host on a private network. See [Security](user-guide/security.md) for details.
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--fetch-allow-private-addresses` |
+| env | `TERRALIST_FETCH_ALLOW_PRIVATE_ADDRESSES` |
+
 ### `s3-endpoint`
 
 The endpoint where the S3 SDK should connect. By default, Terralist will connect to the AWS S3 endpoint.

@@ -24,7 +24,7 @@ func TestFetch_RejectsFileScheme(t *testing.T) {
 	tempFile.Close()
 
 	// Fetching through the file:// scheme must not be allowed
-	_, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil)
+	_, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil, false)
 	if cleanup != nil {
 		cleanup()
 	}
@@ -38,6 +38,41 @@ func TestFetch_RejectsFileScheme(t *testing.T) {
 	}
 }
 
+func TestFetch_BlocksPrivateAddressByDefault(t *testing.T) {
+	// httptest binds to a loopback address, which the guard must reject
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("internal content"))
+	}))
+	defer server.Close()
+
+	_, cleanup, err := fetch("test.txt", server.URL, "", file, nil, false)
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if err == nil {
+		t.Fatal("Expected fetch to reject the private address, but it succeeded")
+	}
+
+	if !errors.Is(err, ErrDownloadFailure) {
+		t.Errorf("Expected ErrDownloadFailure, got: %v", err)
+	}
+}
+
+func TestFetch_AllowsPrivateAddressWhenEnabled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("internal content"))
+	}))
+	defer server.Close()
+
+	result, cleanup, err := fetch("test.txt", server.URL, "", file, nil, true)
+	if err != nil {
+		t.Fatalf("fetch failed with private addresses allowed: %v", err)
+	}
+	defer cleanup()
+	defer result.Close()
+}
+
 func TestFetch_CleanupRemovesTempDir(t *testing.T) {
 	// Serve a file over HTTP to fetch
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +81,7 @@ func TestFetch_CleanupRemovesTempDir(t *testing.T) {
 	defer server.Close()
 
 	// Fetch the file
-	result, cleanup, err := fetch("test.txt", server.URL, "", file, nil)
+	result, cleanup, err := fetch("test.txt", server.URL, "", file, nil, true)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}
