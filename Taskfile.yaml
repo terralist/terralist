@@ -194,12 +194,8 @@ tasks:
           [ -n "$ids" ] && docker stop $ids || true
         ignore_error: true
       - defer: rm -f $TERRALIST_SQLITE_PATH
-      - defer:
-          cmd: docker stop terralist-rustfs-e2e-{{.TEST_RUN_ID}} terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
-          ignore_error: true
-      - defer:
-          cmd: pkill -f "{{.BINARY_FILE_NAME}} server"
-          ignore_error: true
+      - defer: docker stop terralist-rustfs-e2e-{{.TEST_RUN_ID}} terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
+      - defer: pkill -f "{{.BINARY_FILE_NAME}} server"
       - >
         docker run
         --rm
@@ -227,9 +223,7 @@ tasks:
           sleep 1;
         done
       - mkdir -p $GOCOVERDIR
-      - ./{{.BINARY_FILE_NAME}} server &
-      - cmd: read -p "Press any key to stop..."
-        ignore_error: true
+      - ./{{.BINARY_FILE_NAME}} server
 
   test:unit:
     desc: "Run all unit tests."

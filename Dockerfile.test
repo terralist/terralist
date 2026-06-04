@@ -16,7 +16,7 @@ RUN apt-get update && \
       default-mysql-client
 
 # Install GoLang
-ARG GOLANG_VERSION=1.25.8
+ARG GOLANG_VERSION=1.26.4
 RUN curl -sL https://go.dev/dl/go${GOLANG_VERSION}.${TARGETOS}-${TARGETARCH}.tar.gz -o golang.tar.gz \
   && tar -C /usr/local -xzf golang.tar.gz \
   && /usr/local/go/bin/go version

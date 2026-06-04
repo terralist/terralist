@@ -1,6 +1,6 @@
 module terralist/tools
 
-go 1.25.8
+go 1.26.4
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
