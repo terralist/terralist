@@ -12,31 +12,31 @@
         <meta name="author" content="Valentin Deaconu">
       
       
-        <link rel="canonical" href="https://www.terralist.io/dev/dev-guide/">
+        <link rel="canonical" href="https://www.terralist.io/dev/user-guide/security/">
       
       
-        <link rel="prev" href="../user-guide/security/">
+        <link rel="prev" href="../monitoring/">
       
       
-        <link rel="next" href="api-reference/">
+        <link rel="next" href="../../dev-guide/">
       
       
         
       
       
-      <link rel="icon" href="../assets/terralist.svg">
+      <link rel="icon" href="../../assets/terralist.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Developer Guide - Terralist</title>
+        <title>Security - Terralist</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,7 +55,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#developer-guide" class="md-skip">
+        <a href="#security" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +100,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Terralist" class="md-header__button md-logo" aria-label="Terralist" data-md-component="logo">
+    <a href="../.." title="Terralist" class="md-header__button md-logo" aria-label="Terralist" data-md-component="logo">
       
-  <img src="../assets/terralist.svg" alt="logo">
+  <img src="../../assets/terralist.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Developer Guide
+              Security
             
           </span>
         </div>
@@ -235,9 +235,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Terralist" class="md-nav__button md-logo" aria-label="Terralist" data-md-component="logo">
+    <a href="../.." title="Terralist" class="md-nav__button md-logo" aria-label="Terralist" data-md-component="logo">
       
-  <img src="../assets/terralist.svg" alt="logo">
+  <img src="../../assets/terralist.svg" alt="logo">
 
     </a>
     Terralist
@@ -264,7 +264,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -291,7 +291,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         
   
   
@@ -318,7 +318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -345,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -372,7 +372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../artifacts-documentation/" class="md-nav__link">
+      <a href="../../artifacts-documentation/" class="md-nav__link">
         
   
   
@@ -396,6 +396,8 @@
       
   
   
+    
+  
   
   
     
@@ -419,15 +421,15 @@
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../user-guide/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -451,7 +453,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -471,7 +473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/aws-s3-bucket-configuration/" class="md-nav__link">
+      <a href="../aws-s3-bucket-configuration/" class="md-nav__link">
         
   
   
@@ -499,7 +501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/rbac-configuration/" class="md-nav__link">
+      <a href="../rbac-configuration/" class="md-nav__link">
         
   
   
@@ -527,7 +529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/saml-configuration/" class="md-nav__link">
+      <a href="../saml-configuration/" class="md-nav__link">
         
   
   
@@ -555,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/monitoring/" class="md-nav__link">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   
@@ -580,10 +582,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../user-guide/security/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -599,6 +628,71 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#threats-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threats and mitigations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threats and mitigations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#server-side-request-forgery-through-artifact-fetching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server-side request forgery through artifact fetching
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Server-side request forgery through artifact fetching">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serving-artifacts-from-a-private-network" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serving artifacts from a private network
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -615,8 +709,6 @@
       
   
   
-    
-  
   
   
     
@@ -636,15 +728,15 @@
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../dev-guide/" class="md-nav__link ">
               
   
   
@@ -662,13 +754,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_7" id="__nav_7_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -688,7 +780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api-reference/" class="md-nav__link">
+      <a href="../../dev-guide/api-reference/" class="md-nav__link">
         
   
   
@@ -716,7 +808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="local-development/" class="md-nav__link">
+      <a href="../../dev-guide/local-development/" class="md-nav__link">
         
   
   
@@ -744,7 +836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="e2e-testing/" class="md-nav__link">
+      <a href="../../dev-guide/e2e-testing/" class="md-nav__link">
         
   
   
@@ -792,6 +884,59 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#threats-and-mitigations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threats and mitigations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threats and mitigations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#server-side-request-forgery-through-artifact-fetching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Server-side request forgery through artifact fetching
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Server-side request forgery through artifact fetching">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#serving-artifacts-from-a-private-network" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serving artifacts from a private network
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -810,13 +955,17 @@
   
 
 
-<h1 id="developer-guide">Developer Guide<a class="headerlink" href="#developer-guide" title="Permanent link">¶</a></h1>
-<p>The Terralist Developer Guide provides documentation for developers and contributors of Terralist itself. You can jump directly to a page listed below, or use the next and previous buttons in the navigation bar at the top of the page to move through the documentation in order.</p>
-<ul>
-<li><a href="api-reference/">API Reference</a></li>
-<li><a href="local-development/">Local Development</a></li>
-<li><a href="e2e-testing/">E2E Testing</a></li>
-</ul>
+<h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">¶</a></h1>
+<p>Terralist is designed to run as a private registry for trusted users. It is <strong>not</strong> hardened to be exposed directly to the public internet, and we strongly recommend against deploying it that way.</p>
+<p>Run Terralist behind your own network boundary (VPN, private network, or an authenticating reverse proxy) and treat every authenticated tenant as a party that can reach the server, not just the registry API. Several capabilities, such as publishing a module from a remote URL, cause the server to act on tenant-supplied input.</p>
+<h2 id="threats-and-mitigations">Threats and mitigations<a class="headerlink" href="#threats-and-mitigations" title="Permanent link">¶</a></h2>
+<h3 id="server-side-request-forgery-through-artifact-fetching">Server-side request forgery through artifact fetching<a class="headerlink" href="#server-side-request-forgery-through-artifact-fetching" title="Permanent link">¶</a></h3>
+<p>When a module or provider is published, the tenant supplies a download URL that Terralist fetches server-side and stores as a retrievable artifact. Without restrictions, a tenant with write access to a single authority can point that URL at an internal service or a cloud metadata endpoint (for example <code>http://169.254.169.254/</code>), and the response is exfiltrated back through the normal download endpoint.</p>
+<p>Terralist refuses to fetch from private, loopback, link-local and unspecified addresses by default. The check runs against the resolved IP at connection time, so it also covers redirect targets and is not bypassable through DNS rebinding.</p>
+<p>This behavior is controlled by <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a>, which defaults to <code>false</code>.</p>
+<h4 id="serving-artifacts-from-a-private-network">Serving artifacts from a private network<a class="headerlink" href="#serving-artifacts-from-a-private-network" title="Permanent link">¶</a></h4>
+<p>If you host your module or provider artifacts on a host that only has a private address (for example an internal artifact server inside your cluster), the default behavior will block those fetches. In that case, set <code>fetch-allow-private-addresses</code> to <code>true</code>.</p>
+<p>Enabling this removes the protection above for every fetch, so only do this when the network the registry can reach is itself trusted.</p>
 
 
 
@@ -870,10 +1019,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

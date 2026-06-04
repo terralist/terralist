@@ -1088,6 +1088,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#fetch-allow-private-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fetch-allow-private-addresses
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#s3-endpoint" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1412,6 +1423,8 @@
       
         
       
+        
+      
     
     
     
@@ -1560,6 +1573,34 @@
     
   
     Monitoring and Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
   
 
     
@@ -2442,6 +2483,17 @@
     <span class="md-ellipsis">
       
         providers-anonymous-read
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fetch-allow-private-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        fetch-allow-private-addresses
       
     </span>
   </a>
@@ -4713,6 +4765,38 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_PROVIDERS_ANONYMOUS_READ</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code><a class="headerlink" href="#fetch-allow-private-addresses" title="Permanent link">¶</a></h3>
+<p>Allows fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. By default Terralist refuses to connect to these addresses. The check runs against the resolved IP at connection time, so it also applies to redirect targets. Enable this only if your artifacts are served from a host on a private network. See <a href="../user-guide/security/">Security</a> for details.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>bool</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--fetch-allow-private-addresses</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_FETCH_ALLOW_PRIVATE_ADDRESSES</code></td>
 </tr>
 </tbody>
 </table>
