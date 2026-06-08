@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"testing"
@@ -81,6 +82,30 @@ func doAuthRequest(t *testing.T, method, url string, body any) *http.Response {
 	return doRequest(t, method, url, body, map[string]string{
 		"Authorization": "Bearer x-api-key:" + config.MasterAPIKey,
 	})
+}
+
+// doAuthMultipartUpload uploads content as a multipart form file under the
+// given field, authenticated with the master API key.
+func doAuthMultipartUpload(t *testing.T, url, field, fileName string, content []byte) *http.Response {
+	t.Helper()
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile(field, fileName)
+	require.NoError(t, err)
+	_, err = part.Write(content)
+	require.NoError(t, err)
+	require.NoError(t, writer.Close())
+
+	req, err := http.NewRequest(http.MethodPost, url, &body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer x-api-key:"+config.MasterAPIKey)
+
+	resp, err := httpClient().Do(req)
+	require.NoError(t, err)
+
+	return resp
 }
 
 // doUnauthRequest executes an unauthenticated HTTP request.

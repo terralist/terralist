@@ -1,6 +1,7 @@
 package file
 
 import (
+	"archive/zip"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -9,6 +10,55 @@ import (
 	"strings"
 	"testing"
 )
+
+func TestFetchArchive_LoadsLocalArchive(t *testing.T) {
+	// Build a zip archive on disk, mimicking an uploaded module file.
+	tempDir, err := os.MkdirTemp("", "test-fetch-archive-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	zipPath := filepath.Join(tempDir, "module.zip")
+	zf, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip: %v", err)
+	}
+	zw := zip.NewWriter(zf)
+	w, err := zw.Create("main.tf")
+	if err != nil {
+		t.Fatalf("Failed to add zip entry: %v", err)
+	}
+	if _, err := w.Write([]byte("# module content")); err != nil {
+		t.Fatalf("Failed to write zip entry: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("Failed to close zip writer: %v", err)
+	}
+	zf.Close()
+
+	uploaded, err := LoadFromDisk("module.zip", zipPath)
+	if err != nil {
+		t.Fatalf("Failed to load uploaded archive: %v", err)
+	}
+
+	// Loading the archive must not require any URL scheme.
+	result, cleanup, err := fetchArchive("module", uploaded)
+	if err != nil {
+		t.Fatalf("fetchArchive failed: %v", err)
+	}
+	defer cleanup()
+	defer result.Close()
+
+	archiveFile, ok := result.(*ArchiveFile)
+	if !ok {
+		t.Fatalf("Expected *ArchiveFile, got %T", result)
+	}
+
+	if _, found := archiveFile.FS().files["main.tf"]; !found {
+		t.Errorf("Expected archive FS to contain main.tf, got files: %v", archiveFile.FS().files)
+	}
+}
 
 func TestFetch_RejectsFileScheme(t *testing.T) {
 	// Create a local file to read

@@ -3,7 +3,6 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"terralist/internal/server/handlers"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -155,7 +153,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			header := file.CreateHeader(body.Headers)
 
-			if err := c.ModuleService.Upload(&dto, body.DownloadUrl, header); err != nil {
+			if err := c.ModuleService.Upload(&dto, file.NewRemoteFile(body.DownloadUrl, header)); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})
@@ -199,57 +197,15 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			// Create a temp file
-			tempDir, err := os.MkdirTemp("", "terralist-upload-*")
+			// Open the uploaded archive for streaming to the service
+			uploaded, err := moduleFiles[0].Open()
 			if err != nil {
 				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"errors": []string{"cannot create temp directory", err.Error()},
+					"errors": []string{"cannot read the uploaded file", err.Error()},
 				})
 				return
 			}
-			defer os.RemoveAll(tempDir)
-
-			onDiskFile, err := file.SaveToDisk(file.NewFromMultipartFileHeader(moduleFiles[0]), tempDir)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"errors": []string{"cannot allocate a new file", err.Error()},
-				})
-				return
-			}
-
-			defer func() {
-				if err := onDiskFile.Close(); err != nil {
-					log.Error().
-						Err(err).
-						Str("artifact", "module").
-						Str("name", name).
-						Str("provider", provider).
-						Str("version", version).
-						Str("file", onDiskFile.Name()).
-						Str("filepath", onDiskFile.Path()).
-						Msg("could not close the file")
-				}
-
-				if err := onDiskFile.Remove(); err != nil {
-					log.Error().
-						Err(err).
-						Str("artifact", "module").
-						Str("name", name).
-						Str("provider", provider).
-						Str("version", version).
-						Str("file", onDiskFile.Name()).
-						Str("filepath", onDiskFile.Path()).
-						Msg("could not remove module temp disk file")
-				}
-			}()
-
-			// Write form content to the temp file
-			if err := ctx.SaveUploadedFile(moduleFiles[0], onDiskFile.Path()); err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"errors": []string{"cannot save content to the local disk", err.Error()},
-				})
-				return
-			}
+			defer uploaded.Close()
 
 			dto := module.CreateDTO{
 				AuthorityID: authorityID,
@@ -260,10 +216,9 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				},
 			}
 
-			// Pass-in local-file URI for go-getter
-			uri := fmt.Sprintf("file://%v", onDiskFile.Path())
+			archive := file.NewStreamingFile(moduleFiles[0].Filename, uploaded, moduleFiles[0].Size)
 
-			if err := c.ModuleService.Upload(&dto, uri, nil); err != nil {
+			if err := c.ModuleService.Upload(&dto, archive); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})

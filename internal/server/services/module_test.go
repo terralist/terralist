@@ -192,7 +192,7 @@ func TestGetSubmoduleDocumentation_ProxyResolverWithArchiveRoot(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockFetcher.
-			On("Fetch", version, location, mock.Anything).
+			On("Fetch", version, mock.Anything).
 			Return(archive, func() {}, nil)
 
 		doc, err := moduleService.GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath)
@@ -223,7 +223,7 @@ func TestUploadModule(t *testing.T) {
 				dto.Version = "100%-not-sem-ver-valid"
 
 				Convey("When the service is queried", func() {
-					err := moduleService.Upload(&dto, url, nil)
+					err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
@@ -240,7 +240,7 @@ func TestUploadModule(t *testing.T) {
 						Return(nil, errors.New(""))
 
 					Convey("When the service is queried", func() {
-						err := moduleService.Upload(&dto, url, nil)
+						err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 						Convey("An error should be returned", func() {
 							So(err, ShouldNotBeNil)
@@ -265,7 +265,7 @@ func TestUploadModule(t *testing.T) {
 							}, nil)
 
 						Convey("When the service is queried", func() {
-							err := moduleService.Upload(&dto, url, nil)
+							err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 							Convey("An error should be returned", func() {
 								So(err, ShouldNotBeNil)
@@ -303,11 +303,11 @@ func TestUploadModule(t *testing.T) {
 								expectedErr := errors.New("some reason")
 
 								mockFetcher.
-									On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
+									On("Fetch", dto.Version, mock.Anything).
 									Return(nil, nil, expectedErr)
 
 								Convey("When the service is queried", func() {
-									err := moduleService.Upload(&dto, url, nil)
+									err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 									Convey("The fetcher error should be returned", func() {
 										So(err, ShouldEqual, expectedErr)
@@ -323,7 +323,7 @@ func TestUploadModule(t *testing.T) {
 								So(err, ShouldBeNil)
 
 								mockFetcher.
-									On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
+									On("Fetch", dto.Version, mock.Anything).
 									Return(archive, func() {}, nil)
 
 								Convey("If the resolver is not set", func() {
@@ -334,7 +334,7 @@ func TestUploadModule(t *testing.T) {
 										Return(&module.Module{}, nil)
 
 									Convey("When the service is queried", func() {
-										err := moduleService.Upload(&dto, url, nil)
+										err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 										Convey("No error should be returned", func() {
 											So(err, ShouldBeNil)
@@ -351,7 +351,7 @@ func TestUploadModule(t *testing.T) {
 											Return("", errors.New(""))
 
 										Convey("When the service is queried", func() {
-											err := moduleService.Upload(&dto, url, nil)
+											err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 											Convey("An error should be returned", func() {
 												So(err, ShouldNotBeNil)
@@ -376,7 +376,7 @@ func TestUploadModule(t *testing.T) {
 												Return(&module.Module{}, nil)
 
 											Convey("When the service is queried", func() {
-												err := moduleService.Upload(&dto, url, nil)
+												err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 												Convey("No error should be returned", func() {
 													// If we fail to push the documentation, we ignore and log a warning
@@ -397,7 +397,7 @@ func TestUploadModule(t *testing.T) {
 												Return(&module.Module{}, nil)
 
 											Convey("When the service is queried", func() {
-												err := moduleService.Upload(&dto, url, nil)
+												err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
 												Convey("No error should be returned", func() {
 													So(err, ShouldBeNil)
@@ -409,6 +409,71 @@ func TestUploadModule(t *testing.T) {
 							})
 						})
 					}
+				})
+			})
+		})
+	})
+}
+
+func TestUploadModuleArchive(t *testing.T) {
+	Convey("Subject: Upload a new module version from an uploaded archive", t, func() {
+		mockModuleRepository := repositories.NewMockModuleRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
+
+		// Use the real fetcher so the uploaded archive is genuinely persisted,
+		// decompressed and re-archived, exercising the upload-files path
+		// without relying on the file:// scheme.
+		moduleService := &DefaultModuleService{
+			ModuleRepository: mockModuleRepository,
+			AuthorityService: mockAuthorityService,
+			Resolver:         mockResolver,
+			Fetcher:          file.NewFetcher(false),
+		}
+
+		Convey("Given a module DTO and an uploaded archive file", func() {
+			dto := module.CreateDTO{}
+			dto.Version = "1.0.0"
+
+			archive, err := file.Archive("module.zip", []file.File{
+				file.NewInMemoryFile("main.tf", []byte("locals {\n  test = true\n}\n")),
+			})
+			So(err, ShouldBeNil)
+
+			mockAuthorityService.
+				On("GetByID", mock.AnythingOfType("uuid.UUID")).
+				Return(&authority.Authority{}, nil)
+			mockModuleRepository.
+				On("Find", mock.AnythingOfType("string"), mock.AnythingOfType("string"), mock.AnythingOfType("string")).
+				Return(nil, errors.New(""))
+
+			Convey("If a resolver is set", func() {
+				location, _ := random.String(16)
+				mockResolver.
+					On("Store", mock.AnythingOfType("*storage.StoreInput")).
+					Return(location, nil)
+				mockModuleRepository.
+					On("Upsert", mock.AnythingOfType("module.Module")).
+					Return(&module.Module{}, nil)
+
+				Convey("When the archive is uploaded", func() {
+					err := moduleService.Upload(&dto, archive)
+
+					Convey("No error should be returned", func() {
+						So(err, ShouldBeNil)
+					})
+				})
+			})
+
+			Convey("If no resolver is set", func() {
+				moduleService.Resolver = nil
+
+				Convey("When the archive is uploaded", func() {
+					err := moduleService.Upload(&dto, archive)
+
+					Convey("An error should be returned, as an uploaded archive cannot be proxied", func() {
+						So(err, ShouldNotBeNil)
+					})
 				})
 			})
 		})
@@ -715,7 +780,7 @@ func TestUploadModuleDocumentation_MultibytePreserved(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		mockFetcher.
-			On("Fetch", dto.Version, url, mock.AnythingOfType("http.Header")).
+			On("Fetch", dto.Version, mock.Anything).
 			Return(arch, func() {}, nil)
 
 		// First store for archive (accept anything but the docs markdown filename)
@@ -752,7 +817,7 @@ func TestUploadModuleDocumentation_MultibytePreserved(t *testing.T) {
 			Return(&module.Module{}, nil)
 
 		Convey("When uploading the module", func() {
-			err := moduleService.Upload(&dto, url, nil)
+			err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 			Convey("Should succeed and preserve content", func() {
 				So(err, ShouldBeNil)
 			})

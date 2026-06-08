@@ -209,6 +209,68 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 	}
 }
 
+// fetchArchive loads an already-obtained archive from a trusted local source.
+// Unlike fetch, it never goes through go-getter's URL/scheme layer: the bytes
+// are persisted to a temp dir, decompressed with go-getter's decompressors
+// (selected by file extension), and loaded as an archive. It carries no scheme
+// or SSRF surface and is meant for content Terralist already holds, such as a
+// direct file upload.
+func fetchArchive(name string, f File) (File, func(), error) {
+	tempDir, err := os.MkdirTemp("", tempDirPattern)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
+	}
+
+	cleanup := func() { os.RemoveAll(tempDir) }
+
+	src, err := SaveToDisk(f, tempDir)
+	if err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: could not persist archive: %v", ErrSystemFailure, err)
+	}
+
+	decompressor, ok := matchDecompressor(f.Name())
+	if !ok {
+		// Not a recognized archive; load it as a single file.
+		result, err := readFile(name, src.Path())
+		if err != nil {
+			cleanup()
+			return nil, nil, err
+		}
+
+		return result, cleanup, nil
+	}
+
+	dst := path.Join(tempDir, "extracted")
+	if err := decompressor.Decompress(dst, src.Path(), true, 0); err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+	}
+
+	result, err := archiveDir(name, dst)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+
+	return result, cleanup, nil
+}
+
+// matchDecompressor selects the go-getter decompressor whose extension is the
+// longest match for the given file name, mirroring go-getter's own detection.
+func matchDecompressor(name string) (getter.Decompressor, bool) {
+	var matched getter.Decompressor
+	matchingLen := 0
+	for ext, dec := range getter.Decompressors {
+		if strings.HasSuffix(name, "."+ext) && len(ext) > matchingLen {
+			matched = dec
+			matchingLen = len(ext)
+		}
+	}
+
+	return matched, matched != nil
+}
+
 // parseResult parses the download result and returns an
 // File.
 func parseResult(name, src string, kind int) (File, error) {

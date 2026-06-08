@@ -35,9 +35,11 @@ type ModuleService interface {
 	// downloaded.
 	GetVersionURL(namespace, name, provider, version string) (*string, error)
 
-	// Upload loads a new module version to the system.
-	// If the module does not exist, it will be created.
-	Upload(dto *module.CreateDTO, url string, header http.Header) error
+	// Upload loads a new module version to the system from the given file. A
+	// file.RemoteFile is downloaded from its URL; any other file is treated as
+	// an already uploaded archive. If the module does not exist, it will be
+	// created.
+	Upload(dto *module.CreateDTO, f file.File) error
 
 	// Delete removes a module with all its data from the system.
 	Delete(authorityID uuid.UUID, name string, provider string) error
@@ -145,7 +147,7 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 			return "", fmt.Errorf("no fetcher configured to fetch submodule documentation")
 		}
 
-		archive, cleanup, err := s.Fetcher.Fetch(version, v.Location, nil)
+		archive, cleanup, err := s.Fetcher.Fetch(version, file.NewRemoteFile(v.Location, nil))
 		if err != nil {
 			return "", fmt.Errorf("could not fetch module archive for submodule docs: %w", err)
 		}
@@ -296,7 +298,7 @@ func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version 
 	return location, nil
 }
 
-func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header http.Header) error {
+func (s *DefaultModuleService) Upload(d *module.CreateDTO, f file.File) error {
 	// Validate version
 	if semVer := version.Version(d.Version); !semVer.Valid() {
 		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
@@ -319,8 +321,9 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 		}
 	}
 
-	// Download module files
-	archive, cleanup, err := s.Fetcher.Fetch(d.Version, url, header)
+	// Resolve the module files: a remote file is downloaded, an uploaded
+	// archive is decompressed locally.
+	archive, cleanup, err := s.Fetcher.Fetch(d.Version, f)
 	if err != nil {
 		return err
 	}
@@ -453,8 +456,15 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, url string, header ht
 				Msg("stored submodule documentation")
 		}
 	} else {
-		// Terralist is using a proxy provider.
-		m.Versions[0].Location = url
+		// Terralist is using the proxy resolver. There is nowhere to store the
+		// files, so this only works when registering a module by URL, which
+		// Terraform then fetches directly. An uploaded archive has no such URL.
+		remote, ok := f.(*file.RemoteFile)
+		if !ok {
+			return fmt.Errorf("a storage resolver is required to upload module archives")
+		}
+
+		m.Versions[0].Location = remote.URL()
 
 		// The documentation of a module can get pretty large and since we have no place to store it
 		// it will end up in the database, increasing the disk size enormously.
