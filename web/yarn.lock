@@ -578,6 +578,11 @@
     estraverse "^5.3.0"
     picomatch "^4.0.3"
 
+"@sveltejs/load-config@0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@sveltejs/load-config/-/load-config-0.1.1.tgz#e9d103e4f20ef2f317e735272d51d5ae33f807e1"
+  integrity sha512-BXXm+VOH/9X4N7Dd1iZ2MqA1h7M+9i2noI8QYuLDY8QcN2WHYn7D/VK/+IJNfcAmRw7ACNJ538UT9GXIhnBTiA==
+
 "@sveltejs/vite-plugin-svelte-inspector@^1.0.4":
   version "1.0.4"
   resolved "https://registry.npmjs.org/@sveltejs/vite-plugin-svelte-inspector/-/vite-plugin-svelte-inspector-1.0.4.tgz"
@@ -2726,11 +2731,12 @@ supports-preserve-symlinks-flag@^1.0.0:
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
 svelte-check@^4.1.4:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/svelte-check/-/svelte-check-4.5.0.tgz#7859d1670253ed7596da23e53d03c2a39aff05a4"
-  integrity sha512-9lNwPxCLWniFvQIcEv1LFqjIxcFtO3smb5+5BKbRJ3ttL4o2lXCej5rLF4DAnfLPI66oaA81vAxw6ILdIWI7kA==
+  version "4.6.0"
+  resolved "https://registry.yarnpkg.com/svelte-check/-/svelte-check-4.6.0.tgz#3022cc03ce84016f715495901f0cdde25ad00515"
+  integrity sha512-KhVnDFDSid57mmZtHz8gfW8AAGylOZ0vPnOIzVmAL+urzwK8sBYXRss953gD8T0OdgAQ11mdWhE6uadmtOz8TQ==
   dependencies:
     "@jridgewell/trace-mapping" "^0.3.25"
+    "@sveltejs/load-config" "0.1.1"
     chokidar "^4.0.1"
     fdir "^6.2.0"
     picocolors "^1.0.0"
