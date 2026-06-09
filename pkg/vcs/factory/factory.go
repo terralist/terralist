@@ -17,7 +17,7 @@ func NewProvider(backend vcs.Backend, config vcs.Configurator) (vcs.Provider, er
 			Err(err).
 			Str("vcs_backend", backendName).
 			Msg("vcs provider config validation failed")
-		return nil, fmt.Errorf("could not create a new resolver with invalid configuration: %v", err)
+		return nil, fmt.Errorf("could not create a new provider with invalid configuration: %v", err)
 	}
 
 	config.SetDefaults()
