@@ -72,7 +72,7 @@ RUN addgroup terralist && \
   chmod g=u /etc/passwd
 
 RUN apk add --no-cache \
-  git~=2.52 \
+  git~=2.54 \
   libcap~=2.78 \
   dumb-init~=1.2 \
   su-exec~=0.3
