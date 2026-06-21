@@ -89,14 +89,14 @@ func (s *DefaultVcsService) BuildProviderCreateDTO(authorityID uuid.UUID, namesp
 		switch {
 		case strings.HasPrefix(n, prefix) && strings.HasSuffix(n, ".zip"):
 			base := strings.TrimSuffix(n, ".zip")
-			rest := strings.TrimPrefix(base, prefix)
+			rest := strings.TrimPrefix(base, prefix+"_")
 			if rest == "" {
 				continue
 			}
 			zips[rest] = a
-		case n == prefix+"SHA256SUMS":
+		case n == prefix+"_SHA256SUMS":
 			shasumsURL = a.URL
-		case n == prefix+"SHA256SUMS.sig":
+		case n == prefix+"_SHA256SUMS.sig":
 			shasumsSigURL = a.URL
 		}
 	}
@@ -106,14 +106,12 @@ func (s *DefaultVcsService) BuildProviderCreateDTO(authorityID uuid.UUID, namesp
 	}
 
 	var sums map[string]string
-	if shasumsURL != "" {
-		sumsBody, cleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%sSHA256SUMS", prefix), shasumsURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("fetch SHA256SUMS: %v", err)
-		}
-		defer cleanup()
-		sums = vcs.ParseSHA256SUMS(sumsBody)
+	sumsBody, cleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), shasumsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("fetch SHA256SUMS: %v", err)
 	}
+	defer cleanup()
+	sums = vcs.ParseSHA256SUMS(sumsBody)
 
 	var platforms []provider.CreatePlatformDTO
 	for key, asset := range zips {
@@ -141,10 +139,9 @@ func (s *DefaultVcsService) BuildProviderCreateDTO(authorityID uuid.UUID, namesp
 		return nil, fmt.Errorf("no recognized provider platforms in release assets")
 	}
 
-	var shaDTO provider.CreateProviderShaSumsDTO
-	if shasumsURL != "" {
-		shaDTO.URL = shasumsURL
-		shaDTO.SignatureURL = shasumsSigURL
+	shaDTO := provider.CreateProviderShaSumsDTO{
+		URL:          shasumsURL,
+		SignatureURL: shasumsSigURL,
 	}
 
 	dto := &provider.CreateProviderDTO{

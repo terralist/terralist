@@ -243,3 +243,6 @@ ngrok.yml
 
 # MkDocs local build
 site/
+
+# Node modules
+node_modules/

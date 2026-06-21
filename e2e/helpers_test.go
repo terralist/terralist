@@ -2,6 +2,9 @@ package e2e
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,15 +18,17 @@ import (
 
 // config holds the e2e test configuration, populated from environment variables.
 var config struct {
-	URL          string
-	MetricsURL   string
-	MasterAPIKey string
+	URL           string
+	MetricsURL    string
+	MasterAPIKey  string
+	WebhookSecret string
 }
 
 func initConfig() {
 	config.URL = envOrDefault("TERRALIST_URL", "http://localhost:5758")
 	config.MetricsURL = envOrDefault("TERRALIST_METRICS_URL", "http://localhost:9090")
 	config.MasterAPIKey = envOrDefault("TERRALIST_MASTER_API_KEY", "e2e-master-api-key-00000000-0000-0000-0000-000000000000")
+	config.WebhookSecret = envOrDefault("TERRALIST_GH_WEBHOOK_SECRET", "e2e-webhook-secret")
 }
 
 func envOrDefault(key, fallback string) string {
@@ -87,6 +92,37 @@ func doAuthRequest(t *testing.T, method, url string, body any) *http.Response {
 func doUnauthRequest(t *testing.T, method, url string) *http.Response {
 	t.Helper()
 	return doRequest(t, method, url, nil, nil)
+}
+
+// githubWebhookSignature returns the X-Hub-Signature-256 header value for a payload.
+func githubWebhookSignature(body []byte, secret string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write(body)
+	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
+}
+
+// doWebhookRequest executes an unsigned GitHub webhook POST.
+func doWebhookRequest(t *testing.T, url string, body []byte) *http.Response {
+	t.Helper()
+	return doWebhookRequestWithSignature(t, url, body, githubWebhookSignature(body, config.WebhookSecret))
+}
+
+// doWebhookRequestWithSignature executes a GitHub webhook POST with an explicit signature header.
+func doWebhookRequestWithSignature(t *testing.T, url string, body []byte, signature string) *http.Response {
+	t.Helper()
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
+	require.NoError(t, err)
+
+	req.Header.Set("Content-Type", "application/json")
+	if signature != "" {
+		req.Header.Set("X-Hub-Signature-256", signature)
+	}
+
+	resp, err := httpClient().Do(req)
+	require.NoError(t, err)
+
+	return resp
 }
 
 // readJSON reads the response body and unmarshals it into a map.
