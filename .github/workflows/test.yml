@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c
         with:
           go-version: "1.26"
           cache-dependency-path: |
@@ -33,7 +33,7 @@ jobs:
             tools/go.sum
 
       - name: Install task
-        uses: go-task/setup-task@v2
+        uses: go-task/setup-task@01a4adf9db2d14c1de7a560f09170b6e0df736aa
 
       - name: Install dependencies
         run: task --verbose tidy
@@ -54,7 +54,7 @@ jobs:
         run: task --verbose test:unit -- --cover
 
       - name: Upload unit test coverage
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: coverage-unit
           path: coverage/unit.txt
@@ -68,10 +68,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Cache Go Packages
-        uses: actions/cache@v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
             ~/.cache/go-build
@@ -81,7 +81,7 @@ jobs:
             go-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache Yarn Packages
-        uses: actions/cache@v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: |
             web/node_modules
@@ -103,7 +103,7 @@ jobs:
         run: task --verbose build:backend -- --release --cover
 
       - name: Save binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: terralist
           path: terralist
@@ -228,7 +228,7 @@ jobs:
 
     steps:
       - name: Download terralist binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: terralist
           path: /usr/local/bin/terralist
@@ -239,7 +239,7 @@ jobs:
           echo "PATH=$PATH:/usr/local/bin/terralist" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Generate TLS certificate
         run: |
@@ -313,7 +313,7 @@ jobs:
 
       - name: Upload e2e coverage
         if: always() && matrix.database-backend == 'sqlite'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: coverage-e2e
           path: coverage/e2e/
@@ -321,7 +321,7 @@ jobs:
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: e2e-reports-${{ matrix.database-backend }}
           path: |
@@ -339,19 +339,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Mark repo clone as safe
         run: git config --global --add safe.directory /__w/terralist/terralist
 
       - name: Download unit test coverage
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: coverage-unit
           path: coverage/
 
       - name: Download e2e coverage
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: coverage-e2e
           path: coverage/e2e/
