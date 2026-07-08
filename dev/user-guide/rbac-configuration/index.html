@@ -1041,9 +1041,9 @@
 <h2 id="rbac-model-structure">RBAC Model Structure<a class="headerlink" href="#rbac-model-structure" title="Permanent link">¶</a></h2>
 <p>The model syntax is based on <a href="https://casbin.org/docs/overview">Casbin</a> and highly inspired from the <a href="https://argo-cd.readthedocs.io/en/stable/">ArgoCD</a> implementation. There are two different types of syntax: one of assigning policies, and another one for assigning users to internal roles.</p>
 <p><strong>Group</strong>: Used to assign users or groups to internal roles.</p>
-<p>Syntax: <code>g, &lt;username/useremail/group&gt;, &lt;role&gt;</code></p>
+<p>Syntax: <code>g, &lt;username&gt;/&lt;useremail&gt;/role:&lt;group&gt;, &lt;role&gt;</code></p>
 <ul>
-<li><code>&lt;username/useremail/group&gt;</code>: The entity to whom the role will be assigned. Depending on the OAuth provider implementation those values can represent different things; Usually, the <code>username</code> refers to the <code>sub</code> claim, while the <code>useremail</code> and <code>group</code> refers to a custom claims, which might not even be supported by the provider you are using. Check the OAuth provider documentation for more details.</li>
+<li><code>&lt;username&gt;/&lt;useremail&gt;/role:&lt;group&gt;</code>: The entity to whom the role will be assigned. Depending on the OAuth provider implementation those values can represent different things; Usually, the <code>username</code> refers to the <code>sub</code> claim, while the <code>useremail</code> and <code>group</code> refers to a custom claims, which might not even be supported by the provider you are using. Check the OAuth provider documentation for more details.</li>
 <li><code>&lt;role&gt;</code>: The internal role to which the entity will be assigned.</li>
 </ul>
 <!-- TODO: Add proper oauth provider docs -->
@@ -1086,9 +1086,9 @@
 </tbody>
 </table>
 <p><strong>Policy</strong>: Allows to assign permissions to an entity.</p>
-<p>Syntax: <code>p, &lt;role/username/useremail/group&gt;, &lt;resource&gt;, &lt;action&gt;, &lt;object&gt;, &lt;effect&gt;</code></p>
+<p>Syntax: <code>p, role:&lt;role&gt;/&lt;username&gt;/&lt;useremail&gt;/role:&lt;group&gt;, &lt;resource&gt;, &lt;action&gt;, &lt;object&gt;, &lt;effect&gt;</code></p>
 <ul>
-<li><code>&lt;role/username/useremail/group&gt;</code>: The entity to whom the policy will be assigned</li>
+<li><code>role:&lt;role&gt;/&lt;username&gt;/&lt;useremail&gt;/role:&lt;group&gt;</code>: The entity to whom the policy will be assigned</li>
 <li><code>&lt;resource&gt;</code><sup>*</sup>: The type of resource on which the action is performed. Can be one of: <code>modules</code>, <code>providers</code>, <code>authorities</code>, <code>api-keys</code>, <code>settings</code>. Supports glob matching.</li>
 <li><code>&lt;action&gt;</code><sup>*</sup>: The operation that is being performed on the resource. Can be one of: <code>get</code>, <code>create</code>, <code>update</code>, <code>delete</code>. Supports glob matching.</li>
 <li><code>&lt;object&gt;</code><sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.</li>
@@ -1165,8 +1165,8 @@
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>p, role:authority-admin, authorities, *, *, allow
 </span></code></pre></div>
 <p>Then map identity claims (user/group/email) to those roles:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>g, SSOAWS_PLATFORM, role:authority-admin
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>g, SSOAWS_ENGINEERING, role:authority-reader
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>g, role:SSOAWS_PLATFORM, role:authority-admin
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>g, role:SSOAWS_ENGINEERING, role:authority-reader
 </span></code></pre></div>
 <h2 id="settings-page-access-with-rbac">Settings Page Access With RBAC<a class="headerlink" href="#settings-page-access-with-rbac" title="Permanent link">¶</a></h2>
 <p>The Settings page capability endpoint checks RBAC permission:</p>
