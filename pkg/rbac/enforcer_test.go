@@ -174,7 +174,7 @@ func TestProtect_UsesGroupSubjects(t *testing.T) {
 	t.Parallel()
 
 	policy := `
-g, role:engineering, role:developer
+g, group:engineering, role:developer
 p, role:developer, authorities, create, *, allow
 `
 
