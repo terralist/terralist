@@ -18,7 +18,7 @@ jobs:
     if: (!contains(github.ref, '-pre.'))
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set release version
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
@@ -71,7 +71,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache-dependency-path: |
             go.sum
 
@@ -90,7 +90,7 @@ jobs:
         run: touch web/dist/.gitkeep
 
       - name: Release stable
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         if: (!contains(github.ref, '-pre.'))
         with:
           version: v2.4.8
@@ -113,7 +113,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Release pre-release
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         if: contains(github.ref, '-pre.')
         with:
           version: v2.4.8

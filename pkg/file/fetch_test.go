@@ -1,27 +1,137 @@
 package file
 
 import (
+	"archive/zip"
+	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestFetch_CleanupRemovesTempDir(t *testing.T) {
-	// Create a local file to fetch
-	tempFile, err := os.CreateTemp("", "test-fetch-cleanup-*")
+func TestFetchArchive_LoadsLocalArchive(t *testing.T) {
+	// Build a zip archive on disk, mimicking an uploaded module file.
+	tempDir, err := os.MkdirTemp("", "test-fetch-archive-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	zipPath := filepath.Join(tempDir, "module.zip")
+	zf, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip: %v", err)
+	}
+	zw := zip.NewWriter(zf)
+	w, err := zw.Create("main.tf")
+	if err != nil {
+		t.Fatalf("Failed to add zip entry: %v", err)
+	}
+	if _, err := w.Write([]byte("# module content")); err != nil {
+		t.Fatalf("Failed to write zip entry: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("Failed to close zip writer: %v", err)
+	}
+	zf.Close()
+
+	uploaded, err := LoadFromDisk("module.zip", zipPath)
+	if err != nil {
+		t.Fatalf("Failed to load uploaded archive: %v", err)
+	}
+
+	// Loading the archive must not require any URL scheme.
+	result, cleanup, err := fetchArchive("module", uploaded)
+	if err != nil {
+		t.Fatalf("fetchArchive failed: %v", err)
+	}
+	defer cleanup()
+	defer result.Close()
+
+	archiveFile, ok := result.(*ArchiveFile)
+	if !ok {
+		t.Fatalf("Expected *ArchiveFile, got %T", result)
+	}
+
+	if _, found := archiveFile.FS().files["main.tf"]; !found {
+		t.Errorf("Expected archive FS to contain main.tf, got files: %v", archiveFile.FS().files)
+	}
+}
+
+func TestFetch_RejectsFileScheme(t *testing.T) {
+	// Create a local file to read
+	tempFile, err := os.CreateTemp("", "test-fetch-file-scheme-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tempFile.Name())
 
-	if _, err := tempFile.WriteString("test content"); err != nil {
+	if _, err := tempFile.WriteString("sensitive content"); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
 	}
 	tempFile.Close()
 
+	// Fetching through the file:// scheme must not be allowed
+	_, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil, false)
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if err == nil {
+		t.Fatal("Expected fetch to reject the file:// scheme, but it succeeded")
+	}
+
+	if !errors.Is(err, ErrDownloadFailure) {
+		t.Errorf("Expected ErrDownloadFailure, got: %v", err)
+	}
+}
+
+func TestFetch_BlocksPrivateAddressByDefault(t *testing.T) {
+	// httptest binds to a loopback address, which the guard must reject
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("internal content"))
+	}))
+	defer server.Close()
+
+	_, cleanup, err := fetch("test.txt", server.URL, "", file, nil, false)
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if err == nil {
+		t.Fatal("Expected fetch to reject the private address, but it succeeded")
+	}
+
+	if !errors.Is(err, ErrDownloadFailure) {
+		t.Errorf("Expected ErrDownloadFailure, got: %v", err)
+	}
+}
+
+func TestFetch_AllowsPrivateAddressWhenEnabled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("internal content"))
+	}))
+	defer server.Close()
+
+	result, cleanup, err := fetch("test.txt", server.URL, "", file, nil, true)
+	if err != nil {
+		t.Fatalf("fetch failed with private addresses allowed: %v", err)
+	}
+	defer cleanup()
+	defer result.Close()
+}
+
+func TestFetch_CleanupRemovesTempDir(t *testing.T) {
+	// Serve a file over HTTP to fetch
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("test content"))
+	}))
+	defer server.Close()
+
 	// Fetch the file
-	result, cleanup, err := fetch("test.txt", "file://"+tempFile.Name(), "", file, nil)
+	result, cleanup, err := fetch("test.txt", server.URL, "", file, nil, true)
 	if err != nil {
 		t.Fatalf("fetch failed: %v", err)
 	}

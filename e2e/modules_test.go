@@ -1,12 +1,60 @@
 package e2e
 
 import (
+	"archive/zip"
+	"bytes"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestModuleUploadArchive(t *testing.T) {
+	// Build a minimal module archive in memory.
+	var zipBuf bytes.Buffer
+	zw := zip.NewWriter(&zipBuf)
+	w, err := zw.Create("main.tf")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("locals {\n  test = true\n}\n"))
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+
+	// Upload it through the multipart file-upload endpoint.
+	resp := doAuthMultipartUpload(
+		t,
+		apiURL("/v1/api/modules/hashicorp/uploaded/local/1.0.0/upload-files"),
+		"module",
+		"module.zip",
+		zipBuf.Bytes(),
+	)
+	body := readJSON(t, resp)
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, body["errors"])
+
+	// Verify the uploaded version is retrievable.
+	resp = doAuthRequest(t, http.MethodGet, apiURL("/v1/modules/hashicorp/uploaded/local/versions"), nil)
+	versionsBody := readJSON(t, resp)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	modules, ok := versionsBody["modules"].([]any)
+	require.True(t, ok)
+	mod, ok := modules[0].(map[string]any)
+	require.True(t, ok)
+	versions, ok := mod["versions"].([]any)
+	require.True(t, ok)
+
+	found := false
+	for _, v := range versions {
+		entry, ok := v.(map[string]any)
+		if ok && entry["version"] == "1.0.0" {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "expected uploaded version 1.0.0 to be listed")
+}
 
 func TestModuleListVersions(t *testing.T) {
 	t.Run("unauthenticated", func(t *testing.T) {

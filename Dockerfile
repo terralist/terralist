@@ -1,4 +1,4 @@
-FROM node:24-alpine3.23 AS frontend
+FROM node:24-alpine3.24 AS frontend
 
 WORKDIR /home/node/terralist
 
@@ -11,7 +11,7 @@ ENV TERRALIST_VERSION=${VERSION}
 COPY ./web ./
 RUN yarn build
 
-FROM golang:1.25-alpine3.23 AS backend
+FROM golang:1.26-alpine3.24 AS backend
 
 WORKDIR /go/src/terralist
 
@@ -40,7 +40,7 @@ RUN go build -a -v -o terralist \
   -X 'main.Mode=release'" \
   ./cmd/terralist/main.go
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 ARG VERSION="dev"
 ARG COMMIT_HASH="n/a"
@@ -72,7 +72,7 @@ RUN addgroup terralist && \
   chmod g=u /etc/passwd
 
 RUN apk add --no-cache \
-  git~=2.52 \
+  git~=2.54 \
   libcap~=2.78 \
   dumb-init~=1.2 \
   su-exec~=0.3

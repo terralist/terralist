@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 
 	getter "github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
@@ -20,17 +23,56 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
+// isPrivateAddress reports whether the given IP belongs to a range that
+// must not be reachable from a user-supplied download URL: loopback,
+// private (RFC 1918 and IPv6 ULA), link-local (including the cloud
+// metadata address 169.254.169.254) and the unspecified address.
+func isPrivateAddress(ip netip.Addr) bool {
+	return ip.IsLoopback() ||
+		ip.IsPrivate() ||
+		ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() ||
+		ip.IsUnspecified()
+}
+
+// privateAddressGuard is a dial control function that refuses to connect to
+// private addresses. It runs after DNS resolution against the actual IP being
+// dialed, so it covers redirects and is not bypassable through DNS rebinding.
+func privateAddressGuard(network, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("could not parse address %q: %w", address, err)
+	}
+
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return fmt.Errorf("could not parse IP %q: %w", host, err)
+	}
+
+	if isPrivateAddress(ip) {
+		return fmt.Errorf("refusing to connect to non-public address %s", ip)
+	}
+
+	return nil
+}
+
 // generateGetters returns the map of getters.
 // Modified version of https://github.com/hashicorp/go-getter/blob/f7836fb97529673f24dac0aaa140762ee05c847f/get.go#L65
 // to add support for custom http headers.
-func generateGetters(header http.Header) map[string]getter.Getter {
+func generateGetters(header http.Header, allowPrivateAddresses bool) map[string]getter.Getter {
 	httpGetter := &getter.HttpGetter{
 		Netrc:  true,
 		Header: header,
 	}
 
+	if !allowPrivateAddresses {
+		defaultTransport, _ := http.DefaultTransport.(*http.Transport)
+		transport := defaultTransport.Clone()
+		transport.DialContext = (&net.Dialer{Control: privateAddressGuard}).DialContext
+		httpGetter.Client = &http.Client{Transport: transport}
+	}
+
 	return map[string]getter.Getter{
-		"file":  new(getter.FileGetter),
 		"git":   new(getter.GitGetter),
 		"gcs":   new(getter.GCSGetter),
 		"hg":    new(getter.HgGetter),
@@ -44,7 +86,7 @@ func generateGetters(header http.Header) map[string]getter.Getter {
 // It returns the downloaded file and a cleanup function that removes the temporary
 // directory used during the download. The caller must invoke the cleanup function
 // when the file is no longer needed.
-func fetch(name string, url string, checksum string, kind int, header http.Header) (File, func(), error) {
+func fetch(name string, url string, checksum string, kind int, header http.Header, allowPrivateAddresses bool) (File, func(), error) {
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -81,7 +123,7 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		Src:     u.String(),
 		Dst:     dst,
 		Pwd:     tempDir,
-		Getters: generateGetters(header),
+		Getters: generateGetters(header, allowPrivateAddresses),
 	}
 
 	switch kind {
@@ -126,6 +168,16 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 	case <-ctx.Done():
 		wg.Wait()
 
+		// The download goroutine cancels the context as it exits, so reaching
+		// here can also mean the download finished with an error. Surface that
+		// error instead of treating the download as successful.
+		select {
+		case err := <-ech:
+			cleanup()
+			return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+		default:
+		}
+
 		// If we know the type, just parse it
 		if kind == file || kind == dir {
 			f, err := parseResult(name, dst, kind)
@@ -155,6 +207,68 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		}
 		return f, cleanup, nil
 	}
+}
+
+// fetchArchive loads an already-obtained archive from a trusted local source.
+// Unlike fetch, it never goes through go-getter's URL/scheme layer: the bytes
+// are persisted to a temp dir, decompressed with go-getter's decompressors
+// (selected by file extension), and loaded as an archive. It carries no scheme
+// or SSRF surface and is meant for content Terralist already holds, such as a
+// direct file upload.
+func fetchArchive(name string, f File) (File, func(), error) {
+	tempDir, err := os.MkdirTemp("", tempDirPattern)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
+	}
+
+	cleanup := func() { os.RemoveAll(tempDir) }
+
+	src, err := SaveToDisk(f, tempDir)
+	if err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: could not persist archive: %v", ErrSystemFailure, err)
+	}
+
+	decompressor, ok := matchDecompressor(f.Name())
+	if !ok {
+		// Not a recognized archive; load it as a single file.
+		result, err := readFile(name, src.Path())
+		if err != nil {
+			cleanup()
+			return nil, nil, err
+		}
+
+		return result, cleanup, nil
+	}
+
+	dst := path.Join(tempDir, "extracted")
+	if err := decompressor.Decompress(dst, src.Path(), true, 0); err != nil {
+		cleanup()
+		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+	}
+
+	result, err := archiveDir(name, dst)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+
+	return result, cleanup, nil
+}
+
+// matchDecompressor selects the go-getter decompressor whose extension is the
+// longest match for the given file name, mirroring go-getter's own detection.
+func matchDecompressor(name string) (getter.Decompressor, bool) {
+	var matched getter.Decompressor
+	matchingLen := 0
+	for ext, dec := range getter.Decompressors {
+		if strings.HasSuffix(name, "."+ext) && len(ext) > matchingLen {
+			matched = dec
+			matchingLen = len(ext)
+		}
+	}
+
+	return matched, matched != nil
 }
 
 // parseResult parses the download result and returns an

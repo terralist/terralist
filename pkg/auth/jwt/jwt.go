@@ -8,7 +8,7 @@ import (
 
 	"terralist/pkg/auth"
 
-	_jwt "github.com/golang-jwt/jwt"
+	_jwt "github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -49,16 +49,14 @@ func New(secret string) (JWT, error) {
 }
 
 type TokenClaims struct {
-	_jwt.StandardClaims
+	_jwt.RegisteredClaims
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
 func (th *defaultJWT) Build(data Serializer, expireIn int) (string, error) {
-	var exp int64
-	if expireIn <= 0 {
-		exp = 0
-	} else {
-		exp = time.Now().Add(time.Duration(expireIn) * time.Second).Unix()
+	var expiresAt *_jwt.NumericDate
+	if expireIn > 0 {
+		expiresAt = _jwt.NewNumericDate(time.Now().Add(time.Duration(expireIn) * time.Second))
 	}
 
 	if data == nil {
@@ -71,10 +69,10 @@ func (th *defaultJWT) Build(data Serializer, expireIn int) (string, error) {
 	}
 
 	token := _jwt.NewWithClaims(_jwt.SigningMethodHS256, &TokenClaims{
-		_jwt.StandardClaims{
-			ExpiresAt: exp,
+		RegisteredClaims: _jwt.RegisteredClaims{
+			ExpiresAt: expiresAt,
 		},
-		payload,
+		Data: payload,
 	})
 
 	tokenString, err := token.SignedString(th.tokenSigningSecret)
@@ -94,20 +92,21 @@ func (th *defaultJWT) Extract(t string) (Serializer, error) {
 		return th.tokenSigningSecret, nil
 	})
 
-	if token == nil || !token.Valid {
-		ve, ok := err.(*_jwt.ValidationError)
-
-		if ok {
-			if ve.Errors&_jwt.ValidationErrorMalformed != 0 {
-				return nil, ErrInvalidToken
-			} else if ve.Errors&_jwt.ValidationErrorExpired != 0 {
-				return nil, ErrTokenExpired
-			} else if ve.Errors&_jwt.ValidationErrorNotValidYet != 0 {
-				return nil, ErrTokenNotActive
-			}
-		} else {
+	if err != nil {
+		switch {
+		case errors.Is(err, _jwt.ErrTokenMalformed):
+			return nil, ErrInvalidToken
+		case errors.Is(err, _jwt.ErrTokenExpired):
+			return nil, ErrTokenExpired
+		case errors.Is(err, _jwt.ErrTokenNotValidYet):
+			return nil, ErrTokenNotActive
+		default:
 			return nil, fmt.Errorf("%w: unable to parse token: %v", ErrInvalidToken, err)
 		}
+	}
+
+	if token == nil || !token.Valid {
+		return nil, ErrInvalidToken
 	}
 
 	claims, _ := token.Claims.(*TokenClaims)

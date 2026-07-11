@@ -22,18 +22,18 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: "1.26"
           cache-dependency-path: |
             go.sum
             tools/go.sum
 
       - name: Install task
-        uses: arduino/setup-task@v2.0.0
+        uses: go-task/setup-task@v2
 
       - name: Install dependencies
         run: task --verbose tidy
@@ -54,7 +54,7 @@ jobs:
         run: task --verbose test:unit -- --cover
 
       - name: Upload unit test coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-unit
           path: coverage/unit.txt
@@ -68,10 +68,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Cache Go Packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cache/go-build
@@ -81,7 +81,7 @@ jobs:
             go-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Cache Yarn Packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             web/node_modules
@@ -103,7 +103,7 @@ jobs:
         run: task --verbose build:backend -- --release --cover
 
       - name: Save binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: terralist
           path: terralist
@@ -113,6 +113,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     needs: [build-terralist-binary]
 
@@ -125,7 +126,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:18.3
+        image: public.ecr.aws/docker/library/postgres:18.4
         ports:
           - 5432:5432
         env:
@@ -223,9 +224,14 @@ jobs:
 
       GOCOVERDIR: ${{ format('{0}/coverage/e2e', github.workspace) }}
 
+      # Resolve browsers from the location baked into the test-base image
+      # rather than HOME, which GitHub overrides to /github/home for container
+      # jobs. Keep this in sync with Dockerfile.test.
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+
     steps:
       - name: Download terralist binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: terralist
           path: /usr/local/bin/terralist
@@ -236,7 +242,7 @@ jobs:
           echo "PATH=$PATH:/usr/local/bin/terralist" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Generate TLS certificate
         run: |
@@ -251,27 +257,66 @@ jobs:
         run: mkdir -p coverage/e2e
 
       - name: Spin up Terralist server
-        uses: JarvusInnovations/background-action@v1.0.7
-        with:
-          run: terralist server
-          wait-on: |
-            https-get://localhost.direct:${{ env.TERRALIST_PORT }}/check/readyz
-          wait-for: 30s
-          log-output-if: "true"
+        run: |
+          nohup terralist server > /tmp/terralist-server.log 2>&1 &
+          echo "TERRALIST_SERVER_PID=$!" >> "$GITHUB_ENV"
+
+          for i in $(seq 1 30); do
+            if curl -ksf "https://localhost.direct:${TERRALIST_PORT}/check/readyz" >/dev/null; then
+              echo "Terralist is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::Terralist did not become ready within 30s" >&2
+          cat /tmp/terralist-server.log >&2
+          exit 1
 
       - name: Run API E2E Tests
         run: go test -v -count=1 ./e2e/...
 
-      - name: Run Playwright Frontend Tests
+      - name: Install frontend test dependencies
+        working-directory: e2e/frontend
+        run: npm ci
+
+      - name: Install Playwright browser
         working-directory: e2e/frontend
         run: |
-          npm ci
-          npx playwright install --with-deps chromium
-          npx playwright test
+          # The test-base image already ships the browser and OS dependencies.
+          # Only download the browser if Playwright's expected build is missing,
+          # so a normal run never reaches out to the browser CDN.
+          cache="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+          # POSIX glob check: set -- expands the pattern, leaving it literal
+          # (a non-existent path) when nothing matches.
+          set -- "$cache"/chromium_headless_shell-*
+          if [ -e "$1" ]; then
+            echo "Chromium headless shell already present in $cache; skipping install"
+          else
+            echo "Chromium headless shell not found; installing"
+            npx playwright install chromium
+          fi
+
+      - name: Run Playwright Frontend Tests
+        working-directory: e2e/frontend
+        run: npx playwright test
+
+      - name: Stop Terralist server
+        if: always()
+        run: |
+          if [ -n "$TERRALIST_SERVER_PID" ]; then
+            kill -INT "$TERRALIST_SERVER_PID" 2>/dev/null || true
+            for i in $(seq 1 15); do
+              kill -0 "$TERRALIST_SERVER_PID" 2>/dev/null || break
+              sleep 1
+            done
+          fi
+
+          cat /tmp/terralist-server.log || true
 
       - name: Upload e2e coverage
         if: always() && matrix.database-backend == 'sqlite'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-e2e
           path: coverage/e2e/
@@ -279,7 +324,7 @@ jobs:
 
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-reports-${{ matrix.database-backend }}
           path: |
@@ -297,19 +342,19 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Mark repo clone as safe
         run: git config --global --add safe.directory /__w/terralist/terralist
 
       - name: Download unit test coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: coverage-unit
           path: coverage/
 
       - name: Download e2e coverage
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: coverage-e2e
           path: coverage/e2e/

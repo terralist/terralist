@@ -3,14 +3,15 @@ package file
 import "net/http"
 
 type Fetcher interface {
-	// Fetch downloads a file or a directory from a given URL
-	// and returns it along with a cleanup function.
-	// If the file is a directory, it will be archived.
-	// If the file is an archive, it will be decompressed, and
-	// then compressed back to zip.
-	// The caller must invoke the cleanup function when the file
-	// is no longer needed to remove the temporary directory.
-	Fetch(name string, url string, header http.Header) (File, func(), error)
+	// Fetch resolves a File into a module archive along with a cleanup
+	// function. A RemoteFile is downloaded from its URL (through go-getter,
+	// with no local-file scheme); any other File is treated as an already
+	// uploaded archive and decompressed locally without reaching the network.
+	// If the resolved source is a directory it is archived; if it is an
+	// archive it is decompressed and then compressed back to zip. The caller
+	// must invoke the cleanup function when the file is no longer needed to
+	// remove the temporary directory.
+	Fetch(name string, f File) (File, func(), error)
 
 	// FetchFile downloads a file from a given URL and returns it
 	// along with a cleanup function.
@@ -36,30 +37,41 @@ const (
 	unknown
 )
 
-type defaultFetcher struct{}
-
-func NewFetcher() Fetcher {
-	return &defaultFetcher{}
+type defaultFetcher struct {
+	allowPrivateAddresses bool
 }
 
-func (*defaultFetcher) Fetch(name string, url string, header http.Header) (File, func(), error) {
-	return fetch(name, url, "", unknown, header)
+// NewFetcher creates a Fetcher. Unless allowPrivateAddresses is true, fetches
+// over HTTP(S) refuse to connect to private, loopback, link-local and
+// unspecified addresses.
+func NewFetcher(allowPrivateAddresses bool) Fetcher {
+	return &defaultFetcher{
+		allowPrivateAddresses: allowPrivateAddresses,
+	}
 }
 
-func (*defaultFetcher) FetchFile(name string, url string, header http.Header) (File, func(), error) {
-	return fetch(name, url, "", file, header)
+func (f *defaultFetcher) Fetch(name string, src File) (File, func(), error) {
+	if remote, ok := src.(*RemoteFile); ok {
+		return fetch(name, remote.URL(), "", unknown, remote.Header(), f.allowPrivateAddresses)
+	}
+
+	return fetchArchive(name, src)
 }
 
-func (*defaultFetcher) FetchFileChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
-	return fetch(name, url, checksum, file, header)
+func (f *defaultFetcher) FetchFile(name string, url string, header http.Header) (File, func(), error) {
+	return fetch(name, url, "", file, header, f.allowPrivateAddresses)
 }
 
-func (*defaultFetcher) FetchDir(name string, url string, header http.Header) (File, func(), error) {
-	return fetch(name, url, "", dir, header)
+func (f *defaultFetcher) FetchFileChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
+	return fetch(name, url, checksum, file, header, f.allowPrivateAddresses)
 }
 
-func (*defaultFetcher) FetchDirChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
-	return fetch(name, url, checksum, dir, header)
+func (f *defaultFetcher) FetchDir(name string, url string, header http.Header) (File, func(), error) {
+	return fetch(name, url, "", dir, header, f.allowPrivateAddresses)
+}
+
+func (f *defaultFetcher) FetchDirChecksum(name string, url string, checksum string, header http.Header) (File, func(), error) {
+	return fetch(name, url, checksum, dir, header, f.allowPrivateAddresses)
 }
 
 // CreateHeader creates an http.Header from a map of key-value strings.

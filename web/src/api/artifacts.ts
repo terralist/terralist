@@ -46,7 +46,7 @@ const createDateAttributes = (artifact: Artifact): Artifact => {
     ...artifact,
     createdAt: new Date(artifact.createdAt),
     updatedAt: new Date(artifact.updatedAt)
-  } as Artifact;
+  };
 };
 
 const client = createClient({
@@ -104,7 +104,7 @@ const sortVersions = (
   return {
     data: versions.sort(cmp).reverse(),
     ...rest
-  } as Result<ArtifactVersion[]>;
+  };
 };
 
 const actions = {

@@ -73,19 +73,17 @@ const useQuery: <T>(
   query: QueryFn<T>,
   ...args: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
 ) => {
-  const result: Writable<QueryResult<T>> = writable({
-    isLoading: true
-  } as QueryLoading);
+  const result: Writable<QueryResult<T>> = writable({ isLoading: true });
 
   onMount(async () => {
     const { data: content, status, message } = await query(...args);
 
     if (status == 'ERROR') {
-      result.set({ isLoading: false, error: message } as QueryError);
+      result.set({ isLoading: false, error: message });
       return;
     }
 
-    result.set({ data: content, isLoading: false } as QueryOK<T>);
+    result.set({ data: content, isLoading: false });
   });
 
   return result;

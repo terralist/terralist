@@ -17,7 +17,7 @@ import (
 	"terralist/pkg/storage/local"
 
 	"github.com/gin-gonic/gin"
-	gjwt "github.com/golang-jwt/jwt"
+	gjwt "github.com/golang-jwt/jwt/v5"
 )
 
 const localSecret = "local-secret"
