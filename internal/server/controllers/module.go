@@ -152,7 +152,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			headers := c.VcsService.GetHeaders()
 			header := file.CreateHeader(headers)
-			if err := c.ModuleService.Upload(&dto, ev.ModuleArchiveURL, header); err != nil {
+			if err := c.ModuleService.Upload(&dto, file.NewRemoteFile(ev.ModuleArchiveURL, header)); err != nil {
 				ctx.JSON(http.StatusConflict, gin.H{"errors": []string{err.Error()}})
 				return
 			}

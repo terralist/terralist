@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type Client struct {
@@ -70,22 +71,12 @@ func parseRSAPrivateKey(pemData []byte) (*rsa.PrivateKey, error) {
 	return rsaKey, nil
 }
 
-type appJWTClaims struct {
-	IssuedAt  int64 `json:"iat"`
-	ExpiresAt int64 `json:"exp"`
-	Issuer    int64 `json:"iss"`
-}
-
-func (c *appJWTClaims) Valid() error {
-	return nil
-}
-
 func (c *Client) appJWT() (string, error) {
 	now := time.Now()
-	claims := &appJWTClaims{
-		IssuedAt:  now.Unix() - 60,
-		ExpiresAt: now.Add(9 * time.Minute).Unix(),
-		Issuer:    c.AppID,
+	claims := jwt.RegisteredClaims{
+		IssuedAt:  jwt.NewNumericDate(now.Add(-60 * time.Second)),
+		ExpiresAt: jwt.NewNumericDate(now.Add(9 * time.Minute)),
+		Issuer:    strconv.FormatInt(c.AppID, 10),
 	}
 	tok := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	return tok.SignedString(c.PrivateKey)

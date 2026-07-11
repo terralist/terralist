@@ -370,7 +370,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	vcsService := &services.DefaultVcsService{
 		Provider: config.VcsProvider,
-		Fetcher:  file.NewFetcher(),
+		Fetcher:  file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
 	}
 
 	moduleService := &services.DefaultModuleService{
