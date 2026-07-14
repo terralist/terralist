@@ -12,31 +12,27 @@
         <meta name="author" content="Valentin Deaconu">
       
       
-        <link rel="canonical" href="https://www.terralist.io/dev/user-guide/">
+        <link rel="canonical" href="https://www.terralist.io/dev/user-guide/webhook-vcs-releases/">
       
       
-        <link rel="prev" href="../artifacts-documentation/">
-      
-      
-        <link rel="next" href="aws-s3-bucket-configuration/">
       
       
         
       
       
-      <link rel="icon" href="../assets/terralist.svg">
+      <link rel="icon" href="../../assets/terralist.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>User Guide - Terralist</title>
+        <title>VCS release webhooks - Terralist</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#user-guide" class="md-skip">
+        <a href="#vcs-release-webhooks" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +96,9 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Terralist" class="md-header__button md-logo" aria-label="Terralist" data-md-component="logo">
+    <a href="../.." title="Terralist" class="md-header__button md-logo" aria-label="Terralist" data-md-component="logo">
       
-  <img src="../assets/terralist.svg" alt="logo">
+  <img src="../../assets/terralist.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              User Guide
+              VCS release webhooks
             
           </span>
         </div>
@@ -235,9 +231,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Terralist" class="md-nav__button md-logo" aria-label="Terralist" data-md-component="logo">
+    <a href="../.." title="Terralist" class="md-nav__button md-logo" aria-label="Terralist" data-md-component="logo">
       
-  <img src="../assets/terralist.svg" alt="logo">
+  <img src="../../assets/terralist.svg" alt="logo">
 
     </a>
     Terralist
@@ -264,7 +260,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -291,7 +287,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         
   
   
@@ -318,7 +314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -345,7 +341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -372,7 +368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../artifacts-documentation/" class="md-nav__link">
+      <a href="../../artifacts-documentation/" class="md-nav__link">
         
   
   
@@ -396,8 +392,6 @@
       
   
   
-    
-  
   
   
     
@@ -421,15 +415,15 @@
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -447,13 +441,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_6" id="__nav_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -473,7 +467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="aws-s3-bucket-configuration/" class="md-nav__link">
+      <a href="../aws-s3-bucket-configuration/" class="md-nav__link">
         
   
   
@@ -501,7 +495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="rbac-configuration/" class="md-nav__link">
+      <a href="../rbac-configuration/" class="md-nav__link">
         
   
   
@@ -529,7 +523,7 @@
   
   
     <li class="md-nav__item">
-      <a href="saml-configuration/" class="md-nav__link">
+      <a href="../saml-configuration/" class="md-nav__link">
         
   
   
@@ -557,7 +551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="monitoring/" class="md-nav__link">
+      <a href="../monitoring/" class="md-nav__link">
         
   
   
@@ -585,7 +579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   
@@ -644,7 +638,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../dev-guide/" class="md-nav__link ">
+            <a href="../../dev-guide/" class="md-nav__link ">
               
   
   
@@ -688,7 +682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev-guide/api-reference/" class="md-nav__link">
+      <a href="../../dev-guide/api-reference/" class="md-nav__link">
         
   
   
@@ -716,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev-guide/local-development/" class="md-nav__link">
+      <a href="../../dev-guide/local-development/" class="md-nav__link">
         
   
   
@@ -744,7 +738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dev-guide/e2e-testing/" class="md-nav__link">
+      <a href="../../dev-guide/e2e-testing/" class="md-nav__link">
         
   
   
@@ -799,10 +793,104 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#available-guides" class="md-nav__link">
+  <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available Guides
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behavior-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behavior summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outbound-credentials-private-repositories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Outbound credentials (private repositories)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Outbound credentials (private repositories)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#personal-access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Personal access token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github-app-outbound-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub App outbound auth
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-release-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider release artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring GitHub
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security notes
       
     </span>
   </a>
@@ -829,15 +917,79 @@
   
 
 
-<h1 id="user-guide">User Guide<a class="headerlink" href="#user-guide" title="Permanent link">¶</a></h1>
-<p>The Terralist User Guide provides documentation for users of Terralist. Various guides to configuring and using Terralist can be found here.</p>
-<h2 id="available-guides">Available Guides<a class="headerlink" href="#available-guides" title="Permanent link">¶</a></h2>
+<h1 id="vcs-release-webhooks">VCS release webhooks<a class="headerlink" href="#vcs-release-webhooks" title="Permanent link">¶</a></h1>
+<p>Terralist can create a new <strong>module</strong> or <strong>provider</strong> version when GitHub sends a <strong>release</strong> webhook. Only <strong>GitHub</strong> is supported today; the URL includes a <code>:vcs</code> segment for future providers, but the server must be configured with <a href="../../configuration/#vcs-provider"><code>vcs-provider: github</code></a>.</p>
+<p>The registry target (authority namespace and module or provider identity) is taken from the URL path; the release payload supplies the tag, assets, and archive URLs.</p>
+<p>Webhook routes are <strong>not</strong> protected by normal API authentication. Optionally verify inbound requests with <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a> (<code>X-Hub-Signature-256</code>). Outbound downloads from private repositories use <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a> or a <a href="#github-app-outbound-auth">GitHub App</a>.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">¶</a></h2>
+<p>Set <a href="../../configuration/#vcs-provider"><code>vcs-provider</code></a> to <code>github</code> and configure outbound credentials as below. If <code>vcs-provider</code> is left empty, no VCS provider is initialized and webhook handlers are not usable.</p>
+<h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">¶</a></h2>
+<p>Base URL: <code>{terralist-url}/v1</code> (same host as <code>url</code> in <a href="../../configuration/#url">configuration</a>).</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Method and path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Module</td>
+<td><code>POST /api/modules/:namespace/:name/:provider/webhook/:vcs</code></td>
+</tr>
+<tr>
+<td>Provider</td>
+<td><code>POST /api/providers/:namespace/:name/webhook/:vcs</code></td>
+</tr>
+</tbody>
+</table>
+<p>Use <code>:vcs</code> = <code>github</code> (case-insensitive). Other values are not implemented.</p>
 <ul>
-<li><a href="aws-s3-bucket-configuration/">AWS S3 Bucket Configuration</a> - Configure S3 storage backend</li>
-<li><a href="rbac-configuration/">RBAC Configuration</a> - Set up role-based access control</li>
-<li><a href="saml-configuration/">SAML Configuration</a> - Configure SAML SSO authentication</li>
-<li><a href="monitoring/">Monitoring and Observability</a> - Prometheus metrics and monitoring setup</li>
-<li><a href="webhook-vcs-releases/">VCS release webhooks</a> - Publish module and provider versions from GitHub releases</li>
+<li><strong><code>namespace</code></strong> is the <strong>authority</strong> name (it must already exist in Terralist).</li>
+<li><strong><code>name</code></strong> is the module or provider short name in the registry.</li>
+<li><strong><code>provider</code></strong> (modules only) is the Terraform provider suffix for the module (for example <code>aws</code>).</li>
+</ul>
+<p><strong>Example</strong> (module): <code>https://registry.example.com/v1/api/modules/my-corp/network/aws/webhook/github</code></p>
+<p><strong>Example</strong> (provider): <code>https://registry.example.com/v1/api/providers/my-corp/null/webhook/github</code></p>
+<h2 id="behavior-summary">Behavior summary<a class="headerlink" href="#behavior-summary" title="Permanent link">¶</a></h2>
+<ul>
+<li>Only <code>release</code> events with <code>action: published</code> are handled; draft releases are ignored.</li>
+<li>The module archive is taken from <code>zipball_url</code>, falling back to <code>tarball_url</code>.</li>
+<li>Provider binaries come from release <strong>assets</strong> plus a fetched checksums file (see <a href="#provider-release-artifacts">Provider release artifacts</a>).</li>
+<li>The Git tag must normalize to a valid semantic version (a leading <code>v</code> is stripped), matching manual uploads.</li>
+</ul>
+<p>If the module or provider does not exist yet, it is created on first successful upload, same as the authenticated upload API.</p>
+<h2 id="outbound-credentials-private-repositories">Outbound credentials (private repositories)<a class="headerlink" href="#outbound-credentials-private-repositories" title="Permanent link">¶</a></h2>
+<p>Terralist uses these settings when <strong>fetching</strong> archives, assets, or checksum files from GitHub—not for verifying the inbound webhook.</p>
+<p>Startup validation requires <strong>either</strong> <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a> <strong>or</strong> all three: <a href="../../configuration/#gh-app-id"><code>gh-app-id</code></a>, <a href="../../configuration/#gh-app-installation-id"><code>gh-app-installation-id</code></a>, and <a href="../../configuration/#gh-app-private-key-path"><code>gh-app-private-key-path</code></a>.</p>
+<h3 id="personal-access-token">Personal access token<a class="headerlink" href="#personal-access-token" title="Permanent link">¶</a></h3>
+<p>Set <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a>. Terralist sends <code>Authorization: Bearer &lt;token&gt;</code> on outbound fetches.</p>
+<p>The token must be allowed to <strong>read</strong> the repository contents needed for downloads: for private repos, a classic PAT needs at least <strong><code>repo</code></strong>, or fine-grained access with <strong>Contents: Read</strong> on that repository. Public repositories do not require a token.</p>
+<h3 id="github-app-outbound-auth">GitHub App outbound auth<a class="headerlink" href="#github-app-outbound-auth" title="Permanent link">¶</a></h3>
+<p>Set <a href="../../configuration/#gh-app-id"><code>gh-app-id</code></a>, <a href="../../configuration/#gh-app-installation-id"><code>gh-app-installation-id</code></a>, and <a href="../../configuration/#gh-app-private-key-path"><code>gh-app-private-key-path</code></a>.</p>
+<p>The App must be <strong>installed</strong> on the organization or user account that owns the repository, with permission to read repository contents for private repos. Use the numeric <strong>App ID</strong> from the App settings page and the <strong>Installation ID</strong> for that installation.</p>
+<p>The private key file must be PEM for the App’s RSA key (PKCS#1 or PKCS#8).</p>
+<p>Installation access tokens are requested from GitHub’s REST API at <code>https://api.github.com/app/installations/{installation_id}/access_tokens</code>. GitHub Enterprise Server may use a different API host for App tokens than for repository webhooks; confirm compatibility with your deployment.</p>
+<h2 id="provider-release-artifacts">Provider release artifacts<a class="headerlink" href="#provider-release-artifacts" title="Permanent link">¶</a></h2>
+<p>Provider publishing expects release assets consistent with manual provider uploads:</p>
+<ul>
+<li>One zip per platform: <code>terraform-provider-&lt;name&gt;_&lt;version&gt;_&lt;os&gt;_&lt;arch&gt;.zip</code> (the path <code>:name</code> is the short provider name, e.g. <code>null</code> for the <code>null</code> provider).</li>
+<li>A checksums file named <strong><code>terraform-provider-&lt;name&gt;_&lt;version&gt;SHA256SUMS</code></strong> (no <code>_</code> before <code>SHA256SUMS</code>) listing those zips and their SHA-256 hashes. Terralist fetches it by URL from the matching release asset.</li>
+<li>Optionally <strong><code>terraform-provider-&lt;name&gt;_&lt;version&gt;SHA256SUMS.sig</code></strong> for signing metadata.</li>
+</ul>
+<p>Unknown <code>os</code> / <code>arch</code> tokens in filenames are skipped.</p>
+<h2 id="configuring-github">Configuring GitHub<a class="headerlink" href="#configuring-github" title="Permanent link">¶</a></h2>
+<ol>
+<li>In the repository, open <strong>Settings → Webhooks → Add webhook</strong> (or configure an organization webhook scoped to the repositories that should publish).</li>
+<li><strong>Payload URL</strong>: one of the <a href="#endpoints">endpoints</a> above, with <code>github</code> as <code>:vcs</code> and path segments set to your authority name, module or provider name, and module provider suffix as needed.</li>
+<li><strong>Content type</strong>: <code>application/json</code>.</li>
+<li><strong>Secret</strong>: optional; if set, it must match <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a>. GitHub sends <code>X-Hub-Signature-256</code>.</li>
+<li><strong>Which events</strong>: choose <strong>Let me select individual events</strong> and enable <strong>Releases</strong> (Terralist only acts on <strong>published</strong> releases).</li>
+</ol>
+<p>Save the webhook. Creating or publishing a release whose tag is a valid semver should trigger a module or provider version upload.</p>
+<h2 id="security-notes">Security notes<a class="headerlink" href="#security-notes" title="Permanent link">¶</a></h2>
+<ul>
+<li>Leaving <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a> empty accepts any caller who can reach the endpoint; use a secret in production when the URL is exposed.</li>
 </ul>
 
 
@@ -892,10 +1044,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

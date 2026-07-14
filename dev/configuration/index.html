@@ -1351,6 +1351,83 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#vcs-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vcs-provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-webhook-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-webhook-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-access-token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-app-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-app-id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-app-installation-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-app-installation-id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-app-private-key-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-app-private-key-path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-base-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-base-url
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2753,6 +2830,83 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#vcs-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        vcs-provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-webhook-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-webhook-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-access-token
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-app-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-app-id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-app-installation-id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-app-installation-id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-app-private-key-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-app-private-key-path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gh-base-url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        gh-base-url
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2809,7 +2963,7 @@
 <p>Terralist also supports reading the environment at run-time. For example, if you only know the port value at run-time (e.g. you are running on Heroku), you can set the <code>TERRALIST_PORT</code> environment variable to <code>${PORT}</code>; this instruction will inform Terralist to read the value, at run-time, from the environment variable called <code>PORT</code>. It is also possible to set a default value, in case the given one is not present, by using a colon (<code>:</code>), example: <code>${PORT:5758}</code>.</p>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">¶</a></h2>
 <h3 id="config"><code>config</code><a class="headerlink" href="#config" title="Permanent link">¶</a></h3>
-<p>Path to YAML config file where flag values are set.</p>
+<p>Path to the configuration file where flag values are set (same formats as described in the introduction).</p>
 <table>
 <thead>
 <tr>
@@ -5538,6 +5692,234 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
 <tr>
 <td>env</td>
 <td><code>TERRALIST_CUSTOM_COMPANY_NAME</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="vcs-provider"><code>vcs-provider</code><a class="headerlink" href="#vcs-provider" title="Permanent link">¶</a></h3>
+<p>VCS integration used for <a href="../user-guide/webhook-vcs-releases.md">release webhooks</a>. When empty, no VCS provider is initialized (webhook routes must not be used). Today only GitHub is implemented.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>select</td>
+</tr>
+<tr>
+<td>choices</td>
+<td><code>github</code></td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code> (empty)</td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--vcs-provider</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_VCS_PROVIDER</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gh-webhook-secret"><code>gh-webhook-secret</code><a class="headerlink" href="#gh-webhook-secret" title="Permanent link">¶</a></h3>
+<p>Optional shared secret to verify GitHub release webhooks (<code>X-Hub-Signature-256</code>, HMAC-SHA256 of the raw body). If empty, signatures are not verified. See the <a href="../user-guide/webhook-vcs-releases.md">VCS release webhooks</a> guide.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--gh-webhook-secret</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_GH_WEBHOOK_SECRET</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gh-access-token"><code>gh-access-token</code><a class="headerlink" href="#gh-access-token" title="Permanent link">¶</a></h3>
+<p>Optional bearer token for outbound GitHub downloads (for example a personal access token). Sent as <code>Authorization: Bearer</code> on fetches. Startup validation requires <strong>either</strong> this token <strong>or</strong> all of <code>gh-app-id</code>, <code>gh-app-installation-id</code>, and <code>gh-app-private-key-path</code> (GitHub App installation token flow).</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--gh-access-token</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_GH_ACCESS_TOKEN</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gh-app-id"><code>gh-app-id</code><a class="headerlink" href="#gh-app-id" title="Permanent link">¶</a></h3>
+<p>Optional GitHub App ID. Used with <code>gh-app-installation-id</code> and <code>gh-app-private-key-path</code> for installation access tokens on outbound GitHub API and asset downloads.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>int</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--gh-app-id</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_GH_APP_ID</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gh-app-installation-id"><code>gh-app-installation-id</code><a class="headerlink" href="#gh-app-installation-id" title="Permanent link">¶</a></h3>
+<p>GitHub App installation ID used when minting installation tokens (for example repository-level webhooks). The App must be installed on the account that owns the target repositories.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>int</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>0</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--gh-app-installation-id</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_GH_APP_INSTALLATION_ID</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gh-app-private-key-path"><code>gh-app-private-key-path</code><a class="headerlink" href="#gh-app-private-key-path" title="Permanent link">¶</a></h3>
+<p>Path to the GitHub App private key PEM file (PKCS#1 or PKCS#8). Required together with <code>gh-app-id</code> and <code>gh-app-installation-id</code> when not using <code>gh-access-token</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--gh-app-private-key-path</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_GH_APP_PRIVATE_KEY_PATH</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gh-base-url"><code>gh-base-url</code><a class="headerlink" href="#gh-base-url" title="Permanent link">¶</a></h3>
+<p>Hostname (no scheme) for GitHub Enterprise Server-style hosts, for example <code>github.mycompany.com</code>. Defaults to <code>github.com</code>. This is separate from OAuth’s <a href="#gh-domain"><code>gh-domain</code></a>. Webhook asset URLs built from release payloads still use <code>https://api.github.com</code> where the implementation constructs those links.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>github.com</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--gh-base-url</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_GH_BASE_URL</code></td>
 </tr>
 </tbody>
 </table>
