@@ -27,6 +27,9 @@ packages:
   terralist/pkg/file:
     config:
       all: true
+  terralist/pkg/vcs:
+    config:
+      all: true
   terralist/pkg/storage:
     config:
       all: true

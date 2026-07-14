@@ -213,6 +213,9 @@ jobs:
       TERRALIST_S3_USE_PATH_STYLE: "true"
       TERRALIST_S3_SERVER_SIDE_ENCRYPTION: "none"
 
+      TERRALIST_VCS_PROVIDER: github
+      TERRALIST_GH_WEBHOOK_SECRET: e2e-webhook-secret
+
       TERRALIST_RBAC_DEFAULT_ROLE: "readonly"
       TERRALIST_RBAC_POLICY_PATH: ${{ format('{0}/e2e/policy.csv', github.workspace)}}
 
