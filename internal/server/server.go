@@ -141,9 +141,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
 
 	loginService := &services.DefaultLoginService{
-		Provider:  config.Provider,
-		JWT:       jwtManager,
-		CodeStore: services.NewInMemoryOAuthCodeStore(2 * time.Minute),
+		Provider: config.Provider,
+		JWT:      jwtManager,
+		CodeRepository: &repositories.DefaultOAuthCodeRepository{
+			Database: config.Database,
+			TTL:      2 * time.Minute,
+		},
 
 		TokenExpirationSecs: tokenExpirationSeconds,
 	}

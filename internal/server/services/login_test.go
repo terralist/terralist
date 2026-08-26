@@ -7,18 +7,43 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"terralist/internal/server/models/oauth"
+	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
+	"terralist/pkg/database"
+	"terralist/pkg/database/factory"
+	"terralist/pkg/database/sqlite"
 
 	"github.com/mazen160/go-random"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
 )
+
+func newTestCodeRepository(t *testing.T) repositories.OAuthCodeRepository {
+	t.Helper()
+
+	engine, err := factory.NewDatabase(database.SQLITE, &sqlite.Config{
+		Path: filepath.Join(t.TempDir(), "test.db"),
+	})
+	if err != nil {
+		t.Fatalf("failed to create test database: %v", err)
+	}
+
+	if err := engine.Handler().AutoMigrate(&oauth.Code{}); err != nil {
+		t.Fatalf("failed to migrate test database: %v", err)
+	}
+
+	return &repositories.DefaultOAuthCodeRepository{
+		Database: engine,
+		TTL:      2 * time.Minute,
+	}
+}
 
 func TestAuthorize(t *testing.T) {
 	Convey("Subject: Compute an authorize URL", t, func() {
@@ -110,7 +135,7 @@ func TestUnpackCode(t *testing.T) {
 func TestRedirect(t *testing.T) {
 	Convey("Subject: Compute a redirect URL", t, func() {
 		loginService := &DefaultLoginService{
-			CodeStore: NewInMemoryOAuthCodeStore(2 * time.Minute),
+			CodeRepository: newTestCodeRepository(t),
 		}
 
 		Convey("Given the code components and the request", func() {
@@ -283,7 +308,7 @@ func TestRedirect_UsesOpaqueCodeStore(t *testing.T) {
 	state, _ := random.String(16)
 
 	loginService := &DefaultLoginService{
-		CodeStore: NewInMemoryOAuthCodeStore(2 * time.Minute),
+		CodeRepository: newTestCodeRepository(t),
 	}
 
 	cc := oauth.CodeComponents{
@@ -326,7 +351,7 @@ func TestRedirect_UsesOpaqueCodeStore(t *testing.T) {
 func TestResolveCode_RejectsSelfEncodedPayload(t *testing.T) {
 	salt, _ := random.String(16)
 	loginService := &DefaultLoginService{
-		CodeStore: NewInMemoryOAuthCodeStore(2 * time.Minute),
+		CodeRepository: newTestCodeRepository(t),
 	}
 
 	// A payload the client encoded itself, even with the correct salt, is not
@@ -389,7 +414,7 @@ func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
 	loginService := &DefaultLoginService{
 		Provider:            mockProvider,
 		JWT:                 jwtManager,
-		CodeStore:           NewInMemoryOAuthCodeStore(2 * time.Minute),
+		CodeRepository:      newTestCodeRepository(t),
 		TokenExpirationSecs: 24 * 60 * 60,
 	}
 
@@ -459,7 +484,7 @@ func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
 func TestResolveCode_RejectsForgedPayloadCode(t *testing.T) {
 	salt, _ := random.String(32)
 	loginService := &DefaultLoginService{
-		CodeStore: NewInMemoryOAuthCodeStore(2 * time.Minute),
+		CodeRepository: newTestCodeRepository(t),
 	}
 
 	forged := oauth.CodeComponents{

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"terralist/internal/server/models/oauth"
+	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 )
@@ -31,9 +32,9 @@ type LoginService interface {
 }
 
 type DefaultLoginService struct {
-	Provider  auth.Provider
-	JWT       jwt.JWT
-	CodeStore OAuthCodeStore
+	Provider       auth.Provider
+	JWT            jwt.JWT
+	CodeRepository repositories.OAuthCodeRepository
 
 	TokenExpirationSecs int
 }
@@ -78,7 +79,7 @@ func (s *DefaultLoginService) UnpackCode(code string, r *oauth.Request) (*oauth.
 }
 
 func (s *DefaultLoginService) Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error) {
-	code, err := s.CodeStore.Put(*cc)
+	code, err := s.CodeRepository.Put(*cc)
 	if err != nil {
 		return "", oauth.WrapError(err, oauth.ServerError)
 	}
@@ -87,7 +88,7 @@ func (s *DefaultLoginService) Redirect(cc *oauth.CodeComponents, r *oauth.Reques
 }
 
 func (s *DefaultLoginService) ResolveCode(code string) (*oauth.CodeComponents, oauth.Error) {
-	if components, ok := s.CodeStore.Take(code); ok {
+	if components, ok := s.CodeRepository.Take(code); ok {
 		return components, nil
 	}
 
