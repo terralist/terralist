@@ -4,6 +4,7 @@ import (
 	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
+	"terralist/internal/server/models/oauth"
 	"terralist/internal/server/models/provider"
 	"terralist/pkg/database"
 )
@@ -25,6 +26,7 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		&module.Submodule{},
 		&module.Provider{},
 		&module.Dependency{},
+		&oauth.Code{},
 	); err != nil {
 		return err
 	}

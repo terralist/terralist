@@ -3,21 +3,47 @@ package services
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"terralist/internal/server/models/oauth"
+	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
+	"terralist/pkg/database"
+	"terralist/pkg/database/factory"
+	"terralist/pkg/database/sqlite"
 
 	"github.com/mazen160/go-random"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
 )
+
+func newTestCodeRepository(t *testing.T) repositories.OAuthCodeRepository {
+	t.Helper()
+
+	engine, err := factory.NewDatabase(database.SQLITE, &sqlite.Config{
+		Path: filepath.Join(t.TempDir(), "test.db"),
+	})
+	if err != nil {
+		t.Fatalf("failed to create test database: %v", err)
+	}
+
+	if err := engine.Handler().AutoMigrate(&oauth.Code{}); err != nil {
+		t.Fatalf("failed to migrate test database: %v", err)
+	}
+
+	return &repositories.DefaultOAuthCodeRepository{
+		Database: engine,
+		TTL:      2 * time.Minute,
+	}
+}
 
 func TestAuthorize(t *testing.T) {
 	Convey("Subject: Compute an authorize URL", t, func() {
@@ -108,17 +134,12 @@ func TestUnpackCode(t *testing.T) {
 
 func TestRedirect(t *testing.T) {
 	Convey("Subject: Compute a redirect URL", t, func() {
-		salt, _ := random.String(16)
-
 		loginService := &DefaultLoginService{
-			EncryptSalt: salt,
+			CodeRepository: newTestCodeRepository(t),
 		}
 
 		Convey("Given the code components and the request", func() {
 			cc := oauth.CodeComponents{}
-			payload, err := cc.ToPayload(salt)
-
-			So(err, ShouldBeNil)
 
 			state, _ := random.String(16)
 
@@ -140,7 +161,10 @@ func TestRedirect(t *testing.T) {
 
 					query := parsedURL.Query()
 					So(query.Get("state"), ShouldEqual, state)
-					So(query.Get("code"), ShouldEqual, payload.String())
+
+					code := query.Get("code")
+					So(code, ShouldNotBeEmpty)
+					So(code, ShouldNotContainSubstring, "{")
 				})
 			})
 		})
@@ -281,12 +305,10 @@ func TestValidateToken(t *testing.T) {
 }
 
 func TestRedirect_UsesOpaqueCodeStore(t *testing.T) {
-	salt, _ := random.String(16)
 	state, _ := random.String(16)
 
 	loginService := &DefaultLoginService{
-		EncryptSalt: salt,
-		CodeStore:   NewInMemoryOAuthCodeStore(2 * time.Minute),
+		CodeRepository: newTestCodeRepository(t),
 	}
 
 	cc := oauth.CodeComponents{
@@ -326,32 +348,33 @@ func TestRedirect_UsesOpaqueCodeStore(t *testing.T) {
 	}
 }
 
-func TestResolveCode_FallsBackToPayloadDecode(t *testing.T) {
+func TestResolveCode_RejectsSelfEncodedPayload(t *testing.T) {
 	salt, _ := random.String(16)
 	loginService := &DefaultLoginService{
-		EncryptSalt: salt,
-		CodeStore:   NewInMemoryOAuthCodeStore(2 * time.Minute),
+		CodeRepository: newTestCodeRepository(t),
 	}
 
-	expected := oauth.CodeComponents{
+	// A payload the client encoded itself, even with the correct salt, is not
+	// an opaque code the server issued and must not resolve to trusted claims.
+	forged := oauth.CodeComponents{
 		UserName:            "alice",
 		UserEmail:           "alice@example.com",
 		CodeChallenge:       "challenge",
 		CodeChallengeMethod: "S256",
 	}
 
-	payload, err := expected.ToPayload(salt)
+	data, err := json.Marshal(forged)
 	if err != nil {
-		t.Fatalf("failed to create legacy payload: %v", err)
+		t.Fatalf("failed to marshal components: %v", err)
 	}
+	payload := base64.StdEncoding.EncodeToString([]byte(salt + "/" + string(data)))
 
-	resolved, oauthErr := loginService.ResolveCode(payload.String())
-	if oauthErr != nil {
-		t.Fatalf("expected payload decode to still work, got: %v", oauthErr)
+	resolved, oauthErr := loginService.ResolveCode(payload)
+	if oauthErr == nil {
+		t.Fatalf("expected self-encoded payload to be rejected, got components: %+v", resolved)
 	}
-
-	if resolved.UserName != expected.UserName || resolved.UserEmail != expected.UserEmail {
-		t.Fatalf("resolved payload mismatch: %+v", resolved)
+	if oauthErr.Kind() != oauth.InvalidRequest {
+		t.Fatalf("expected InvalidRequest error, got: %v", oauthErr.Kind())
 	}
 }
 
@@ -361,9 +384,6 @@ func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create jwt manager: %v", err)
 	}
-
-	salt, _ := random.String(16)
-	exchangeKey, _ := random.String(16)
 
 	groupCount := 750
 	groups := make([]string, 0, groupCount)
@@ -394,9 +414,7 @@ func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
 	loginService := &DefaultLoginService{
 		Provider:            mockProvider,
 		JWT:                 jwtManager,
-		CodeStore:           NewInMemoryOAuthCodeStore(2 * time.Minute),
-		EncryptSalt:         salt,
-		CodeExchangeKey:     exchangeKey,
+		CodeRepository:      newTestCodeRepository(t),
 		TokenExpirationSecs: 24 * 60 * 60,
 	}
 
@@ -460,5 +478,37 @@ func TestTerraformFlow_HighGroupCountClaimsArePreserved(t *testing.T) {
 	}
 	if len(user.Groups) != groupCount {
 		t.Fatalf("expected %d groups in jwt payload, got %d", groupCount, len(user.Groups))
+	}
+}
+
+func TestResolveCode_RejectsForgedPayloadCode(t *testing.T) {
+	salt, _ := random.String(32)
+	loginService := &DefaultLoginService{
+		CodeRepository: newTestCodeRepository(t),
+	}
+
+	forged := oauth.CodeComponents{
+		UserName:            "attacker",
+		UserEmail:           "attacker@evil.test",
+		UserGroups:          []string{"admins"},
+		CodeChallenge:       "challenge",
+		CodeChallengeMethod: "S256",
+	}
+
+	// A client-crafted code the server never issued: the attacker only needs a
+	// filler of the salt's length, since the salt value is never verified.
+	filler := strings.Repeat("A", len(salt))
+	data, err := json.Marshal(forged)
+	if err != nil {
+		t.Fatalf("failed to marshal forged components: %v", err)
+	}
+	code := base64.StdEncoding.EncodeToString([]byte(filler + "/" + string(data)))
+
+	resolved, oauthErr := loginService.ResolveCode(code)
+	if oauthErr == nil {
+		t.Fatalf("expected forged payload code to be rejected, got components: %+v", resolved)
+	}
+	if oauthErr.Kind() != oauth.InvalidRequest {
+		t.Fatalf("expected InvalidRequest error, got: %v", oauthErr.Kind())
 	}
 }
