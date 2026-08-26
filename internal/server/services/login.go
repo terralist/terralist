@@ -35,8 +35,6 @@ type DefaultLoginService struct {
 	JWT       jwt.JWT
 	CodeStore OAuthCodeStore
 
-	EncryptSalt         string
-	CodeExchangeKey     string
 	TokenExpirationSecs int
 }
 
@@ -69,7 +67,6 @@ func (s *DefaultLoginService) UnpackCode(code string, r *oauth.Request) (*oauth.
 	}
 
 	return &oauth.CodeComponents{
-		Key:                 s.CodeExchangeKey,
 		CodeChallenge:       r.CodeChallenge,
 		CodeChallengeMethod: r.CodeChallengeMethod,
 		UserName:            userDetails.Name,
@@ -81,36 +78,20 @@ func (s *DefaultLoginService) UnpackCode(code string, r *oauth.Request) (*oauth.
 }
 
 func (s *DefaultLoginService) Redirect(cc *oauth.CodeComponents, r *oauth.Request) (string, oauth.Error) {
-	if s.CodeStore != nil {
-		code, err := s.CodeStore.Put(*cc)
-		if err != nil {
-			return "", oauth.WrapError(err, oauth.ServerError)
-		}
-
-		return fmt.Sprintf("%s?state=%s&code=%s", r.RedirectURI, r.State, code), nil
-	}
-
-	payload, err := cc.ToPayload(s.EncryptSalt)
+	code, err := s.CodeStore.Put(*cc)
 	if err != nil {
-		return "", oauth.WrapError(err, oauth.InvalidRequest)
+		return "", oauth.WrapError(err, oauth.ServerError)
 	}
 
-	return fmt.Sprintf("%s?state=%s&code=%s", r.RedirectURI, r.State, payload), nil
+	return fmt.Sprintf("%s?state=%s&code=%s", r.RedirectURI, r.State, code), nil
 }
 
 func (s *DefaultLoginService) ResolveCode(code string) (*oauth.CodeComponents, oauth.Error) {
-	if s.CodeStore != nil {
-		if components, ok := s.CodeStore.Take(code); ok {
-			return components, nil
-		}
+	if components, ok := s.CodeStore.Take(code); ok {
+		return components, nil
 	}
 
-	components, err := oauth.Payload(code).ToCodeComponents(s.EncryptSalt)
-	if err != nil {
-		return nil, oauth.WrapError(err, oauth.InvalidRequest)
-	}
-
-	return &components, nil
+	return nil, oauth.WrapError(fmt.Errorf("authorization code is invalid or expired"), oauth.InvalidRequest)
 }
 
 func (s *DefaultLoginService) ValidateToken(components *oauth.CodeComponents, verifier string) (*oauth.TokenResponse, oauth.Error) {

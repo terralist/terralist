@@ -31,25 +31,6 @@ func (p Payload) ToRequest(salt string) (Request, error) {
 	return request, nil
 }
 
-func (p Payload) ToCodeComponents(salt string) (CodeComponents, error) {
-	salted, err := base64.StdEncoding.DecodeString(p.String())
-
-	if err != nil {
-		return CodeComponents{}, err
-	}
-
-	saltedStr := string(salted)
-
-	data := saltedStr[len(salt)+1:]
-
-	var codeComponents CodeComponents
-	if err := json.Unmarshal([]byte(data), &codeComponents); err != nil {
-		return CodeComponents{}, err
-	}
-
-	return codeComponents, nil
-}
-
 type Request struct {
 	ClientID            string `json:"client_id"`
 	CodeChallenge       string `json:"code_challenge"`
@@ -73,7 +54,6 @@ func (r Request) ToPayload(salt string) (Payload, error) {
 }
 
 type CodeComponents struct {
-	Key                 string   `json:"key"`
 	CodeChallenge       string   `json:"code_challenge"`
 	CodeChallengeMethod string   `json:"code_challenge_method"`
 	UserName            string   `json:"user_name"`
@@ -81,17 +61,4 @@ type CodeComponents struct {
 	UserGroups          []string `json:"user_groups,omitempty"`
 	UserAuthority       string   `json:"user_authority,omitempty"`
 	UserAuthorityID     string   `json:"user_authority_id,omitempty"`
-}
-
-func (c CodeComponents) ToPayload(salt string) (Payload, error) {
-	data, err := json.Marshal(c)
-
-	if err != nil {
-		return "", err
-	}
-
-	salted := fmt.Sprintf("%s/%s", salt, string(data))
-	state := base64.StdEncoding.EncodeToString([]byte(salted))
-
-	return Payload(state), nil
 }
