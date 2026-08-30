@@ -85,6 +85,10 @@ func (t *StringFlag) Validate() error {
 		return fmt.Errorf("required but not set")
 	}
 
+	if !t.Required && t.Value == "" {
+		return nil
+	}
+
 	if len(t.Choices) > 0 {
 		if !slices.Contains(t.Choices, t.Value) {
 			options := strings.Join(t.Choices, ", ")
