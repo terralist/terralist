@@ -501,11 +501,6 @@ func (s *Command) run() error {
 			AppPrivateKeyPath: flags[GitHubAppPrivateKeyPathFlag].(*cli.StringFlag).Value,
 			BaseURL:           flags[GitHubBaseURLFlag].(*cli.StringFlag).Value,
 		})
-	default:
-		raw := flags[VcsProviderFlag].(*cli.StringFlag).Value //nolint:forcetypeassert
-		if raw != "" {
-			return fmt.Errorf("invalid VCS provider: %s", raw)
-		}
 	}
 	if err != nil {
 		return err
