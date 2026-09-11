@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../assets/terralist.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -33,7 +33,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1066,6 +1066,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mirror-storage-resolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mirror-storage-resolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modules-anonymous-read" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1081,6 +1092,17 @@
     <span class="md-ellipsis">
       
         providers-anonymous-read
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mirror-anonymous-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mirror-anonymous-read
       
     </span>
   </a>
@@ -1502,6 +1524,8 @@
       
         
       
+        
+      
     
     
     
@@ -1650,6 +1674,34 @@
     
   
     Monitoring and Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../user-guide/network-mirror/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Network Mirror
   
 
     
@@ -2545,6 +2597,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#mirror-storage-resolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mirror-storage-resolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#modules-anonymous-read" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2560,6 +2623,17 @@
     <span class="md-ellipsis">
       
         providers-anonymous-read
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mirror-anonymous-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        mirror-anonymous-read
       
     </span>
   </a>
@@ -3873,18 +3947,18 @@
 <h3 id="oi-host"><code>oi-host</code><a class="headerlink" href="#oi-host" title="Permanent link">¶</a></h3>
 <p>The OpenID Connect issuer URL used for <a href="https://auth0.com/docs/get-started/applications/configure-applications-with-oidc-discovery">OIDC discovery</a>. Terralist fetches <code>authorization_endpoint</code>, <code>token_endpoint</code>, <code>userinfo_endpoint</code>, and <code>scopes_supported</code> from <code>/.well-known/openid-configuration</code>. If discovery fails, or discovery does not provide one of the required endpoints, Terralist falls back to the corresponding manual OIDC endpoint flag when it is set. If the provider does not advertise scopes, or does not advertise all of Terralist's required scopes, Terralist logs a warning and continues. Prefer this over configuring all endpoints manually.</p>
 <p>Recommended OIDC configuration:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;oidc&quot;</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">oi-client-id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${OIDC_CLIENT_ID}&quot;</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">oi-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${OIDC_CLIENT_SECRET}&quot;</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">oi-host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://login.example.com/realms/platform&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="s">"oidc"</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">oi-client-id</span><span class="p">:</span><span class="w"> </span><span class="s">"${OIDC_CLIENT_ID}"</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">oi-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"${OIDC_CLIENT_SECRET}"</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">oi-host</span><span class="p">:</span><span class="w"> </span><span class="s">"https://login.example.com/realms/platform"</span>
 </span></code></pre></div>
 <p>Manual fallback configuration:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;oidc&quot;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">oi-client-id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${OIDC_CLIENT_ID}&quot;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">oi-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${OIDC_CLIENT_SECRET}&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">oi-authorize-url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://login.example.com/realms/platform/protocol/openid-connect/auth&quot;</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">oi-token-url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://login.example.com/realms/platform/protocol/openid-connect/token&quot;</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">oi-userinfo-url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://login.example.com/realms/platform/protocol/openid-connect/userinfo&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="s">"oidc"</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">oi-client-id</span><span class="p">:</span><span class="w"> </span><span class="s">"${OIDC_CLIENT_ID}"</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">oi-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"${OIDC_CLIENT_SECRET}"</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">oi-authorize-url</span><span class="p">:</span><span class="w"> </span><span class="s">"https://login.example.com/realms/platform/protocol/openid-connect/auth"</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">oi-token-url</span><span class="p">:</span><span class="w"> </span><span class="s">"https://login.example.com/realms/platform/protocol/openid-connect/token"</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">oi-userinfo-url</span><span class="p">:</span><span class="w"> </span><span class="s">"https://login.example.com/realms/platform/protocol/openid-connect/userinfo"</span>
 </span></code></pre></div>
 <table>
 <thead>
@@ -4858,6 +4932,42 @@
 </tr>
 </tbody>
 </table>
+<h3 id="mirror-storage-resolver"><code>mirror-storage-resolver</code><a class="headerlink" href="#mirror-storage-resolver" title="Permanent link">¶</a></h3>
+<p>The storage resolver for mirrored providers, served through the <a href="../user-guide/network-mirror/">Provider Network Mirror Protocol</a>. Mirrored packages are always stored under the <code>mirror/</code> prefix, so the same bucket or directory can be shared with modules and providers. The network mirror endpoints are served only when a resolver is configured.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>select</td>
+</tr>
+<tr>
+<td>choices</td>
+<td><code>disabled</code>, <code>local</code>, <code>s3</code>, <code>azure</code>, <code>gcs</code></td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>disabled</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--mirror-storage-resolver</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_MIRROR_STORAGE_RESOLVER</code></td>
+</tr>
+</tbody>
+</table>
 <h3 id="modules-anonymous-read"><code>modules-anonymous-read</code><a class="headerlink" href="#modules-anonymous-read" title="Permanent link">¶</a></h3>
 <p>Allows anonymous read and download of modules.</p>
 <table>
@@ -4919,6 +5029,38 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_PROVIDERS_ANONYMOUS_READ</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="mirror-anonymous-read"><code>mirror-anonymous-read</code><a class="headerlink" href="#mirror-anonymous-read" title="Permanent link">¶</a></h3>
+<p>Allows anonymous read and download of mirrored providers through the <a href="../user-guide/network-mirror/">Provider Network Mirror Protocol</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>bool</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--mirror-anonymous-read</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_MIRROR_ANONYMOUS_READ</code></td>
 </tr>
 </tbody>
 </table>
@@ -5924,51 +6066,51 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
 </tbody>
 </table>
 <h2 id="example-yaml-configuration-file">Example YAML configuration file<a class="headerlink" href="#example-yaml-configuration-file" title="Permanent link">¶</a></h2>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Try to read PORT from the environment variable, and if it&#39;s missing,</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Try to read PORT from the environment variable, and if it's missing,</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># fallback to 5758</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${PORT:5758}&quot;</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="s">"${PORT:5758}"</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">log-level</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;debug&quot;</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">log-level</span><span class="p">:</span><span class="w"> </span><span class="s">"debug"</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;github&quot;</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nt">gh-client-id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GITHUB_OAUTH_CLIENT_ID}&quot;</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nt">gh-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${GITHUB_OAUTH_CLIENT_SECRET}&quot;</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="s">"github"</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nt">gh-client-id</span><span class="p">:</span><span class="w"> </span><span class="s">"${GITHUB_OAUTH_CLIENT_ID}"</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="nt">gh-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"${GITHUB_OAUTH_CLIENT_SECRET}"</span>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># gh-organization is optional, you can set it to restrict access to the registry</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># only to members of your GitHub organization</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="nt">gh-organization</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-org&quot;</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="nt">gh-organization</span><span class="p">:</span><span class="w"> </span><span class="s">"my-org"</span>
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># gh-teams is optional, only users that are part of one of the teams will be able to access the registry</span>
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># gh-organization is required for gh-teams to work</span>
 </span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1"># you must use the slug version of the team</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="nt">gh-teams</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;team-a,team-b&quot;</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;supersecretstring&quot;</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="nt">gh-teams</span><span class="p">:</span><span class="w"> </span><span class="s">"team-a,team-b"</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"supersecretstring"</span>
 </span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nt">database-backend</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sqlite&quot;</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="nt">sqlite-path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;terralist.db&quot;</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="nt">database-backend</span><span class="p">:</span><span class="w"> </span><span class="s">"sqlite"</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="nt">sqlite-path</span><span class="p">:</span><span class="w"> </span><span class="s">"terralist.db"</span>
 </span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="c1"># database-backend: &quot;postgresql&quot;</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="c1"># postgres-url: &quot;${DATABASE_URL:postgres://admin:admin@localhost:5678/public}&quot;</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="c1"># database-backend: "postgresql"</span>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="c1"># postgres-url: "${DATABASE_URL:postgres://admin:admin@localhost:5678/public}"</span>
 </span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="c1"># database-backend: &quot;mysql&quot;</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="c1"># mysql-url: &quot;admin:admin@tcp(localhost:3306)/terralist&quot;</span>
+</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="c1"># database-backend: "mysql"</span>
+</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="c1"># mysql-url: "admin:admin@tcp(localhost:3306)/terralist"</span>
 </span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="nt">modules-storage-resolver</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;s3&quot;</span><span class="w"> </span><span class="c1"># or &quot;azure&quot;</span>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="nt">providers-storage-resolver</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;proxy&quot;</span>
+</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="nt">modules-storage-resolver</span><span class="p">:</span><span class="w"> </span><span class="s">"s3"</span><span class="w"> </span><span class="c1"># or "azure"</span>
+</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a><span class="nt">providers-storage-resolver</span><span class="p">:</span><span class="w"> </span><span class="s">"proxy"</span>
 </span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="nt">s3-bucket-name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-bucket&quot;</span>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="nt">s3-bucket-region</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;us-east-1&quot;</span>
-</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="nt">s3-access-key-id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${AWS_ACCESS_KEY_ID}&quot;</span>
-</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="nt">s3-secret-access-key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${AWS_SECRET_ACCESS_KEY}&quot;</span>
+</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="nt">s3-bucket-name</span><span class="p">:</span><span class="w"> </span><span class="s">"my-bucket"</span>
+</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="nt">s3-bucket-region</span><span class="p">:</span><span class="w"> </span><span class="s">"us-east-1"</span>
+</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="nt">s3-access-key-id</span><span class="p">:</span><span class="w"> </span><span class="s">"${AWS_ACCESS_KEY_ID}"</span>
+</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a><span class="nt">s3-secret-access-key</span><span class="p">:</span><span class="w"> </span><span class="s">"${AWS_SECRET_ACCESS_KEY}"</span>
 </span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>
-</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="c1"># azure-account-name: &quot;Globally unique name of your storage account&quot;</span>
-</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="c1"># azure-container-name: &quot;Name of the container in the storage account&quot;</span>
-</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="c1"># azure-account-key: &quot;Access key of the storage account&quot; # If not using DefaultAzureCredentials</span>
+</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a><span class="c1"># azure-account-name: "Globally unique name of your storage account"</span>
+</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a><span class="c1"># azure-container-name: "Name of the container in the storage account"</span>
+</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a><span class="c1"># azure-account-key: "Access key of the storage account" # If not using DefaultAzureCredentials</span>
 </span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a><span class="c1"># azure-sas-expire: 45 # The number of minutes after which the SAS should expire.</span>
 </span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>
-</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="c1"># local-store: &quot;~/.terralist.d&quot;</span>
+</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a><span class="c1"># local-store: "~/.terralist.d"</span>
 </span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>
-</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="nt">session-store</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cookie&quot;</span>
+</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a><span class="nt">session-store</span><span class="p">:</span><span class="w"> </span><span class="s">"cookie"</span>
 </span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>
-</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="nt">cookie-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;anothersupersecretstring&quot;</span>
+</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a><span class="nt">cookie-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"anothersupersecretstring"</span>
 </span></code></pre></div>
 
 
@@ -6026,7 +6168,7 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
