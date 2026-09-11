@@ -7,75 +7,40 @@
     CreatePolicyDTO,
     CreateStandaloneApiKeyDTO
   } from '@/api/standaloneApiKeys';
+  import {
+    buildPolicyObject,
+    emptyPolicyRow,
+    resources,
+    type PolicyRow
+  } from '@/lib/policy';
 
   export let enabled: boolean = false;
   export let onClose: () => void = () => {};
   export let onSubmit: (dto: CreateStandaloneApiKeyDTO) => void = () => {};
   export let authorities: string[] = [];
 
-  const resources = ['modules', 'providers', 'authorities', 'api-keys', '*'];
   const actions = ['get', 'create', 'update', 'delete', '*'];
   const effects = ['allow', 'deny'];
-
-  type PolicyRow = {
-    resource: string;
-    action: string;
-    effect: string;
-    // Structured object fields
-    authority: string;
-    module: string;
-    provider: string;
-    apiKey: string;
-  };
 
   let name = '';
   let scope = '';
   let expireIn = 0;
-  let policies: PolicyRow[] = [emptyPolicy()];
+  let policies: PolicyRow[] = [emptyPolicyRow()];
   let error = '';
 
-  function emptyPolicy(): PolicyRow {
-    return {
-      resource: 'modules',
-      action: 'get',
-      effect: 'allow',
-      authority: '*',
-      module: '*',
-      provider: '*',
-      apiKey: '*'
-    };
-  }
-
   function addPolicy() {
-    policies = [...policies, emptyPolicy()];
+    policies = [...policies, emptyPolicyRow()];
   }
 
   function removePolicy(index: number) {
     policies = policies.filter((_, i) => i !== index);
   }
 
-  function buildObject(policy: PolicyRow): string {
-    switch (policy.resource) {
-      case 'modules':
-        return `${policy.authority}/${policy.module}/${policy.provider}`;
-      case 'providers':
-        return `${policy.authority}/${policy.provider}`;
-      case 'authorities':
-        return policy.authority;
-      case 'api-keys':
-        return policy.apiKey;
-      case '*':
-        return '*';
-      default:
-        return '*';
-    }
-  }
-
   function reset() {
     name = '';
     scope = '';
     expireIn = 0;
-    policies = [emptyPolicy()];
+    policies = [emptyPolicyRow()];
     error = '';
   }
 
@@ -111,7 +76,7 @@
         (p): CreatePolicyDTO => ({
           resource: p.resource,
           action: p.action,
-          object: buildObject(p),
+          object: buildPolicyObject(p),
           effect: p.effect
         })
       )
@@ -352,6 +317,45 @@
                       class={inputClass}
                       placeholder="* (all)"
                       bind:value={policy.apiKey} />
+                  </div>
+                </div>
+              {:else if policy.resource === 'mirror'}
+                <div class="grid grid-cols-3 gap-2">
+                  <div>
+                    <label
+                      for="policy-host-{index}"
+                      class="text-xs text-zinc-500 dark:text-zinc-400"
+                      >Hostname</label>
+                    <input
+                      id="policy-host-{index}"
+                      type="text"
+                      class={inputClass}
+                      placeholder="* (all)"
+                      bind:value={policy.hostname} />
+                  </div>
+                  <div>
+                    <label
+                      for="policy-ns-{index}"
+                      class="text-xs text-zinc-500 dark:text-zinc-400"
+                      >Namespace</label>
+                    <input
+                      id="policy-ns-{index}"
+                      type="text"
+                      class={inputClass}
+                      placeholder="* (all)"
+                      bind:value={policy.namespace} />
+                  </div>
+                  <div>
+                    <label
+                      for="policy-prov-{index}"
+                      class="text-xs text-zinc-500 dark:text-zinc-400"
+                      >Provider</label>
+                    <input
+                      id="policy-prov-{index}"
+                      type="text"
+                      class={inputClass}
+                      placeholder="* (all)"
+                      bind:value={policy.provider} />
                   </div>
                 </div>
               {/if}
