@@ -23,9 +23,9 @@ func (Provider) TableName() string {
 func (p Provider) GetVersion(v string) *Version {
 	vv := version.Version(v)
 
-	for _, ver := range p.Versions {
-		if version.Compare(version.Version(ver.Version), vv) == 0 {
-			return &ver
+	for i := range p.Versions {
+		if version.Compare(version.Version(p.Versions[i].Version), vv) == 0 {
+			return &p.Versions[i]
 		}
 	}
 

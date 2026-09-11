@@ -21,9 +21,9 @@ func (Version) TableName() string {
 
 // GetPlatform returns the platform matching the given os and architecture, or nil.
 func (v Version) GetPlatform(system, architecture string) *Platform {
-	for _, p := range v.Platforms {
-		if p.System == system && p.Architecture == architecture {
-			return &p
+	for i := range v.Platforms {
+		if v.Platforms[i].System == system && v.Platforms[i].Architecture == architecture {
+			return &v.Platforms[i]
 		}
 	}
 
