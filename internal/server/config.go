@@ -12,6 +12,7 @@ type UserConfig struct {
 	CustomCompanyName          string `mapstructure:"custom-company-name"`
 	ModulesAnonymousRead       bool   `mapstructure:"modules-anonymous-read"`
 	ProvidersAnonymousRead     bool   `mapstructure:"providers-anonymous-read"`
+	MirrorAnonymousRead        bool   `mapstructure:"mirror-anonymous-read"`
 	FetchAllowPrivateAddresses bool   `mapstructure:"fetch-allow-private-addresses"`
 	LocalTokenSigningSecret    string `mapstructure:"local-token-signing-secret"`
 	SamlDisplayName            string `mapstructure:"saml-display-name"`

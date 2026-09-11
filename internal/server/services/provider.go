@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"strings"
 
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
@@ -27,9 +26,6 @@ type ProviderService interface {
 
 	// GetVersion returns a specific installation for a provider.
 	GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error)
-
-	// GetVersionAllPlatforms retrieves all platform binaries for a specific provider version.
-	GetVersionAllPlatforms(namespace, name, version string) (*provider.VersionAllPlatformsDTO, error)
 
 	// Upload loads a new provider version into the system.
 	// If the provider does not already exist, it will create a new one.
@@ -105,59 +101,6 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 	metrics.RecordArtifactDownload("provider", namespace)
 
 	return &dto, nil
-}
-
-func (s *DefaultProviderService) GetVersionAllPlatforms(namespace, name, version string) (*provider.VersionAllPlatformsDTO, error) {
-	p, err := s.ProviderRepository.Find(namespace, name)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, v := range p.Versions {
-		if v.Version == version {
-			dto := &provider.VersionAllPlatformsDTO{
-				Version:   v.Version,
-				Protocols: []string{},
-				Platforms: make([]provider.PlatformDTO, 0),
-			}
-
-			shaSumsUrl := v.ShaSumsUrl
-			if s.Resolver != nil && v.ShaSumsUrl != "" {
-				resolvedURL, err := s.Resolver.Find(v.ShaSumsUrl)
-				if err != nil {
-					return nil, fmt.Errorf("could not resolve shasums location: %v", err)
-				}
-				shaSumsUrl = resolvedURL
-			}
-			dto.ShaSumsUrl = shaSumsUrl
-
-			if v.Protocols != "" {
-				dto.Protocols = strings.Split(v.Protocols, ",")
-			}
-
-			for _, platform := range v.Platforms {
-				downloadURL := platform.Location
-				if s.Resolver != nil {
-					resolvedURL, err := s.Resolver.Find(platform.Location)
-					if err != nil {
-						return nil, fmt.Errorf("could not resolve platform download location: %v", err)
-					}
-					downloadURL = resolvedURL
-				}
-
-				dto.Platforms = append(dto.Platforms, provider.PlatformDTO{
-					OS:          platform.System,
-					Arch:        platform.Architecture,
-					DownloadURL: downloadURL,
-					Shasum:      platform.ShaSum,
-				})
-			}
-
-			return dto, nil
-		}
-	}
-
-	return nil, fmt.Errorf("version %s not found", version)
 }
 
 func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
