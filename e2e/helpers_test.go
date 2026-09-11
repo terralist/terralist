@@ -89,22 +89,55 @@ func doAuthRequest(t *testing.T, method, url string, body any) *http.Response {
 	})
 }
 
+// multipartFile is a file part of a multipart form request.
+type multipartFile struct {
+	Field    string
+	FileName string
+	Content  []byte
+}
+
+// multipartBody encodes the given files as a multipart form body and returns
+// it together with its content type.
+func multipartBody(files []multipartFile) (*bytes.Buffer, string, error) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	for _, f := range files {
+		part, err := writer.CreateFormFile(f.Field, f.FileName)
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err := part.Write(f.Content); err != nil {
+			return nil, "", err
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, "", err
+	}
+
+	return &body, writer.FormDataContentType(), nil
+}
+
 // doAuthMultipartUpload uploads content as a multipart form file under the
 // given field, authenticated with the master API key.
 func doAuthMultipartUpload(t *testing.T, url, field, fileName string, content []byte) *http.Response {
 	t.Helper()
 
-	var body bytes.Buffer
-	writer := multipart.NewWriter(&body)
-	part, err := writer.CreateFormFile(field, fileName)
-	require.NoError(t, err)
-	_, err = part.Write(content)
-	require.NoError(t, err)
-	require.NoError(t, writer.Close())
+	return doAuthMultipartRequest(t, url, []multipartFile{{Field: field, FileName: fileName, Content: content}})
+}
 
-	req, err := http.NewRequest(http.MethodPost, url, &body)
+// doAuthMultipartRequest posts the given files as a multipart form,
+// authenticated with the master API key.
+func doAuthMultipartRequest(t *testing.T, url string, files []multipartFile) *http.Response {
+	t.Helper()
+
+	body, contentType, err := multipartBody(files)
 	require.NoError(t, err)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Authorization", "Bearer x-api-key:"+config.MasterAPIKey)
 
 	resp, err := httpClient().Do(req)
