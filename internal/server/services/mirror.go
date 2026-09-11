@@ -157,7 +157,7 @@ func (s *DefaultMirrorService) Upload(hostname, namespace, name, ver string, met
 	}
 
 	for i := range platforms {
-		platforms[i].Location = keys[platforms[i].String()]
+		platforms[i].Location = keys[archives[i].Name()]
 	}
 
 	v.Platforms = append(v.Platforms, platforms...)
@@ -258,7 +258,7 @@ func (s *DefaultMirrorService) deleteProvider(p *mirror.Provider) error {
 }
 
 // storeArchives uploads the archives to the storage and returns the resulting
-// keys, indexed by platform key.
+// keys, indexed by archive file name.
 func (s *DefaultMirrorService) storeArchives(hostname, namespace, name, ver string, archives []file.File) (map[string]string, error) {
 	prefix := fmt.Sprintf("%s/%s/%s/%s/%s", mirrorStoragePrefix, hostname, namespace, name, ver)
 	keys := map[string]string{}
@@ -276,7 +276,7 @@ func (s *DefaultMirrorService) storeArchives(hostname, namespace, name, ver stri
 			return nil, fmt.Errorf("could not upload %s: %v", archive.Name(), err)
 		}
 
-		keys[platformKeyOf(archive.Name(), ver)] = key
+		keys[archive.Name()] = key
 	}
 
 	return keys, nil
@@ -351,14 +351,6 @@ func findArchiveEntry(metadata mirror.ArchivesDTO, fileName string) (string, mir
 	}
 
 	return "", mirror.ArchiveDTO{}, false
-}
-
-// platformKeyOf extracts the os_arch platform key from a package file name in
-// the form of terraform-provider-<name>_<version>_<os>_<arch>.zip.
-func platformKeyOf(fileName, ver string) string {
-	_, platform, _ := strings.Cut(strings.TrimSuffix(fileName, ".zip"), "_"+ver+"_")
-
-	return platform
 }
 
 // computeH1 computes the h1 hash of a zip archive, the same way Terraform does

@@ -389,6 +389,38 @@ func TestMirrorUpload(t *testing.T) {
 				})
 			})
 
+			Convey("If the archive file name does not follow the terraform naming", func() {
+				renamed := fixtureMetadata(map[string]string{"linux_amd64": "custom.zip"})
+
+				mockRepository.
+					On("Find", "registry.terraform.io", "hashicorp", "null").
+					Return(nil, errors.New(""))
+
+				mockResolver.
+					On("Store", mock.MatchedBy(func(in *storage.StoreInput) bool {
+						return in.FileName == "custom.zip"
+					})).
+					Return("mirror/registry.terraform.io/hashicorp/null/3.2.4/custom.zip", nil)
+
+				var saved mirror.Provider
+				mockRepository.
+					On("Upsert", mock.AnythingOfType("mirror.Provider")).
+					Run(func(args mock.Arguments) {
+						saved, _ = args.Get(0).(mirror.Provider)
+					}).
+					Return(&mirror.Provider{}, nil)
+
+				Convey("When the upload is requested", func() {
+					err := service.Upload("registry.terraform.io", "hashicorp", "null", "3.2.4", renamed, []file.File{fixtureArchive("custom.zip")})
+
+					Convey("The platform should still point to the stored archive", func() {
+						So(err, ShouldBeNil)
+						So(saved.Versions[0].Platforms[0].String(), ShouldEqual, "linux_amd64")
+						So(saved.Versions[0].Platforms[0].Location, ShouldEqual, "mirror/registry.terraform.io/hashicorp/null/3.2.4/custom.zip")
+					})
+				})
+			})
+
 			Convey("If storing an archive fails", func() {
 				mockRepository.
 					On("Find", "registry.terraform.io", "hashicorp", "null").
