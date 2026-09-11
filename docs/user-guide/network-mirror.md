@@ -1,38 +1,140 @@
-# Network Mirror Protocol
+# Provider Network Mirror
 
-Terralist supports the Terraform **Network Mirror Protocol** for providers, offering a simpler alternative to the standard Registry Protocol configuration.
+Terralist can act as a [Provider Network Mirror](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol) for Terraform and OpenTofu. A network mirror serves provider packages that were originally published on other registries, such as `registry.terraform.io`, so that Terraform can install them without reaching the upstream registry.
 
-## Overview
+This is designed for air-gapped deployments: an operator downloads the providers on a machine with internet access, moves them into the isolated network, and uploads them to Terralist. Terraform clients inside the isolated network then install every provider from Terralist.
 
-The Network Mirror Protocol provides:
+!!! note "Providers only"
+    The network mirror protocol is defined by Terraform for providers only. Modules keep using the [Module Registry Protocol](../getting-started.md#upload-a-new-module).
 
-- **Simpler configuration** - Less setup required in `.terraformrc`
-- **Optional authentication** - Can work without authentication in isolated environments
-- **Dual protocol support** - Works alongside the existing Registry Protocol
-- **Provider mirroring** - Compatible with `terraform providers mirror` command
-- **Provider-only support** - Note: Terraform's Network Mirror Protocol is currently designed for providers only, not modules
+## How it works
 
-## Provider Network Mirror
+Mirrored providers are stored apart from the providers published directly on Terralist. They are identified by the hostname of their upstream registry, their namespace and their type, exactly as Terraform identifies them in a `source` address. A mirrored `registry.terraform.io/hashicorp/aws` and a `hashicorp/aws` provider published on a Terralist authority never interfere with each other.
 
-### Benefits
+The protocol does not use service discovery, so its endpoints live at a fixed base URL:
 
-- Reduced configuration complexity compared to host overrides
-- Direct compatibility with Terraform's `providers mirror` command
-- Ability to mirror providers from public registries
+```
+https://terralist.example.com/providers/
+```
 
-### Configuration
+Terraform queries two documents under that base URL:
 
-Configure Terraform to use Terralist as a network mirror for providers:
+| Document | Endpoint |
+| --- | --- |
+| Available versions | `GET /providers/<hostname>/<namespace>/<type>/index.json` |
+| Installation packages of a version | `GET /providers/<hostname>/<namespace>/<type>/<version>.json` |
+
+Both documents are generated from the Terralist database. Package download URLs point to the configured storage backend.
+
+## Enabling the mirror
+
+The mirror is disabled by default. Enable it by choosing a storage backend for the mirrored packages with the [`mirror-storage-resolver`](../configuration.md#mirror-storage-resolver) option:
+
+```yaml title="config.yaml"
+mirror-storage-resolver: "s3"
+```
+
+Any of the `local`, `s3`, `azure` and `gcs` backends can be used. Mirrored packages are stored under the `mirror/<hostname>/<namespace>/<type>/<version>/` prefix, so the mirror can share a bucket or directory with the modules and providers storage.
+
+Reads through the protocol are subject to [access control](#access-control). To let unauthenticated Terraform clients use the mirror, enable [`mirror-anonymous-read`](../configuration.md#mirror-anonymous-read).
+
+## Populating the mirror
+
+### 1. Download the providers
+
+On a machine with internet access, let Terraform download the providers required by a configuration, together with their metadata:
+
+```shell
+terraform providers mirror -platform=linux_amd64 -platform=darwin_arm64 ./mirror
+```
+
+The command writes one directory per provider, containing a `<version>.json` document and one package archive per platform:
+
+```
+mirror/registry.terraform.io/hashicorp/null/
+├── 3.2.4.json
+├── index.json
+├── terraform-provider-null_3.2.4_darwin_arm64.zip
+└── terraform-provider-null_3.2.4_linux_amd64.zip
+```
+
+Terraform verifies the signatures of the packages it downloads, so the `h1` hashes listed in `<version>.json` can be trusted as long as the files are not altered afterwards.
+
+### 2. Upload a version
+
+Move the directory into the isolated network and upload each version to Terralist. The upload is a multipart request with two fields:
+
+- `metadata`: the `<version>.json` document, as written by Terraform;
+- `archives`: one or more package archives listed in the document.
+
+```shell
+curl -X POST \
+  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  -F metadata=@3.2.4.json \
+  -F archives=@terraform-provider-null_3.2.4_linux_amd64.zip \
+  -F archives=@terraform-provider-null_3.2.4_darwin_arm64.zip \
+  https://terralist.example.com/v1/api/mirror/registry.terraform.io/hashicorp/null/3.2.4/upload
+```
+
+The `index.json` file is not uploaded. Terralist computes the list of available versions itself, so versions uploaded at different times never overwrite each other.
+
+Terralist matches every uploaded archive with the entry of the same file name in the metadata, computes the `h1` hash of the archive and rejects the whole upload if any archive does not match its declared hash, is not listed in the metadata, or has no `h1` hash. Since Terraform trusts a network mirror completely, this check is what guarantees that clients receive the packages Terraform originally verified.
+
+Archives listed in the metadata but not attached to the request are ignored, so platforms can be uploaded in separate requests. Uploading a platform that already exists for the version is rejected; delete the version first to replace it.
+
+A whole mirror directory can be uploaded with a small loop:
+
+```shell
+cd mirror
+find . -name '*.json' ! -name 'index.json' | while read -r metadata; do
+  dir=$(dirname "$metadata")
+  version=$(basename "$metadata" .json)
+  path=${dir#./}
+
+  args=()
+  for archive in "$dir"/*_"$version"_*.zip; do
+    args+=(-F "archives=@$archive")
+  done
+
+  curl -X POST \
+    -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+    -F "metadata=@$metadata" "${args[@]}" \
+    "https://terralist.example.com/v1/api/mirror/$path/$version/upload"
+done
+```
+
+### 3. Remove providers
+
+Mirrored providers can be removed at any granularity:
+
+```shell
+# A single version
+curl -X DELETE -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  https://terralist.example.com/v1/api/mirror/registry.terraform.io/hashicorp/null/3.2.4
+
+# A provider with all its versions
+curl -X DELETE -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  https://terralist.example.com/v1/api/mirror/registry.terraform.io/hashicorp/null
+
+# Every provider of a namespace
+curl -X DELETE -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  https://terralist.example.com/v1/api/mirror/registry.terraform.io/hashicorp
+
+# Every provider mirrored from a hostname
+curl -X DELETE -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  https://terralist.example.com/v1/api/mirror/registry.terraform.io
+```
+
+The stored packages are removed together with their database records.
+
+## Configuring Terraform
+
+Point Terraform at the mirror in the [CLI configuration file](https://developer.hashicorp.com/terraform/cli/config/config-file#provider-installation). The trailing slash in the URL is required.
 
 ```hcl title=".terraformrc"
 provider_installation {
   network_mirror {
-    url = "https://terralist.example.com/"
-    include = ["registry.terraform.io/your-namespace/*"]
-  }
-
-  direct {
-    exclude = ["registry.terraform.io/your-namespace/*"]
+    url = "https://terralist.example.com/providers/"
   }
 }
 
@@ -41,258 +143,55 @@ credentials "terralist.example.com" {
 }
 ```
 
-### URL Format
-
-The Network Mirror Protocol uses the following URL pattern:
-
-```
-{base_url}/{hostname}/{namespace}/{type}/...
-```
-
-**Example endpoints:**
-
-- **List versions**: `https://terralist.example.com/registry.terraform.io/mycompany/aws/index.json`
-- **Version details**: `https://terralist.example.com/registry.terraform.io/mycompany/aws/1.0.0.json`
-
-### Response Format
-
-#### List Provider Versions
-
-**Endpoint**: `/{hostname}/{namespace}/{type}/index.json`
-
-```json
-{
-  "versions": {
-    "1.0.0": {},
-    "1.0.1": {},
-    "1.1.0": {}
-  }
-}
-```
-
-#### Get Version Details
-
-**Endpoint**: `/{hostname}/{namespace}/{type}/{version}.json`
-
-```json
-{
-  "archives": {
-    "darwin_arm64": {
-      "url": "https://example.com/provider.zip",
-      "hashes": [
-        "h1:abc123...",
-        "zh:def456..."
-      ]
-    },
-    "linux_amd64": {
-      "url": "https://example.com/provider-linux.zip",
-      "hashes": ["h1:xyz789..."]
-    }
-  }
-}
-```
-
-### Using Providers with Network Mirror
-
-Once configured, use providers normally in your Terraform configuration:
+With this configuration, Terraform installs every provider from the mirror. Provider addresses in the configuration stay unchanged:
 
 ```hcl
 terraform {
   required_providers {
-    myapp = {
-      source  = "registry.terraform.io/mycompany/myapp"
-      version = "1.0.0"
+    null = {
+      source  = "hashicorp/null"
+      version = "3.2.4"
     }
   }
 }
 ```
 
-Terraform will automatically fetch the provider from your Terralist network mirror.
-
-### Mirroring Public Providers
-
-You can mirror providers from the public registry to your Terralist instance:
-
-```bash
-# Mirror a provider using terraform providers mirror
-terraform providers mirror .
-
-# Upload the mirrored provider to Terralist
-curl -X POST https://terralist.example.com/v1/api/providers/aws/5.0.0/upload \
-     -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-     -d @provider-manifest.json
-```
-
-## Module Support
-
-!!! warning "Not Supported by Terraform"
-    Terraform's Network Mirror Protocol **only supports providers**, not modules. This is a limitation of the Terraform CLI itself.
-
-    **Current Status (September 2025)**: Module Network Mirror Protocol is not implemented in Terraform. Track progress on [GitHub Issue #35892](https://github.com/hashicorp/terraform/issues/35892).
-
-    Terralist continues to support modules through the standard **Module Registry Protocol** as documented in the [Getting Started](getting-started.md#upload-a-new-module) guide.
-
-## Comparison: Network Mirror vs Registry Protocol
-
-| Feature | Network Mirror | Registry Protocol |
-|---------|---------------|------------------|
-| Configuration complexity | Lower | Higher |
-| Authentication | Optional | Required |
-| Static JSON responses | Yes | No |
-| `terraform providers mirror` support | Yes | No |
-| Host override required | No | Yes |
-| Terraform version required | 0.13.2+ | 0.13+ |
-
-## Using Both Protocols
-
-Terralist supports both protocols simultaneously. Choose based on your needs:
-
-### Use Network Mirror when:
-
-- You want simpler client configuration
-- You're using `terraform providers mirror`
-- You need offline/air-gapped environments
-- Authentication is optional
-
-### Use Registry Protocol when:
-
-- You need dynamic provider/module discovery
-- You require advanced authorization controls
-- You're integrating with existing Terraform workflows
-- You need fine-grained access control
-
-## Configuration Examples
-
-### Network Mirror Only
+To mirror only some providers and install the rest directly, combine the `network_mirror` and `direct` methods with `include` and `exclude`:
 
 ```hcl title=".terraformrc"
 provider_installation {
   network_mirror {
-    url = "https://terralist.example.com/"
-  }
-}
-
-credentials "terralist.example.com" {
-  token = "x-api-key:YOUR_API_KEY"
-}
-```
-
-### Mixed Configuration
-
-Use network mirror for your company's providers, direct access for others:
-
-```hcl title=".terraformrc"
-provider_installation {
-  network_mirror {
-    url = "https://terralist.example.com/"
-    include = ["registry.terraform.io/mycompany/*"]
+    url     = "https://terralist.example.com/providers/"
+    include = ["registry.terraform.io/hashicorp/*"]
   }
 
   direct {
-    exclude = ["registry.terraform.io/mycompany/*"]
+    exclude = ["registry.terraform.io/hashicorp/*"]
   }
 }
-
-credentials "terralist.example.com" {
-  token = "x-api-key:YOUR_API_KEY"
-}
 ```
 
-### Air-Gapped Environment
+Terraform requires HTTPS for network mirrors. The `credentials` block is not needed when `mirror-anonymous-read` is enabled.
 
-For completely offline environments, configure all providers through the network mirror:
+!!! tip "Terralist providers and the mirror"
+    Providers published directly on Terralist are installed through the Provider Registry Protocol, under Terralist's own hostname. When a configuration uses both, exclude Terralist's hostname from the mirror: `exclude = ["terralist.example.com/*/*"]`.
 
-```hcl title=".terraformrc"
-provider_installation {
-  network_mirror {
-    url = "https://terralist.internal/"
-  }
-}
+## Access control
 
-# Authentication may be optional in isolated environments
-credentials "terralist.internal" {
-  token = "x-api-key:YOUR_API_KEY"
-}
+Mirrored providers are governed by the `mirror` [RBAC resource](rbac-configuration.md). Policy objects use the `<hostname>/<namespace>/<type>` syntax:
+
+```csv
+# Everyone can install mirrored providers
+p, role:readonly, mirror, get, *, allow
+
+# The platform team maintains everything mirrored from the public registry
+p, role:platform, mirror, *, registry.terraform.io*, allow
 ```
 
-## Authentication
+The built-in `role:readonly` role already grants `get` on every mirrored provider. Uploading requires the `create` action and removing requires the `delete` action. Deleting a namespace or a hostname is evaluated against the `<hostname>/<namespace>` and `<hostname>` objects respectively.
 
-Network mirrors support the same authentication as the Registry Protocol:
+## Reference
 
-- **API Keys**: `x-api-key:YOUR_API_KEY`
-- **OAuth Tokens**: Standard bearer tokens
-- **Anonymous Access**: Available when `providers-anonymous-read` is enabled
-
-Configure anonymous access for isolated environments:
-
-```yaml title="config.yaml"
-providers-anonymous-read: true
-```
-
-## Troubleshooting
-
-### Error: Provider not found
-
-Ensure the provider is uploaded to Terralist and the namespace matches your configuration:
-
-```bash
-# Check if provider exists
-curl https://terralist.example.com/registry.terraform.io/mycompany/myapp/index.json
-```
-
-### Error: Invalid hash
-
-The provider's SHA256 hash doesn't match. Verify:
-
-1. The provider binary is correctly uploaded
-2. The hash in the manifest matches the actual file
-3. The hash has the correct `h1:` prefix
-
-### Error: Network mirror URL not accessible
-
-Check:
-
-1. Terralist is running and accessible
-2. Network connectivity from your machine
-3. HTTPS is properly configured (required for Terraform)
-4. Credentials are correctly configured
-
-## Security Considerations
-
-When using Network Mirror Protocol:
-
-- **HTTPS Required**: Terraform requires HTTPS for network mirrors
-- **Authentication**: While optional, authentication is recommended for production
-- **Hostname Validation**: Terralist validates hostname parameters to prevent injection
-- **Rate Limiting**: Same rate limits apply as Registry Protocol
-- **Hash Verification**: All providers must include valid SHA256 hashes
-
-## Migration Guide
-
-### From Registry Protocol to Network Mirror
-
-1. **Keep existing setup** - Both protocols work simultaneously
-2. **Update `.terraformrc`**:
-   ```hcl
-   # Add network mirror configuration
-   provider_installation {
-     network_mirror {
-       url = "https://terralist.example.com/"
-     }
-
-     # Keep existing host override for transition
-     direct {
-       include = ["terralist.example.com/*/*"]
-     }
-   }
-   ```
-3. **Test with one provider** - Verify network mirror works
-4. **Gradually migrate** - Move providers one namespace at a time
-5. **Remove host override** - Once all providers are migrated
-
-## References
-
-- [Terraform Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol)
-- [Terraform Provider Registry Protocol](https://developer.hashicorp.com/terraform/internals/provider-registry-protocol)
-- [Provider Installation Methods](https://developer.hashicorp.com/terraform/cli/config/config-file#provider-installation)
-- [Terraform CLI Configuration](https://developer.hashicorp.com/terraform/cli/config/config-file)
+- [Terraform Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol)
+- [`terraform providers mirror`](https://developer.hashicorp.com/terraform/cli/commands/providers/mirror)
+- [API reference](../dev-guide/api-reference.md#list-mirrored-provider-versions)

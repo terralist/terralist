@@ -746,6 +746,19 @@ The providers storage resolver.
 | cli | `--providers-storage-resolver` |
 | env | `TERRALIST_PROVIDERS_STORAGE_RESOLVER` |
 
+### `mirror-storage-resolver`
+
+The storage resolver for mirrored providers, served through the [Provider Network Mirror Protocol](user-guide/network-mirror.md). Mirrored packages are always stored under the `mirror/` prefix, so the same bucket or directory can be shared with modules and providers. The network mirror endpoints are served only when a resolver is configured.
+
+| Name | Value |
+| --- | --- |
+| type | select |
+| choices | `disabled`, `local`, `s3`, `azure`, `gcs` |
+| required | no |
+| default | `disabled` |
+| cli | `--mirror-storage-resolver` |
+| env | `TERRALIST_MIRROR_STORAGE_RESOLVER` |
+
 ### `modules-anonymous-read`
 
 Allows anonymous read and download of modules.
@@ -769,6 +782,18 @@ Allows anonymous read and download of providers.
 | default | `false` |
 | cli | `--providers-anonymous-read` |
 | env | `TERRALIST_PROVIDERS_ANONYMOUS_READ` |
+
+### `mirror-anonymous-read`
+
+Allows anonymous read and download of mirrored providers through the [Provider Network Mirror Protocol](user-guide/network-mirror.md).
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--mirror-anonymous-read` |
+| env | `TERRALIST_MIRROR_ANONYMOUS_READ` |
 
 ### `fetch-allow-private-addresses`
 
