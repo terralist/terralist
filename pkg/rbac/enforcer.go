@@ -241,7 +241,7 @@ func (e *Enforcer) Protect(subject auth.User, resource, action, object string) e
 		append(
 			[]string{subject.Name, subject.Email},
 			lo.Map(subject.Groups, func(group string, _ int) string {
-				return fmt.Sprintf("role:%s", group)
+				return fmt.Sprintf("group:%s", group)
 			})...,
 		),
 	)

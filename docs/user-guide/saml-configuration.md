@@ -369,9 +369,9 @@ SAML integrates with Terralist's RBAC system. Configure user roles based on SAML
 
 ```bash
 # In your RBAC policy file
-g, engineering@company.com, role:admin
-g, developers@company.com, role:contributor
-g, viewers@company.com, role:readonly
+g, group:engineering@company.com, role:admin
+g, group:developers@company.com, role:contributor
+g, group:viewers@company.com, role:readonly
 ```
 
 The `saml-groups-attribute` configuration determines which SAML attribute contains the group information.
