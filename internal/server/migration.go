@@ -3,6 +3,7 @@ package server
 import (
 	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/models/authority"
+	"terralist/internal/server/models/mirror"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/oauth"
 	"terralist/internal/server/models/provider"
@@ -27,6 +28,9 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		&module.Provider{},
 		&module.Dependency{},
 		&oauth.Code{},
+		&mirror.Provider{},
+		&mirror.Version{},
+		&mirror.Platform{},
 	); err != nil {
 		return err
 	}

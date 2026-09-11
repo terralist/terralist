@@ -125,6 +125,32 @@ resource "null_resource" "test" {}
 	assert.Contains(t, applyOut, "Apply complete! Resources: 1 added")
 }
 
+func TestTerraformNetworkMirrorInit(t *testing.T) {
+	requireTerraformCapable(t)
+	host := registryHost(t)
+
+	dir := setupTerraformMirrorProject(t, host, `
+terraform {
+  required_providers {
+    null = {
+      source  = "hashicorp/null"
+      version = "3.2.4"
+    }
+  }
+}
+
+resource "null_resource" "test" {}
+`)
+
+	out := runTerraform(t, dir, "init")
+	assert.Contains(t, out, "Installed hashicorp/null v3.2.4")
+	assert.Contains(t, out, "Terraform has been successfully initialized")
+
+	lock, err := os.ReadFile(filepath.Join(dir, ".terraform.lock.hcl"))
+	require.NoError(t, err)
+	assert.Contains(t, string(lock), bootstrap.NullProviderH1)
+}
+
 // requireTerraformCapable skips the test if the environment is not set up
 // for Terraform integration tests (requires HTTPS and terraform binary).
 func requireTerraformCapable(t *testing.T) {
@@ -144,17 +170,44 @@ func requireTerraformCapable(t *testing.T) {
 func setupTerraformProject(t *testing.T, host, tfConfig string) string {
 	t.Helper()
 
-	dir := t.TempDir()
+	return writeTerraformProject(t, tfConfig, terraformCredentials(host))
+}
 
-	// Write the Terraform configuration.
-	mainTf := filepath.Join(dir, "main.tf")
-	require.NoError(t, os.WriteFile(mainTf, []byte(tfConfig), 0644))
+// setupTerraformMirrorProject creates a temporary directory with a Terraform
+// configuration and a CLI config that installs all providers through the
+// Terralist provider network mirror.
+func setupTerraformMirrorProject(t *testing.T, host, tfConfig string) string {
+	t.Helper()
 
-	// Write a .terraformrc that authenticates with the master API key.
-	rcContent := fmt.Sprintf(`credentials "%s" {
+	rcContent := fmt.Sprintf(`provider_installation {
+  network_mirror {
+    url = "https://%s/providers/"
+  }
+}
+
+%s`, host, terraformCredentials(host))
+
+	return writeTerraformProject(t, tfConfig, rcContent)
+}
+
+// terraformCredentials returns a CLI config block that authenticates against
+// the given host with the master API key.
+func terraformCredentials(host string) string {
+	return fmt.Sprintf(`credentials "%s" {
   token = "x-api-key:%s"
 }
 `, host, config.MasterAPIKey)
+}
+
+// writeTerraformProject writes the Terraform configuration and the CLI config
+// into a temporary directory and returns its path.
+func writeTerraformProject(t *testing.T, tfConfig, rcContent string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	mainTf := filepath.Join(dir, "main.tf")
+	require.NoError(t, os.WriteFile(mainTf, []byte(tfConfig), 0644))
 
 	rcPath := filepath.Join(dir, ".terraformrc")
 	require.NoError(t, os.WriteFile(rcPath, []byte(rcContent), 0644))

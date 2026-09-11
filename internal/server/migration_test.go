@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"terralist/internal/server/models/mirror"
+
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -73,4 +75,21 @@ func documentationColumnDefault(db *gorm.DB) (sql.NullString, error) {
 	}
 
 	return sql.NullString{}, gorm.ErrRecordNotFound
+}
+
+func TestInitialMigrationCreatesMirrorTables(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to open sqlite database: %v", err)
+	}
+
+	if err := (&InitialMigration{}).Migrate(db); err != nil {
+		t.Fatalf("failed to run initial migration: %v", err)
+	}
+
+	for _, model := range []any{&mirror.Provider{}, &mirror.Version{}, &mirror.Platform{}} {
+		if !db.Migrator().HasTable(model) {
+			t.Errorf("expected table for %T to be created", model)
+		}
+	}
 }
