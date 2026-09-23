@@ -651,9 +651,9 @@
     undici-types "~7.19.0"
 
 "@types/node@^24.10.0":
-  version "24.13.3"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.13.3.tgz#49f18bd3c647866dcda51a0756c145e14590ce16"
-  integrity sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==
+  version "24.13.6"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.13.6.tgz#30ba2d8aae3c321fd170fe52a915231a67a4875c"
+  integrity sha512-SGrw/h3KPFshy3OE6ZL53LMBG5vGQQ8/gIpiqz/kRZhPJ7HgwCEs8LBuNtWLa8dvGZVpSF7+Bf+c11HUrCb/yg==
   dependencies:
     undici-types "~7.18.0"
 
