@@ -505,6 +505,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#oauth-state-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oauth-state-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rbac-policy-path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2036,6 +2047,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#oauth-state-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        oauth-state-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rbac-policy-path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3293,6 +3315,41 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_TOKEN_SIGNING_SECRET</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="oauth-state-secret"><code>oauth-state-secret</code><a class="headerlink" href="#oauth-state-secret" title="Permanent link">¶</a></h3>
+<p>The secret to use when signing the OAuth state passed to the identity provider. If unset, it is derived from the <code>token-signing-secret</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Deriving the state secret from <code>token-signing-secret</code> is deprecated. This flag will become required in the next version.</p>
+</div>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--oauth-state-secret</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_OAUTH_STATE_SECRET</code></td>
 </tr>
 </tbody>
 </table>
