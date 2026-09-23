@@ -338,34 +338,24 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		authorityService.Sealer = sealer
 	}
 
-	apiKeyRepository := &repositories.DefaultApiKeyRepository{
-		Database: config.Database,
-	}
-
-	apiKeyService := &services.DefaultApiKeyService{
-		ApiKeyRepository: apiKeyRepository,
-		AuthorityService: authorityService,
-	}
-
 	enforcer, err := rbac.NewEnforcer(userConfig.RbacPolicyPath, userConfig.RbacDefaultRole)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create policy enforcer: %v", err)
 	}
 
-	standaloneApiKeyRepository := &repositories.DefaultStandaloneApiKeyRepository{
+	apiKeyRepository := &repositories.DefaultApiKeyRepository{
 		Database: config.Database,
 	}
 
-	standaloneApiKeyService := &services.DefaultStandaloneApiKeyService{
-		Repository: standaloneApiKeyRepository,
+	apiKeyService := &services.DefaultApiKeyService{
+		Repository: apiKeyRepository,
 	}
 
 	authentication := &handlers.Authentication{
-		ApiKeyService:           apiKeyService,
-		StandaloneApiKeyService: standaloneApiKeyService,
-		MasterApiKey:            userConfig.MasterApiKey,
-		JWT:                     jwtManager,
-		Store:                   config.Store,
+		ApiKeyService: apiKeyService,
+		MasterApiKey:  userConfig.MasterApiKey,
+		JWT:           jwtManager,
+		Store:         config.Store,
 	}
 
 	authorization := &handlers.Authorization{
@@ -477,7 +467,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
-		ApiKeyService:    apiKeyService,
 
 		Authentication: authentication,
 		Authorization:  authorization,
@@ -486,7 +475,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	apiV1Group.Register(authorityController)
 
 	apiKeyController := &controllers.DefaultApiKeyController{
-		Service:        standaloneApiKeyService,
+		Service:        apiKeyService,
 		Authentication: authentication,
 		Authorization:  authorization,
 	}

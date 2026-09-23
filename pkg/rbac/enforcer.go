@@ -221,7 +221,7 @@ func (e *Enforcer) Protect(subject auth.User, resource, action, object string) e
 		return fmt.Errorf("%w: action %v", ErrUnsupported, action)
 	}
 
-	// If the user has inline policies (standalone API key), evaluate them directly.
+	// If the user has inline policies (API key), evaluate them directly.
 	if len(subject.InlinePolicies) > 0 {
 		if !EvaluateInline(subject.InlinePolicies, resource, action, object) {
 			log.Debug().

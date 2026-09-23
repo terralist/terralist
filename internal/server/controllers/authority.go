@@ -28,7 +28,6 @@ type AuthorityController interface {
 // AuthorityController.
 type DefaultAuthorityController struct {
 	AuthorityService services.AuthorityService
-	ApiKeyService    services.ApiKeyService
 
 	Authentication *handlers.Authentication
 	Authorization  *handlers.Authorization
@@ -276,58 +275,6 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 
 			if err := c.AuthorityService.RemoveRule(authorityId, id); err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
-					"errors": []string{err.Error()},
-				})
-				return
-			}
-
-			ctx.JSON(http.StatusOK, true)
-		},
-	)
-
-	api.POST(
-		"/:id/api-keys",
-		requireAuthorization(rbac.ActionUpdate, authorityComposer),
-		func(ctx *gin.Context) {
-			authorityId := handlers.MustGetFromContext[authority.Authority](ctx, "authority").ID
-
-			var body authority.ApiKeyDTO
-			if err := ctx.BindJSON(&body); err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"errors": []string{err.Error()},
-				})
-				return
-			}
-
-			apiKey, err := c.ApiKeyService.Grant(authorityId, body.Name, 0)
-			if err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{
-					"errors": []string{err.Error()},
-				})
-				return
-			}
-
-			ctx.JSON(http.StatusOK, gin.H{
-				"id":   apiKey,
-				"name": body.Name,
-			})
-		},
-	)
-
-	api.DELETE(
-		"/:id/api-keys/:apiKey",
-		requireAuthorization(rbac.ActionUpdate, authorityComposer),
-		func(ctx *gin.Context) {
-			id, err := uuid.Parse(ctx.Param("apiKey"))
-			if err != nil {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"errors": []string{err.Error()},
-				})
-				return
-			}
-
-			if err := c.ApiKeyService.Revoke(id.String()); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return

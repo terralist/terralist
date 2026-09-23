@@ -24,7 +24,6 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 	if err := db.AutoMigrate(
 		&authority.Authority{},
 		&authority.Key{},
-		&authority.ApiKey{},
 		&authority.Rule{},
 		&apikey.ApiKey{},
 		&apikey.Policy{},
@@ -47,6 +46,10 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 
 	// Remove default empty string column in Version.Documentation
 	if err := db.Migrator().AlterColumn(&module.Version{}, "Documentation"); err != nil {
+		return err
+	}
+
+	if err := db.Migrator().DropTable("authority_api_keys"); err != nil {
 		return err
 	}
 

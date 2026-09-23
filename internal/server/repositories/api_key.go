@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"terralist/internal/server/models/authority"
+	"terralist/internal/server/models/apikey"
 	"terralist/pkg/database"
 
 	"github.com/google/uuid"
@@ -17,14 +17,21 @@ var (
 
 // ApiKeyRepository describes a service that can interact with the API keys database.
 type ApiKeyRepository interface {
-	// Find searches for a specific ApiKey.
-	Find(id uuid.UUID) (*authority.ApiKey, error)
+	// Find searches for a specific ApiKey by its ID.
+	Find(id uuid.UUID) (*apikey.ApiKey, error)
 
-	// Create creates a new ApiKey.
-	Create(*authority.ApiKey) (*authority.ApiKey, error)
+	// FindByHash searches for the ApiKey stored under the hash of a secret and
+	// eagerly loads its policies.
+	FindByHash(hash string) (*apikey.ApiKey, error)
 
-	// Delete removes an ApiKey from the database.
+	// Create creates a new ApiKey along with its policies in a single transaction.
+	Create(key *apikey.ApiKey) (*apikey.ApiKey, error)
+
+	// Delete removes an ApiKey and its associated policies from the database.
 	Delete(id uuid.UUID) error
+
+	// List returns all non-expired ApiKeys.
+	List() ([]apikey.ApiKey, error)
 }
 
 // DefaultApiKeyRepository is a concrete implementation of ApiKeyRepository.
@@ -32,39 +39,71 @@ type DefaultApiKeyRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*authority.ApiKey, error) {
-	apiKey := &authority.ApiKey{}
+func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*apikey.ApiKey, error) {
+	key := &apikey.ApiKey{}
 
 	if err := r.Database.Handler().
 		Where("id = ?", id).
-		First(apiKey).
+		First(key).
 		Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
 
-	if apiKey.Expiration != nil && time.Now().Unix() > apiKey.Expiration.Unix() {
-		r.Database.Handler().Delete(apiKey)
+	if key.Expiration != nil && time.Now().Unix() > key.Expiration.Unix() {
+		r.Database.Handler().Delete(key)
 		return nil, fmt.Errorf("%w", ErrApiKeyExpired)
 	}
 
-	return apiKey, nil
+	return key, nil
 }
 
-func (r *DefaultApiKeyRepository) Create(apiKey *authority.ApiKey) (*authority.ApiKey, error) {
-	if err := r.Database.Handler().Create(apiKey).Error; err != nil {
+func (r *DefaultApiKeyRepository) FindByHash(hash string) (*apikey.ApiKey, error) {
+	key := &apikey.ApiKey{}
+
+	if err := r.Database.Handler().
+		Preload("Policies").
+		Where("hash = ?", hash).
+		First(key).
+		Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
 
-	return apiKey, nil
+	if key.Expiration != nil && time.Now().Unix() > key.Expiration.Unix() {
+		r.Database.Handler().Delete(key)
+		return nil, fmt.Errorf("%w", ErrApiKeyExpired)
+	}
+
+	return key, nil
+}
+
+func (r *DefaultApiKeyRepository) Create(key *apikey.ApiKey) (*apikey.ApiKey, error) {
+	if err := r.Database.Handler().Create(key).Error; err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
+	}
+
+	return key, nil
 }
 
 func (r *DefaultApiKeyRepository) Delete(id uuid.UUID) error {
 	if err := r.Database.Handler().
 		Where("id = ?", id).
-		Delete(&authority.ApiKey{}).
+		Delete(&apikey.ApiKey{}).
 		Error; err != nil {
 		return fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
 
 	return nil
+}
+
+func (r *DefaultApiKeyRepository) List() ([]apikey.ApiKey, error) {
+	var keys []apikey.ApiKey
+
+	if err := r.Database.Handler().
+		Preload("Policies").
+		Find(&keys).
+		Error; err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
+	}
+
+	return keys, nil
 }

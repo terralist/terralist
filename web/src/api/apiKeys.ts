@@ -1,24 +1,62 @@
 import { AxiosError } from 'axios';
 import { createClient, handleError, handleResponse } from '@/api/api.utils';
 
+type PolicyDTO = {
+  id: string;
+  resource: string;
+  action: string;
+  object: string;
+  effect: string;
+};
+
 type ApiKey = {
   id: string;
   name: string;
+  scope: string;
+  createdBy: string;
+  expiration: string;
+  policies: PolicyDTO[];
+};
+
+type CreatePolicyDTO = {
+  resource: string;
+  action: string;
+  object: string;
+  effect: string;
+};
+
+type CreateApiKeyDTO = {
+  name: string;
+  scope: string;
+  expireIn: number;
+  policies: CreatePolicyDTO[];
+};
+
+type CreateApiKeyResponse = {
+  id: string;
+  name: string;
+  key: string;
 };
 
 const client = createClient({
-  baseURL: '/v1/api/authorities',
+  baseURL: '/v1/api/api-keys',
   timeout: 120000
 });
 
 const actions = {
-  create: async (authorityId: string, name: string) =>
+  list: async () =>
     client
-      .post<ApiKey>(`/${authorityId}/api-keys`, { name })
-      .then(handleResponse<ApiKey>)
+      .get<ApiKey[]>('/')
+      .then(handleResponse<ApiKey[]>)
       .catch(handleError),
 
-  delete: async (authorityId: string, id: string) => {
+  create: async (dto: CreateApiKeyDTO) =>
+    client
+      .post<CreateApiKeyResponse>('/', dto)
+      .then(handleResponse<CreateApiKeyResponse>)
+      .catch(handleError),
+
+  delete: async (id: string) => {
     if (!id) {
       return Promise.reject(
         handleError(new AxiosError(AxiosError.ERR_BAD_REQUEST, '400'))
@@ -26,17 +64,22 @@ const actions = {
     }
 
     return client
-      .delete<boolean>(`/${authorityId}/api-keys/${id}`)
+      .delete<boolean>(`/${id}`)
       .then(handleResponse<boolean>)
       .catch(handleError);
   }
 };
 
 const ApiKeys = {
-  create: async (authorityId: string, name: string) =>
-    await actions.create(authorityId, name),
-  delete: async (authorityId: string, id: string) =>
-    await actions.delete(authorityId, id)
+  list: async () => await actions.list(),
+  create: async (dto: CreateApiKeyDTO) => await actions.create(dto),
+  delete: async (id: string) => await actions.delete(id)
 };
 
-export { type ApiKey, ApiKeys };
+export {
+  type PolicyDTO,
+  type ApiKey,
+  type CreatePolicyDTO,
+  type CreateApiKeyDTO,
+  ApiKeys
+};

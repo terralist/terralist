@@ -22,7 +22,7 @@ func newTestAuthorityRepository(t *testing.T) *DefaultAuthorityRepository {
 		t.Fatalf("failed to create test database: %v", err)
 	}
 
-	if err := engine.Handler().AutoMigrate(&authority.Authority{}, &authority.Key{}, &authority.ApiKey{}, &authority.Rule{}); err != nil {
+	if err := engine.Handler().AutoMigrate(&authority.Authority{}, &authority.Key{}, &authority.Rule{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
