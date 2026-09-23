@@ -163,6 +163,7 @@ tasks:
       TERRALIST_OI_HOST: "http://localhost:8080/default"
 
       TERRALIST_TOKEN_SIGNING_SECRET: "e2e-test-secret"
+      TERRALIST_OAUTH_STATE_SECRET: "e2e-state-secret"
 
       TERRALIST_DATABASE_BACKEND: "sqlite"
       TERRALIST_SQLITE_PATH: "test-run-{{.TEST_RUN_ID}}.db"

@@ -116,14 +116,12 @@ The secret to use when signing authorization tokens.
 
 ### `oauth-state-secret`
 
-The secret to use when signing the OAuth state passed to the identity provider. If unset, it is derived from the `token-signing-secret`.
-
-!!! warning "Deriving the state secret from `token-signing-secret` is deprecated. This flag will become required in the next version."
+The secret to use when signing the OAuth state passed to the identity provider.
 
 | Name | Value |
 | --- | --- |
 | type | string |
-| required | no |
+| required | yes |
 | default | `n/a` |
 | cli | `--oauth-state-secret` |
 | env | `TERRALIST_OAUTH_STATE_SECRET` |
@@ -1205,6 +1203,7 @@ gh-organization: "my-org"
 # you must use the slug version of the team
 gh-teams: "team-a,team-b"
 token-signing-secret: "supersecretstring"
+oauth-state-secret: "anothersecretstring"
 
 database-backend: "sqlite"
 sqlite-path: "terralist.db"

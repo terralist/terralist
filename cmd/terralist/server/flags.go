@@ -368,7 +368,8 @@ var flags = map[string]cli.Flag{
 		Required:    true,
 	},
 	OAuthStateSecretFlag: &cli.StringFlag{
-		Description: "The secret to use when signing the OAuth state. If unset, it is derived from the token signing secret; this fallback is deprecated and the flag will become required in the next version.",
+		Description: "The secret to use when signing the OAuth state.",
+		Required:    true,
 	},
 
 	PreferredEmailDomainFlag: &cli.StringFlag{
