@@ -13,23 +13,10 @@
   export let apiKey: StandaloneApiKey;
   export let onDelete: (id: string) => void = () => {};
 
-  const [clipboardUpdated, setClipboardUpdated, resetClipboardUpdated] =
-    useFlag(false);
-
   const [viewModalEnabled, showViewModal, hideViewModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 
   let errorMessage: string = '';
-
-  const censor = (value: string) => {
-    return `****${value.slice(-4)}`;
-  };
-
-  const updateClipboard = () => {
-    navigator.clipboard.writeText(apiKey.id);
-    setClipboardUpdated();
-    setTimeout(resetClipboardUpdated, 1000);
-  };
 
   const remove = () => {
     onDelete(apiKey.id);
@@ -66,21 +53,6 @@
   onClose={hideViewModal}>
   <span slot="body">
     <div class="space-y-4">
-      <div>
-        <p class="text-xs uppercase text-zinc-400 mb-1">Key</p>
-        <div
-          class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-2">
-          <pre class="text-xs">{apiKey.id}</pre>
-          {#key $clipboardUpdated}
-            <TransparentButton
-              onClick={updateClipboard}
-              disabled={$clipboardUpdated}>
-              <Icon name={$clipboardUpdated ? 'check' : 'clipboard'} />
-            </TransparentButton>
-          {/key}
-        </div>
-      </div>
-
       <div>
         <p class="text-xs uppercase text-zinc-400 mb-1">Scope</p>
         <p class="text-sm">{apiKey.scope}</p>
@@ -124,7 +96,7 @@
 </Modal>
 
 <ConfirmationModal
-  title={`Remove API Key ${censor(apiKey.id)}`}
+  title={`Remove API Key ${apiKey.name}`}
   enabled={$deleteModalEnabled}
   onClose={hideDeleteModal}
   onSubmit={remove}>

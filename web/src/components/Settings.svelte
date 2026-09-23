@@ -3,7 +3,9 @@
   import { writable } from 'svelte/store';
 
   import Icon from './Icon.svelte';
+  import TransparentButton from './TransparentButton.svelte';
 
+  import Modal from './Modal.svelte';
   import FormModal from './FormModal.svelte';
   import ErrorModal from './ErrorModal.svelte';
 
@@ -35,6 +37,7 @@
   let authorities = writable<AuthorityT[]>([]);
   let apiKeys = writable<StandaloneApiKeyT[]>([]);
   let apiKeysAccessible = writable<boolean>(false);
+  let createdKey = writable<string>('');
   let errorMessage = writable<string>('');
 
   const user = defaultIfNull(UserStore.get(), {
@@ -83,6 +86,16 @@
     showCreateApiKeyModal,
     hideCreateApiKeyModal
   ] = useFlag(false);
+  const [createdKeyModalEnabled, showCreatedKeyModal, hideCreatedKeyModal] =
+    useFlag(false, undefined, () => createdKey.set(''));
+  const [clipboardUpdated, setClipboardUpdated, resetClipboardUpdated] =
+    useFlag(false);
+
+  const copyCreatedKey = () => {
+    navigator.clipboard.writeText($createdKey);
+    setClipboardUpdated();
+    setTimeout(resetClipboardUpdated, 1000);
+  };
 
   const onAuthorityCreateSubmit = async (
     entries: Map<string, string | string[] | undefined>
@@ -142,6 +155,9 @@
     let result = await StandaloneApiKeys.create(dto);
 
     if (result.status === 'OK') {
+      createdKey.set(result.data.key);
+      showCreatedKeyModal();
+
       // Refresh the list to get the full object with policies
       let listResult = await StandaloneApiKeys.list();
       if (listResult.status === 'OK') {
@@ -282,6 +298,31 @@
     onClose={hideCreateApiKeyModal}
     onSubmit={onApiKeyCreateSubmit}
     authorities={$authorities.map(a => a.name)} />
+
+  <Modal
+    title="API key created"
+    enabled={$createdKeyModalEnabled}
+    onClose={hideCreatedKeyModal}>
+    <span slot="body">
+      <div class="space-y-4">
+        <p class="text-sm">
+          Copy this key now. It is shown only once and cannot be retrieved
+          later.
+        </p>
+        <div
+          class="flex justify-between items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-2">
+          <pre class="text-xs">{$createdKey}</pre>
+          {#key $clipboardUpdated}
+            <TransparentButton
+              onClick={copyCreatedKey}
+              disabled={$clipboardUpdated}>
+              <Icon name={$clipboardUpdated ? 'check' : 'clipboard'} />
+            </TransparentButton>
+          {/key}
+        </div>
+      </div>
+    </span>
+  </Modal>
 
   <FormModal
     title="New authority"
