@@ -43,6 +43,7 @@ oauth-provider: github
 gh-client-id: ${GITHUB_OAUTH_CLIENT_ID}
 gh-client-secret: ${GITHUB_OAUTH_CLIENT_SECRET}
 token-signing-secret: $(openssl rand -hex 16)
+oauth-state-secret: $(openssl rand -hex 16)
 cookie-secret: $(openssl rand -hex 16)
 EOF
 
