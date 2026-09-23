@@ -2,13 +2,11 @@ package controllers
 
 import (
 	"net/http"
+
+	"terralist/internal/server/models/oauth"
 	"terralist/pkg/api"
 
 	"github.com/gin-gonic/gin"
-)
-
-var (
-	terraformPorts = []int{10000, 10010}
 )
 
 // ServiceDiscoveryController registers the endpoints described by the
@@ -44,7 +42,7 @@ func (c *DefaultServiceDiscoveryController) Subscribe(apis ...*gin.RouterGroup) 
 					"grant_types": []string{"authz_code"},
 					"authz":       c.AuthorizationEndpoint,
 					"token":       c.TokenEndpoint,
-					"ports":       terraformPorts,
+					"ports":       oauth.TerraformPorts,
 				},
 				"modules.v1":   c.ModuleEndpoint,
 				"providers.v1": c.ProviderEndpoint,

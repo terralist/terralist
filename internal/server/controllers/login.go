@@ -97,6 +97,13 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			State:               ctx.Query("state"),
 		}
 
+		if err := oauth.ValidateRedirectURI(r.RedirectURI, c.HostURL.Host); err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"errors": []string{err.Error()},
+			})
+			return
+		}
+
 		state, err := r.ToPayload(c.StateKey)
 		if err != nil {
 			ctx.Redirect(
@@ -166,6 +173,11 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 
 		r, err := oauth.Payload(state).ToRequest(c.StateKey)
 		if err != nil {
+			ctx.AbortWithStatus(http.StatusBadRequest)
+			return
+		}
+
+		if err := oauth.ValidateRedirectURI(r.RedirectURI, c.HostURL.Host); err != nil {
 			ctx.AbortWithStatus(http.StatusBadRequest)
 			return
 		}

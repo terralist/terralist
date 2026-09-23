@@ -234,6 +234,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 				return
 			}
 
+			if err := oauth.ValidateRedirectURI(r.RedirectURI, hostURL.Host); err != nil {
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
 			codeComponents, erro := loginService.UnpackCode(samlResponse, &r)
 			if erro != nil {
 				ctx.Redirect(http.StatusFound, redirectWithError(r.RedirectURI, r.State, erro))
