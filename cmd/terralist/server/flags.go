@@ -81,6 +81,7 @@ const (
 	SamlDisableRequestIDValidationFlag   = "saml-disable-request-id-validation"
 
 	TokenSigningSecretFlag = "token-signing-secret"
+	OAuthStateSecretFlag   = "oauth-state-secret"
 
 	PreferredEmailDomainFlag = "oauth-preferred-email-domain"
 
@@ -363,6 +364,9 @@ var flags = map[string]cli.Flag{
 	TokenSigningSecretFlag: &cli.StringFlag{
 		Description: "The secret to use when signing authorization tokens.",
 		Required:    true,
+	},
+	OAuthStateSecretFlag: &cli.StringFlag{
+		Description: "The secret to use when signing the OAuth state. If unset, it is derived from the token signing secret; this fallback is deprecated and the flag will become required in the next version.",
 	},
 
 	PreferredEmailDomainFlag: &cli.StringFlag{
