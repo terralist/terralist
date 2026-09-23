@@ -21,25 +21,25 @@ func TestAuthenticate(t *testing.T) {
 			Repository: mockRepo,
 		}
 
-		Convey("Given an invalid API key", func() {
-			Convey("When the service is queried", func() {
-				user, err := service.Authenticate("not-a-uuid")
+		Convey("Given an unknown API key", func() {
+			mockRepo.On("FindByHash", apikey.HashSecret("tlk_unknown")).Return(nil, repositories.ErrDatabaseFailure)
 
-				Convey("Then a parse error should be returned", func() {
+			Convey("When the service is queried", func() {
+				user, err := service.Authenticate("tlk_unknown")
+
+				Convey("Then an invalid key error should be returned", func() {
 					So(err, ShouldNotBeNil)
 					So(user, ShouldBeNil)
-					So(err.Error(), ShouldContainSubstring, "cannot parse")
+					So(err.Error(), ShouldContainSubstring, "invalid key")
 				})
 			})
 		})
 
 		Convey("Given an expired API key", func() {
-			keyID := uuid.Must(uuid.NewRandom())
-
-			mockRepo.On("FindWithPolicies", keyID).Return(nil, repositories.ErrApiKeyExpired)
+			mockRepo.On("FindByHash", apikey.HashSecret("tlk_expired")).Return(nil, repositories.ErrApiKeyExpired)
 
 			Convey("When the service is queried", func() {
-				user, err := service.Authenticate(keyID.String())
+				user, err := service.Authenticate("tlk_expired")
 
 				Convey("Then an invalid key error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -57,8 +57,9 @@ func TestAuthenticate(t *testing.T) {
 				{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
 			}
 
-			mockRepo.On("FindWithPolicies", keyID).Return(&apikey.ApiKey{
+			mockRepo.On("FindByHash", apikey.HashSecret("tlk_valid")).Return(&apikey.ApiKey{
 				Entity:    entity.Entity{ID: keyID},
+				Hash:      apikey.HashSecret("tlk_valid"),
 				Name:      "test-key",
 				Scope:     "team-a",
 				CreatedBy: createdBy,
@@ -66,7 +67,7 @@ func TestAuthenticate(t *testing.T) {
 			}, nil)
 
 			Convey("When the service is queried", func() {
-				user, err := service.Authenticate(keyID.String())
+				user, err := service.Authenticate("tlk_valid")
 
 				Convey("Then the user with inline policies should be returned", func() {
 					So(err, ShouldBeNil)
@@ -99,28 +100,38 @@ func TestStandaloneCreate(t *testing.T) {
 				{Resource: "providers", Action: "*", Object: "*", Effect: "allow"},
 			}
 
+			var stored *apikey.ApiKey
 			mockRepo.
 				On("Create", mock.AnythingOfType("*apikey.ApiKey")).
+				Run(func(args mock.Arguments) {
+					stored = args.Get(0).(*apikey.ApiKey) //nolint:forcetypeassert
+				}).
 				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
 			mockRepo.
 				On("List").
 				Return([]apikey.ApiKey{{Entity: entity.Entity{ID: keyID}, Scope: "team-a"}}, nil)
 
 			Convey("When the service is queried with no expiration", func() {
-				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
-				Convey("Then a valid API key should be returned", func() {
+				Convey("Then a prefixed secret is returned and only its hash is stored", func() {
 					So(err, ShouldBeNil)
-					So(key, ShouldEqual, keyID.String())
+					So(created.ID, ShouldEqual, keyID.String())
+					So(created.Name, ShouldEqual, "ci-key")
+					So(created.Key, ShouldStartWith, apikey.SecretPrefix)
+					So(stored.Hash, ShouldEqual, apikey.HashSecret(created.Key))
+					So(stored.Expiration, ShouldBeNil)
 				})
 			})
 
 			Convey("When the service is queried with expiration", func() {
-				key, err := service.Create("ci-key", "team-a", "test@example.com", 24, policies)
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 24, policies)
 
-				Convey("Then a valid API key should be returned", func() {
+				Convey("Then a prefixed secret is returned and the key expires", func() {
 					So(err, ShouldBeNil)
-					So(key, ShouldEqual, keyID.String())
+					So(created.Key, ShouldStartWith, apikey.SecretPrefix)
+					So(stored.Hash, ShouldEqual, apikey.HashSecret(created.Key))
+					So(stored.Expiration, ShouldNotBeNil)
 				})
 			})
 		})
@@ -131,11 +142,11 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
-					So(key, ShouldBeEmpty)
+					So(created, ShouldBeNil)
 					So(err.Error(), ShouldContainSubstring, "invalid resource")
 				})
 			})
@@ -147,11 +158,11 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
-					So(key, ShouldBeEmpty)
+					So(created, ShouldBeNil)
 					So(err.Error(), ShouldContainSubstring, "invalid action")
 				})
 			})
@@ -163,11 +174,11 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
-					So(key, ShouldBeEmpty)
+					So(created, ShouldBeNil)
 					So(err.Error(), ShouldContainSubstring, "invalid effect")
 				})
 			})
@@ -179,11 +190,11 @@ func TestStandaloneCreate(t *testing.T) {
 			}
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
 
 				Convey("Then a validation error should be returned", func() {
 					So(err, ShouldNotBeNil)
-					So(key, ShouldBeEmpty)
+					So(created, ShouldBeNil)
 					So(err.Error(), ShouldContainSubstring, "empty object")
 				})
 			})
@@ -203,11 +214,11 @@ func TestStandaloneCreate(t *testing.T) {
 				Return([]apikey.ApiKey{{Entity: entity.Entity{ID: keyID}, Scope: "global"}}, nil)
 
 			Convey("When the service is queried", func() {
-				key, err := service.Create("admin-key", "global", "admin@example.com", 0, policies)
+				created, err := service.Create("admin-key", "global", "admin@example.com", 0, policies)
 
 				Convey("Then a valid API key should be returned", func() {
 					So(err, ShouldBeNil)
-					So(key, ShouldEqual, keyID.String())
+					So(created.Key, ShouldStartWith, apikey.SecretPrefix)
 				})
 			})
 		})

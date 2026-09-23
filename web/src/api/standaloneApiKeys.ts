@@ -35,6 +35,7 @@ type CreateStandaloneApiKeyDTO = {
 type CreateStandaloneApiKeyResponse = {
   id: string;
   name: string;
+  key: string;
 };
 
 const client = createClient({

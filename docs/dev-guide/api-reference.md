@@ -802,11 +802,12 @@ curl -L -X POST \
     ``` json
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "ci-deploy-key"
+      "name": "ci-deploy-key",
+      "key": "tlk_9rJ0mQ3xK8vN2pL5wT7yB1cD4fG6hJ0kM3nP5qR8sU"
     }
     ```
 
-    !!! note "The `id` is the API key value. Store it securely — it cannot be retrieved again."
+    !!! note "The `key` is the API key value and is returned only in this response. Store it securely, it cannot be retrieved again. Only a hash of it is kept on the server. The `id` identifies the key for listing and deletion."
 
 === "Status 400"
 

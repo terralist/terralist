@@ -10,6 +10,7 @@ import (
 
 type ApiKey struct {
 	entity.Entity
+	Hash       string `gorm:"size:64;uniqueIndex"`
 	Name       string `gorm:"not null"`
 	Scope      string `gorm:"not null"`
 	CreatedBy  string `gorm:"not null"`
@@ -35,6 +36,14 @@ type CreateApiKeyDTO struct {
 	Scope    string            `json:"scope" binding:"required"`
 	ExpireIn int               `json:"expire_in"`
 	Policies []CreatePolicyDTO `json:"policies" binding:"required,min=1"`
+}
+
+// CreatedApiKeyDTO is returned once, right after a key is created, and is the
+// only time the secret leaves the server.
+type CreatedApiKeyDTO struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Key  string `json:"key"`
 }
 
 func (a ApiKey) ToDTO() ApiKeyDTO {
