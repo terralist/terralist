@@ -1,9 +1,16 @@
 package oauth
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrInvalidPayload = errors.New("invalid payload")
 )
 
 type Payload string
@@ -12,20 +19,25 @@ func (p Payload) String() string {
 	return string(p)
 }
 
-func (p Payload) ToRequest(salt string) (Request, error) {
-	salted, err := base64.StdEncoding.DecodeString(p.String())
-
+func (p Payload) ToRequest(key []byte) (Request, error) {
+	signed, err := base64.StdEncoding.DecodeString(p.String())
 	if err != nil {
-		return Request{}, err
+		return Request{}, fmt.Errorf("%w: %v", ErrInvalidPayload, err)
 	}
 
-	saltedStr := string(salted)
+	if len(signed) < sha256.Size {
+		return Request{}, fmt.Errorf("%w: payload too short", ErrInvalidPayload)
+	}
 
-	data := saltedStr[len(salt)+1:]
+	signature, data := signed[:sha256.Size], signed[sha256.Size:]
+
+	if !hmac.Equal(signature, sign(key, data)) {
+		return Request{}, fmt.Errorf("%w: signature mismatch", ErrInvalidPayload)
+	}
 
 	var request Request
-	if err := json.Unmarshal([]byte(data), &request); err != nil {
-		return Request{}, err
+	if err := json.Unmarshal(data, &request); err != nil {
+		return Request{}, fmt.Errorf("%w: %v", ErrInvalidPayload, err)
 	}
 
 	return request, nil
@@ -40,17 +52,22 @@ type Request struct {
 	State               string `json:"state"`
 }
 
-func (r Request) ToPayload(salt string) (Payload, error) {
+func (r Request) ToPayload(key []byte) (Payload, error) {
 	data, err := json.Marshal(r)
-
 	if err != nil {
 		return "", err
 	}
 
-	salted := fmt.Sprintf("%s/%s", salt, string(data))
-	state := base64.StdEncoding.EncodeToString([]byte(salted))
+	signed := append(sign(key, data), data...)
 
-	return Payload(state), nil
+	return Payload(base64.StdEncoding.EncodeToString(signed)), nil
+}
+
+func sign(key []byte, data []byte) []byte {
+	mac := hmac.New(sha256.New, key)
+	mac.Write(data)
+
+	return mac.Sum(nil)
 }
 
 type CodeComponents struct {

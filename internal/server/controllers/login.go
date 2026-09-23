@@ -55,7 +55,7 @@ type DefaultLoginController struct {
 
 	HostURL *url.URL
 
-	EncryptSalt string
+	StateKey []byte
 }
 
 func (c *DefaultLoginController) Paths() []string {
@@ -97,7 +97,7 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			State:               ctx.Query("state"),
 		}
 
-		state, err := r.ToPayload(c.EncryptSalt)
+		state, err := r.ToPayload(c.StateKey)
 		if err != nil {
 			ctx.Redirect(
 				http.StatusFound,
@@ -164,12 +164,9 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			return
 		}
 
-		r, err := oauth.Payload(state).ToRequest(c.EncryptSalt)
+		r, err := oauth.Payload(state).ToRequest(c.StateKey)
 		if err != nil {
-			ctx.Redirect(
-				http.StatusFound,
-				c.redirectWithError(r.RedirectURI, r.State, oauth.WrapError(err, oauth.InvalidRequest)),
-			)
+			ctx.AbortWithStatus(http.StatusBadRequest)
 			return
 		}
 
