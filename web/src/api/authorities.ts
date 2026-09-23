@@ -1,7 +1,6 @@
 import { AxiosError } from 'axios';
 import { createClient, handleResponse, handleError } from '@/api/api.utils';
 import type { Key } from '@/api/keys';
-import type { ApiKey } from '@/api/apiKeys';
 
 type Authority = {
   id: string;
@@ -9,7 +8,6 @@ type Authority = {
   policyUrl: string;
   public: boolean;
   keys: Key[];
-  apiKeys: ApiKey[];
 };
 
 type UpdateAuthority = {
@@ -18,7 +16,6 @@ type UpdateAuthority = {
   policyUrl?: string;
   public?: boolean;
   keys?: Key[];
-  apiKeys?: ApiKey[];
 };
 
 const client = createClient({
@@ -81,10 +78,4 @@ const Authorities = {
   delete: async (id: string) => await actions.delete(id)
 };
 
-export {
-  type Authority,
-  type UpdateAuthority,
-  type Key,
-  type ApiKey,
-  Authorities
-};
+export { type Authority, type UpdateAuthority, type Key, Authorities };

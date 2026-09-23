@@ -327,15 +327,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityRepository: authorityRepository,
 	}
 
-	apiKeyRepository := &repositories.DefaultApiKeyRepository{
-		Database: config.Database,
-	}
-
-	apiKeyService := &services.DefaultApiKeyService{
-		ApiKeyRepository: apiKeyRepository,
-		AuthorityService: authorityService,
-	}
-
 	enforcer, err := rbac.NewEnforcer(userConfig.RbacPolicyPath, userConfig.RbacDefaultRole)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create policy enforcer: %v", err)
@@ -350,7 +341,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	authentication := &handlers.Authentication{
-		ApiKeyService:           apiKeyService,
 		StandaloneApiKeyService: standaloneApiKeyService,
 		MasterApiKey:            userConfig.MasterApiKey,
 		JWT:                     jwtManager,
@@ -448,7 +438,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
-		ApiKeyService:    apiKeyService,
 
 		Authentication: authentication,
 		Authorization:  authorization,

@@ -26,7 +26,6 @@ var (
 )
 
 type Authentication struct {
-	ApiKeyService           services.ApiKeyService
 	StandaloneApiKeyService services.StandaloneApiKeyService
 	MasterApiKey            string
 	JWT                     jwt.JWT
@@ -115,22 +114,10 @@ func (a *Authentication) parseApiKey(c *gin.Context) (*auth.User, error) {
 		}, nil
 	}
 
-	// Try standalone API key (RBAC-driven, no authority coupling).
-	if a.StandaloneApiKeyService != nil {
-		if user, err := a.StandaloneApiKeyService.Authenticate(apiKey); err == nil {
-			return user, nil
-		}
-	}
-
-	// Fall back to legacy authority-linked API key.
-	user, err := a.ApiKeyService.GetUserDetails(apiKey)
+	user, err := a.StandaloneApiKeyService.Authenticate(apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidValue, err)
 	}
-
-	log.Warn().
-		Str("authority", user.Authority).
-		Msg("Authority-linked API keys are deprecated and will be removed in the next release. Please migrate to standalone API keys with RBAC policies.")
 
 	return user, nil
 }

@@ -239,12 +239,11 @@
       <p>Loading...</p>
     {:else if ($authorities ?? []).length > 0}
       <div
-        class="w-full p-2 px-6 grid grid-cols-7 lg:grid-cols-11 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
+        class="w-full p-2 px-6 grid grid-cols-6 lg:grid-cols-10 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
         <span class="col-span-2 lg:col-span-6"> Name </span>
         <span> Policy </span>
         <span> Public </span>
         <span> Signing Keys </span>
-        <span> API Keys </span>
         <span class="place-self-end"> Actions </span>
       </div>
       {#each $authorities as authority (authority.id)}

@@ -44,7 +44,6 @@ func (r *DefaultAuthorityRepository) FindByID(id uuid.UUID) (*authority.Authorit
 	err := r.Database.Handler().
 		Where("id = ?", id).
 		Preload("Keys").
-		Preload("ApiKeys").
 		First(&a).
 		Error
 
@@ -65,7 +64,6 @@ func (r *DefaultAuthorityRepository) FindByName(name string) (*authority.Authori
 	err := r.Database.Handler().
 		Where("name = ?", name).
 		Preload("Keys").
-		Preload("ApiKeys").
 		First(&a).
 		Error
 
@@ -85,7 +83,6 @@ func (r *DefaultAuthorityRepository) FindAll() ([]*authority.Authority, error) {
 
 	err := r.Database.Handler().
 		Preload("Keys").
-		Preload("ApiKeys").
 		Preload("Modules").
 		Preload("Modules.Versions").
 		Preload("Providers").
@@ -115,7 +112,6 @@ func (r *DefaultAuthorityRepository) FindAllByOwner(owner string) ([]*authority.
 	err := r.Database.Handler().
 		Where(&authority.Authority{Owner: owner}).
 		Preload("Keys").
-		Preload("ApiKeys").
 		Find(&as).
 		Error
 

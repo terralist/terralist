@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -8,6 +9,10 @@ import (
 	"terralist/pkg/database"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrApiKeyExpired = errors.New("api key expired")
 )
 
 // StandaloneApiKeyRepository describes a service that can interact with the standalone API keys database.

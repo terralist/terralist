@@ -8,16 +8,11 @@
   import ErrorModal from './ErrorModal.svelte';
 
   import Key from './Key.svelte';
-  import ApiKey from './ApiKey.svelte';
 
   import type { Authority as AuthorityT } from '@/api/authorities';
   import { Keys, type Key as KeyT } from '@/api/keys';
-  import { ApiKeys, type ApiKey as ApiKeyT } from '@/api/apiKeys';
 
-  import {
-    StringMinimumLengthValidation,
-    URLValidation
-  } from '@/lib/validation';
+  import { URLValidation } from '@/lib/validation';
   import { useFlag, useToggle } from '@/lib/hooks';
 
   export let authority: AuthorityT;
@@ -28,29 +23,10 @@
 
   const [createKeyModalEnabled, showCreateKeyModal, hideCreateKeyModal] =
     useFlag(false);
-  const [
-    createApiKeyModalEnabled,
-    showCreateApiKeyModal,
-    hideCreateApiKeyModal
-  ] = useFlag(false);
   const [updateModalEnabled, showUpdateModal, hideUpdateModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 
-  // To avoid a circular dependency, we will create a wrapper fn for toggleShowKeys
-  const [showKeys, _toggleShowKeys] = useToggle(false);
-  const [showApiKeys, toggleShowApiKeys] = useToggle(false, () => {
-    if ($showKeys) {
-      _toggleShowKeys();
-    }
-  });
-
-  const toggleShowKeys = () => {
-    if ($showApiKeys) {
-      toggleShowApiKeys();
-    }
-
-    _toggleShowKeys();
-  };
+  const [showKeys, toggleShowKeys] = useToggle(false);
 
   const update = (entries: Map<string, string | string[] | undefined>) => {
     const policyUrlValue = entries.get('policyUrl');
@@ -119,48 +95,11 @@
       errorMessage = result.message;
     }
   };
-
-  const createApiKeySubmit = async (
-    entries: Map<string, string | string[] | undefined>
-  ) => {
-    const nameValue = entries.get('name');
-    const name = Array.isArray(nameValue) ? nameValue.at(0) : nameValue;
-
-    let result = await ApiKeys.create(authority.id, name ?? '');
-
-    if (result.status === 'OK') {
-      authority.apiKeys = [...authority.apiKeys, result.data];
-    } else {
-      errorMessage = result.message;
-    }
-  };
-
-  const onApiKeyDelete = async (id: string) => {
-    const apiKey = authority.apiKeys.find((ak: ApiKeyT) => ak.id === id);
-    if (!apiKey) {
-      errorMessage = `Could not select API key with ID: ${id}.`;
-      return;
-    }
-
-    let result = await ApiKeys.delete(authority.id, apiKey.id);
-
-    if (result.status === 'OK') {
-      authority.apiKeys = [
-        ...authority.apiKeys.filter((ak: ApiKeyT) => ak.id !== id)
-      ];
-    } else {
-      errorMessage = result.message;
-    }
-
-    if (authority.apiKeys.length === 0) {
-      toggleShowApiKeys();
-    }
-  };
 </script>
 
 <div class="mb-4">
   <div
-    class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-7 lg:grid-cols-11 place-items-start">
+    class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-6 lg:grid-cols-10 place-items-start">
     <span class="col-span-2 lg:col-span-6">{authority.name}</span>
     <span>
       {#if authority.policyUrl}
@@ -197,20 +136,6 @@
           enabled={$showKeys} />
       {/if}
     </span>
-    <span class="flex flex-col md:flex-row justify-center items-center">
-      <TransparentButton onClick={showCreateApiKeyModal}>
-        <Icon name="plus" />
-      </TransparentButton>
-      <span class="ml-0 md:ml-2">
-        {authority.apiKeys?.length ?? 0}
-      </span>
-      {#if authority.apiKeys?.length > 0}
-        <CaretButton
-          class="ml-0 md:ml-2"
-          onClick={toggleShowApiKeys}
-          enabled={$showApiKeys} />
-      {/if}
-    </span>
     <span class="place-self-end flex justify-center items-center">
       <TransparentButton onClick={showUpdateModal}>
         <Icon name="edit-box" />
@@ -234,19 +159,6 @@
         authorityName={authority.name}
         isAlone={authority.keys.length === 1}
         onDelete={onKeyDelete} />
-    {/each}
-  {/if}
-  {#if $showApiKeys}
-    <div
-      class="w-full p-2 px-6 grid grid-cols-2 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
-      <span> Api Key </span>
-      <span class="place-self-end"> Actions </span>
-    </div>
-    {#each authority.apiKeys as apiKey (apiKey.id)}
-      <ApiKey
-        {apiKey}
-        authorityName={authority.name}
-        onDelete={onApiKeyDelete} />
     {/each}
   {/if}
 
@@ -315,22 +227,6 @@
         validations: []
       }
     ]} />
-
-  <FormModal
-    title={`Add a new API key to ${authority.name}`}
-    enabled={$createApiKeyModalEnabled}
-    onClose={hideCreateApiKeyModal}
-    onSubmit={createApiKeySubmit}
-    entries={[
-      {
-        id: 'name',
-        name: 'Name',
-        required: true,
-        type: 'text',
-        validations: [StringMinimumLengthValidation(4)]
-      }
-    ]}>
-  </FormModal>
 
   {#if errorMessage}
     <ErrorModal bind:message={errorMessage} />

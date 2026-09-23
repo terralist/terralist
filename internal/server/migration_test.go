@@ -184,3 +184,32 @@ func TestInitialMigrationLeavesHashedApiKeysAlone(t *testing.T) {
 		t.Fatalf("expected the hashed key to keep its id: %v", err)
 	}
 }
+
+type legacyAuthorityApiKey struct {
+	ID          uuid.UUID `gorm:"primary_key;"`
+	AuthorityID uuid.UUID
+	Name        string
+}
+
+func (legacyAuthorityApiKey) TableName() string {
+	return "authority_api_keys"
+}
+
+func TestInitialMigrationDropsAuthorityApiKeys(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to open sqlite database: %v", err)
+	}
+
+	if err := db.AutoMigrate(&legacyAuthorityApiKey{}); err != nil {
+		t.Fatalf("failed to create legacy table: %v", err)
+	}
+
+	if err := (&InitialMigration{}).Migrate(db); err != nil {
+		t.Fatalf("failed to run initial migration: %v", err)
+	}
+
+	if db.Migrator().HasTable("authority_api_keys") {
+		t.Errorf("expected authority_api_keys table to be dropped")
+	}
+}

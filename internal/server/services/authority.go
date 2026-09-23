@@ -81,18 +81,10 @@ func (s *DefaultAuthorityService) Update(id uuid.UUID, in authority.AuthorityDTO
 	a := in.ToAuthority()
 	a.ID = id
 
-	// ApiKeys are not managed from within authority API
-	// With this, we make sure we don't touch them while updating the authority
-	apiKeys := a.ApiKeys
-	a.ApiKeys = nil
-
 	updated, err := s.AuthorityRepository.Upsert(a)
 	if err != nil {
 		return nil, err
 	}
-
-	// Put back missing ApiKeys
-	updated.ApiKeys = apiKeys
 
 	dto := updated.ToDTO()
 	return &dto, nil

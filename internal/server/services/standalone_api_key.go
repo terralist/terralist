@@ -16,7 +16,11 @@ import (
 	"github.com/samber/lo"
 )
 
-var ErrInvalidPolicy = errors.New("invalid policy")
+var (
+	ErrCannotParseID = errors.New("cannot parse")
+	ErrInvalidKey    = errors.New("invalid key")
+	ErrInvalidPolicy = errors.New("invalid policy")
+)
 
 // StandaloneApiKeyService describes a service that manages standalone API keys with RBAC policies.
 type StandaloneApiKeyService interface {
