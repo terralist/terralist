@@ -14,10 +14,10 @@ import (
 )
 
 func TestAuthenticate(t *testing.T) {
-	Convey("Subject: Authenticating with a standalone API key", t, func() {
-		mockRepo := repositories.NewMockStandaloneApiKeyRepository(t)
+	Convey("Subject: Authenticating with an API key", t, func() {
+		mockRepo := repositories.NewMockApiKeyRepository(t)
 
-		service := &DefaultStandaloneApiKeyService{
+		service := &DefaultApiKeyService{
 			Repository: mockRepo,
 		}
 
@@ -85,11 +85,11 @@ func TestAuthenticate(t *testing.T) {
 	})
 }
 
-func TestStandaloneCreate(t *testing.T) {
-	Convey("Subject: Creating a standalone API key", t, func() {
-		mockRepo := repositories.NewMockStandaloneApiKeyRepository(t)
+func TestApiKeyCreate(t *testing.T) {
+	Convey("Subject: Creating an API key", t, func() {
+		mockRepo := repositories.NewMockApiKeyRepository(t)
 
-		service := &DefaultStandaloneApiKeyService{
+		service := &DefaultApiKeyService{
 			Repository: mockRepo,
 		}
 
@@ -225,11 +225,11 @@ func TestStandaloneCreate(t *testing.T) {
 	})
 }
 
-func TestStandaloneDelete(t *testing.T) {
-	Convey("Subject: Deleting a standalone API key", t, func() {
-		mockRepo := repositories.NewMockStandaloneApiKeyRepository(t)
+func TestApiKeyDelete(t *testing.T) {
+	Convey("Subject: Deleting an API key", t, func() {
+		mockRepo := repositories.NewMockApiKeyRepository(t)
 
-		service := &DefaultStandaloneApiKeyService{
+		service := &DefaultApiKeyService{
 			Repository: mockRepo,
 		}
 

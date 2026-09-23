@@ -15,8 +15,8 @@ var (
 	ErrApiKeyExpired = errors.New("api key expired")
 )
 
-// StandaloneApiKeyRepository describes a service that can interact with the standalone API keys database.
-type StandaloneApiKeyRepository interface {
+// ApiKeyRepository describes a service that can interact with the API keys database.
+type ApiKeyRepository interface {
 	// Find searches for a specific ApiKey by its ID.
 	Find(id uuid.UUID) (*apikey.ApiKey, error)
 
@@ -34,12 +34,12 @@ type StandaloneApiKeyRepository interface {
 	List() ([]apikey.ApiKey, error)
 }
 
-// DefaultStandaloneApiKeyRepository is a concrete implementation of StandaloneApiKeyRepository.
-type DefaultStandaloneApiKeyRepository struct {
+// DefaultApiKeyRepository is a concrete implementation of ApiKeyRepository.
+type DefaultApiKeyRepository struct {
 	Database database.Engine
 }
 
-func (r *DefaultStandaloneApiKeyRepository) Find(id uuid.UUID) (*apikey.ApiKey, error) {
+func (r *DefaultApiKeyRepository) Find(id uuid.UUID) (*apikey.ApiKey, error) {
 	key := &apikey.ApiKey{}
 
 	if err := r.Database.Handler().
@@ -57,7 +57,7 @@ func (r *DefaultStandaloneApiKeyRepository) Find(id uuid.UUID) (*apikey.ApiKey, 
 	return key, nil
 }
 
-func (r *DefaultStandaloneApiKeyRepository) FindByHash(hash string) (*apikey.ApiKey, error) {
+func (r *DefaultApiKeyRepository) FindByHash(hash string) (*apikey.ApiKey, error) {
 	key := &apikey.ApiKey{}
 
 	if err := r.Database.Handler().
@@ -76,7 +76,7 @@ func (r *DefaultStandaloneApiKeyRepository) FindByHash(hash string) (*apikey.Api
 	return key, nil
 }
 
-func (r *DefaultStandaloneApiKeyRepository) Create(key *apikey.ApiKey) (*apikey.ApiKey, error) {
+func (r *DefaultApiKeyRepository) Create(key *apikey.ApiKey) (*apikey.ApiKey, error) {
 	if err := r.Database.Handler().Create(key).Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)
 	}
@@ -84,7 +84,7 @@ func (r *DefaultStandaloneApiKeyRepository) Create(key *apikey.ApiKey) (*apikey.
 	return key, nil
 }
 
-func (r *DefaultStandaloneApiKeyRepository) Delete(id uuid.UUID) error {
+func (r *DefaultApiKeyRepository) Delete(id uuid.UUID) error {
 	if err := r.Database.Handler().
 		Where("id = ?", id).
 		Delete(&apikey.ApiKey{}).
@@ -95,7 +95,7 @@ func (r *DefaultStandaloneApiKeyRepository) Delete(id uuid.UUID) error {
 	return nil
 }
 
-func (r *DefaultStandaloneApiKeyRepository) List() ([]apikey.ApiKey, error) {
+func (r *DefaultApiKeyRepository) List() ([]apikey.ApiKey, error) {
 	var keys []apikey.ApiKey
 
 	if err := r.Database.Handler().

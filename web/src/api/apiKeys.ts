@@ -9,7 +9,7 @@ type PolicyDTO = {
   effect: string;
 };
 
-type StandaloneApiKey = {
+type ApiKey = {
   id: string;
   name: string;
   scope: string;
@@ -25,14 +25,14 @@ type CreatePolicyDTO = {
   effect: string;
 };
 
-type CreateStandaloneApiKeyDTO = {
+type CreateApiKeyDTO = {
   name: string;
   scope: string;
   expireIn: number;
   policies: CreatePolicyDTO[];
 };
 
-type CreateStandaloneApiKeyResponse = {
+type CreateApiKeyResponse = {
   id: string;
   name: string;
   key: string;
@@ -46,14 +46,14 @@ const client = createClient({
 const actions = {
   list: async () =>
     client
-      .get<StandaloneApiKey[]>('/')
-      .then(handleResponse<StandaloneApiKey[]>)
+      .get<ApiKey[]>('/')
+      .then(handleResponse<ApiKey[]>)
       .catch(handleError),
 
-  create: async (dto: CreateStandaloneApiKeyDTO) =>
+  create: async (dto: CreateApiKeyDTO) =>
     client
-      .post<CreateStandaloneApiKeyResponse>('/', dto)
-      .then(handleResponse<CreateStandaloneApiKeyResponse>)
+      .post<CreateApiKeyResponse>('/', dto)
+      .then(handleResponse<CreateApiKeyResponse>)
       .catch(handleError),
 
   delete: async (id: string) => {
@@ -70,16 +70,16 @@ const actions = {
   }
 };
 
-const StandaloneApiKeys = {
+const ApiKeys = {
   list: async () => await actions.list(),
-  create: async (dto: CreateStandaloneApiKeyDTO) => await actions.create(dto),
+  create: async (dto: CreateApiKeyDTO) => await actions.create(dto),
   delete: async (id: string) => await actions.delete(id)
 };
 
 export {
   type PolicyDTO,
-  type StandaloneApiKey,
+  type ApiKey,
   type CreatePolicyDTO,
-  type CreateStandaloneApiKeyDTO,
-  StandaloneApiKeys
+  type CreateApiKeyDTO,
+  ApiKeys
 };

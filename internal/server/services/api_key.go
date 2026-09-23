@@ -22,8 +22,8 @@ var (
 	ErrInvalidPolicy = errors.New("invalid policy")
 )
 
-// StandaloneApiKeyService describes a service that manages standalone API keys with RBAC policies.
-type StandaloneApiKeyService interface {
+// ApiKeyService describes a service that manages API keys with RBAC policies.
+type ApiKeyService interface {
 	// Authenticate validates an API key and returns the associated user with inline policies.
 	Authenticate(key string) (*auth.User, error)
 
@@ -41,12 +41,12 @@ type StandaloneApiKeyService interface {
 	List() ([]apikey.ApiKeyDTO, error)
 }
 
-// DefaultStandaloneApiKeyService is a concrete implementation of StandaloneApiKeyService.
-type DefaultStandaloneApiKeyService struct {
-	Repository repositories.StandaloneApiKeyRepository
+// DefaultApiKeyService is a concrete implementation of ApiKeyService.
+type DefaultApiKeyService struct {
+	Repository repositories.ApiKeyRepository
 }
 
-func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, error) {
+func (s *DefaultApiKeyService) Authenticate(key string) (*auth.User, error) {
 	k, err := s.Repository.FindByHash(apikey.HashSecret(key))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
@@ -68,7 +68,7 @@ func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, e
 	return user, nil
 }
 
-func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (*apikey.CreatedApiKeyDTO, error) {
+func (s *DefaultApiKeyService) Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (*apikey.CreatedApiKeyDTO, error) {
 	if err := validatePolicies(policies); err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, e
 	}, nil
 }
 
-func (s *DefaultStandaloneApiKeyService) GetScope(key string) (string, error) {
+func (s *DefaultApiKeyService) GetScope(key string) (string, error) {
 	id, err := uuid.Parse(key)
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrCannotParseID, err)
@@ -119,7 +119,7 @@ func (s *DefaultStandaloneApiKeyService) GetScope(key string) (string, error) {
 	return k.Scope, nil
 }
 
-func (s *DefaultStandaloneApiKeyService) Delete(key string) error {
+func (s *DefaultApiKeyService) Delete(key string) error {
 	id, err := uuid.Parse(key)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCannotParseID, err)
@@ -134,7 +134,7 @@ func (s *DefaultStandaloneApiKeyService) Delete(key string) error {
 	return nil
 }
 
-func (s *DefaultStandaloneApiKeyService) List() ([]apikey.ApiKeyDTO, error) {
+func (s *DefaultApiKeyService) List() ([]apikey.ApiKeyDTO, error) {
 	keys, err := s.Repository.List()
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (s *DefaultStandaloneApiKeyService) List() ([]apikey.ApiKeyDTO, error) {
 	}), nil
 }
 
-func (s *DefaultStandaloneApiKeyService) updateMetrics() {
+func (s *DefaultApiKeyService) updateMetrics() {
 	keys, err := s.Repository.List()
 	if err != nil {
 		return

@@ -6,11 +6,11 @@
   import ConfirmationModal from './ConfirmationModal.svelte';
   import ErrorModal from './ErrorModal.svelte';
 
-  import type { StandaloneApiKey } from '@/api/standaloneApiKeys';
+  import type { ApiKey } from '@/api/apiKeys';
 
   import { useFlag } from '@/lib/hooks';
 
-  export let apiKey: StandaloneApiKey;
+  export let apiKey: ApiKey;
   export let onDelete: (id: string) => void = () => {};
 
   const [viewModalEnabled, showViewModal, hideViewModal] = useFlag(false);

@@ -26,10 +26,10 @@ var (
 )
 
 type Authentication struct {
-	StandaloneApiKeyService services.StandaloneApiKeyService
-	MasterApiKey            string
-	JWT                     jwt.JWT
-	Store                   session.Store
+	ApiKeyService services.ApiKeyService
+	MasterApiKey  string
+	JWT           jwt.JWT
+	Store         session.Store
 }
 
 // parseTerraformCLI parses a request context, and, if the user is authenticated
@@ -114,7 +114,7 @@ func (a *Authentication) parseApiKey(c *gin.Context) (*auth.User, error) {
 		}, nil
 	}
 
-	user, err := a.StandaloneApiKeyService.Authenticate(apiKey)
+	user, err := a.ApiKeyService.Authenticate(apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidValue, err)
 	}

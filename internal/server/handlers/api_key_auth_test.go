@@ -17,11 +17,11 @@ func TestAuthentication_ParseApiKey(t *testing.T) {
 	Convey("Subject: Authenticating requests with an API key", t, func() {
 		gin.SetMode(gin.TestMode)
 
-		mockStandalone := services.NewMockStandaloneApiKeyService(t)
+		mockApiKeyService := services.NewMockApiKeyService(t)
 
 		authentication := &Authentication{
-			StandaloneApiKeyService: mockStandalone,
-			MasterApiKey:            "master-key",
+			ApiKeyService: mockApiKeyService,
+			MasterApiKey:  "master-key",
 		}
 
 		requestWithKey := func(key string) *gin.Context {
@@ -41,11 +41,11 @@ func TestAuthentication_ParseApiKey(t *testing.T) {
 			})
 		})
 
-		Convey("Given a standalone API key", func() {
-			mockStandalone.On("Authenticate", "standalone-key").
-				Return(&auth.User{Name: "apikey:standalone", Email: "ci@example.com"}, nil)
+		Convey("Given an API key", func() {
+			mockApiKeyService.On("Authenticate", "ci-key").
+				Return(&auth.User{Name: "apikey:ci", Email: "ci@example.com"}, nil)
 
-			user, err := authentication.parseApiKey(requestWithKey("standalone-key"))
+			user, err := authentication.parseApiKey(requestWithKey("ci-key"))
 
 			Convey("Then the key's user is returned", func() {
 				So(err, ShouldBeNil)
@@ -54,7 +54,7 @@ func TestAuthentication_ParseApiKey(t *testing.T) {
 		})
 
 		Convey("Given an unknown API key", func() {
-			mockStandalone.On("Authenticate", "unknown-key").
+			mockApiKeyService.On("Authenticate", "unknown-key").
 				Return(nil, errors.New("invalid key"))
 
 			user, err := authentication.parseApiKey(requestWithKey("unknown-key"))

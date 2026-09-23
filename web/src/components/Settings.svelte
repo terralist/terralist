@@ -10,15 +10,15 @@
   import ErrorModal from './ErrorModal.svelte';
 
   import Authority from './Authority.svelte';
-  import StandaloneApiKey from './StandaloneApiKey.svelte';
-  import StandaloneApiKeyForm from './StandaloneApiKeyForm.svelte';
+  import ApiKey from './ApiKey.svelte';
+  import ApiKeyForm from './ApiKeyForm.svelte';
 
   import { Authorities, type Authority as AuthorityT } from '@/api/authorities';
   import {
-    StandaloneApiKeys,
-    type StandaloneApiKey as StandaloneApiKeyT,
-    type CreateStandaloneApiKeyDTO
-  } from '@/api/standaloneApiKeys';
+    ApiKeys,
+    type ApiKey as ApiKeyT,
+    type CreateApiKeyDTO
+  } from '@/api/apiKeys';
 
   import config from '@/config';
 
@@ -32,10 +32,10 @@
   import { defaultIfNull } from '@/lib/utils';
 
   const result = useQuery(Authorities.getAll);
-  const apiKeysResult = useQuery(StandaloneApiKeys.list);
+  const apiKeysResult = useQuery(ApiKeys.list);
 
   let authorities = writable<AuthorityT[]>([]);
-  let apiKeys = writable<StandaloneApiKeyT[]>([]);
+  let apiKeys = writable<ApiKeyT[]>([]);
   let apiKeysAccessible = writable<boolean>(false);
   let createdKey = writable<string>('');
   let errorMessage = writable<string>('');
@@ -151,15 +151,15 @@
     }
   };
 
-  const onApiKeyCreateSubmit = async (dto: CreateStandaloneApiKeyDTO) => {
-    let result = await StandaloneApiKeys.create(dto);
+  const onApiKeyCreateSubmit = async (dto: CreateApiKeyDTO) => {
+    let result = await ApiKeys.create(dto);
 
     if (result.status === 'OK') {
       createdKey.set(result.data.key);
       showCreatedKeyModal();
 
       // Refresh the list to get the full object with policies
-      let listResult = await StandaloneApiKeys.list();
+      let listResult = await ApiKeys.list();
       if (listResult.status === 'OK') {
         apiKeys.set(listResult.data);
       }
@@ -169,7 +169,7 @@
   };
 
   const onApiKeyDeleteSubmit = async (id: string) => {
-    let result = await StandaloneApiKeys.delete(id);
+    let result = await ApiKeys.delete(id);
 
     if (result.status === 'OK') {
       apiKeys.set($apiKeys.filter(k => k.id !== id));
@@ -282,7 +282,7 @@
           <span class="place-self-end"> Actions </span>
         </div>
         {#each $apiKeys as apiKey (apiKey.id)}
-          <StandaloneApiKey {apiKey} onDelete={onApiKeyDeleteSubmit} />
+          <ApiKey {apiKey} onDelete={onApiKeyDeleteSubmit} />
         {/each}
       {/if}
     </section>
@@ -292,7 +292,7 @@
     <ErrorModal message={$errorMessage} />
   {/if}
 
-  <StandaloneApiKeyForm
+  <ApiKeyForm
     enabled={$createApiKeyModalEnabled}
     onClose={hideCreateApiKeyModal}
     onSubmit={onApiKeyCreateSubmit}
