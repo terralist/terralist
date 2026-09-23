@@ -8,6 +8,7 @@ type UserConfig struct {
 	CertFile                   string `mapstructure:"cert-file"`
 	KeyFile                    string `mapstructure:"key-file"`
 	TokenSigningSecret         string `mapstructure:"token-signing-secret"`
+	OAuthStateSecret           string `mapstructure:"oauth-state-secret"`
 	OauthProvider              string `mapstructure:"oauth-provider"`
 	CustomCompanyName          string `mapstructure:"custom-company-name"`
 	ModulesAnonymousRead       bool   `mapstructure:"modules-anonymous-read"`

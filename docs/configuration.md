@@ -114,6 +114,20 @@ The secret to use when signing authorization tokens.
 | cli | `--token-signing-secret` |
 | env | `TERRALIST_TOKEN_SIGNING_SECRET` |
 
+### `oauth-state-secret`
+
+The secret to use when signing the OAuth state passed to the identity provider. If unset, it is derived from the `token-signing-secret`.
+
+!!! warning "Deriving the state secret from `token-signing-secret` is deprecated. This flag will become required in the next version."
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--oauth-state-secret` |
+| env | `TERRALIST_OAUTH_STATE_SECRET` |
+
 ### `rbac-policy-path`
 
 Path to the RBAC server-side policy.

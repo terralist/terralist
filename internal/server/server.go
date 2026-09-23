@@ -33,7 +33,6 @@ import (
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	random "github.com/mazen160/go-random"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/log"
 )
@@ -136,7 +135,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to create JWT manager: %v", err)
 	}
 
-	salt, _ := random.String(32)
+	stateKey := oauthStateKey(userConfig)
 
 	// Parse token expiration duration
 	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
@@ -156,8 +155,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Store:        config.Store,
 		LoginService: loginService,
 
-		EncryptSalt: salt,
-		HostURL:     hostURL,
+		StateKey: stateKey,
+		HostURL:  hostURL,
 	}
 
 	apiV1Group.Register(loginController)
@@ -229,8 +228,13 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 				return
 			}
 
-			r, err := oauth.Payload(relayState).ToRequest(salt)
+			r, err := oauth.Payload(relayState).ToRequest(stateKey)
 			if err != nil {
+				ctx.AbortWithStatus(http.StatusBadRequest)
+				return
+			}
+
+			if err := oauth.ValidateRedirectURI(r.RedirectURI, hostURL.Host); err != nil {
 				ctx.AbortWithStatus(http.StatusBadRequest)
 				return
 			}

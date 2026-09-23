@@ -20,7 +20,7 @@ import (
 // terraformCallbackURL is the CLI-side redirect URI presented during the login
 // protocol. Its host differs from the server host so the server issues an
 // authorization code to be exchanged, rather than establishing a session.
-const terraformCallbackURL = "http://127.0.0.1:65000/terraform-callback"
+const terraformCallbackURL = "http://127.0.0.1:10000/terraform-callback"
 
 type oauthToken struct {
 	AccessToken string `json:"access_token"`
