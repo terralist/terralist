@@ -86,7 +86,7 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 				return p.ToModel()
 			})
 
-			id, err := c.Service.Create(body.Name, body.Scope, user.Email, body.ExpireIn, policies)
+			created, err := c.Service.Create(body.Name, body.Scope, user.Email, body.ExpireIn, policies)
 			if err != nil {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"errors": []string{err.Error()},
@@ -94,10 +94,7 @@ func (c *DefaultApiKeyController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			ctx.JSON(http.StatusCreated, gin.H{
-				"id":   id,
-				"name": body.Name,
-			})
+			ctx.JSON(http.StatusCreated, created)
 		},
 	)
 

@@ -15,8 +15,9 @@ type StandaloneApiKeyRepository interface {
 	// Find searches for a specific ApiKey by its ID.
 	Find(id uuid.UUID) (*apikey.ApiKey, error)
 
-	// FindWithPolicies searches for a specific ApiKey and eagerly loads its policies.
-	FindWithPolicies(id uuid.UUID) (*apikey.ApiKey, error)
+	// FindByHash searches for the ApiKey stored under the hash of a secret and
+	// eagerly loads its policies.
+	FindByHash(hash string) (*apikey.ApiKey, error)
 
 	// Create creates a new ApiKey along with its policies in a single transaction.
 	Create(key *apikey.ApiKey) (*apikey.ApiKey, error)
@@ -51,12 +52,12 @@ func (r *DefaultStandaloneApiKeyRepository) Find(id uuid.UUID) (*apikey.ApiKey, 
 	return key, nil
 }
 
-func (r *DefaultStandaloneApiKeyRepository) FindWithPolicies(id uuid.UUID) (*apikey.ApiKey, error) {
+func (r *DefaultStandaloneApiKeyRepository) FindByHash(hash string) (*apikey.ApiKey, error) {
 	key := &apikey.ApiKey{}
 
 	if err := r.Database.Handler().
 		Preload("Policies").
-		Where("id = ?", id).
+		Where("hash = ?", hash).
 		First(key).
 		Error; err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDatabaseFailure, err)

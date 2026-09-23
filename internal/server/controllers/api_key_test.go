@@ -180,14 +180,14 @@ func TestApiKeyController_Create(t *testing.T) {
 					[]apikey.Policy{
 						{Resource: "modules", Action: "get", Object: "*", Effect: "allow"},
 					},
-				).Return("generated-uuid", nil)
+				).Return(&apikey.CreatedApiKeyDTO{ID: "generated-uuid", Name: "ci-key", Key: "tlk_secret"}, nil)
 
 				req := httptest.NewRequest(http.MethodPost, "/v1/api/api-keys/", bytes.NewBuffer(jsonBody))
 				req.Header.Set("Content-Type", "application/json")
 				w := httptest.NewRecorder()
 				router.ServeHTTP(w, req)
 
-				Convey("Then it should return 201 with the key ID", func() {
+				Convey("Then it should return 201 with the key ID and the secret", func() {
 					So(w.Code, ShouldEqual, http.StatusCreated)
 
 					var result map[string]string
@@ -195,6 +195,7 @@ func TestApiKeyController_Create(t *testing.T) {
 					So(err, ShouldBeNil)
 					So(result["id"], ShouldEqual, "generated-uuid")
 					So(result["name"], ShouldEqual, "ci-key")
+					So(result["key"], ShouldEqual, "tlk_secret")
 				})
 			})
 		})
