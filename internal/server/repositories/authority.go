@@ -50,7 +50,6 @@ func (r *DefaultAuthorityRepository) FindByID(id uuid.UUID) (*authority.Authorit
 	err := r.Database.Handler().
 		Where("id = ?", id).
 		Preload("Keys").
-		Preload("ApiKeys").
 		Preload("Rules").
 		First(&a).
 		Error
@@ -72,7 +71,6 @@ func (r *DefaultAuthorityRepository) FindByName(name string) (*authority.Authori
 	err := r.Database.Handler().
 		Where("name = ?", name).
 		Preload("Keys").
-		Preload("ApiKeys").
 		Preload("Rules").
 		First(&a).
 		Error
@@ -94,7 +92,6 @@ func (r *DefaultAuthorityRepository) FindByUpstream(hostname, namespace string) 
 	err := r.Database.Handler().
 		Where("LOWER(upstream_hostname) = LOWER(?) AND LOWER(upstream_namespace) = LOWER(?)", hostname, namespace).
 		Preload("Keys").
-		Preload("ApiKeys").
 		Preload("Rules").
 		First(&a).
 		Error
@@ -115,7 +112,6 @@ func (r *DefaultAuthorityRepository) FindAll() ([]*authority.Authority, error) {
 
 	err := r.Database.Handler().
 		Preload("Keys").
-		Preload("ApiKeys").
 		Preload("Rules").
 		Preload("Modules").
 		Preload("Modules.Versions").
@@ -146,7 +142,6 @@ func (r *DefaultAuthorityRepository) FindAllByOwner(owner string) ([]*authority.
 	err := r.Database.Handler().
 		Where(&authority.Authority{Owner: owner}).
 		Preload("Keys").
-		Preload("ApiKeys").
 		Preload("Rules").
 		Find(&as).
 		Error
