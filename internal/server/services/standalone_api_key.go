@@ -23,8 +23,9 @@ type StandaloneApiKeyService interface {
 	// Authenticate validates an API key and returns the associated user with inline policies.
 	Authenticate(key string) (*auth.User, error)
 
-	// Create creates a new API key with the given policies.
-	Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (string, error)
+	// Create creates a new API key with the given policies and returns its
+	// secret, which is never retrievable afterwards.
+	Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (*apikey.CreatedApiKeyDTO, error)
 
 	// GetScope returns the scope of an API key.
 	GetScope(key string) (string, error)
@@ -42,12 +43,7 @@ type DefaultStandaloneApiKeyService struct {
 }
 
 func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, error) {
-	id, err := uuid.Parse(key)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCannotParseID, err)
-	}
-
-	k, err := s.Repository.FindWithPolicies(id)
+	k, err := s.Repository.FindByHash(apikey.HashSecret(key))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}
@@ -68,12 +64,18 @@ func (s *DefaultStandaloneApiKeyService) Authenticate(key string) (*auth.User, e
 	return user, nil
 }
 
-func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (string, error) {
+func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (*apikey.CreatedApiKeyDTO, error) {
 	if err := validatePolicies(policies); err != nil {
-		return "", err
+		return nil, err
+	}
+
+	secret, err := apikey.NewSecret()
+	if err != nil {
+		return nil, err
 	}
 
 	key := &apikey.ApiKey{
+		Hash:      apikey.HashSecret(secret),
 		Name:      name,
 		Scope:     scope,
 		CreatedBy: createdBy,
@@ -85,14 +87,18 @@ func (s *DefaultStandaloneApiKeyService) Create(name, scope, createdBy string, e
 		key.Expiration = &exp
 	}
 
-	key, err := s.Repository.Create(key)
+	key, err = s.Repository.Create(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	s.updateMetrics()
 
-	return key.ID.String(), nil
+	return &apikey.CreatedApiKeyDTO{
+		ID:   key.ID.String(),
+		Name: name,
+		Key:  secret,
+	}, nil
 }
 
 func (s *DefaultStandaloneApiKeyService) GetScope(key string) (string, error) {
