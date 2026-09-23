@@ -79,6 +79,7 @@ saml-idp-metadata-url: "https://idp.example.com/saml/metadata"
 saml-name-attribute: "displayName"
 saml-email-attribute: "email"
 token-signing-secret: "your-signing-secret"
+oauth-state-secret: "your-state-secret"
 ```
 
 For direct IdP configuration:
@@ -93,6 +94,7 @@ saml-idp-sso-certificate: |
   ...
   -----END CERTIFICATE-----
 token-signing-secret: "your-signing-secret"
+oauth-state-secret: "your-state-secret"
 ```
 
 ## Service Provider Metadata

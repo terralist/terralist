@@ -25,6 +25,7 @@ While Terralist can be highly configured, the following settings are required an
 - `oauth-provider`: the OAuth provider you wish to use for your instance (e.g. `github`).
 - the OAuth provider configuration: it depends on what provider you selected (e.g. for GitHub, `gh-client-id` and `gh-client-secret`);
 - `token-signing-secret`: a random string to protect the tokens;
+- `oauth-state-secret`: a random string to protect the OAuth login flow;
 - `cookie-secret`: a random string to protect the cookies;
 
 ```yaml title="config.yaml"
@@ -32,6 +33,7 @@ oauth-provider: github
 gh-client-id: ${GITHUB_OAUTH_CLIENT_ID:default}
 gh-client-secret: ${GITHUB_OAUTH_CLIENT_SECRET:default}
 token-signing-secret: secret
+oauth-state-secret: secret
 cookie-secret: secret
 ```
 
@@ -45,6 +47,7 @@ oi-client-id: ${OIDC_CLIENT_ID}
 oi-client-secret: ${OIDC_CLIENT_SECRET}
 oi-host: https://login.example.com/realms/platform
 token-signing-secret: secret
+oauth-state-secret: secret
 cookie-secret: secret
 ```
 
