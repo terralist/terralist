@@ -189,6 +189,7 @@ func (s *Command) run() error {
 		CertFile:                   flags[CertFileFlag].(*cli.StringFlag).Value,
 		KeyFile:                    flags[KeyFileFlag].(*cli.StringFlag).Value,
 		TokenSigningSecret:         flags[TokenSigningSecretFlag].(*cli.StringFlag).Value,
+		OAuthStateSecret:           flags[OAuthStateSecretFlag].(*cli.StringFlag).Value,
 		OauthProvider:              flags[OAuthProviderFlag].(*cli.StringFlag).Value,
 		CustomCompanyName:          flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
 		ModulesAnonymousRead:       flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,

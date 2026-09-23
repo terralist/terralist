@@ -135,7 +135,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, fmt.Errorf("failed to create JWT manager: %v", err)
 	}
 
-	stateKey := oauth.DeriveStateKey(userConfig.TokenSigningSecret)
+	stateKey := oauthStateKey(userConfig)
 
 	// Parse token expiration duration
 	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
