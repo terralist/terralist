@@ -96,9 +96,9 @@ type multipartFile struct {
 	Content  []byte
 }
 
-// multipartBody encodes the given files as a multipart form body and returns
-// it together with its content type.
-func multipartBody(files []multipartFile) (*bytes.Buffer, string, error) {
+// multipartBody encodes the given files and form values as a multipart form
+// body and returns it together with its content type.
+func multipartBody(files []multipartFile, values map[string]string) (*bytes.Buffer, string, error) {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 
@@ -112,11 +112,36 @@ func multipartBody(files []multipartFile) (*bytes.Buffer, string, error) {
 		}
 	}
 
+	for field, value := range values {
+		if err := writer.WriteField(field, value); err != nil {
+			return nil, "", err
+		}
+	}
+
 	if err := writer.Close(); err != nil {
 		return nil, "", err
 	}
 
 	return &body, writer.FormDataContentType(), nil
+}
+
+// doAuthMultipartRequestWithValues posts the given files and form values as a
+// multipart form, authenticated with the master API key.
+func doAuthMultipartRequestWithValues(t *testing.T, url string, files []multipartFile, values map[string]string) *http.Response {
+	t.Helper()
+
+	body, contentType, err := multipartBody(files, values)
+	require.NoError(t, err)
+
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", contentType)
+	req.Header.Set("Authorization", "Bearer x-api-key:"+config.MasterAPIKey)
+
+	resp, err := httpClient().Do(req)
+	require.NoError(t, err)
+
+	return resp
 }
 
 // doAuthMultipartUpload uploads content as a multipart form file under the
@@ -132,18 +157,7 @@ func doAuthMultipartUpload(t *testing.T, url, field, fileName string, content []
 func doAuthMultipartRequest(t *testing.T, url string, files []multipartFile) *http.Response {
 	t.Helper()
 
-	body, contentType, err := multipartBody(files)
-	require.NoError(t, err)
-
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", "Bearer x-api-key:"+config.MasterAPIKey)
-
-	resp, err := httpClient().Do(req)
-	require.NoError(t, err)
-
-	return resp
+	return doAuthMultipartRequestWithValues(t, url, files, nil)
 }
 
 // doUnauthRequest executes an unauthenticated HTTP request.

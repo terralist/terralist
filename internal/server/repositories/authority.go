@@ -20,6 +20,10 @@ type AuthorityRepository interface {
 	// Find searches for a specific authority by its name.
 	FindByName(string) (*authority.Authority, error)
 
+	// FindByUpstream searches for the authority standing for the given
+	// upstream registry hostname and namespace.
+	FindByUpstream(hostname, namespace string) (*authority.Authority, error)
+
 	// FindAll searches for all authorities.
 	FindAll() ([]*authority.Authority, error)
 
@@ -75,6 +79,27 @@ func (r *DefaultAuthorityRepository) FindByName(name string) (*authority.Authori
 		} else {
 			return nil, fmt.Errorf("error while querying the database: %v", err)
 		}
+	}
+
+	return a, nil
+}
+
+func (r *DefaultAuthorityRepository) FindByUpstream(hostname, namespace string) (*authority.Authority, error) {
+	a := &authority.Authority{}
+
+	err := r.Database.Handler().
+		Where("LOWER(upstream_hostname) = LOWER(?) AND LOWER(upstream_namespace) = LOWER(?)", hostname, namespace).
+		Preload("Keys").
+		Preload("ApiKeys").
+		First(&a).
+		Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("no authority found for upstream %s/%s", hostname, namespace)
+		}
+
+		return nil, fmt.Errorf("error while querying the database: %v", err)
 	}
 
 	return a, nil

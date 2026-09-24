@@ -16,6 +16,10 @@ type Platform struct {
 	Architecture string `gorm:"not null"`
 	Location     string `gorm:"not null"`
 	ShaSum       string `gorm:"not null"`
+
+	// H1 is the package hash in Terraform's h1 scheme, when the uploader
+	// provided it. Terralist never computes it.
+	H1 string
 }
 
 func (Platform) TableName() string {
@@ -38,6 +42,7 @@ type CreatePlatformDTO struct {
 	Architecture string `json:"arch"`
 	Location     string `json:"download_url"`
 	ShaSum       string `json:"shasum"`
+	H1           string `json:"h1,omitempty"`
 }
 
 func (d CreatePlatformDTO) ToPlatform() Platform {
@@ -46,6 +51,7 @@ func (d CreatePlatformDTO) ToPlatform() Platform {
 		Architecture: d.Architecture,
 		Location:     d.Location,
 		ShaSum:       d.ShaSum,
+		H1:           d.H1,
 	}
 }
 

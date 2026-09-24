@@ -364,3 +364,222 @@ func TestDeleteAuthority(t *testing.T) {
 		})
 	})
 }
+
+func TestCreateAuthorityWithUpstream(t *testing.T) {
+	Convey("Subject: Creating authorities with an upstream identity", t, func() {
+		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+
+		authorityService := &DefaultAuthorityService{
+			AuthorityRepository: mockAuthorityRepository,
+		}
+
+		Convey("Given a hostname and no namespace", func() {
+			dto := authority.AuthorityCreateDTO{
+				Name:             "hashicorp",
+				PolicyURL:        "https://example.com/hashicorp",
+				Owner:            "test@example.com",
+				UpstreamHostname: "Registry.Terraform.io",
+			}
+
+			var saved authority.Authority
+			mockAuthorityRepository.
+				On("Upsert", mock.AnythingOfType("authority.Authority")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(authority.Authority)
+				}).
+				Return(&authority.Authority{Name: dto.Name}, nil)
+
+			Convey("When the authority is created", func() {
+				_, err := authorityService.Create(dto)
+
+				Convey("The hostname should be lowercased and the namespace default to the name", func() {
+					So(err, ShouldBeNil)
+					So(*saved.UpstreamHostname, ShouldEqual, "registry.terraform.io")
+					So(*saved.UpstreamNamespace, ShouldEqual, "hashicorp")
+				})
+			})
+		})
+
+		Convey("Given no hostname", func() {
+			dto := authority.AuthorityCreateDTO{
+				Name:      "hashicorp",
+				PolicyURL: "https://example.com/hashicorp",
+				Owner:     "test@example.com",
+			}
+
+			var saved authority.Authority
+			mockAuthorityRepository.
+				On("Upsert", mock.AnythingOfType("authority.Authority")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(authority.Authority)
+				}).
+				Return(&authority.Authority{Name: dto.Name}, nil)
+
+			Convey("When the authority is created", func() {
+				_, err := authorityService.Create(dto)
+
+				Convey("No upstream identity should be stored", func() {
+					So(err, ShouldBeNil)
+					So(saved.UpstreamHostname, ShouldBeNil)
+					So(saved.UpstreamNamespace, ShouldBeNil)
+				})
+			})
+		})
+
+		Convey("Given a namespace without a hostname", func() {
+			dto := authority.AuthorityCreateDTO{
+				Name:              "hashicorp",
+				PolicyURL:         "https://example.com/hashicorp",
+				Owner:             "test@example.com",
+				UpstreamNamespace: "hashicorp",
+			}
+
+			Convey("When the authority is created", func() {
+				_, err := authorityService.Create(dto)
+
+				Convey("An error should be returned", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given an invalid hostname", func() {
+			dto := authority.AuthorityCreateDTO{
+				Name:             "hashicorp",
+				PolicyURL:        "https://example.com/hashicorp",
+				Owner:            "test@example.com",
+				UpstreamHostname: "https://registry.terraform.io",
+			}
+
+			Convey("When the authority is created", func() {
+				_, err := authorityService.Create(dto)
+
+				Convey("An error should be returned", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given an invalid namespace", func() {
+			dto := authority.AuthorityCreateDTO{
+				Name:              "hashicorp",
+				PolicyURL:         "https://example.com/hashicorp",
+				Owner:             "test@example.com",
+				UpstreamHostname:  "registry.terraform.io",
+				UpstreamNamespace: "hashi corp",
+			}
+
+			Convey("When the authority is created", func() {
+				_, err := authorityService.Create(dto)
+
+				Convey("An error should be returned", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+	})
+}
+
+func TestUpdateAuthorityUpstream(t *testing.T) {
+	Convey("Subject: Updating the upstream identity of an authority", t, func() {
+		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+
+		authorityService := &DefaultAuthorityService{
+			AuthorityRepository: mockAuthorityRepository,
+		}
+
+		id, _ := uuid.NewRandom()
+
+		Convey("Given a hostname with a port and an explicit namespace", func() {
+			dto := authority.AuthorityDTO{
+				Name:              "mirror",
+				PolicyURL:         "https://example.com/mirror",
+				UpstreamHostname:  "Registry.Example.com:8443",
+				UpstreamNamespace: "hashicorp",
+			}
+
+			var saved authority.Authority
+			mockAuthorityRepository.
+				On("Upsert", mock.AnythingOfType("authority.Authority")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(authority.Authority)
+				}).
+				Return(&authority.Authority{Name: dto.Name}, nil)
+
+			Convey("When the authority is updated", func() {
+				_, err := authorityService.Update(id, dto)
+
+				Convey("The identity should be stored normalized", func() {
+					So(err, ShouldBeNil)
+					So(*saved.UpstreamHostname, ShouldEqual, "registry.example.com:8443")
+					So(*saved.UpstreamNamespace, ShouldEqual, "hashicorp")
+				})
+			})
+		})
+
+		Convey("Given an empty hostname and namespace", func() {
+			dto := authority.AuthorityDTO{
+				Name:      "mirror",
+				PolicyURL: "https://example.com/mirror",
+			}
+
+			var saved authority.Authority
+			mockAuthorityRepository.
+				On("Upsert", mock.AnythingOfType("authority.Authority")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(authority.Authority)
+				}).
+				Return(&authority.Authority{Name: dto.Name}, nil)
+
+			Convey("When the authority is updated", func() {
+				_, err := authorityService.Update(id, dto)
+
+				Convey("The identity should be cleared", func() {
+					So(err, ShouldBeNil)
+					So(saved.UpstreamHostname, ShouldBeNil)
+					So(saved.UpstreamNamespace, ShouldBeNil)
+				})
+			})
+		})
+	})
+}
+
+func TestGetAuthorityByUpstream(t *testing.T) {
+	Convey("Subject: Finding an authority by its upstream identity", t, func() {
+		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+
+		authorityService := &DefaultAuthorityService{
+			AuthorityRepository: mockAuthorityRepository,
+		}
+
+		Convey("If the repository finds the authority", func() {
+			mockAuthorityRepository.
+				On("FindByUpstream", "registry.terraform.io", "hashicorp").
+				Return(&authority.Authority{Name: "hashicorp"}, nil)
+
+			Convey("When the service is queried", func() {
+				a, err := authorityService.GetByUpstream("registry.terraform.io", "hashicorp")
+
+				Convey("The authority should be returned", func() {
+					So(err, ShouldBeNil)
+					So(a.Name, ShouldEqual, "hashicorp")
+				})
+			})
+		})
+
+		Convey("If the repository does not find the authority", func() {
+			mockAuthorityRepository.
+				On("FindByUpstream", "registry.terraform.io", "hashicorp").
+				Return(nil, errors.New(""))
+
+			Convey("When the service is queried", func() {
+				a, err := authorityService.GetByUpstream("registry.terraform.io", "hashicorp")
+
+				Convey("An error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(a, ShouldBeNil)
+				})
+			})
+		})
+	})
+}

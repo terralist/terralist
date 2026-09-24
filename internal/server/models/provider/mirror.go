@@ -45,11 +45,17 @@ func (v Version) ToMirrorArchivesDTO() MirrorArchivesDTO {
 }
 
 // ToMirrorArchiveDTO maps the platform to its network mirror protocol archive
-// entry. The hash uses the zh scheme, which is the sha256 of the package as
-// listed in the SHA256SUMS file.
+// entry. The h1 hash is listed when known, followed by the zh hash, which is
+// the sha256 of the package as listed in the SHA256SUMS file.
 func (p Platform) ToMirrorArchiveDTO() MirrorArchiveDTO {
+	hashes := make([]string, 0, 2)
+	if p.H1 != "" {
+		hashes = append(hashes, p.H1)
+	}
+	hashes = append(hashes, fmt.Sprintf("zh:%s", p.ShaSum))
+
 	return MirrorArchiveDTO{
 		URL:    p.Location,
-		Hashes: []string{fmt.Sprintf("zh:%s", p.ShaSum)},
+		Hashes: hashes,
 	}
 }

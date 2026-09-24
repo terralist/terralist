@@ -418,11 +418,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	apiV1Group.Register(providerController)
 
 	mirrorController := &controllers.DefaultMirrorController{
-		ProviderService: providerService,
-		Authentication:  authentication,
-		Authorization:   authorization,
-		Hostname:        hostURL.Host,
-		AnonymousRead:   userConfig.ProvidersAnonymousRead,
+		ProviderService:  providerService,
+		AuthorityService: authorityService,
+		Authentication:   authentication,
+		Authorization:    authorization,
+		Hostname:         hostURL.Host,
+		AnonymousRead:    userConfig.ProvidersAnonymousRead,
 	}
 
 	// The Provider Network Mirror Protocol does not use service discovery,

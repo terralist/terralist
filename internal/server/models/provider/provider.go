@@ -22,9 +22,15 @@ func (Provider) TableName() string {
 	return "providers"
 }
 
+// ToVersionListProviderDTO builds the provider registry protocol version list,
+// which carries only the versions Terraform can verify.
 func (p Provider) ToVersionListProviderDTO() VersionListProviderDTO {
 	var versions []VersionListVersionDTO
 	for _, v := range p.Versions {
+		if v.MirrorOnly() {
+			continue
+		}
+
 		versions = append(versions, v.ToVersionListVersionDTO())
 	}
 

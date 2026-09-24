@@ -1,7 +1,12 @@
 package services
 
 import (
+	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"strings"
 
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
@@ -21,8 +26,13 @@ const (
 
 // ProviderService describes a service that holds the business logic for providers registry.
 type ProviderService interface {
-	// Get returns a specific provider.
+	// Get returns a specific provider, with the versions the provider registry
+	// protocol can serve.
 	Get(namespace, name string) (*provider.VersionListProviderDTO, error)
+
+	// ListVersions returns every version of a provider, including the ones
+	// served through the network mirror only.
+	ListVersions(namespace, name string) ([]string, error)
 
 	// GetVersion returns a specific installation for a provider.
 	GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error)
@@ -39,6 +49,12 @@ type ProviderService interface {
 	// Upload loads a new provider version into the system.
 	// If the provider does not already exist, it will create a new one.
 	Upload(*provider.CreateProviderDTO) error
+
+	// UploadPackages stores the packages of a new provider version uploaded
+	// directly, as produced by `terraform providers mirror`. Without the
+	// SHA256SUMS file and its signature the version is served through the
+	// network mirror only.
+	UploadPackages(*provider.PackagesUploadDTO) error
 
 	// Delete removes a provider from the system with all its data (versions).
 	Delete(authorityID uuid.UUID, name string) error
@@ -74,10 +90,28 @@ func (s *DefaultProviderService) Get(namespace, name string) (*provider.VersionL
 	return &dto, nil
 }
 
+func (s *DefaultProviderService) ListVersions(namespace, name string) ([]string, error) {
+	p, err := s.ProviderRepository.Find(namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("requested provider was not found: %v", err)
+	}
+
+	versions := make([]string, 0, len(p.Versions))
+	for _, v := range p.Versions {
+		versions = append(versions, v.Version)
+	}
+
+	return versions, nil
+}
+
 func (s *DefaultProviderService) GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error) {
 	p, err := s.ProviderRepository.FindVersionPlatform(namespace, name, version, system, architecture)
 	if err != nil {
 		return nil, err
+	}
+
+	if p.Version.MirrorOnly() {
+		return nil, fmt.Errorf("version %s of provider %s/%s is served through the network mirror only", version, namespace, name)
 	}
 
 	a, err := s.AuthorityService.GetByID(p.Version.Provider.AuthorityID)
@@ -222,6 +256,168 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 	metrics.RecordRequest(a.Name, "upload")
 
 	return nil
+}
+
+func (s *DefaultProviderService) UploadPackages(d *provider.PackagesUploadDTO) error {
+	if semVer := version.Version(d.Version); !semVer.Valid() {
+		return fmt.Errorf("version should respect the semantic versioning standard (semver.org)")
+	}
+
+	if s.Resolver == nil {
+		return fmt.Errorf("uploading packages requires a providers storage resolver")
+	}
+
+	if len(d.Archives) == 0 {
+		return fmt.Errorf("at least one provider package is required")
+	}
+
+	if (d.ShaSums == nil) != (d.ShaSumsSignature == nil) {
+		return fmt.Errorf("the SHA256SUMS file and its signature must be uploaded together")
+	}
+
+	if d.Signed() && len(d.Protocols) == 0 {
+		return fmt.Errorf("the provider protocols are required to serve a signed version through the registry")
+	}
+
+	a, err := s.AuthorityService.GetByID(d.AuthorityID)
+	if err != nil {
+		return err
+	}
+
+	current, err := s.ProviderRepository.Find(a.Name, d.Name)
+	if err == nil && current.GetVersion(d.Version) != nil {
+		return fmt.Errorf("version %s already exists", d.Version)
+	}
+
+	v := d.ToVersion()
+	files := map[string]file.File{}
+
+	if d.Signed() {
+		files[shaSumsKey] = d.ShaSums
+		files[shaSumsSigKey] = d.ShaSumsSignature
+	}
+
+	v.Platforms, err = s.verifyPackages(d)
+	if err != nil {
+		return err
+	}
+
+	for i, archive := range d.Archives {
+		files[v.Platforms[i].String()] = archive
+	}
+
+	keys, err := s.uploadFiles(a.Name, d.Name, d.Version, files)
+	if err != nil {
+		return err
+	}
+
+	v.ShaSumsUrl = keys[shaSumsKey]
+	v.ShaSumsSignatureUrl = keys[shaSumsSigKey]
+	for i := range v.Platforms {
+		v.Platforms[i].Location = keys[v.Platforms[i].String()]
+	}
+
+	toUpload := current
+	if toUpload == nil {
+		toUpload = &provider.Provider{
+			AuthorityID: d.AuthorityID,
+			Name:        d.Name,
+		}
+	}
+	toUpload.Versions = append(toUpload.Versions, v)
+
+	if _, err := s.ProviderRepository.Upsert(*toUpload); err != nil {
+		return err
+	}
+
+	metrics.RecordArtifactUpload("provider", a.Name)
+	metrics.RecordRequest(a.Name, "upload")
+
+	return nil
+}
+
+// verifyPackages matches every uploaded archive against the version document,
+// computes its sha256 and, when a SHA256SUMS file is uploaded, checks the
+// archive against it. It returns the platforms in the order of the archives.
+func (s *DefaultProviderService) verifyPackages(d *provider.PackagesUploadDTO) ([]provider.Platform, error) {
+	var sums map[string]string
+	if d.Signed() {
+		var err error
+		if sums, err = parseShaSums(d.ShaSums); err != nil {
+			return nil, err
+		}
+	}
+
+	platforms := make([]provider.Platform, 0, len(d.Archives))
+	for _, archive := range d.Archives {
+		key, entry, ok := d.Metadata.FindArchive(archive.Name())
+		if !ok {
+			return nil, fmt.Errorf("package %s is not listed in the version document", archive.Name())
+		}
+
+		platform, err := entry.ToPlatform(key)
+		if err != nil {
+			return nil, err
+		}
+
+		if platform.ShaSum, err = sha256Sum(archive); err != nil {
+			return nil, fmt.Errorf("could not hash package %s: %v", archive.Name(), err)
+		}
+
+		if sums != nil {
+			expected, ok := sums[archive.Name()]
+			if !ok {
+				return nil, fmt.Errorf("package %s is not listed in the SHA256SUMS file", archive.Name())
+			}
+
+			if expected != platform.ShaSum {
+				return nil, fmt.Errorf("package %s does not match its SHA256SUMS entry", archive.Name())
+			}
+		}
+
+		platforms = append(platforms, platform)
+	}
+
+	return platforms, nil
+}
+
+// parseShaSums reads a SHA256SUMS file into a map from file name to hex digest
+// and rewinds the file afterwards.
+func parseShaSums(f file.File) (map[string]string, error) {
+	defer func() {
+		_, _ = f.Seek(0, io.SeekStart)
+	}()
+
+	sums := map[string]string{}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) != 2 {
+			continue
+		}
+
+		sums[strings.TrimPrefix(fields[1], "*")] = fields[0]
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("could not read the SHA256SUMS file: %v", err)
+	}
+
+	return sums, nil
+}
+
+// sha256Sum computes the hex sha256 digest of a file and rewinds it afterwards.
+func sha256Sum(f file.File) (string, error) {
+	defer func() {
+		_, _ = f.Seek(0, io.SeekStart)
+	}()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) error {
