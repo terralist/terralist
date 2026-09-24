@@ -52,7 +52,7 @@ type DefaultProviderController struct {
 	// Tokens signs the download links that point at the network mirror, where
 	// packages not stored yet are fetched from. MirrorBaseURL is where those
 	// links start.
-	Tokens        *handlers.PackageTokens
+	Tokens        *handlers.DownloadTokens
 	MirrorBaseURL string
 }
 
@@ -356,7 +356,7 @@ func (c *DefaultProviderController) signMirrorDownload(dto *provider.DownloadPla
 		return nil
 	}
 
-	token, err := c.Tokens.Sign(namespace, pkg, fetch)
+	token, err := c.Tokens.Sign(pkg.Subject(namespace), fetch)
 	if err != nil {
 		return err
 	}

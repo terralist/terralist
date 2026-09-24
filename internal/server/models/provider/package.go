@@ -1,6 +1,9 @@
 package provider
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	packagePrefix = "terraform-provider-"
@@ -14,6 +17,11 @@ type Package struct {
 	Version      string
 	System       string
 	Architecture string
+}
+
+// Subject names the package within an authority, for download tokens.
+func (p Package) Subject(namespace string) string {
+	return fmt.Sprintf("providers/%s/%s/%s/%s_%s", namespace, p.Name, p.Version, p.System, p.Architecture)
 }
 
 // ParsePackageFileName reads the coordinates out of a package file name of the

@@ -60,7 +60,7 @@ func setupProviderRouter(t *testing.T, user *auth.User, policyCSV string) (*gin.
 		t.Fatalf("failed to create session store: %v", err)
 	}
 
-	tokens, err := handlers.NewPackageTokens("test-signing-secret")
+	tokens, err := handlers.NewDownloadTokens("test-signing-secret")
 	if err != nil {
 		t.Fatalf("failed to create package tokens: %v", err)
 	}
@@ -384,9 +384,9 @@ func TestProviderController_DownloadFromUpstream(t *testing.T) {
 					So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
 					So(body.DownloadUrl, ShouldStartWith, "https://terralist.example.com/providers/terralist.example.com/hashicorp/null/terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
 
-					tokens, _ := handlers.NewPackageTokens("test-signing-secret")
+					tokens, _ := handlers.NewDownloadTokens("test-signing-secret")
 					token := strings.SplitN(body.DownloadUrl, "?token=", 2)[1]
-					fetch, ok := tokens.Verify(token, "hashicorp", provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"})
+					fetch, ok := tokens.Verify(token, provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}.Subject("hashicorp"))
 					So(ok, ShouldBeTrue)
 					So(fetch, ShouldBeTrue)
 				})

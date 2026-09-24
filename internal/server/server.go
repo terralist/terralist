@@ -411,9 +411,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, err
 	}
 
-	packageTokens, err := handlers.NewPackageTokens(userConfig.TokenSigningSecret)
+	downloadTokens, err := handlers.NewDownloadTokens(userConfig.TokenSigningSecret)
 	if err != nil {
-		return nil, fmt.Errorf("could not create the package token signer: %w", err)
+		return nil, fmt.Errorf("could not create the download token signer: %w", err)
 	}
 
 	mirrorBaseURL := strings.TrimRight(hostURL.String(), "/") + "/providers/" + hostURL.Host
@@ -434,7 +434,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
-		Tokens:           packageTokens,
+		Tokens:           downloadTokens,
 		MirrorBaseURL:    mirrorBaseURL,
 	}
 
@@ -445,7 +445,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		Authentication:   authentication,
 		Authorization:    authorization,
-		Tokens:           packageTokens,
+		Tokens:           downloadTokens,
 		Hostname:         hostURL.Host,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
 		AutoCreate:       splitHostnames(userConfig.UpstreamAutoCreate),
