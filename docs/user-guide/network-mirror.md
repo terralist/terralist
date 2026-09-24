@@ -55,6 +55,8 @@ curl -X PATCH \
   https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID
 ```
 
+Pulling through needs a storage backend for providers, since fetched packages are stored and then served from there like uploaded ones. With the `proxy` [`providers-storage-resolver`](../configuration.md#providers-storage-resolver) the upstream is never consulted. Terralist never streams a package to a client: a stored package is answered with a redirect to storage, and a package not stored yet is downloaded from the upstream, verified and stored first, then answered with the same redirect.
+
 The upstream is reached at `https://<upstream_hostname>` unless `upstream_url` names another location, such as a private mirror of the public registry. A private upstream can be given an `upstream_token`, which Terralist sends as a bearer token and stores sealed with the [`upstream-secret`](../configuration.md#upstream-secret). The token is never returned by the API; `upstream_has_token` tells whether one is stored, and an update without a token keeps the stored one. Private upstreams on internal networks also need [`fetch-allow-private-addresses`](../configuration.md#fetch-allow-private-addresses).
 
 ### What happens on a request
