@@ -19,6 +19,9 @@ import (
 	"terralist/pkg/auth"
 	authFactory "terralist/pkg/auth/factory"
 	"terralist/pkg/auth/github"
+	"terralist/pkg/cache"
+	cacheFactory "terralist/pkg/cache/factory"
+	"terralist/pkg/cache/memory"
 	"terralist/pkg/cli"
 	"terralist/pkg/database"
 	dbFactory "terralist/pkg/database/factory"
@@ -524,6 +527,12 @@ func (s *Command) run() error {
 		return err
 	}
 
+	// Initialize cache
+	c, err := cacheFactory.NewCache(cache.MEMORY, &memory.Config{})
+	if err != nil {
+		return err
+	}
+
 	// Set build info for metrics
 	metrics.SetBuildInfo(s.Version, s.CommitHash, s.BuildTimestamp)
 
@@ -534,6 +543,7 @@ func (s *Command) run() error {
 		ProvidersResolver: resolvers["providers"],
 		VcsProvider:       vcsProvider,
 		Store:             store,
+		Cache:             c,
 		RunningMode:       s.RunningMode,
 	})
 
