@@ -297,7 +297,6 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 }
 
-// resolveAuthorityID resolves the authority ID from the namespace URL parameter.
 // readPackagesUpload fills the upload with the files of the multipart form: the
 // version document, the package archives and, when present, the SHA256SUMS
 // file with its signature. The caller owns the opened files.
@@ -390,6 +389,7 @@ func splitProtocols(value string) []string {
 	return protocols
 }
 
+// resolveAuthorityID resolves the authority ID from the namespace URL parameter.
 func (c *DefaultProviderController) resolveAuthorityID(ctx *gin.Context) (uuid.UUID, bool) {
 	namespace := ctx.Param("namespace")
 
