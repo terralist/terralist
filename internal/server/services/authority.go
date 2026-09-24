@@ -2,6 +2,10 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
 
@@ -11,6 +15,12 @@ import (
 
 var (
 	ErrKeyNotFound = errors.New("key not found")
+
+	// upstreamHostnameRegexp accepts DNS hostnames with an optional port.
+	upstreamHostnameRegexp = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*(:[0-9]{1,5})?$`)
+
+	// upstreamNamespaceRegexp accepts provider registry namespaces.
+	upstreamNamespaceRegexp = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 )
 
 // AuthorityService describes a service that can interact with the authorities database.
@@ -20,6 +30,10 @@ type AuthorityService interface {
 
 	// Get returns an authority with a specific name.
 	GetByName(name string) (*authority.Authority, error)
+
+	// GetByUpstream returns the authority standing for an upstream registry
+	// hostname and namespace.
+	GetByUpstream(hostname, namespace string) (*authority.Authority, error)
 
 	// GetAll returns all authorities.
 	GetAll() ([]*authority.Authority, error)
@@ -57,6 +71,10 @@ func (s *DefaultAuthorityService) GetByName(name string) (*authority.Authority, 
 	return s.AuthorityRepository.FindByName(name)
 }
 
+func (s *DefaultAuthorityService) GetByUpstream(hostname, namespace string) (*authority.Authority, error) {
+	return s.AuthorityRepository.FindByUpstream(hostname, namespace)
+}
+
 func (s *DefaultAuthorityService) GetAll() ([]*authority.Authority, error) {
 	return s.AuthorityRepository.FindAll()
 }
@@ -67,6 +85,10 @@ func (s *DefaultAuthorityService) GetAllByOwner(owner string) ([]*authority.Auth
 
 func (s *DefaultAuthorityService) Create(in authority.AuthorityCreateDTO) (*authority.AuthorityDTO, error) {
 	a := in.ToAuthority()
+
+	if err := normalizeUpstream(&a); err != nil {
+		return nil, err
+	}
 
 	created, err := s.AuthorityRepository.Upsert(a)
 	if err != nil {
@@ -80,6 +102,10 @@ func (s *DefaultAuthorityService) Create(in authority.AuthorityCreateDTO) (*auth
 func (s *DefaultAuthorityService) Update(id uuid.UUID, in authority.AuthorityDTO) (*authority.AuthorityDTO, error) {
 	a := in.ToAuthority()
 	a.ID = id
+
+	if err := normalizeUpstream(&a); err != nil {
+		return nil, err
+	}
 
 	// ApiKeys are not managed from within authority API
 	// With this, we make sure we don't touch them while updating the authority
@@ -150,4 +176,33 @@ func (s *DefaultAuthorityService) RemoveKey(authorityID uuid.UUID, keyID uuid.UU
 
 func (s *DefaultAuthorityService) Delete(id uuid.UUID) error {
 	return s.AuthorityRepository.Delete(id)
+}
+
+// normalizeUpstream validates the upstream identity of an authority, lowercases
+// the hostname and defaults the namespace to the authority name.
+func normalizeUpstream(a *authority.Authority) error {
+	if a.UpstreamHostname == nil {
+		if a.UpstreamNamespace != nil {
+			return fmt.Errorf("an upstream namespace requires an upstream hostname")
+		}
+
+		return nil
+	}
+
+	hostname := strings.ToLower(*a.UpstreamHostname)
+	if !upstreamHostnameRegexp.MatchString(hostname) {
+		return fmt.Errorf("invalid upstream hostname %q", *a.UpstreamHostname)
+	}
+
+	a.UpstreamHostname = &hostname
+
+	if a.UpstreamNamespace == nil {
+		a.UpstreamNamespace = &a.Name
+	}
+
+	if !upstreamNamespaceRegexp.MatchString(*a.UpstreamNamespace) {
+		return fmt.Errorf("invalid upstream namespace %q", *a.UpstreamNamespace)
+	}
+
+	return nil
 }

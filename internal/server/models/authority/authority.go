@@ -11,10 +11,17 @@ import (
 type Authority struct {
 	entity.Entity
 
-	Name      string              `gorm:"not null;uniqueIndex"`
-	PolicyURL string              `gorm:"not null"`
-	Public    bool                `gorm:"not null;default:false"`
-	Owner     string              `gorm:"not null;index"`
+	Name      string `gorm:"not null;uniqueIndex"`
+	PolicyURL string `gorm:"not null"`
+	Public    bool   `gorm:"not null;default:false"`
+	Owner     string `gorm:"not null;index"`
+
+	// UpstreamHostname and UpstreamNamespace identify the namespace of an
+	// upstream registry that this authority stands for, so that its providers
+	// can be addressed with the upstream address through the network mirror.
+	UpstreamHostname  *string `gorm:"uniqueIndex:idx_authorities_upstream"`
+	UpstreamNamespace *string `gorm:"uniqueIndex:idx_authorities_upstream"`
+
 	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	ApiKeys   []ApiKey            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Modules   []module.Module     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
@@ -26,20 +33,24 @@ func (Authority) TableName() string {
 }
 
 type AuthorityDTO struct {
-	ID        string      `json:"id"`
-	Name      string      `json:"name"`
-	PolicyURL string      `json:"policy_url"`
-	Public    bool        `json:"public"`
-	Keys      []KeyDTO    `json:"keys"`
-	ApiKeys   []ApiKeyDTO `json:"api_keys"`
+	ID                string      `json:"id"`
+	Name              string      `json:"name"`
+	PolicyURL         string      `json:"policy_url"`
+	Public            bool        `json:"public"`
+	UpstreamHostname  string      `json:"upstream_hostname"`
+	UpstreamNamespace string      `json:"upstream_namespace"`
+	Keys              []KeyDTO    `json:"keys"`
+	ApiKeys           []ApiKeyDTO `json:"api_keys"`
 }
 
 func (a Authority) ToDTO() AuthorityDTO {
 	return AuthorityDTO{
-		ID:        a.ID.String(),
-		Name:      a.Name,
-		PolicyURL: a.PolicyURL,
-		Public:    a.Public,
+		ID:                a.ID.String(),
+		Name:              a.Name,
+		PolicyURL:         a.PolicyURL,
+		Public:            a.Public,
+		UpstreamHostname:  lo.FromPtr(a.UpstreamHostname),
+		UpstreamNamespace: lo.FromPtr(a.UpstreamNamespace),
 
 		Keys: lo.Map(a.Keys, func(k Key, _ int) KeyDTO {
 			return k.ToKeyDTO()
@@ -53,9 +64,11 @@ func (a Authority) ToDTO() AuthorityDTO {
 
 func (d AuthorityDTO) ToAuthority() Authority {
 	return Authority{
-		Name:      d.Name,
-		PolicyURL: d.PolicyURL,
-		Public:    d.Public,
+		Name:              d.Name,
+		PolicyURL:         d.PolicyURL,
+		Public:            d.Public,
+		UpstreamHostname:  lo.EmptyableToPtr(d.UpstreamHostname),
+		UpstreamNamespace: lo.EmptyableToPtr(d.UpstreamNamespace),
 
 		Keys: lo.Map(d.Keys, func(k KeyDTO, _ int) Key {
 			return k.ToKey()
@@ -68,17 +81,21 @@ func (d AuthorityDTO) ToAuthority() Authority {
 }
 
 type AuthorityCreateDTO struct {
-	Name      string `json:"name"`
-	PolicyURL string `json:"policy_url"`
-	Public    bool   `json:"public"`
-	Owner     string `json:"owner"`
+	Name              string `json:"name"`
+	PolicyURL         string `json:"policy_url"`
+	Public            bool   `json:"public"`
+	Owner             string `json:"owner"`
+	UpstreamHostname  string `json:"upstream_hostname"`
+	UpstreamNamespace string `json:"upstream_namespace"`
 }
 
 func (d AuthorityCreateDTO) ToAuthority() Authority {
 	return Authority{
-		Name:      d.Name,
-		PolicyURL: d.PolicyURL,
-		Public:    d.Public,
-		Owner:     d.Owner,
+		Name:              d.Name,
+		PolicyURL:         d.PolicyURL,
+		Public:            d.Public,
+		Owner:             d.Owner,
+		UpstreamHostname:  lo.EmptyableToPtr(d.UpstreamHostname),
+		UpstreamNamespace: lo.EmptyableToPtr(d.UpstreamNamespace),
 	}
 }
