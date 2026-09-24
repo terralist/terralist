@@ -283,6 +283,76 @@ curl -L -X POST \
     }
     ```
 
+## Upload provider packages
+
+```
+POST /v1/api/providers/:namespace/:name/:version/upload-files
+```
+
+Upload a new provider version from its package files, as produced by `terraform providers mirror`. The request is a multipart form:
+
+- `metadata`: the `<version>.json` document listing the packages and their `h1` hashes;
+- `archives`: one or more package archives listed in the document;
+- `shasums` and `shasums_signature` (optional): the provider's `SHA256SUMS` file and its signature, always together;
+- `protocols` (required with `shasums`): comma separated provider protocol versions.
+
+Every archive must be listed in the document under its file name. When a `SHA256SUMS` file is given, every archive must match its entry. A version uploaded without `shasums` is served through the [network mirror](../user-guide/network-mirror.md) only and does not appear in the registry protocol version list. A providers storage resolver must be configured.
+
+### Example Request
+
+``` shell
+curl -L -X POST \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -F metadata=@3.2.4.json \
+  -F archives=@terraform-provider-null_3.2.4_linux_amd64.zip \
+  -F archives=@terraform-provider-null_3.2.4_darwin_arm64.zip \
+  -F shasums=@SHA256SUMS \
+  -F shasums_signature=@SHA256SUMS.sig \
+  -F protocols=5.0 \
+  http://localhost:5758/v1/api/providers/hashicorp/null/3.2.4/upload-files
+```
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    {
+      "errors": []
+    }
+    ```
+
+=== "Status 400"
+
+    ``` json
+    {
+      "errors": [
+        "expecting exactly one version document in the \"metadata\" field"
+      ]
+    }
+    ```
+
+=== "Status 401"
+
+    ``` json
+    {
+      "errors": [
+        "Authorization: missing",
+        "X-API-Key: missing"
+      ]
+    }
+    ```
+
+=== "Status 409"
+
+    ``` json
+    {
+      "errors": [
+        "package terraform-provider-null_3.2.4_linux_amd64.zip does not match its SHA256SUMS entry"
+      ]
+    }
+    ```
+
 ## Remove a provider
 
 ```
@@ -710,7 +780,7 @@ curl -L -X DELETE \
 GET /providers/:hostname/:namespace/:name/index.json
 ```
 
-List all versions of a provider, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). The `hostname` must be the one Terralist is served under; any other hostname is not found. See the [Provider Network Mirror](../user-guide/network-mirror.md) guide for details.
+List all versions of a provider, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). Under Terralist's own hostname the namespace is the authority name; under any other hostname the request is served by the authority standing for that upstream hostname and namespace. See the [Provider Network Mirror](../user-guide/network-mirror.md) guide for details.
 
 ### Example Request
 
@@ -753,7 +823,7 @@ curl -L -X GET \
 GET /providers/:hostname/:namespace/:name/:version.json
 ```
 
-List the installation packages of a provider version, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). The `url` of each package points to the storage backend and may be temporary. Each package carries its `zh:` hash, the sha256 published in the provider's `SHA256SUMS` file.
+List the installation packages of a provider version, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). The `url` of each package points to the storage backend and may be temporary. Each package carries its `zh:` hash, the sha256 of the package, preceded by its `h1:` hash when the uploader provided one.
 
 ### Example Request
 
