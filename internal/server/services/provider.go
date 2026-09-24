@@ -27,6 +27,15 @@ type ProviderService interface {
 	// GetVersion returns a specific installation for a provider.
 	GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error)
 
+	// ListMirrorVersions returns the versions of a provider as the network
+	// mirror protocol lists them.
+	ListMirrorVersions(namespace, name string) (*provider.MirrorVersionListDTO, error)
+
+	// ListMirrorArchives returns the installation packages of a provider
+	// version as the network mirror protocol lists them, with resolved
+	// download locations.
+	ListMirrorArchives(namespace, name, version string) (*provider.MirrorArchivesDTO, error)
+
 	// Upload loads a new provider version into the system.
 	// If the provider does not already exist, it will create a new one.
 	Upload(*provider.CreateProviderDTO) error
@@ -97,6 +106,50 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 	}
 
 	// Record download metrics
+	metrics.RecordRequest(namespace, "download")
+	metrics.RecordArtifactDownload("provider", namespace)
+
+	return &dto, nil
+}
+
+func (s *DefaultProviderService) ListMirrorVersions(namespace, name string) (*provider.MirrorVersionListDTO, error) {
+	p, err := s.ProviderRepository.Find(namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("requested provider was not found: %v", err)
+	}
+
+	metrics.RecordRequest(namespace, "list")
+
+	dto := p.ToMirrorVersionListDTO()
+
+	return &dto, nil
+}
+
+func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version string) (*provider.MirrorArchivesDTO, error) {
+	p, err := s.ProviderRepository.Find(namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("requested provider was not found: %v", err)
+	}
+
+	v := p.GetVersion(version)
+	if v == nil {
+		return nil, fmt.Errorf("provider %s/%s does not contain version %s", namespace, name, version)
+	}
+
+	dto := v.ToMirrorArchivesDTO()
+
+	if s.Resolver != nil {
+		for key, archive := range dto.Archives {
+			url, err := s.Resolver.Find(archive.URL)
+			if err != nil {
+				return nil, fmt.Errorf("could not resolve package location for %s: %v", key, err)
+			}
+
+			archive.URL = url
+			dto.Archives[key] = archive
+		}
+	}
+
 	metrics.RecordRequest(namespace, "download")
 	metrics.RecordArtifactDownload("provider", namespace)
 
