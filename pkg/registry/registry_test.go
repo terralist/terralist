@@ -283,81 +283,108 @@ func TestVerifyShaSums(t *testing.T) {
 	Convey("Subject: Verifying the signature of a SHA256SUMS file", t, func() {
 		document := fixture(t, "terraform-provider-null_3.2.4_SHA256SUMS")
 		signature := fixture(t, "terraform-provider-null_3.2.4_SHA256SUMS.sig")
+		// The key HashiCorp advertises for this release expired on 2026-04-19.
 		hashicorp := GPGPublicKey{KeyID: "34365D9472D7468F", ASCIIArmor: string(fixture(t, "hashicorp.asc"))}
 		other := GPGPublicKey{KeyID: "0000000000000000", ASCIIArmor: otherPublicKey(t)}
+		lenient := SignatureVerifier{AcceptExpiredKeys: true}
+		strict := SignatureVerifier{}
 
-		Convey("When the recorded signature is checked against the HashiCorp key", func() {
-			keyID, err := VerifyShaSums(document, signature, []GPGPublicKey{hashicorp})
+		Convey("Given a verifier accepting expired keys", func() {
+			Convey("When the recorded signature is checked against the HashiCorp key", func() {
+				keyID, err := lenient.VerifyShaSums(document, signature, []GPGPublicKey{hashicorp})
 
-			Convey("Then it should verify and report the signing key", func() {
+				Convey("Then it should verify and report the signing key", func() {
+					So(err, ShouldBeNil)
+					So(keyID, ShouldEqual, "34365D9472D7468F")
+				})
+			})
+
+			Convey("When the signing key is not the first one offered", func() {
+				keyID, err := lenient.VerifyShaSums(document, signature, []GPGPublicKey{other, hashicorp})
+
+				Convey("Then it should still verify", func() {
+					So(err, ShouldBeNil)
+					So(keyID, ShouldEqual, "34365D9472D7468F")
+				})
+			})
+
+			Convey("When the signature is armored", func() {
+				var armored bytes.Buffer
+				encoder, err := armor.Encode(&armored, "PGP SIGNATURE", nil)
 				So(err, ShouldBeNil)
-				So(keyID, ShouldEqual, "34365D9472D7468F")
-			})
-		})
-
-		Convey("When the signing key is not the first one offered", func() {
-			keyID, err := VerifyShaSums(document, signature, []GPGPublicKey{other, hashicorp})
-
-			Convey("Then it should still verify", func() {
+				_, err = encoder.Write(signature)
 				So(err, ShouldBeNil)
-				So(keyID, ShouldEqual, "34365D9472D7468F")
+				So(encoder.Close(), ShouldBeNil)
+
+				_, err = lenient.VerifyShaSums(document, armored.Bytes(), []GPGPublicKey{hashicorp})
+
+				Convey("Then it should verify", func() {
+					So(err, ShouldBeNil)
+				})
+			})
+
+			Convey("When the document was tampered with", func() {
+				tampered := bytes.Replace(document, []byte("9d32ac36"), []byte("00000000"), 1)
+				_, err := lenient.VerifyShaSums(tampered, signature, []GPGPublicKey{hashicorp})
+
+				Convey("Then it should be rejected", func() {
+					So(err, ShouldNotBeNil)
+					So(errors.Is(err, ErrUnknownIssuer), ShouldBeFalse)
+					So(errors.Is(err, ErrKeyExpired), ShouldBeFalse)
+				})
+			})
+
+			Convey("When none of the keys issued the signature", func() {
+				_, err := lenient.VerifyShaSums(document, signature, []GPGPublicKey{other})
+
+				Convey("Then it should report an unknown issuer", func() {
+					So(errors.Is(err, ErrUnknownIssuer), ShouldBeTrue)
+				})
+			})
+
+			Convey("When no key is offered", func() {
+				_, err := lenient.VerifyShaSums(document, signature, nil)
+
+				Convey("Then it should report an unknown issuer", func() {
+					So(errors.Is(err, ErrUnknownIssuer), ShouldBeTrue)
+				})
+			})
+
+			Convey("When a key cannot be decoded", func() {
+				_, err := lenient.VerifyShaSums(document, signature, []GPGPublicKey{{KeyID: "bad", ASCIIArmor: "not a key"}})
+
+				Convey("Then an error should be returned", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+
+			Convey("When the signature is garbage", func() {
+				_, err := lenient.VerifyShaSums(document, []byte("garbage"), []GPGPublicKey{hashicorp})
+
+				Convey("Then an error should be returned", func() {
+					So(err, ShouldNotBeNil)
+				})
 			})
 		})
 
-		Convey("When the signature is armored", func() {
-			var armored bytes.Buffer
-			encoder, err := armor.Encode(&armored, "PGP SIGNATURE", nil)
-			So(err, ShouldBeNil)
-			_, err = encoder.Write(signature)
-			So(err, ShouldBeNil)
-			So(encoder.Close(), ShouldBeNil)
+		Convey("Given a verifier rejecting expired keys", func() {
+			Convey("When the recorded signature is checked against the expired HashiCorp key", func() {
+				_, err := strict.VerifyShaSums(document, signature, []GPGPublicKey{hashicorp})
 
-			_, err = VerifyShaSums(document, armored.Bytes(), []GPGPublicKey{hashicorp})
-
-			Convey("Then it should verify", func() {
-				So(err, ShouldBeNil)
+				Convey("Then it should report the expired key", func() {
+					So(errors.Is(err, ErrKeyExpired), ShouldBeTrue)
+					So(err.Error(), ShouldContainSubstring, "34365D9472D7468F")
+				})
 			})
-		})
 
-		Convey("When the document was tampered with", func() {
-			tampered := bytes.Replace(document, []byte("9d32ac36"), []byte("00000000"), 1)
-			_, err := VerifyShaSums(tampered, signature, []GPGPublicKey{hashicorp})
+			Convey("When the document was tampered with", func() {
+				tampered := bytes.Replace(document, []byte("9d32ac36"), []byte("00000000"), 1)
+				_, err := strict.VerifyShaSums(tampered, signature, []GPGPublicKey{hashicorp})
 
-			Convey("Then it should be rejected", func() {
-				So(err, ShouldNotBeNil)
-				So(errors.Is(err, ErrUnknownIssuer), ShouldBeFalse)
-			})
-		})
-
-		Convey("When none of the keys issued the signature", func() {
-			_, err := VerifyShaSums(document, signature, []GPGPublicKey{other})
-
-			Convey("Then it should report an unknown issuer", func() {
-				So(errors.Is(err, ErrUnknownIssuer), ShouldBeTrue)
-			})
-		})
-
-		Convey("When no key is offered", func() {
-			_, err := VerifyShaSums(document, signature, nil)
-
-			Convey("Then it should report an unknown issuer", func() {
-				So(errors.Is(err, ErrUnknownIssuer), ShouldBeTrue)
-			})
-		})
-
-		Convey("When a key cannot be decoded", func() {
-			_, err := VerifyShaSums(document, signature, []GPGPublicKey{{KeyID: "bad", ASCIIArmor: "not a key"}})
-
-			Convey("Then an error should be returned", func() {
-				So(err, ShouldNotBeNil)
-			})
-		})
-
-		Convey("When the signature is garbage", func() {
-			_, err := VerifyShaSums(document, []byte("garbage"), []GPGPublicKey{hashicorp})
-
-			Convey("Then an error should be returned", func() {
-				So(err, ShouldNotBeNil)
+				Convey("Then it should be rejected for the signature, not the expiry", func() {
+					So(err, ShouldNotBeNil)
+					So(errors.Is(err, ErrKeyExpired), ShouldBeFalse)
+				})
 			})
 		})
 	})
