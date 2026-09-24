@@ -129,6 +129,13 @@ func TestTerraformNetworkMirrorInit(t *testing.T) {
 	requireTerraformCapable(t)
 	host := registryHost(t)
 
+	// Terraform parses the provider hostname as part of a relative URL when
+	// querying a network mirror, so a hostname with a port is mistaken for a
+	// URL scheme and the request never reaches the mirror.
+	if strings.Contains(host, ":") {
+		t.Skipf("Terraform cannot install providers from a network mirror when their hostname has a port (%s)", host)
+	}
+
 	dir := setupTerraformMirrorProject(t, host, fmt.Sprintf(`
 terraform {
   required_providers {
