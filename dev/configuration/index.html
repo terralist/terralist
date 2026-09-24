@@ -516,6 +516,61 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upstream-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-cache-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-cache-ttl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-cache-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-cache-retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-auto-create" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-auto-create
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-reject-expired-signing-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-reject-expired-signing-keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rbac-policy-path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2036,6 +2091,61 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#upstream-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-cache-ttl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-cache-ttl
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-cache-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-cache-retention
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-auto-create" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-auto-create
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upstream-reject-expired-signing-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        upstream-reject-expired-signing-keys
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rbac-policy-path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3306,6 +3416,166 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_OAUTH_STATE_SECRET</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="upstream-secret"><code>upstream-secret</code><a class="headerlink" href="#upstream-secret" title="Permanent link">¶</a></h3>
+<p>The secret used to seal the tokens of upstream registries at rest, when an authority <a href="../user-guide/network-mirror/">pulls providers through</a> from a private upstream. Required only to store an upstream token.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--upstream-secret</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_UPSTREAM_SECRET</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="upstream-cache-ttl"><code>upstream-cache-ttl</code><a class="headerlink" href="#upstream-cache-ttl" title="Permanent link">¶</a></h3>
+<p>How long the metadata read from upstream registries, version lists and SHA256SUMS documents, stays fresh before Terralist refreshes it. See <a href="../user-guide/network-mirror/#pulling-providers-through-from-an-upstream">pulling providers through</a>.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>duration</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>5m</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--upstream-cache-ttl</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_UPSTREAM_CACHE_TTL</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="upstream-cache-retention"><code>upstream-cache-retention</code><a class="headerlink" href="#upstream-cache-retention" title="Permanent link">¶</a></h3>
+<p>How long the metadata read from upstream registries is kept once stale, to be served when the upstream is unavailable. Must be at least the TTL.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>duration</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>24h</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--upstream-cache-retention</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_UPSTREAM_CACHE_RETENTION</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="upstream-auto-create"><code>upstream-auto-create</code><a class="headerlink" href="#upstream-auto-create" title="Permanent link">¶</a></h3>
+<p>Comma separated upstream hostnames for which Terralist creates an authority on the first authenticated network mirror request for an unknown namespace. The authority takes the namespace as its name, stands for that upstream namespace with the upstream enabled and the <code>allow</code> policy, and is owned by the caller. Anonymous requests never create authorities.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>string</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>n/a</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--upstream-auto-create</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_UPSTREAM_AUTO_CREATE</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="upstream-reject-expired-signing-keys"><code>upstream-reject-expired-signing-keys</code><a class="headerlink" href="#upstream-reject-expired-signing-keys" title="Permanent link">¶</a></h3>
+<p>Reject <code>SHA256SUMS</code> signatures issued by a signing key whose validity period has ended. Registries keep advertising the key that signed a release after it expired and do not re-sign old releases, so enabling this refuses every provider signed with such a key. Terraform itself accepts them. When accepted, an expired key is logged as a warning.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>type</td>
+<td>bool</td>
+</tr>
+<tr>
+<td>required</td>
+<td>no</td>
+</tr>
+<tr>
+<td>default</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td>cli</td>
+<td><code>--upstream-reject-expired-signing-keys</code></td>
+</tr>
+<tr>
+<td>env</td>
+<td><code>TERRALIST_UPSTREAM_REJECT_EXPIRED_SIGNING_KEYS</code></td>
 </tr>
 </tbody>
 </table>
