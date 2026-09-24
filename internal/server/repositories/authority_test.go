@@ -8,6 +8,8 @@ import (
 	"terralist/pkg/database"
 	"terralist/pkg/database/factory"
 	"terralist/pkg/database/sqlite"
+
+	"github.com/google/uuid"
 )
 
 func newTestAuthorityRepository(t *testing.T) *DefaultAuthorityRepository {
@@ -20,7 +22,7 @@ func newTestAuthorityRepository(t *testing.T) *DefaultAuthorityRepository {
 		t.Fatalf("failed to create test database: %v", err)
 	}
 
-	if err := engine.Handler().AutoMigrate(&authority.Authority{}, &authority.Key{}, &authority.ApiKey{}); err != nil {
+	if err := engine.Handler().AutoMigrate(&authority.Authority{}, &authority.Key{}, &authority.ApiKey{}, &authority.Rule{}); err != nil {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
@@ -85,5 +87,48 @@ func TestAuthorityRepository_ManyAuthoritiesWithoutUpstream(t *testing.T) {
 		if _, err := repo.Upsert(authority.Authority{Name: name, PolicyURL: "https://example.com/" + name, Owner: "owner@example.com"}); err != nil {
 			t.Fatalf("expected authority %s without upstream to be accepted, got: %v", name, err)
 		}
+	}
+}
+
+func TestAuthorityRepository_Rules(t *testing.T) {
+	repo := newTestAuthorityRepository(t)
+
+	a := upstreamAuthority("hashicorp", "hashicorp")
+	a.Rules = []authority.Rule{{Kind: authority.RuleKindProvider, Name: "aws", Version: "*", Effect: authority.EffectDeny}}
+
+	created, err := repo.Upsert(a)
+	if err != nil {
+		t.Fatalf("failed to create authority: %v", err)
+	}
+	if len(created.Rules) != 1 || created.Rules[0].ID == (uuid.UUID{}) {
+		t.Fatalf("expected the rule to be stored with an id, got %+v", created.Rules)
+	}
+
+	found, err := repo.FindByID(created.ID)
+	if err != nil {
+		t.Fatalf("failed to find authority: %v", err)
+	}
+	if len(found.Rules) != 1 || found.Rules[0].Name != "aws" {
+		t.Fatalf("expected the rule to be loaded with the authority, got %+v", found.Rules)
+	}
+
+	byUpstream, err := repo.FindByUpstream("registry.terraform.io", "hashicorp")
+	if err != nil {
+		t.Fatalf("failed to find authority by upstream: %v", err)
+	}
+	if len(byUpstream.Rules) != 1 {
+		t.Fatalf("expected the rule to be loaded by upstream lookup, got %+v", byUpstream.Rules)
+	}
+
+	if err := repo.DeleteRule(found.Rules[0].ID); err != nil {
+		t.Fatalf("failed to delete rule: %v", err)
+	}
+
+	found, err = repo.FindByID(created.ID)
+	if err != nil {
+		t.Fatalf("failed to find authority: %v", err)
+	}
+	if len(found.Rules) != 0 {
+		t.Fatalf("expected no rules after deletion, got %+v", found.Rules)
 	}
 }
