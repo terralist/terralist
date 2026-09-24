@@ -213,3 +213,15 @@ func readJSON(t *testing.T, resp *http.Response) map[string]any {
 	require.NoError(t, json.Unmarshal(data, &result), "response body: %s", string(data))
 	return result
 }
+
+// readJSONArray decodes a JSON array of objects from the response body.
+func readJSONArray(resp *http.Response) ([]map[string]any, error) {
+	defer resp.Body.Close()
+
+	var body []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return nil, err
+	}
+
+	return body, nil
+}

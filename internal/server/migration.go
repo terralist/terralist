@@ -18,6 +18,7 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		&authority.Authority{},
 		&authority.Key{},
 		&authority.ApiKey{},
+		&authority.Rule{},
 		&apikey.ApiKey{},
 		&apikey.Policy{},
 		&provider.Provider{},

@@ -3,18 +3,21 @@ package services
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/secret"
 
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 )
 
 var (
-	ErrKeyNotFound = errors.New("key not found")
+	ErrKeyNotFound  = errors.New("key not found")
+	ErrRuleNotFound = errors.New("rule not found")
 
 	// upstreamHostnameRegexp accepts DNS hostnames with an optional port.
 	upstreamHostnameRegexp = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*(:[0-9]{1,5})?$`)
@@ -54,6 +57,10 @@ type AuthorityService interface {
 	// If no keys are left, the entire authority is removed.
 	RemoveKey(uuid.UUID, uuid.UUID) error
 
+	AddRule(uuid.UUID, authority.RuleDTO) (*authority.RuleDTO, error)
+
+	RemoveRule(uuid.UUID, uuid.UUID) error
+
 	// Delete removes an existing authority.
 	Delete(id uuid.UUID) error
 }
@@ -61,6 +68,10 @@ type AuthorityService interface {
 // DefaultAuthorityService is a concrete implementation of AuthorityService.
 type DefaultAuthorityService struct {
 	AuthorityRepository repositories.AuthorityRepository
+
+	// Sealer protects upstream tokens at rest. Without it, no upstream token
+	// can be stored.
+	Sealer *secret.Sealer
 }
 
 func (s *DefaultAuthorityService) GetByID(id uuid.UUID) (*authority.Authority, error) {
@@ -86,7 +97,7 @@ func (s *DefaultAuthorityService) GetAllByOwner(owner string) ([]*authority.Auth
 func (s *DefaultAuthorityService) Create(in authority.AuthorityCreateDTO) (*authority.AuthorityDTO, error) {
 	a := in.ToAuthority()
 
-	if err := normalizeUpstream(&a); err != nil {
+	if err := s.normalizeUpstream(&a); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +114,16 @@ func (s *DefaultAuthorityService) Update(id uuid.UUID, in authority.AuthorityDTO
 	a := in.ToAuthority()
 	a.ID = id
 
-	if err := normalizeUpstream(&a); err != nil {
+	// A token is never sent back to clients, so an update without one keeps
+	// the token already stored.
+	if a.UpstreamToken == nil {
+		if current, err := s.AuthorityRepository.FindByID(id); err == nil && current.UpstreamToken != nil {
+			a.UpstreamToken = current.UpstreamToken
+			a.UpstreamTokenSealed = true
+		}
+	}
+
+	if err := s.normalizeUpstream(&a); err != nil {
 		return nil, err
 	}
 
@@ -174,17 +194,68 @@ func (s *DefaultAuthorityService) RemoveKey(authorityID uuid.UUID, keyID uuid.UU
 	return err
 }
 
+func (s *DefaultAuthorityService) AddRule(authorityID uuid.UUID, in authority.RuleDTO) (*authority.RuleDTO, error) {
+	rule := in.ToRule()
+	if err := rule.Validate(); err != nil {
+		return nil, err
+	}
+
+	a, err := s.AuthorityRepository.FindByID(authorityID)
+	if err != nil {
+		return nil, err
+	}
+
+	a.Rules = append(a.Rules, rule)
+
+	updated, err := s.AuthorityRepository.Upsert(*a)
+	if err != nil {
+		return nil, err
+	}
+
+	dto := updated.Rules[len(updated.Rules)-1].ToDTO()
+	return &dto, nil
+}
+
+func (s *DefaultAuthorityService) RemoveRule(authorityID uuid.UUID, ruleID uuid.UUID) error {
+	a, err := s.AuthorityRepository.FindByID(authorityID)
+	if err != nil {
+		return err
+	}
+
+	if !lo.ContainsBy(a.Rules, func(r authority.Rule) bool { return r.ID == ruleID }) {
+		return ErrRuleNotFound
+	}
+
+	return s.AuthorityRepository.DeleteRule(ruleID)
+}
+
 func (s *DefaultAuthorityService) Delete(id uuid.UUID) error {
 	return s.AuthorityRepository.Delete(id)
 }
 
-// normalizeUpstream validates the upstream identity of an authority, lowercases
-// the hostname and defaults the namespace to the authority name.
-func normalizeUpstream(a *authority.Authority) error {
+// normalizeUpstream validates the upstream settings of an authority: it
+// lowercases the hostname, defaults the namespace to the authority name and
+// the policy to allow, trims the URL and seals the token.
+func (s *DefaultAuthorityService) normalizeUpstream(a *authority.Authority) error {
+	if a.UpstreamDefaultPolicy == "" {
+		a.UpstreamDefaultPolicy = authority.PolicyAllow
+	}
+
+	if a.UpstreamDefaultPolicy != authority.PolicyAllow && a.UpstreamDefaultPolicy != authority.PolicyDeny {
+		return fmt.Errorf("invalid upstream default policy %q, expected %s or %s", a.UpstreamDefaultPolicy, authority.PolicyAllow, authority.PolicyDeny)
+	}
+
 	if a.UpstreamHostname == nil {
 		if a.UpstreamNamespace != nil {
 			return fmt.Errorf("an upstream namespace requires an upstream hostname")
 		}
+
+		if a.UpstreamEnabled {
+			return fmt.Errorf("enabling the upstream requires an upstream hostname")
+		}
+
+		a.UpstreamURL = nil
+		a.UpstreamToken = nil
 
 		return nil
 	}
@@ -202,6 +273,30 @@ func normalizeUpstream(a *authority.Authority) error {
 
 	if !upstreamNamespaceRegexp.MatchString(*a.UpstreamNamespace) {
 		return fmt.Errorf("invalid upstream namespace %q", *a.UpstreamNamespace)
+	}
+
+	if a.UpstreamURL != nil {
+		parsed, err := url.Parse(*a.UpstreamURL)
+		if err != nil || parsed.Host == "" || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+			return fmt.Errorf("invalid upstream URL %q, expected an http or https URL", *a.UpstreamURL)
+		}
+
+		trimmed := strings.TrimRight(*a.UpstreamURL, "/")
+		a.UpstreamURL = &trimmed
+	}
+
+	if a.UpstreamToken != nil && !a.UpstreamTokenSealed {
+		if s.Sealer == nil {
+			return fmt.Errorf("storing an upstream token requires the upstream-secret option")
+		}
+
+		sealed, err := s.Sealer.Seal(*a.UpstreamToken)
+		if err != nil {
+			return fmt.Errorf("could not seal the upstream token: %w", err)
+		}
+
+		a.UpstreamToken = &sealed
+		a.UpstreamTokenSealed = true
 	}
 
 	return nil

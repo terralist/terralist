@@ -11,6 +11,7 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
 	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 
@@ -47,6 +48,12 @@ type DefaultProviderController struct {
 	Authentication   *handlers.Authentication
 	Authorization    *handlers.Authorization
 	AnonymousRead    bool
+
+	// Tokens signs the download links that point at the network mirror, where
+	// packages not stored yet are fetched from. MirrorBaseURL is where those
+	// links start.
+	Tokens        *handlers.PackageTokens
+	MirrorBaseURL string
 }
 
 func (c *DefaultProviderController) Paths() []string {
@@ -85,7 +92,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 
-			d, err := c.ProviderService.Get(namespace, name)
+			d, err := c.ProviderService.Get(namespace, name, c.mayFetch(ctx, namespace, name))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": err.Error(),
@@ -107,13 +114,23 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			os := ctx.Param("os")
 			arch := ctx.Param("arch")
 
-			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch)
+			fetch := c.mayFetch(ctx, namespace, name)
+
+			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch, fetch)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
 			}
+
+			if err := c.signMirrorDownload(dto, namespace, fetch); err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
 			ctx.JSON(http.StatusOK, dto)
 		},
 	)
@@ -245,6 +262,36 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
+	// Fetch the packages of a version from the upstream registry
+	api.POST(
+		"/:namespace/:name/:version/fetch",
+		requireAuthorization(rbac.ActionCreate, slugComposer),
+		func(ctx *gin.Context) {
+			var body struct {
+				Platforms []string `json:"platforms"`
+			}
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			if len(body.Platforms) == 0 {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"expecting at least one os_arch platform to fetch"},
+				})
+				return
+			}
+
+			results := c.ProviderService.Fetch(ctx.Param("namespace"), ctx.Param("name"), ctx.Param("version"), body.Platforms)
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"results": results,
+			})
+		},
+	)
+
 	// Delete a provider
 	api.DELETE(
 		"/:namespace/:name/remove",
@@ -295,6 +342,39 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			})
 		},
 	)
+}
+
+// signMirrorDownload appends a package token to a download URL pointing at the
+// network mirror, since Terraform downloads packages without credentials.
+func (c *DefaultProviderController) signMirrorDownload(dto *provider.DownloadPlatformDTO, namespace string, fetch bool) error {
+	if c.MirrorBaseURL == "" || !strings.HasPrefix(dto.DownloadUrl, c.MirrorBaseURL+"/") {
+		return nil
+	}
+
+	pkg, ok := provider.ParsePackageFileName(dto.FileName)
+	if !ok {
+		return nil
+	}
+
+	token, err := c.Tokens.Sign(namespace, pkg, fetch)
+	if err != nil {
+		return err
+	}
+
+	dto.DownloadUrl = fmt.Sprintf("%s?token=%s", dto.DownloadUrl, token)
+
+	return nil
+}
+
+// mayFetch reports whether the caller may create packages of the provider,
+// which is what fetching them from the upstream registry amounts to.
+func (c *DefaultProviderController) mayFetch(ctx *gin.Context, namespace, name string) bool {
+	user, err := handlers.GetFromContext[auth.User](ctx, "user")
+	if err != nil {
+		return false
+	}
+
+	return c.Authorization.CanPerform(*user, rbac.ResourceProviders, rbac.ActionCreate, fmt.Sprintf("%s/%s", namespace, name))
 }
 
 // readPackagesUpload fills the upload with the files of the multipart form: the

@@ -10,12 +10,13 @@ import (
 
 type Platform struct {
 	entity.Entity
-	VersionID    uuid.UUID
+	VersionID    uuid.UUID `gorm:"uniqueIndex:idx_provider_platforms_platform"`
 	Version      Version
-	System       string `gorm:"not null"`
-	Architecture string `gorm:"not null"`
+	System       string `gorm:"not null;uniqueIndex:idx_provider_platforms_platform"`
+	Architecture string `gorm:"not null;uniqueIndex:idx_provider_platforms_platform"`
 	Location     string `gorm:"not null"`
 	ShaSum       string `gorm:"not null"`
+	Origin       string `gorm:"not null;default:manual"`
 
 	// H1 is the package hash in Terraform's h1 scheme, when the uploader
 	// provided it. Terralist never computes it.
@@ -60,14 +61,21 @@ type VersionListPlatformDTO struct {
 	Architecture string `json:"arch"`
 }
 
+// PackageFileName returns the file name of a provider package as published by
+// registries and by `terraform providers mirror`.
+func PackageFileName(name, version, system, architecture string) string {
+	return fmt.Sprintf("terraform-provider-%s_%s_%s_%s.zip", name, version, system, architecture)
+}
+
+// FetchResultDTO reports the outcome of fetching one platform from the
+// upstream registry.
+type FetchResultDTO struct {
+	Platform string `json:"platform"`
+	Error    string `json:"error,omitempty"`
+}
+
 func (p Platform) ToDownloadPlatformDTO(keys SigningKeysDTO) DownloadPlatformDTO {
-	fileName := fmt.Sprintf(
-		"terraform-provider-%s_%s_%s_%s.zip",
-		p.Version.Provider.Name,
-		p.Version.Version,
-		p.System,
-		p.Architecture,
-	)
+	fileName := PackageFileName(p.Version.Provider.Name, p.Version.Version, p.System, p.Architecture)
 
 	return DownloadPlatformDTO{
 		System:              p.System,

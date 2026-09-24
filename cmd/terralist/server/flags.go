@@ -140,6 +140,12 @@ const (
 	GitHubAppInstallationIDFlag = "gh-app-installation-id"
 	GitHubAppPrivateKeyPathFlag = "gh-app-private-key-path"
 	GitHubBaseURLFlag           = "gh-base-url"
+
+	UpstreamSecretFlag                   = "upstream-secret"
+	UpstreamCacheTTLFlag                 = "upstream-cache-ttl"
+	UpstreamCacheRetentionFlag           = "upstream-cache-retention"
+	UpstreamAutoCreateFlag               = "upstream-auto-create"
+	UpstreamRejectExpiredSigningKeysFlag = "upstream-reject-expired-signing-keys"
 )
 
 var flags = map[string]cli.Flag{
@@ -533,5 +539,24 @@ var flags = map[string]cli.Flag{
 	GitHubBaseURLFlag: &cli.StringFlag{
 		Description:  "The GitHub base domain if you are using GitHub Enterprise. (default: 'github.com')",
 		DefaultValue: "github.com",
+	},
+
+	UpstreamSecretFlag: &cli.StringFlag{
+		Description: "Secret used to seal the tokens of upstream registries at rest. Required only to store an upstream token.",
+	},
+	UpstreamCacheTTLFlag: &cli.StringFlag{
+		Description:  "How long metadata read from upstream registries stays fresh before it is refreshed.",
+		DefaultValue: "5m",
+	},
+	UpstreamCacheRetentionFlag: &cli.StringFlag{
+		Description:  "How long metadata read from upstream registries is kept to be served when the upstream is unavailable.",
+		DefaultValue: "24h",
+	},
+	UpstreamAutoCreateFlag: &cli.StringFlag{
+		Description: "Comma separated upstream hostnames for which an authority is created on the first authenticated network mirror request for an unknown namespace.",
+	},
+	UpstreamRejectExpiredSigningKeysFlag: &cli.BoolFlag{
+		Description:  "Reject SHA256SUMS signatures issued by an expired signing key. Registries keep advertising expired keys for existing releases, so enabling this refuses providers signed with them.",
+		DefaultValue: false,
 	},
 }

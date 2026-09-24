@@ -35,6 +35,8 @@ type AuthorityRepository interface {
 
 	// Delete removes an authority with all its data (api keys, providers).
 	Delete(uuid.UUID) error
+
+	DeleteRule(uuid.UUID) error
 }
 
 // DefaultAuthorityRepository is a concrete implementation of AuthorityRepository.
@@ -49,6 +51,7 @@ func (r *DefaultAuthorityRepository) FindByID(id uuid.UUID) (*authority.Authorit
 		Where("id = ?", id).
 		Preload("Keys").
 		Preload("ApiKeys").
+		Preload("Rules").
 		First(&a).
 		Error
 
@@ -70,6 +73,7 @@ func (r *DefaultAuthorityRepository) FindByName(name string) (*authority.Authori
 		Where("name = ?", name).
 		Preload("Keys").
 		Preload("ApiKeys").
+		Preload("Rules").
 		First(&a).
 		Error
 
@@ -91,6 +95,7 @@ func (r *DefaultAuthorityRepository) FindByUpstream(hostname, namespace string) 
 		Where("LOWER(upstream_hostname) = LOWER(?) AND LOWER(upstream_namespace) = LOWER(?)", hostname, namespace).
 		Preload("Keys").
 		Preload("ApiKeys").
+		Preload("Rules").
 		First(&a).
 		Error
 
@@ -111,6 +116,7 @@ func (r *DefaultAuthorityRepository) FindAll() ([]*authority.Authority, error) {
 	err := r.Database.Handler().
 		Preload("Keys").
 		Preload("ApiKeys").
+		Preload("Rules").
 		Preload("Modules").
 		Preload("Modules.Versions").
 		Preload("Providers").
@@ -141,6 +147,7 @@ func (r *DefaultAuthorityRepository) FindAllByOwner(owner string) ([]*authority.
 		Where(&authority.Authority{Owner: owner}).
 		Preload("Keys").
 		Preload("ApiKeys").
+		Preload("Rules").
 		Find(&as).
 		Error
 
@@ -207,4 +214,8 @@ func (r *DefaultAuthorityRepository) Delete(id uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (r *DefaultAuthorityRepository) DeleteRule(id uuid.UUID) error {
+	return r.Database.Handler().Where("id = ?", id).Delete(&authority.Rule{}).Error
 }

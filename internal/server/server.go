@@ -26,6 +26,8 @@ import (
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
 	"terralist/pkg/rbac"
+	"terralist/pkg/registry"
+	"terralist/pkg/secret"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/pkg/storage/local"
@@ -327,6 +329,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	authorityService := &services.DefaultAuthorityService{
 		AuthorityRepository: authorityRepository,
 	}
+	if userConfig.UpstreamSecret != "" {
+		authorityService.Sealer = secret.NewSealer(userConfig.UpstreamSecret)
+	}
 
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{
 		Database: config.Database,
@@ -401,11 +406,25 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Database: config.Database,
 	}
 
+	upstreamService, err := newUpstreamService(userConfig, config.Cache, authorityService.Sealer)
+	if err != nil {
+		return nil, err
+	}
+
+	packageTokens, err := handlers.NewPackageTokens(userConfig.TokenSigningSecret)
+	if err != nil {
+		return nil, fmt.Errorf("could not create the package token signer: %w", err)
+	}
+
+	mirrorBaseURL := strings.TrimRight(hostURL.String(), "/") + "/providers/" + hostURL.Host
+
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
 		Resolver:           config.ProvidersResolver,
 		Fetcher:            file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
+		Upstream:           upstreamService,
+		MirrorBaseURL:      mirrorBaseURL,
 	}
 
 	providerController := &controllers.DefaultProviderController{
@@ -415,6 +434,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
+		Tokens:           packageTokens,
+		MirrorBaseURL:    mirrorBaseURL,
 	}
 
 	apiV1Group.Register(providerController)
@@ -424,8 +445,10 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		Authentication:   authentication,
 		Authorization:    authorization,
+		Tokens:           packageTokens,
 		Hostname:         hostURL.Host,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
+		AutoCreate:       splitHostnames(userConfig.UpstreamAutoCreate),
 	}
 
 	// The Provider Network Mirror Protocol does not use service discovery,
@@ -631,4 +654,41 @@ func (s *Server) waitForDrain() {
 			log.Info().Msg("Waiting for in-progress operations to complete...")
 		}
 	}
+}
+
+// upstreamRequestTimeout bounds every metadata request to an upstream registry.
+const upstreamRequestTimeout = 30 * time.Second
+
+// newUpstreamService builds the service reading upstream registries from the
+// user configuration.
+func newUpstreamService(userConfig UserConfig, c cache.Cache, sealer *secret.Sealer) (*services.DefaultUpstreamService, error) {
+	ttl, err := time.ParseDuration(userConfig.UpstreamCacheTTL)
+	if err != nil || ttl <= 0 {
+		return nil, fmt.Errorf("invalid upstream cache TTL %q", userConfig.UpstreamCacheTTL)
+	}
+
+	retention, err := time.ParseDuration(userConfig.UpstreamCacheRetention)
+	if err != nil || retention < ttl {
+		return nil, fmt.Errorf("invalid upstream cache retention %q, expected a duration of at least the TTL", userConfig.UpstreamCacheRetention)
+	}
+
+	return &services.DefaultUpstreamService{
+		Cache:      c,
+		TTL:        ttl,
+		Retention:  retention,
+		HTTPClient: file.NewHTTPClient(userConfig.FetchAllowPrivateAddresses, upstreamRequestTimeout),
+		Verifier:   registry.SignatureVerifier{AcceptExpiredKeys: !userConfig.UpstreamRejectExpiredKeys},
+		Sealer:     sealer,
+	}, nil
+}
+
+func splitHostnames(value string) []string {
+	var hostnames []string
+	for _, hostname := range strings.Split(value, ",") {
+		if hostname = strings.TrimSpace(hostname); hostname != "" {
+			hostnames = append(hostnames, hostname)
+		}
+	}
+
+	return hostnames
 }

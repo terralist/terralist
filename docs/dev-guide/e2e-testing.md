@@ -78,7 +78,7 @@ The Terraform tests use `localhost.direct` as the registry hostname (a public do
 Tests bootstrap their own data at startup. No database snapshots or fixture files are needed. The Go `TestMain` function:
 
 1. Creates an S3 bucket via the AWS SDK
-2. Creates a `hashicorp` authority standing for `registry.terraform.io/hashicorp` via the master API key
+2. Creates a `hashicorp` authority standing for `registry.terraform.io/hashicorp` via the master API key, with the upstream enabled under the `deny` policy and rules allowing the `random` provider except one version
 3. Fetches the null provider (v3.2.4) metadata from the Terraform registry and uploads it
 4. Downloads the null provider packages v3.2.1 and v3.2.0 for the current platform and uploads them as package files, the first without and the second with its `SHA256SUMS` file and signature
 5. Uploads the `hashicorp/subnets/cidr` module (v1.0.0) from GitHub

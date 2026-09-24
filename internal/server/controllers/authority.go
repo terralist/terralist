@@ -235,6 +235,57 @@ func (c *DefaultAuthorityController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 
 	api.POST(
+		"/:id/rules",
+		requireAuthorization(rbac.ActionUpdate, authorityComposer),
+		func(ctx *gin.Context) {
+			authorityId := handlers.MustGetFromContext[authority.Authority](ctx, "authority").ID
+
+			var body authority.RuleDTO
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			dto, err := c.AuthorityService.AddRule(authorityId, body)
+			if err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, dto)
+		},
+	)
+
+	api.DELETE(
+		"/:id/rules/:ruleId",
+		requireAuthorization(rbac.ActionUpdate, authorityComposer),
+		func(ctx *gin.Context) {
+			authorityId := handlers.MustGetFromContext[authority.Authority](ctx, "authority").ID
+
+			id, err := uuid.Parse(ctx.Param("ruleId"))
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			if err := c.AuthorityService.RemoveRule(authorityId, id); err != nil {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, true)
+		},
+	)
+
+	api.POST(
 		"/:id/api-keys",
 		requireAuthorization(rbac.ActionUpdate, authorityComposer),
 		func(ctx *gin.Context) {

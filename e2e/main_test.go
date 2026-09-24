@@ -28,6 +28,11 @@ const (
 	// nullSignedVersion is uploaded from packages together with its
 	// SHA256SUMS file and signature, so it is served through both protocols.
 	nullSignedVersion = "3.2.0"
+
+	// upstreamProvider is never uploaded and is served by pulling it through
+	// from registry.terraform.io, except upstreamDeniedVersion.
+	upstreamProvider      = "random"
+	upstreamDeniedVersion = "3.5.0"
 )
 
 // bootstrapState holds data created during bootstrap that tests can reference.
@@ -144,20 +149,59 @@ func createS3Bucket() error {
 func createAuthorities() error {
 	// The hashicorp authority stands for the hashicorp namespace of the public
 	// registry, so its providers are also served through the network mirror
-	// under their registry.terraform.io address.
-	id, err := createAuthority(map[string]string{
-		"name":              "hashicorp",
-		"upstream_hostname": "registry.terraform.io",
+	// under their registry.terraform.io address. Its upstream is enabled with
+	// the deny policy, so only the providers the rules allow are pulled
+	// through: the random provider, except one denied version.
+	id, err := createAuthority(map[string]any{
+		"name":                    "hashicorp",
+		"upstream_hostname":       "registry.terraform.io",
+		"upstream_enabled":        true,
+		"upstream_default_policy": "deny",
 	})
 	if err != nil {
 		return err
 	}
 	bootstrap.HashicorpAuthorityID = id
 
+	for _, rule := range []map[string]string{
+		{"kind": "provider", "name": upstreamProvider, "version": "*", "effect": "allow"},
+		{"kind": "provider", "name": upstreamProvider, "version": upstreamDeniedVersion, "effect": "deny"},
+	} {
+		if _, err := addRule(id, rule); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
-func createAuthority(body map[string]string) (string, error) {
+// addRule adds an upstream rule to an authority and returns the rule id.
+func addRule(authorityID string, rule map[string]string) (string, error) {
+	resp, err := doBootstrapRequest(apiURL("/v1/api/authorities/%s/rules", authorityID), rule)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("expected 200, got %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+
+	id, ok := result["id"].(string)
+	if !ok {
+		return "", fmt.Errorf("rule response missing 'id' field")
+	}
+
+	return id, nil
+}
+
+func createAuthority(body map[string]any) (string, error) {
 	resp, err := doBootstrapRequest(apiURL("/v1/api/authorities"), body)
 	if err != nil {
 		return "", err

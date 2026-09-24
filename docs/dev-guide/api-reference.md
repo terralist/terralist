@@ -353,6 +353,88 @@ curl -L -X POST \
     }
     ```
 
+## Fetch provider packages from the upstream
+
+```
+POST /v1/api/providers/:namespace/:name/:version/fetch
+```
+
+Download the given `os_arch` platforms of a version from the upstream registry the authority stands for into storage, so that later installs are served without reaching the upstream. Requires the `create` action on the provider. See [pulling providers through](../user-guide/network-mirror.md#pulling-providers-through-from-an-upstream).
+
+### Example Request
+
+``` shell
+curl -L -X POST \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -d '{"platforms": ["linux_amd64", "darwin_arm64"]}' \
+  http://localhost:5758/v1/api/providers/hashicorp/aws/5.0.0/fetch
+```
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    {
+      "results": [
+        {"platform": "linux_amd64"},
+        {"platform": "darwin_arm64", "error": "version not allowed by the upstream rules"}
+      ]
+    }
+    ```
+
+=== "Status 400"
+
+    ``` json
+    {
+      "errors": [
+        "expecting at least one os_arch platform to fetch"
+      ]
+    }
+    ```
+
+## Manage upstream rules
+
+```
+POST   /v1/api/authorities/:id/rules
+DELETE /v1/api/authorities/:id/rules/:ruleId
+```
+
+Add or remove a rule deciding which versions an authority serves from its upstream registry. `kind` is `provider` or `module`, `name` and `version` are globs, `effect` is `allow` or `deny`. Both require the `update` action on the authority. The rules of an authority are returned with the authority itself.
+
+### Example Request
+
+``` shell
+curl -L -X POST \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  -d '{"kind": "provider", "name": "aws", "version": "5.*", "effect": "deny"}' \
+  http://localhost:5758/v1/api/authorities/AUTHORITY_ID/rules
+```
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    {
+      "id": "b3f1c2d4-...",
+      "kind": "provider",
+      "name": "aws",
+      "version": "5.*",
+      "effect": "deny"
+    }
+    ```
+
+=== "Status 409"
+
+    ``` json
+    {
+      "errors": [
+        "invalid rule kind \"bucket\", expected provider or module"
+      ]
+    }
+    ```
+
 ## Remove a provider
 
 ```

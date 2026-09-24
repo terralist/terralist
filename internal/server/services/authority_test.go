@@ -7,6 +7,7 @@ import (
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/database/entity"
+	"terralist/pkg/secret"
 
 	"github.com/google/uuid"
 	"github.com/mazen160/go-random"
@@ -489,6 +490,7 @@ func TestUpdateAuthorityUpstream(t *testing.T) {
 		}
 
 		id, _ := uuid.NewRandom()
+		mockAuthorityRepository.On("FindByID", id).Return(nil, errors.New("")).Maybe()
 
 		Convey("Given a hostname with a port and an explicit namespace", func() {
 			dto := authority.AuthorityDTO{
@@ -582,4 +584,267 @@ func TestGetAuthorityByUpstream(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestAuthorityUpstreamSettings(t *testing.T) {
+	Convey("Subject: Validating the upstream connection settings of an authority", t, func() {
+		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		sealer := secret.NewSealer("test-secret")
+
+		authorityService := &DefaultAuthorityService{
+			AuthorityRepository: mockAuthorityRepository,
+			Sealer:              sealer,
+		}
+
+		var saved authority.Authority
+		expectUpsert := func() {
+			mockAuthorityRepository.
+				On("Upsert", mock.AnythingOfType("authority.Authority")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(authority.Authority)
+				}).
+				Return(&authority.Authority{Name: "hashicorp"}, nil)
+		}
+
+		base := func() authority.AuthorityCreateDTO {
+			return authority.AuthorityCreateDTO{
+				Name:             "hashicorp",
+				PolicyURL:        "https://example.com/hashicorp",
+				Owner:            "test@example.com",
+				UpstreamHostname: "registry.terraform.io",
+			}
+		}
+
+		Convey("Given no default policy", func() {
+			expectUpsert()
+			_, err := authorityService.Create(base())
+
+			Convey("Then the policy should default to allow", func() {
+				So(err, ShouldBeNil)
+				So(saved.UpstreamDefaultPolicy, ShouldEqual, authority.PolicyAllow)
+			})
+		})
+
+		Convey("Given an unknown default policy", func() {
+			dto := base()
+			dto.UpstreamPolicy = "sometimes"
+			_, err := authorityService.Create(dto)
+
+			Convey("Then it should be rejected", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("Given an upstream URL", func() {
+			Convey("When it is a valid https URL", func() {
+				dto := base()
+				dto.UpstreamURL = "https://mirror.example.com/registry/"
+				expectUpsert()
+				_, err := authorityService.Create(dto)
+
+				Convey("Then it should be stored without the trailing slash", func() {
+					So(err, ShouldBeNil)
+					So(*saved.UpstreamURL, ShouldEqual, "https://mirror.example.com/registry")
+				})
+			})
+
+			Convey("When it is not an http URL", func() {
+				dto := base()
+				dto.UpstreamURL = "ftp://mirror.example.com"
+				_, err := authorityService.Create(dto)
+
+				Convey("Then it should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given the upstream is enabled without a hostname", func() {
+			dto := base()
+			dto.UpstreamHostname = ""
+			dto.UpstreamEnabled = true
+			_, err := authorityService.Create(dto)
+
+			Convey("Then it should be rejected", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("Given a token", func() {
+			dto := base()
+			dto.UpstreamToken = "ghp_secret"
+			expectUpsert()
+			_, err := authorityService.Create(dto)
+
+			Convey("Then it should be sealed before it is stored", func() {
+				So(err, ShouldBeNil)
+				So(*saved.UpstreamToken, ShouldNotContainSubstring, "ghp_secret")
+				opened, err := sealer.Open(*saved.UpstreamToken)
+				So(err, ShouldBeNil)
+				So(opened, ShouldEqual, "ghp_secret")
+			})
+		})
+
+		Convey("Given a token without a sealer configured", func() {
+			authorityService.Sealer = nil
+			dto := base()
+			dto.UpstreamToken = "ghp_secret"
+			_, err := authorityService.Create(dto)
+
+			Convey("Then it should be rejected", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "upstream-secret")
+			})
+		})
+	})
+}
+
+func TestUpdateAuthorityKeepsToken(t *testing.T) {
+	Convey("Subject: Updating an authority that has an upstream token", t, func() {
+		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+		sealer := secret.NewSealer("test-secret")
+
+		authorityService := &DefaultAuthorityService{
+			AuthorityRepository: mockAuthorityRepository,
+			Sealer:              sealer,
+		}
+
+		id, _ := uuid.NewRandom()
+		sealed, _ := sealer.Seal("ghp_old")
+		hostname := "registry.terraform.io"
+
+		mockAuthorityRepository.On("FindByID", id).Return(&authority.Authority{
+			Entity:           entity.Entity{ID: id},
+			Name:             "hashicorp",
+			UpstreamHostname: &hostname,
+			UpstreamToken:    &sealed,
+		}, nil).Maybe()
+
+		var saved authority.Authority
+		mockAuthorityRepository.
+			On("Upsert", mock.AnythingOfType("authority.Authority")).
+			Run(func(args mock.Arguments) {
+				saved, _ = args.Get(0).(authority.Authority)
+			}).
+			Return(&authority.Authority{Name: "hashicorp"}, nil)
+
+		Convey("When the update carries no token", func() {
+			_, err := authorityService.Update(id, authority.AuthorityDTO{
+				Name:             "hashicorp",
+				PolicyURL:        "https://example.com/hashicorp",
+				UpstreamHostname: hostname,
+				UpstreamEnabled:  true,
+			})
+
+			Convey("Then the stored token should be kept", func() {
+				So(err, ShouldBeNil)
+				So(*saved.UpstreamToken, ShouldEqual, sealed)
+				So(saved.UpstreamEnabled, ShouldBeTrue)
+			})
+		})
+
+		Convey("When the update carries a new token", func() {
+			_, err := authorityService.Update(id, authority.AuthorityDTO{
+				Name:             "hashicorp",
+				PolicyURL:        "https://example.com/hashicorp",
+				UpstreamHostname: hostname,
+				UpstreamToken:    "ghp_new",
+			})
+
+			Convey("Then the new token should be sealed and stored", func() {
+				So(err, ShouldBeNil)
+				opened, _ := sealer.Open(*saved.UpstreamToken)
+				So(opened, ShouldEqual, "ghp_new")
+			})
+		})
+
+		Convey("When the update drops the upstream hostname", func() {
+			_, err := authorityService.Update(id, authority.AuthorityDTO{
+				Name:      "hashicorp",
+				PolicyURL: "https://example.com/hashicorp",
+			})
+
+			Convey("Then the token should be dropped with it", func() {
+				So(err, ShouldBeNil)
+				So(saved.UpstreamToken, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestAuthorityRules(t *testing.T) {
+	Convey("Subject: Managing the upstream rules of an authority", t, func() {
+		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
+
+		authorityService := &DefaultAuthorityService{
+			AuthorityRepository: mockAuthorityRepository,
+		}
+
+		id, _ := uuid.NewRandom()
+		ruleID, _ := uuid.NewRandom()
+		existing := authority.Rule{
+			Entity:  entity.Entity{ID: ruleID},
+			Kind:    authority.RuleKindProvider,
+			Name:    "aws",
+			Version: "*",
+			Effect:  authority.EffectDeny,
+		}
+
+		Convey("When a valid rule is added", func() {
+			mockAuthorityRepository.On("FindByID", id).Return(&authority.Authority{Entity: entity.Entity{ID: id}}, nil)
+
+			var saved authority.Authority
+			mockAuthorityRepository.
+				On("Upsert", mock.AnythingOfType("authority.Authority")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(authority.Authority)
+				}).
+				Return(&authority.Authority{Rules: []authority.Rule{existing}}, nil)
+
+			dto, err := authorityService.AddRule(id, authority.RuleDTO{Kind: "provider", Name: "aws", Version: "*", Effect: "deny"})
+
+			Convey("Then it should be stored and returned", func() {
+				So(err, ShouldBeNil)
+				So(len(saved.Rules), ShouldEqual, 1)
+				So(saved.Rules[0].Name, ShouldEqual, "aws")
+				So(dto.ID, ShouldEqual, ruleID.String())
+			})
+		})
+
+		Convey("When an invalid rule is added", func() {
+			mockAuthorityRepository.On("FindByID", id).Return(&authority.Authority{Entity: entity.Entity{ID: id}}, nil).Maybe()
+
+			_, err := authorityService.AddRule(id, authority.RuleDTO{Kind: "bucket", Name: "aws", Version: "*", Effect: "deny"})
+
+			Convey("Then it should be rejected without storing", func() {
+				So(err, ShouldNotBeNil)
+				mockAuthorityRepository.AssertNotCalled(t, "Upsert", mock.Anything)
+			})
+		})
+
+		Convey("When an existing rule is removed", func() {
+			mockAuthorityRepository.On("FindByID", id).Return(&authority.Authority{Entity: entity.Entity{ID: id}, Rules: []authority.Rule{existing}}, nil)
+			mockAuthorityRepository.On("DeleteRule", ruleID).Return(nil)
+
+			err := authorityService.RemoveRule(id, ruleID)
+
+			Convey("Then it should be deleted", func() {
+				So(err, ShouldBeNil)
+			})
+		})
+
+		Convey("When an unknown rule is removed", func() {
+			mockAuthorityRepository.On("FindByID", id).Return(&authority.Authority{Entity: entity.Entity{ID: id}}, nil)
+
+			err := authorityService.RemoveRule(id, ruleID)
+
+			Convey("Then it should be reported as not found", func() {
+				So(errors.Is(err, ErrRuleNotFound), ShouldBeTrue)
+			})
+		})
+	})
+}
+
+func newTestSealer() *secret.Sealer {
+	return secret.NewSealer("test-secret")
 }

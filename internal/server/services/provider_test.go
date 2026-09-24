@@ -38,7 +38,7 @@ func TestGetProvider(t *testing.T) {
 					}, nil)
 
 				Convey("When the service is queried", func() {
-					resp, err := providerService.Get(namespace, name)
+					resp, err := providerService.Get(namespace, name, false)
 
 					Convey("A provider should be returned", func() {
 						So(err, ShouldBeNil)
@@ -59,7 +59,7 @@ func TestGetProvider(t *testing.T) {
 					}, nil)
 
 				Convey("When the service is queried", func() {
-					resp, err := providerService.Get(namespace, name)
+					resp, err := providerService.Get(namespace, name, false)
 
 					Convey("Only the signed version should be listed", func() {
 						So(err, ShouldBeNil)
@@ -75,7 +75,7 @@ func TestGetProvider(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					resp, err := providerService.Get(namespace, name)
+					resp, err := providerService.Get(namespace, name, false)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
@@ -112,7 +112,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+					info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 					Convey("An error should be returned", func() {
 						So(info, ShouldBeNil)
@@ -130,7 +130,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 					}, nil)
 
 				Convey("When the service is queried", func() {
-					info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+					info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 					Convey("An error should be returned", func() {
 						So(info, ShouldBeNil)
@@ -167,7 +167,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 					mockProviderPlatform.Location = location
 
 					Convey("When the service is queried", func() {
-						info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+						info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 						Convey("A response with download info should be returned", func() {
 							So(info, ShouldNotBeNil)
@@ -186,7 +186,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 							Return("", errors.New(""))
 
 						Convey("When the service is queried", func() {
-							info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+							info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 							Convey("An error should be returned", func() {
 								So(info, ShouldBeNil)
@@ -207,7 +207,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 							Return("", errors.New(""))
 
 						Convey("When the service is queried", func() {
-							info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+							info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 							Convey("An error should be returned", func() {
 								So(info, ShouldBeNil)
@@ -233,7 +233,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 							Return("", errors.New(""))
 
 						Convey("When the service is queried", func() {
-							info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+							info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 							Convey("An error should be returned", func() {
 								So(info, ShouldBeNil)
@@ -260,7 +260,7 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 							Return(binaryLocation, nil)
 
 						Convey("When the service is queried", func() {
-							info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+							info, err := providerService.GetVersion(namespace, name, version, system, architecture, false)
 
 							Convey("A response with download info should be returned", func() {
 								So(info, ShouldNotBeNil)
@@ -722,7 +722,7 @@ func TestListMirrorVersions(t *testing.T) {
 					}, nil)
 
 				Convey("When the service is queried", func() {
-					resp, err := providerService.ListMirrorVersions(namespace, name)
+					resp, err := providerService.ListMirrorVersions(namespace, name, false)
 
 					Convey("Every version should map to an empty object", func() {
 						So(err, ShouldBeNil)
@@ -740,7 +740,7 @@ func TestListMirrorVersions(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					resp, err := providerService.ListMirrorVersions(namespace, name)
+					resp, err := providerService.ListMirrorVersions(namespace, name, false)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
@@ -772,7 +772,7 @@ func TestListMirrorArchives(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+					resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0", false)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
@@ -799,7 +799,7 @@ func TestListMirrorArchives(t *testing.T) {
 
 				Convey("If the version does not exist", func() {
 					Convey("When the service is queried", func() {
-						resp, err := providerService.ListMirrorArchives(namespace, name, "9.9.9")
+						resp, err := providerService.ListMirrorArchives(namespace, name, "9.9.9", false)
 
 						Convey("An error should be returned", func() {
 							So(err, ShouldNotBeNil)
@@ -813,7 +813,7 @@ func TestListMirrorArchives(t *testing.T) {
 					mockResolver.On("Find", "providers/darwin.zip").Return("https://storage/darwin.zip", nil)
 
 					Convey("When the service is queried", func() {
-						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0", false)
 
 						Convey("Every platform should be listed with its resolved url, its h1 hash when known and its zh hash", func() {
 							So(err, ShouldBeNil)
@@ -829,7 +829,7 @@ func TestListMirrorArchives(t *testing.T) {
 					mockResolver.On("Find", mock.Anything).Return("", errors.New(""))
 
 					Convey("When the service is queried", func() {
-						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0", false)
 
 						Convey("An error should be returned", func() {
 							So(err, ShouldNotBeNil)
@@ -868,7 +868,7 @@ func TestListMirrorArchivesWithoutResolver(t *testing.T) {
 			}, nil)
 
 		Convey("When the service is queried", func() {
-			resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+			resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0", false)
 
 			Convey("The stored location should be served as is", func() {
 				So(err, ShouldBeNil)
