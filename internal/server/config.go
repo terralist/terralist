@@ -21,4 +21,8 @@ type UserConfig struct {
 	MasterApiKey               string `mapstructure:"master-api-key"`
 	AuthTokenExpiration        string `mapstructure:"auth-token-expiration"`
 	UpstreamSecret             string `mapstructure:"upstream-secret"`
+	UpstreamCacheTTL           string `mapstructure:"upstream-cache-ttl"`
+	UpstreamCacheRetention     string `mapstructure:"upstream-cache-retention"`
+	UpstreamAutoCreate         string `mapstructure:"upstream-auto-create"`
+	UpstreamRejectExpiredKeys  bool   `mapstructure:"upstream-reject-expired-signing-keys"`
 }

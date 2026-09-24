@@ -26,6 +26,7 @@ import (
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
 	"terralist/pkg/rbac"
+	"terralist/pkg/registry"
 	"terralist/pkg/secret"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
@@ -405,11 +406,18 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Database: config.Database,
 	}
 
+	upstreamService, err := newUpstreamService(userConfig, config.Cache, authorityService.Sealer)
+	if err != nil {
+		return nil, err
+	}
+
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
 		Resolver:           config.ProvidersResolver,
 		Fetcher:            file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
+		Upstream:           upstreamService,
+		MirrorBaseURL:      strings.TrimRight(hostURL.String(), "/") + "/providers/" + hostURL.Host,
 	}
 
 	providerController := &controllers.DefaultProviderController{
@@ -430,6 +438,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authorization:    authorization,
 		Hostname:         hostURL.Host,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
+		AutoCreate:       splitHostnames(userConfig.UpstreamAutoCreate),
 	}
 
 	// The Provider Network Mirror Protocol does not use service discovery,
@@ -635,4 +644,42 @@ func (s *Server) waitForDrain() {
 			log.Info().Msg("Waiting for in-progress operations to complete...")
 		}
 	}
+}
+
+// upstreamRequestTimeout bounds every metadata request to an upstream registry.
+const upstreamRequestTimeout = 30 * time.Second
+
+// newUpstreamService builds the service reading upstream registries from the
+// user configuration.
+func newUpstreamService(userConfig UserConfig, c cache.Cache, sealer *secret.Sealer) (*services.DefaultUpstreamService, error) {
+	ttl, err := time.ParseDuration(userConfig.UpstreamCacheTTL)
+	if err != nil || ttl <= 0 {
+		return nil, fmt.Errorf("invalid upstream cache TTL %q", userConfig.UpstreamCacheTTL)
+	}
+
+	retention, err := time.ParseDuration(userConfig.UpstreamCacheRetention)
+	if err != nil || retention < ttl {
+		return nil, fmt.Errorf("invalid upstream cache retention %q, expected a duration of at least the TTL", userConfig.UpstreamCacheRetention)
+	}
+
+	return &services.DefaultUpstreamService{
+		Cache:      c,
+		TTL:        ttl,
+		Retention:  retention,
+		HTTPClient: file.NewHTTPClient(userConfig.FetchAllowPrivateAddresses, upstreamRequestTimeout),
+		Verifier:   registry.SignatureVerifier{AcceptExpiredKeys: !userConfig.UpstreamRejectExpiredKeys},
+		Sealer:     sealer,
+	}, nil
+}
+
+// splitHostnames parses a comma separated list of hostnames.
+func splitHostnames(value string) []string {
+	var hostnames []string
+	for _, hostname := range strings.Split(value, ",") {
+		if hostname = strings.TrimSpace(hostname); hostname != "" {
+			hostnames = append(hostnames, hostname)
+		}
+	}
+
+	return hostnames
 }

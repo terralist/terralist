@@ -205,6 +205,10 @@ func (s *Command) run() error {
 		MasterApiKey:               flags[MasterApiKeyFlag].(*cli.StringFlag).Value,
 		AuthTokenExpiration:        flags[AuthTokenExpirationFlag].(*cli.StringFlag).Value,
 		UpstreamSecret:             flags[UpstreamSecretFlag].(*cli.StringFlag).Value,
+		UpstreamCacheTTL:           flags[UpstreamCacheTTLFlag].(*cli.StringFlag).Value,
+		UpstreamCacheRetention:     flags[UpstreamCacheRetentionFlag].(*cli.StringFlag).Value,
+		UpstreamAutoCreate:         flags[UpstreamAutoCreateFlag].(*cli.StringFlag).Value,
+		UpstreamRejectExpiredKeys:  flags[UpstreamRejectExpiredSigningKeysFlag].(*cli.BoolFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {

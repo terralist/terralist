@@ -140,6 +140,54 @@ The secret used to seal the tokens of upstream registries at rest, when an autho
 | cli | `--upstream-secret` |
 | env | `TERRALIST_UPSTREAM_SECRET` |
 
+### `upstream-cache-ttl`
+
+How long the metadata read from upstream registries, version lists and SHA256SUMS documents, stays fresh before Terralist refreshes it. See [pulling providers through](user-guide/network-mirror.md#pulling-providers-through-from-an-upstream).
+
+| Name | Value |
+| --- | --- |
+| type | duration |
+| required | no |
+| default | `5m` |
+| cli | `--upstream-cache-ttl` |
+| env | `TERRALIST_UPSTREAM_CACHE_TTL` |
+
+### `upstream-cache-retention`
+
+How long the metadata read from upstream registries is kept once stale, to be served when the upstream is unavailable. Must be at least the TTL.
+
+| Name | Value |
+| --- | --- |
+| type | duration |
+| required | no |
+| default | `24h` |
+| cli | `--upstream-cache-retention` |
+| env | `TERRALIST_UPSTREAM_CACHE_RETENTION` |
+
+### `upstream-auto-create`
+
+Comma separated upstream hostnames for which Terralist creates an authority on the first authenticated network mirror request for an unknown namespace. The authority takes the namespace as its name, stands for that upstream namespace with the upstream enabled and the `allow` policy, and is owned by the caller. Anonymous requests never create authorities.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--upstream-auto-create` |
+| env | `TERRALIST_UPSTREAM_AUTO_CREATE` |
+
+### `upstream-reject-expired-signing-keys`
+
+Reject `SHA256SUMS` signatures issued by a signing key whose validity period has ended. Registries keep advertising the key that signed a release after it expired and do not re-sign old releases, so enabling this refuses every provider signed with such a key, which as of this writing includes every HashiCorp provider on `registry.terraform.io`. Terraform itself accepts them. When accepted, an expired key is logged as a warning.
+
+| Name | Value |
+| --- | --- |
+| type | bool |
+| required | no |
+| default | `false` |
+| cli | `--upstream-reject-expired-signing-keys` |
+| env | `TERRALIST_UPSTREAM_REJECT_EXPIRED_SIGNING_KEYS` |
+
 ### `rbac-policy-path`
 
 Path to the RBAC server-side policy.
