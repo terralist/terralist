@@ -1,13 +1,17 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
+	"mime/multipart"
 	"net/http"
+	"strings"
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +21,13 @@ import (
 const (
 	providersTerraformApiBase = "/providers"
 	providersDefaultApiBase   = "/api/providers"
+
+	// Multipart fields of a provider packages upload.
+	packagesMetadataField         = "metadata"
+	packagesArchivesField         = "archives"
+	packagesShaSumsField          = "shasums"
+	packagesShaSumsSignatureField = "shasums_signature"
+	packagesProtocolsField        = "protocols"
 )
 
 // ProviderController registers the routes that handles the modules.
@@ -188,6 +199,52 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
+	// Upload the packages of a new provider version
+	api.POST(
+		"/:namespace/:name/:version/upload-files",
+		requireAuthorization(rbac.ActionCreate, slugComposer),
+		func(ctx *gin.Context) {
+			authorityID, ok := c.resolveAuthorityID(ctx)
+			if !ok {
+				return
+			}
+
+			form, err := ctx.MultipartForm()
+			if err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			dto := provider.PackagesUploadDTO{
+				AuthorityID: authorityID,
+				Name:        ctx.Param("name"),
+				Version:     ctx.Param("version"),
+				Protocols:   splitProtocols(ctx.PostForm(packagesProtocolsField)),
+			}
+
+			if err := readPackagesUpload(form, &dto); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+			defer closeFiles(dto)
+
+			if err := c.ProviderService.UploadPackages(&dto); err != nil {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
+			})
+		},
+	)
+
 	// Delete a provider
 	api.DELETE(
 		"/:namespace/:name/remove",
@@ -241,6 +298,98 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 }
 
 // resolveAuthorityID resolves the authority ID from the namespace URL parameter.
+// readPackagesUpload fills the upload with the files of the multipart form: the
+// version document, the package archives and, when present, the SHA256SUMS
+// file with its signature. The caller owns the opened files.
+func readPackagesUpload(form *multipart.Form, dto *provider.PackagesUploadDTO) error {
+	metadata := form.File[packagesMetadataField]
+	if len(metadata) != 1 {
+		return fmt.Errorf("expecting exactly one version document in the %q field", packagesMetadataField)
+	}
+
+	document, err := metadata[0].Open()
+	if err != nil {
+		return fmt.Errorf("cannot read the version document: %v", err)
+	}
+	defer document.Close()
+
+	if err := json.NewDecoder(document).Decode(&dto.Metadata); err != nil {
+		return fmt.Errorf("cannot decode the version document: %v", err)
+	}
+
+	if len(form.File[packagesArchivesField]) == 0 {
+		return fmt.Errorf("expecting at least one provider package in the %q field", packagesArchivesField)
+	}
+
+	for _, header := range form.File[packagesArchivesField] {
+		archive, err := openUploadedFile(header)
+		if err != nil {
+			return err
+		}
+
+		dto.Archives = append(dto.Archives, archive)
+	}
+
+	if dto.ShaSums, err = openOptionalFile(form, packagesShaSumsField); err != nil {
+		return err
+	}
+
+	if dto.ShaSumsSignature, err = openOptionalFile(form, packagesShaSumsSignatureField); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// openOptionalFile opens the single file of a multipart field, or returns nil
+// when the field is absent.
+func openOptionalFile(form *multipart.Form, field string) (file.File, error) {
+	headers := form.File[field]
+	if len(headers) == 0 {
+		return nil, nil
+	}
+
+	if len(headers) > 1 {
+		return nil, fmt.Errorf("expecting at most one file in the %q field", field)
+	}
+
+	return openUploadedFile(headers[0])
+}
+
+func openUploadedFile(header *multipart.FileHeader) (file.File, error) {
+	uploaded, err := header.Open()
+	if err != nil {
+		return nil, fmt.Errorf("cannot read the uploaded file %s: %v", header.Filename, err)
+	}
+
+	return file.NewStreamingFile(header.Filename, uploaded, header.Size), nil
+}
+
+// closeFiles closes every file opened for a packages upload.
+func closeFiles(dto provider.PackagesUploadDTO) {
+	for _, f := range dto.Archives {
+		_ = f.Close()
+	}
+
+	for _, f := range []file.File{dto.ShaSums, dto.ShaSumsSignature} {
+		if f != nil {
+			_ = f.Close()
+		}
+	}
+}
+
+// splitProtocols parses the comma separated provider protocols form value.
+func splitProtocols(value string) []string {
+	var protocols []string
+	for _, protocol := range strings.Split(value, ",") {
+		if protocol = strings.TrimSpace(protocol); protocol != "" {
+			protocols = append(protocols, protocol)
+		}
+	}
+
+	return protocols
+}
+
 func (c *DefaultProviderController) resolveAuthorityID(ctx *gin.Context) (uuid.UUID, bool) {
 	namespace := ctx.Param("namespace")
 
