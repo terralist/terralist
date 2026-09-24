@@ -66,6 +66,14 @@ type UpstreamService interface {
 	// ProviderPackage locates the package of one platform of an allowed
 	// version, with its digest checked against the verified SHA256SUMS.
 	ProviderPackage(a *authority.Authority, name, version, os, arch string) (*UpstreamPackage, error)
+
+	// ModuleVersions returns the upstream versions of a module that the
+	// authority allows, or nothing when the authority has no enabled upstream.
+	ModuleVersions(a *authority.Authority, name, system string) ([]string, error)
+
+	// ModuleLocation returns the go-getter source of an allowed module
+	// version.
+	ModuleLocation(a *authority.Authority, name, system, version string) (string, error)
 }
 
 type DefaultUpstreamService struct {
@@ -166,6 +174,55 @@ func (s *DefaultUpstreamService) ProviderPackage(a *authority.Authority, name, v
 		URL:      download.DownloadURL,
 		ShaSum:   download.ShaSum,
 	}, nil
+}
+
+func (s *DefaultUpstreamService) ModuleVersions(a *authority.Authority, name, system string) ([]string, error) {
+	if !a.UpstreamEnabled {
+		return nil, nil
+	}
+
+	var versions []string
+	err := s.cached(a, "module_versions", s.moduleKey(a, name, system, "versions"), &versions, func(ctx context.Context, client *registry.Client) (any, error) {
+		upstream, err := client.ModuleVersions(ctx, *a.UpstreamNamespace, name, system)
+		if errors.Is(err, registry.ErrNotFound) {
+			return []string{}, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		return lo.Map(upstream, func(v registry.ModuleVersion, _ int) string { return v.Version }), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ruleName := name + "/" + system
+
+	return lo.Filter(versions, func(v string, _ int) bool {
+		return a.AllowsUpstream(authority.RuleKindModule, ruleName, v)
+	}), nil
+}
+
+func (s *DefaultUpstreamService) ModuleLocation(a *authority.Authority, name, system, version string) (string, error) {
+	if !a.AllowsUpstream(authority.RuleKindModule, name+"/"+system, version) {
+		return "", ErrUpstreamDenied
+	}
+
+	client, err := s.client(a)
+	if err != nil {
+		return "", err
+	}
+
+	location, err := client.ModuleLocation(context.Background(), *a.UpstreamNamespace, name, system, version)
+	if err != nil {
+		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "module_location", "error")
+		return "", err
+	}
+
+	metrics.RecordUpstreamRequest(*a.UpstreamHostname, "module_location", "success")
+
+	return location, nil
 }
 
 // readVersion fetches the download metadata of a version, then its SHA256SUMS
@@ -326,6 +383,10 @@ func (s *DefaultUpstreamService) fetch(ctx context.Context, url string) ([]byte,
 
 func (s *DefaultUpstreamService) key(a *authority.Authority, name, suffix string) string {
 	return fmt.Sprintf("upstream/%s/providers/%s/%s", a.ID, name, suffix)
+}
+
+func (s *DefaultUpstreamService) moduleKey(a *authority.Authority, name, system, suffix string) string {
+	return fmt.Sprintf("upstream/%s/modules/%s/%s/%s", a.ID, name, system, suffix)
 }
 
 // clock returns the current time, overridable in tests.
