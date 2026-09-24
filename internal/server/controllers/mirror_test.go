@@ -115,7 +115,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 
 		Convey("Given a public authority and no user", func() {
 			router, mockService, _ := setupMirrorRouter(t, nil, false, true)
-			mockService.On("ListMirrorVersions", "hashicorp", "null").Return(versions, nil)
+			mockService.On("ListMirrorVersions", "hashicorp", "null", false).Return(versions, nil)
 
 			Convey("When the versions are requested", func() {
 				w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
@@ -128,7 +128,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 
 		Convey("Given anonymous read is enabled and no user", func() {
 			router, mockService, _ := setupMirrorRouter(t, nil, true, false)
-			mockService.On("ListMirrorVersions", "hashicorp", "null").Return(versions, nil)
+			mockService.On("ListMirrorVersions", "hashicorp", "null", false).Return(versions, nil)
 
 			Convey("When the versions are requested", func() {
 				w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
@@ -144,7 +144,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 			router, mockService, mockAuthorityService := setupMirrorRouter(t, user, false, false)
 
 			Convey("If the provider exists", func() {
-				mockService.On("ListMirrorVersions", "hashicorp", "null").Return(versions, nil)
+				mockService.On("ListMirrorVersions", "hashicorp", "null", false).Return(versions, nil)
 
 				Convey("When the versions are requested", func() {
 					w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
@@ -157,7 +157,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 			})
 
 			Convey("If the provider does not exist", func() {
-				mockService.On("ListMirrorVersions", "hashicorp", "null").Return(nil, errors.New("not found"))
+				mockService.On("ListMirrorVersions", "hashicorp", "null", false).Return(nil, errors.New("not found"))
 
 				Convey("When the versions are requested", func() {
 					w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
@@ -181,7 +181,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 
 				Convey("Then it should be not found and the service not called", func() {
 					So(w.Code, ShouldEqual, http.StatusNotFound)
-					mockService.AssertNotCalled(t, "ListMirrorVersions", mock.Anything, mock.Anything)
+					mockService.AssertNotCalled(t, "ListMirrorVersions", mock.Anything, mock.Anything, mock.Anything)
 				})
 			})
 
@@ -190,7 +190,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 					On("GetByUpstream", "registry.terraform.io", "hashicorp").
 					Return(&authority.Authority{Name: "hashicorp-mirror"}, nil)
 				mockAuthorityService.On("GetByName", "hashicorp-mirror").Return(&authority.Authority{}, nil).Maybe()
-				mockService.On("ListMirrorVersions", "hashicorp-mirror", "null").Return(versions, nil)
+				mockService.On("ListMirrorVersions", "hashicorp-mirror", "null", false).Return(versions, nil)
 
 				w := serve(router, httptest.NewRequest(http.MethodGet, "/providers/registry.terraform.io/hashicorp/null/index.json", nil))
 
@@ -201,7 +201,7 @@ func TestMirrorController_ListVersions(t *testing.T) {
 			})
 
 			Convey("When the hostname differs only in case", func() {
-				mockService.On("ListMirrorVersions", "hashicorp", "null").Return(versions, nil)
+				mockService.On("ListMirrorVersions", "hashicorp", "null", false).Return(versions, nil)
 
 				w := serve(router, httptest.NewRequest(http.MethodGet, "/providers/Terralist.Example.com/hashicorp/null/index.json", nil))
 
@@ -221,7 +221,7 @@ func TestMirrorController_ListArchives(t *testing.T) {
 
 		Convey("If the version exists", func() {
 			mockService.
-				On("ListMirrorArchives", "hashicorp", "null", "3.2.4").
+				On("ListMirrorArchives", "hashicorp", "null", "3.2.4", false).
 				Return(&provider.MirrorArchivesDTO{
 					Archives: map[string]provider.MirrorArchiveDTO{
 						"linux_amd64": {URL: "https://storage.example.com/pkg.zip", Hashes: []string{"zh:abc"}},
@@ -243,13 +243,13 @@ func TestMirrorController_ListArchives(t *testing.T) {
 
 			Convey("Then it should be not found and the service not called", func() {
 				So(w.Code, ShouldEqual, http.StatusNotFound)
-				mockService.AssertNotCalled(t, "ListMirrorArchives", mock.Anything, mock.Anything, mock.Anything)
+				mockService.AssertNotCalled(t, "ListMirrorArchives", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 			})
 		})
 
 		Convey("If the version does not exist", func() {
 			mockService.
-				On("ListMirrorArchives", "hashicorp", "null", "9.9.9").
+				On("ListMirrorArchives", "hashicorp", "null", "9.9.9", false).
 				Return(nil, errors.New("not found"))
 
 			Convey("When the version document is requested", func() {
@@ -267,7 +267,7 @@ func TestMirrorController_ListArchives(t *testing.T) {
 				Return(&authority.Authority{Name: "hashicorp-mirror"}, nil)
 			mockAuthorityService.On("GetByName", "hashicorp-mirror").Return(&authority.Authority{}, nil).Maybe()
 			mockService.
-				On("ListMirrorArchives", "hashicorp-mirror", "null", "3.2.4").
+				On("ListMirrorArchives", "hashicorp-mirror", "null", "3.2.4", false).
 				Return(&provider.MirrorArchivesDTO{Archives: map[string]provider.MirrorArchiveDTO{}}, nil)
 
 			w := serve(router, httptest.NewRequest(http.MethodGet, "/providers/registry.terraform.io/hashicorp/null/3.2.4.json", nil))

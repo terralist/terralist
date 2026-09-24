@@ -8,6 +8,7 @@ import (
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
 	"terralist/pkg/rbac"
 
 	"github.com/gin-gonic/gin"
@@ -77,7 +78,7 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 			namespace := handlers.MustGetFromContext[string](ctx, mirrorNamespaceKey)
 			name := ctx.Param("name")
 
-			dto, err := c.ProviderService.ListMirrorVersions(*namespace, name)
+			dto, err := c.ProviderService.ListMirrorVersions(*namespace, name, c.mayFetch(ctx, *namespace, name))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -101,7 +102,7 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			dto, err := c.ProviderService.ListMirrorArchives(*namespace, name, version)
+			dto, err := c.ProviderService.ListMirrorArchives(*namespace, name, version, c.mayFetch(ctx, *namespace, name))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -112,6 +113,17 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 			ctx.JSON(http.StatusOK, dto)
 		},
 	)
+}
+
+// mayFetch reports whether the caller may create packages of the provider,
+// which is what fetching them from the upstream registry amounts to.
+func (c *DefaultMirrorController) mayFetch(ctx *gin.Context, namespace, name string) bool {
+	user, err := handlers.GetFromContext[auth.User](ctx, "user")
+	if err != nil {
+		return false
+	}
+
+	return c.Authorization.CanPerform(*user, rbac.ResourceProviders, rbac.ActionCreate, fmt.Sprintf("%s/%s", namespace, name))
 }
 
 // resolveNamespace maps the hostname and namespace of a mirror request to the

@@ -11,6 +11,7 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
 	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 
@@ -85,7 +86,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 
-			d, err := c.ProviderService.Get(namespace, name)
+			d, err := c.ProviderService.Get(namespace, name, c.mayFetch(ctx, namespace, name))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": err.Error(),
@@ -107,7 +108,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			os := ctx.Param("os")
 			arch := ctx.Param("arch")
 
-			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch)
+			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch, c.mayFetch(ctx, namespace, name))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -295,6 +296,17 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			})
 		},
 	)
+}
+
+// mayFetch reports whether the caller may create packages of the provider,
+// which is what fetching them from the upstream registry amounts to.
+func (c *DefaultProviderController) mayFetch(ctx *gin.Context, namespace, name string) bool {
+	user, err := handlers.GetFromContext[auth.User](ctx, "user")
+	if err != nil {
+		return false
+	}
+
+	return c.Authorization.CanPerform(*user, rbac.ResourceProviders, rbac.ActionCreate, fmt.Sprintf("%s/%s", namespace, name))
 }
 
 // readPackagesUpload fills the upload with the files of the multipart form: the
