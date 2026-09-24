@@ -28,7 +28,6 @@ const (
 	ResourceAuthorities = "authorities"
 	ResourceApiKeys     = "api-keys"
 	ResourceSettings    = "settings"
-	ResourceMirror      = "mirror"
 
 	ActionGet    = "get"
 	ActionUpdate = "update"
@@ -50,7 +49,6 @@ var (
 		ResourceAuthorities,
 		ResourceApiKeys,
 		ResourceSettings,
-		ResourceMirror,
 	}
 
 	Actions []string = []string{
@@ -76,7 +74,6 @@ var defaultPolicies = [][]string{
 	{SubjectReadonly, ResourceModules, ActionGet, "*", EffectAllow},
 	{SubjectReadonly, ResourceProviders, ActionGet, "*", EffectAllow},
 	{SubjectReadonly, ResourceAuthorities, ActionGet, "*", EffectAllow},
-	{SubjectReadonly, ResourceMirror, ActionGet, "*", EffectAllow},
 }
 
 // Make sure that CasbinEnforcer interface properly wraps the casbin.Enforcer struct.
