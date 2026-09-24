@@ -33,11 +33,22 @@ func TestProviderListVersions(t *testing.T) {
 
 		versions, ok := body["versions"].([]any)
 		require.True(t, ok)
-		require.Len(t, versions, 1)
 
-		version, ok := versions[0].(map[string]any)
-		require.True(t, ok)
-		assert.Equal(t, "3.2.4", version["version"])
+		byVersion := map[string]map[string]any{}
+		for _, v := range versions {
+			version, ok := v.(map[string]any)
+			require.True(t, ok)
+
+			number, ok := version["version"].(string)
+			require.True(t, ok)
+			byVersion[number] = version
+		}
+
+		assert.Contains(t, byVersion, nullSignedVersion, "a version uploaded with its signature material is served by the registry")
+		assert.NotContains(t, byVersion, nullMirrorOnlyVersion, "a version uploaded without signature material is served by the mirror only")
+		require.Contains(t, byVersion, "3.2.4")
+
+		version := byVersion["3.2.4"]
 
 		platforms, ok := version["platforms"].([]any)
 		require.True(t, ok)
@@ -70,6 +81,24 @@ func TestProviderDownload(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("mirror-only version", func(t *testing.T) {
+		resp := doAuthRequest(t, http.MethodGet, apiURL("/v1/providers/hashicorp/null/%s/download/%s/%s", nullMirrorOnlyVersion, runtime.GOOS, runtime.GOARCH), nil)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("signed packages upload", func(t *testing.T) {
+		resp := doAuthRequest(t, http.MethodGet, apiURL("/v1/providers/hashicorp/null/%s/download/%s/%s", nullSignedVersion, runtime.GOOS, runtime.GOARCH), nil)
+		body := readJSON(t, resp)
+
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, []any{"5.0"}, body["protocols"])
+		assert.Contains(t, body, "download_url")
+		assert.Contains(t, body, "shasums_url")
+		assert.Contains(t, body, "shasums_signature_url")
 	})
 
 	t.Run("success", func(t *testing.T) {
@@ -122,6 +151,78 @@ func TestProviderUpload(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusConflict, resp.StatusCode)
+	})
+}
+
+func TestProviderUploadPackages(t *testing.T) {
+	url := apiURL("/v1/api/providers/hashicorp/null/4.0.0/upload-files")
+	files := func() []multipartFile {
+		return packagesUploadFiles("4.0.0", bootstrap.NullMirrorOnlyH1, bootstrap.NullMirrorOnlyArchive)
+	}
+
+	t.Run("unauthenticated", func(t *testing.T) {
+		resp := doUnauthRequest(t, http.MethodPost, url)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+	})
+
+	t.Run("not multipart", func(t *testing.T) {
+		resp := doAuthRequest(t, http.MethodPost, url, map[string]any{})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("missing metadata", func(t *testing.T) {
+		resp := doAuthMultipartRequest(t, url, files()[1:])
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("duplicate version", func(t *testing.T) {
+		resp := doAuthMultipartRequest(t, apiURL("/v1/api/providers/hashicorp/null/%s/upload-files", nullMirrorOnlyVersion), files())
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusConflict, resp.StatusCode)
+	})
+
+	t.Run("package not listed in the version document", func(t *testing.T) {
+		mismatched := files()
+		mismatched[1].FileName = "other.zip"
+
+		resp := doAuthMultipartRequest(t, url, mismatched)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusConflict, resp.StatusCode)
+	})
+
+	t.Run("shasums without signature", func(t *testing.T) {
+		withSums := append(files(), multipartFile{Field: "shasums", FileName: "SHA256SUMS", Content: []byte("")})
+
+		resp := doAuthMultipartRequestWithValues(t, url, withSums, map[string]string{"protocols": "5.0"})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusConflict, resp.StatusCode)
+	})
+
+	t.Run("shasums mismatch", func(t *testing.T) {
+		sums := "0000000000000000000000000000000000000000000000000000000000000000  " + nullProviderArchiveName("4.0.0") + "\n"
+		withSums := append(files(),
+			multipartFile{Field: "shasums", FileName: "SHA256SUMS", Content: []byte(sums)},
+			multipartFile{Field: "shasums_signature", FileName: "SHA256SUMS.sig", Content: []byte("signature")},
+		)
+
+		resp := doAuthMultipartRequestWithValues(t, url, withSums, map[string]string{"protocols": "5.0"})
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusConflict, resp.StatusCode)
+
+		index := doAuthRequest(t, http.MethodGet, apiURL("/providers/%s/hashicorp/null/index.json", mirrorHostname(t)), nil)
+		body := readJSON(t, index)
+		versions, _ := body["versions"].(map[string]any)
+		assert.NotContains(t, versions, "4.0.0")
 	})
 }
 
