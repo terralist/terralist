@@ -1,6 +1,8 @@
 package services
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"testing"
 
@@ -923,4 +925,319 @@ func TestListProviderVersions(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestUploadProviderPackages(t *testing.T) {
+	Convey("Subject: Upload the packages of a provider version", t, func() {
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockAuthorityService := NewMockAuthorityService(t)
+		mockResolver := storage.NewMockResolver(t)
+
+		providerService := &DefaultProviderService{
+			ProviderRepository: mockProviderRepository,
+			AuthorityService:   mockAuthorityService,
+			Resolver:           mockResolver,
+		}
+
+		authorityID, _ := uuid.NewRandom()
+		linux := []byte("linux package")
+		darwin := []byte("darwin package")
+		linuxSum := sha256Hex(linux)
+		darwinSum := sha256Hex(darwin)
+
+		newDTO := func() provider.PackagesUploadDTO {
+			return provider.PackagesUploadDTO{
+				AuthorityID: authorityID,
+				Name:        "null",
+				Version:     "3.2.4",
+				Metadata: provider.MirrorArchivesDTO{
+					Archives: map[string]provider.MirrorArchiveDTO{
+						"linux_amd64":  {URL: "terraform-provider-null_3.2.4_linux_amd64.zip", Hashes: []string{"h1:linux"}},
+						"darwin_arm64": {URL: "terraform-provider-null_3.2.4_darwin_arm64.zip", Hashes: []string{"h1:darwin"}},
+					},
+				},
+				Archives: []file.File{
+					file.NewInMemoryFile("terraform-provider-null_3.2.4_linux_amd64.zip", linux),
+					file.NewInMemoryFile("terraform-provider-null_3.2.4_darwin_arm64.zip", darwin),
+				},
+			}
+		}
+
+		expectStore := func() *provider.Provider {
+			var saved provider.Provider
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
+			mockResolver.
+				On("Store", mock.AnythingOfType("*storage.StoreInput")).
+				Return(func(in *storage.StoreInput) (string, error) {
+					return in.KeyPrefix + "/" + in.FileName, nil
+				})
+			mockProviderRepository.
+				On("Upsert", mock.AnythingOfType("provider.Provider")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(provider.Provider)
+				}).
+				Return(&provider.Provider{}, nil)
+
+			return &saved
+		}
+
+		Convey("Given packages without signature material", func() {
+			dto := newDTO()
+			saved := expectStore()
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("A mirror-only version should be stored with both hashes per platform", func() {
+					So(err, ShouldBeNil)
+					So(saved.AuthorityID, ShouldEqual, authorityID)
+					So(saved.Name, ShouldEqual, "null")
+					So(len(saved.Versions), ShouldEqual, 1)
+
+					v := saved.Versions[0]
+					So(v.Version, ShouldEqual, "3.2.4")
+					So(v.MirrorOnly(), ShouldBeTrue)
+					So(len(v.Platforms), ShouldEqual, 2)
+
+					platforms := map[string]provider.Platform{}
+					for _, p := range v.Platforms {
+						platforms[p.String()] = p
+					}
+					So(platforms["linux_amd64"].ShaSum, ShouldEqual, linuxSum)
+					So(platforms["linux_amd64"].H1, ShouldEqual, "h1:linux")
+					So(platforms["linux_amd64"].Location, ShouldEqual, "providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip")
+					So(platforms["darwin_arm64"].ShaSum, ShouldEqual, darwinSum)
+				})
+			})
+		})
+
+		Convey("Given packages with a matching SHA256SUMS, its signature and protocols", func() {
+			dto := newDTO()
+			dto.Protocols = []string{"5.0", "6.0"}
+			dto.ShaSums = file.NewInMemoryFile("terraform-provider-null_3.2.4_SHA256SUMS", []byte(
+				linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"+
+					darwinSum+"  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
+			))
+			dto.ShaSumsSignature = file.NewInMemoryFile("terraform-provider-null_3.2.4_SHA256SUMS.sig", []byte("signature"))
+			saved := expectStore()
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("A registry-visible version should be stored", func() {
+					So(err, ShouldBeNil)
+
+					v := saved.Versions[0]
+					So(v.MirrorOnly(), ShouldBeFalse)
+					So(v.Protocols, ShouldEqual, "5.0,6.0")
+					So(v.ShaSumsUrl, ShouldEqual, "providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_SHA256SUMS")
+					So(v.ShaSumsSignatureUrl, ShouldEqual, "providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_SHA256SUMS.sig")
+				})
+			})
+		})
+
+		Convey("Given a SHA256SUMS that does not match a package", func() {
+			dto := newDTO()
+			dto.Protocols = []string{"5.0"}
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", []byte(
+				linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"+
+					sha256Hex([]byte("tampered"))+"  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
+			))
+			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", []byte("signature"))
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected and nothing stored", func() {
+					So(err, ShouldNotBeNil)
+					mockResolver.AssertNotCalled(t, "Store", mock.Anything)
+				})
+			})
+		})
+
+		Convey("Given a SHA256SUMS that does not list a package", func() {
+			dto := newDTO()
+			dto.Protocols = []string{"5.0"}
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", []byte(linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"))
+			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", []byte("signature"))
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given a SHA256SUMS without its signature", func() {
+			dto := newDTO()
+			dto.Protocols = []string{"5.0"}
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", []byte(linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"))
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given a SHA256SUMS and signature without protocols", func() {
+			dto := newDTO()
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", []byte(linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"))
+			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", []byte("signature"))
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given a package that is not listed in the metadata", func() {
+			dto := newDTO()
+			dto.Archives = append(dto.Archives, file.NewInMemoryFile("terraform-provider-null_3.2.4_windows_amd64.zip", []byte("windows")))
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given metadata without an h1 hash", func() {
+			dto := newDTO()
+			dto.Metadata.Archives["linux_amd64"] = provider.MirrorArchiveDTO{URL: "terraform-provider-null_3.2.4_linux_amd64.zip"}
+			saved := expectStore()
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The platform should be stored without an h1 hash", func() {
+					So(err, ShouldBeNil)
+					for _, p := range saved.Versions[0].Platforms {
+						if p.String() == "linux_amd64" {
+							So(p.H1, ShouldBeEmpty)
+						}
+					}
+				})
+			})
+		})
+
+		Convey("Given no packages", func() {
+			dto := newDTO()
+			dto.Archives = nil
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given an invalid version", func() {
+			dto := newDTO()
+			dto.Version = "latest"
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given a version that already exists", func() {
+			dto := newDTO()
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(&provider.Provider{
+				Name:     "null",
+				Versions: []provider.Version{{Version: "3.2.4"}},
+			}, nil)
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected", func() {
+					So(err, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given a provider that already has other versions", func() {
+			dto := newDTO()
+			var saved provider.Provider
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(&provider.Provider{
+				Name:     "null",
+				Versions: []provider.Version{{Version: "3.2.3"}},
+			}, nil)
+			mockResolver.
+				On("Store", mock.AnythingOfType("*storage.StoreInput")).
+				Return(func(in *storage.StoreInput) (string, error) {
+					return in.KeyPrefix + "/" + in.FileName, nil
+				})
+			mockProviderRepository.
+				On("Upsert", mock.AnythingOfType("provider.Provider")).
+				Run(func(args mock.Arguments) {
+					saved, _ = args.Get(0).(provider.Provider)
+				}).
+				Return(&provider.Provider{}, nil)
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The version should be appended to the provider", func() {
+					So(err, ShouldBeNil)
+					So(len(saved.Versions), ShouldEqual, 2)
+					So(saved.Versions[1].Version, ShouldEqual, "3.2.4")
+				})
+			})
+		})
+	})
+}
+
+func TestUploadProviderPackagesWithoutResolver(t *testing.T) {
+	Convey("Subject: Upload the packages of a provider version without a storage resolver", t, func() {
+		providerService := &DefaultProviderService{
+			ProviderRepository: repositories.NewMockProviderRepository(t),
+			AuthorityService:   NewMockAuthorityService(t),
+		}
+
+		dto := provider.PackagesUploadDTO{
+			Name:     "null",
+			Version:  "3.2.4",
+			Archives: []file.File{file.NewInMemoryFile("terraform-provider-null_3.2.4_linux_amd64.zip", []byte("linux"))},
+		}
+
+		Convey("When the packages are uploaded", func() {
+			err := providerService.UploadPackages(&dto)
+
+			Convey("The upload should be rejected", func() {
+				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func sha256Hex(content []byte) string {
+	sum := sha256.Sum256(content)
+
+	return hex.EncodeToString(sum[:])
 }
