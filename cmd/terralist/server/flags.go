@@ -140,6 +140,8 @@ const (
 	GitHubAppInstallationIDFlag = "gh-app-installation-id"
 	GitHubAppPrivateKeyPathFlag = "gh-app-private-key-path"
 	GitHubBaseURLFlag           = "gh-base-url"
+
+	UpstreamSecretFlag = "upstream-secret"
 )
 
 var flags = map[string]cli.Flag{
@@ -533,5 +535,9 @@ var flags = map[string]cli.Flag{
 	GitHubBaseURLFlag: &cli.StringFlag{
 		Description:  "The GitHub base domain if you are using GitHub Enterprise. (default: 'github.com')",
 		DefaultValue: "github.com",
+	},
+
+	UpstreamSecretFlag: &cli.StringFlag{
+		Description: "Secret used to seal the tokens of upstream registries at rest. Required only to store an upstream token.",
 	},
 }

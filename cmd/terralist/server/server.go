@@ -204,6 +204,7 @@ func (s *Command) run() error {
 		RbacDefaultRole:            flags[RbacDefaultRoleFlag].(*cli.StringFlag).Value,
 		MasterApiKey:               flags[MasterApiKeyFlag].(*cli.StringFlag).Value,
 		AuthTokenExpiration:        flags[AuthTokenExpirationFlag].(*cli.StringFlag).Value,
+		UpstreamSecret:             flags[UpstreamSecretFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {

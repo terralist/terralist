@@ -128,6 +128,18 @@ The secret to use when signing the OAuth state passed to the identity provider. 
 | cli | `--oauth-state-secret` |
 | env | `TERRALIST_OAUTH_STATE_SECRET` |
 
+### `upstream-secret`
+
+The secret used to seal the tokens of upstream registries at rest, when an authority [pulls providers through](user-guide/network-mirror.md) from a private upstream. A dedicated value, not shared with `token-signing-secret`. Required only to store an upstream token.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--upstream-secret` |
+| env | `TERRALIST_UPSTREAM_SECRET` |
+
 ### `rbac-policy-path`
 
 Path to the RBAC server-side policy.

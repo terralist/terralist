@@ -26,6 +26,7 @@ import (
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
 	"terralist/pkg/rbac"
+	"terralist/pkg/secret"
 	"terralist/pkg/session"
 	"terralist/pkg/storage"
 	"terralist/pkg/storage/local"
@@ -326,6 +327,9 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	authorityService := &services.DefaultAuthorityService{
 		AuthorityRepository: authorityRepository,
+	}
+	if userConfig.UpstreamSecret != "" {
+		authorityService.Sealer = secret.NewSealer(userConfig.UpstreamSecret)
 	}
 
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{

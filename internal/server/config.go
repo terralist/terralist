@@ -20,4 +20,5 @@ type UserConfig struct {
 	RbacDefaultRole            string `mapstructure:"rbac-default-role"`
 	MasterApiKey               string `mapstructure:"master-api-key"`
 	AuthTokenExpiration        string `mapstructure:"auth-token-expiration"`
+	UpstreamSecret             string `mapstructure:"upstream-secret"`
 }
