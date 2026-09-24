@@ -764,6 +764,42 @@ curl -L -X POST \
     }
     ```
 
+## Fetch a module version from the upstream
+
+```
+POST /v1/api/modules/:namespace/:name/:provider/:version/fetch
+```
+
+Download a module version from the upstream registry the authority stands for into storage, so that later installs are served without reaching the upstream. Requires the `create` action on the module. See [pulling modules through](../user-guide/network-mirror.md#pulling-modules-through-from-an-upstream).
+
+### Example Request
+
+``` shell
+curl -L -X POST \
+  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
+  http://localhost:5758/v1/api/modules/hashicorp/dir/template/1.0.2/fetch
+```
+
+### Example Response
+
+=== "Status 200"
+
+    ``` json
+    {
+      "errors": []
+    }
+    ```
+
+=== "Status 502"
+
+    ``` json
+    {
+      "errors": [
+        "version not allowed by the upstream rules"
+      ]
+    }
+    ```
+
 ## Remove a module
 
 ```
