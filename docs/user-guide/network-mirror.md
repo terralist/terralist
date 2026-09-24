@@ -60,6 +60,8 @@ terraform {
 }
 ```
 
+Terraform verifies each package against the `zh:` hash listed by the mirror and reports it as `verified checksum`. The dependency lock file then records only the `h1:` hash Terraform computes for the installed platform, and `terraform init` warns about incomplete lock file information. Run [`terraform providers lock`](https://developer.hashicorp.com/terraform/cli/commands/providers/lock) to record the hashes of every platform your team uses.
+
 Terraform requires HTTPS for network mirrors. The `credentials` block is not needed when [`providers-anonymous-read`](../configuration.md#providers-anonymous-read) is enabled or the authority is public.
 
 !!! warning "Hostnames with a port"
