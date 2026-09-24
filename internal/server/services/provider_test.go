@@ -748,7 +748,7 @@ func TestListMirrorArchives(t *testing.T) {
 							{
 								Version: "1.0.0",
 								Platforms: []provider.Platform{
-									{System: "linux", Architecture: "amd64", Location: "providers/linux.zip", ShaSum: "aaaa"},
+									{System: "linux", Architecture: "amd64", Location: "providers/linux.zip", ShaSum: "aaaa", H1: "h1:linux"},
 									{System: "darwin", Architecture: "arm64", Location: "providers/darwin.zip", ShaSum: "bbbb"},
 								},
 							},
@@ -773,10 +773,10 @@ func TestListMirrorArchives(t *testing.T) {
 					Convey("When the service is queried", func() {
 						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
 
-						Convey("Every platform should be listed with its resolved url and zh hash", func() {
+						Convey("Every platform should be listed with its resolved url, its h1 hash when known and its zh hash", func() {
 							So(err, ShouldBeNil)
 							So(resp.Archives, ShouldResemble, map[string]provider.MirrorArchiveDTO{
-								"linux_amd64":  {URL: "https://storage/linux.zip", Hashes: []string{"zh:aaaa"}},
+								"linux_amd64":  {URL: "https://storage/linux.zip", Hashes: []string{"h1:linux", "zh:aaaa"}},
 								"darwin_arm64": {URL: "https://storage/darwin.zip", Hashes: []string{"zh:bbbb"}},
 							})
 						})
