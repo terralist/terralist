@@ -139,12 +139,12 @@ func (r *DefaultProviderRepository) FindVersionPlatform(
 }
 
 func (r *DefaultProviderRepository) Upsert(p provider.Provider) (*provider.Provider, error) {
-	if len(p.Versions) != 1 {
-		if err := r.Database.Handler().Save(&p).Error; err != nil {
+	if p.Empty() {
+		if err := r.Database.Handler().Create(&p).Error; err != nil {
 			return nil, err
 		}
 	} else {
-		if err := r.Database.Handler().Create(&p).Error; err != nil {
+		if err := r.Database.Handler().Save(&p).Error; err != nil {
 			return nil, err
 		}
 	}
