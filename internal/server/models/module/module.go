@@ -82,6 +82,9 @@ type CreateDTO struct {
 	AuthorityID uuid.UUID
 	Name        string `json:"name"`
 	Provider    string `json:"provider"`
+
+	// Origin records where the version comes from; empty means uploaded.
+	Origin string `json:"-"`
 }
 
 type CreateFromURLDTO struct {
@@ -107,6 +110,7 @@ func (d CreateDTO) ToModule() Module {
 		Versions: []Version{
 			{
 				Version:      d.Version,
+				Origin:       d.Origin,
 				Providers:    providers,
 				Dependencies: dependencies,
 			},

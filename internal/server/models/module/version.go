@@ -7,12 +7,20 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	// OriginManual marks versions uploaded by an operator, OriginUpstream
+	// versions fetched from the upstream registry of the authority.
+	OriginManual   = "manual"
+	OriginUpstream = "upstream"
+)
+
 type Version struct {
 	entity.Entity
 	ModuleID      uuid.UUID
 	Module        Module
 	Version       string `gorm:"not null"`
 	Location      string `gorm:"not null"`
+	Origin        string `gorm:"not null;default:manual"`
 	Documentation *string
 	Providers     []Provider   `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Dependencies  []Dependency `gorm:"foreignKey:ParentID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`

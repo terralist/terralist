@@ -9,6 +9,7 @@ import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
+	"terralist/pkg/auth"
 	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 
@@ -79,7 +80,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 
-			d, err := c.ModuleService.Get(namespace, name, provider)
+			d, err := c.ModuleService.Get(namespace, name, provider, c.mayFetch(ctx, namespace, name, provider))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": err.Error(),
@@ -100,7 +101,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			location, err := c.ModuleService.GetVersionURL(namespace, name, provider, version)
+			location, err := c.ModuleService.GetVersionURL(namespace, name, provider, version, c.mayFetch(ctx, namespace, name, provider))
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -371,4 +372,15 @@ func (c *DefaultModuleController) resolveAuthorityID(ctx *gin.Context) (uuid.UUI
 	}
 
 	return authority.ID, true
+}
+
+// mayFetch reports whether the caller may create versions of the module, which
+// is what fetching them from the upstream registry amounts to.
+func (c *DefaultModuleController) mayFetch(ctx *gin.Context, namespace, name, provider string) bool {
+	user, err := handlers.GetFromContext[auth.User](ctx, "user")
+	if err != nil {
+		return false
+	}
+
+	return c.Authorization.CanPerform(*user, rbac.ResourceModules, rbac.ActionCreate, fmt.Sprintf("%s/%s/%s", namespace, name, provider))
 }
