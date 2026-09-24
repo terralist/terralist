@@ -30,7 +30,7 @@ type Version struct {
 	// SigningKeys is the JSON signing_keys block advertised by the upstream
 	// registry for a version fetched from it; empty for uploaded versions,
 	// which are signed with the authority keys.
-	SigningKeys string
+	SigningKeys string `gorm:"type:text"`
 	Origin      string `gorm:"not null;default:manual"`
 }
 

@@ -27,8 +27,8 @@ type Authority struct {
 	UpstreamURL *string
 	// UpstreamToken authenticates against the upstream registry and is sealed
 	// at rest.
-	UpstreamToken       *string
-	UpstreamTokenSealed bool `gorm:"-"`
+	UpstreamToken       *string `gorm:"type:text"`
+	UpstreamTokenSealed bool    `gorm:"-"`
 	// UpstreamEnabled allows fetching from the upstream registry; without it
 	// the identity only serves the network mirror address.
 	UpstreamEnabled bool `gorm:"not null;default:false"`
