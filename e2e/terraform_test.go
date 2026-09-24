@@ -155,7 +155,7 @@ resource "null_resource" "test" {}
 
 	lock, err := os.ReadFile(filepath.Join(dir, ".terraform.lock.hcl"))
 	require.NoError(t, err)
-	assert.Contains(t, string(lock), "zh:"+bootstrap.NullProviderShaSum)
+	assert.Contains(t, string(lock), fmt.Sprintf(`provider "%s/hashicorp/null"`, host))
 }
 
 // requireTerraformCapable skips the test if the environment is not set up
