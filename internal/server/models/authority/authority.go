@@ -16,17 +16,21 @@ type Authority struct {
 	Public    bool   `gorm:"not null;default:false"`
 	Owner     string `gorm:"not null;index"`
 
-	// UpstreamHostname represents the upstream registry that this authority stands for.
+	// UpstreamHostname is the upstream registry this authority stands for.
 	UpstreamHostname *string `gorm:"uniqueIndex:idx_authorities_upstream"`
-	// UpstreamNamespace represents the upstream registry's namespace that this authority stands for.
-	// It's providers can be addressed through the network mirror.
+	// UpstreamNamespace is the namespace of that registry whose artifacts the
+	// authority serves; its providers are addressed through the network mirror
+	// with the upstream address.
 	UpstreamNamespace *string `gorm:"uniqueIndex:idx_authorities_upstream"`
-	// UpstreamURL is where the upstream registry is reached; empty means https://<UpstreamHostname>.
+	// UpstreamURL is where the upstream registry is reached; empty means
+	// https://<UpstreamHostname>.
 	UpstreamURL *string
-	// UpstreamToken authenticates against it and is sealed at rest.
+	// UpstreamToken authenticates against the upstream registry and is sealed
+	// at rest.
 	UpstreamToken       *string
 	UpstreamTokenSealed bool `gorm:"-"`
-	// UpstreamEnabled decides if the upstream is enabled. Nothing is fetched unless is set.
+	// UpstreamEnabled allows fetching from the upstream registry; without it
+	// the identity only serves the network mirror address.
 	UpstreamEnabled bool `gorm:"not null;default:false"`
 	// UpstreamDefaultPolicy decides what the Rules do not decide.
 	UpstreamDefaultPolicy string `gorm:"not null;default:allow"`

@@ -57,10 +57,8 @@ type AuthorityService interface {
 	// If no keys are left, the entire authority is removed.
 	RemoveKey(uuid.UUID, uuid.UUID) error
 
-	// AddRule adds an upstream rule to an existing authority.
 	AddRule(uuid.UUID, authority.RuleDTO) (*authority.RuleDTO, error)
 
-	// RemoveRule removes an upstream rule from an existing authority.
 	RemoveRule(uuid.UUID, uuid.UUID) error
 
 	// Delete removes an existing authority.
@@ -214,12 +212,7 @@ func (s *DefaultAuthorityService) AddRule(authorityID uuid.UUID, in authority.Ru
 		return nil, err
 	}
 
-	// The find operation cannot fail if the upsert method passes
-	stored, _ := lo.Find(updated.Rules, func(r authority.Rule) bool {
-		return r.Kind == rule.Kind && r.Name == rule.Name && r.Version == rule.Version && r.Effect == rule.Effect
-	})
-
-	dto := stored.ToDTO()
+	dto := updated.Rules[len(updated.Rules)-1].ToDTO()
 	return &dto, nil
 }
 

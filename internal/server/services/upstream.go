@@ -68,7 +68,6 @@ type UpstreamService interface {
 	ProviderPackage(a *authority.Authority, name, version, os, arch string) (*UpstreamPackage, error)
 }
 
-// DefaultUpstreamService is a concrete implementation of UpstreamService.
 type DefaultUpstreamService struct {
 	Cache      cache.Cache
 	TTL        time.Duration

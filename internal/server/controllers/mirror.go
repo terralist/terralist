@@ -66,7 +66,6 @@ const (
 	// by a valid package token, when the request presented one.
 	packageFetchKey = "packageFetch"
 
-	// packageTokenQuery is the query parameter carrying a package token.
 	packageTokenQuery = "token"
 )
 

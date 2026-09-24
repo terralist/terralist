@@ -36,7 +36,6 @@ type AuthorityRepository interface {
 	// Delete removes an authority with all its data (api keys, providers).
 	Delete(uuid.UUID) error
 
-	// DeleteRule removes an upstream rule.
 	DeleteRule(uuid.UUID) error
 }
 

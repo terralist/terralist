@@ -34,7 +34,6 @@ func RecordUpstreamRequest(hostname, operation, result string) {
 	UpstreamRequestsTotal.WithLabelValues(hostname, operation, result).Inc()
 }
 
-// RecordUpstreamFetch records the duration of a package fetch.
 func RecordUpstreamFetch(hostname string, durationSeconds float64) {
 	UpstreamFetchDuration.WithLabelValues(hostname).Observe(durationSeconds)
 }

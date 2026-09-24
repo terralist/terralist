@@ -682,7 +682,6 @@ func newUpstreamService(userConfig UserConfig, c cache.Cache, sealer *secret.Sea
 	}, nil
 }
 
-// splitHostnames parses a comma separated list of hostnames.
 func splitHostnames(value string) []string {
 	var hostnames []string
 	for _, hostname := range strings.Split(value, ",") {

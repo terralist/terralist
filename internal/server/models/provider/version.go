@@ -34,8 +34,6 @@ type Version struct {
 	Origin      string `gorm:"not null;default:manual"`
 }
 
-// GetPlatform returns the platform built for the given system and
-// architecture, or nil.
 func (v Version) GetPlatform(system, architecture string) *Platform {
 	for i := range v.Platforms {
 		if v.Platforms[i].System == system && v.Platforms[i].Architecture == architecture {
