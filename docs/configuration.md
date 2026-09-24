@@ -178,7 +178,7 @@ Comma separated upstream hostnames for which Terralist creates an authority on t
 
 ### `upstream-reject-expired-signing-keys`
 
-Reject `SHA256SUMS` signatures issued by a signing key whose validity period has ended. Registries keep advertising the key that signed a release after it expired and do not re-sign old releases, so enabling this refuses every provider signed with such a key, which as of this writing includes every HashiCorp provider on `registry.terraform.io`. Terraform itself accepts them. When accepted, an expired key is logged as a warning.
+Reject `SHA256SUMS` signatures issued by a signing key whose validity period has ended. Registries keep advertising the key that signed a release after it expired and do not re-sign old releases, so enabling this refuses every provider signed with such a key. Terraform itself accepts them. When accepted, an expired key is logged as a warning.
 
 | Name | Value |
 | --- | --- |

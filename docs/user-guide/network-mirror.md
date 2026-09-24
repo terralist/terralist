@@ -70,7 +70,7 @@ Terraform downloads packages without credentials, so the links Terralist lists c
 
 ### Who may pull through
 
-Reading a version list or a document only needs the `get` action on the provider, as before. Merging upstream versions and fetching packages writes to storage and to the database, so it needs the `create` action on the `<authority>/<type>` object of the `providers` resource. A caller with `get` only sees and downloads what Terralist already holds. The API key Terraform uses must therefore be allowed to `create` the providers it should pull through.
+Reading a version list or a document only needs the `get` action on the provider. Merging upstream versions and fetching packages writes to storage and to the database, so it needs the `create` action on the `<authority>/<type>` object of the `providers` resource. A caller with `get` only sees and downloads what Terralist already holds. The API key Terraform uses must therefore be allowed to `create` the providers it should pull through.
 
 ### Rules
 
