@@ -17,17 +17,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"golang.org/x/mod/sumdb/dirhash"
 )
 
 // bootstrapState holds data created during bootstrap that tests can reference.
 var bootstrap struct {
 	HashicorpAuthorityID string
 
-	// NullProviderArchive is the null provider package for the current
-	// platform, as mirrored into Terralist, and NullProviderH1 its h1 hash.
-	NullProviderArchive []byte
-	NullProviderH1      string
+	// NullProviderShaSum is the sha256 of the null provider package for the
+	// current platform, as published in its SHA256SUMS file.
+	NullProviderShaSum string
 }
 
 func TestMain(m *testing.M) {
@@ -77,10 +75,6 @@ func bootstrapEnvironment() error {
 
 	if err := uploadNullProvider(); err != nil {
 		return fmt.Errorf("uploading null provider: %w", err)
-	}
-
-	if err := mirrorNullProvider(); err != nil {
-		return fmt.Errorf("mirroring null provider: %w", err)
 	}
 
 	if err := uploadModule(); err != nil {
@@ -231,6 +225,8 @@ func uploadNullProvider() error {
 	downloadURL, _ := metadata["download_url"].(string)
 	shasum, _ := metadata["shasum"].(string)
 
+	bootstrap.NullProviderShaSum = shasum
+
 	providerBody := map[string]any{
 		"protocols": []string{"6.0"},
 		"shasums": map[string]string{
@@ -262,107 +258,6 @@ func uploadNullProvider() error {
 	}
 
 	return nil
-}
-
-// mirrorNullProvider mirrors the null provider (v3.2.4) package for the
-// current platform, the same way `terraform providers mirror` output would be
-// uploaded by an operator.
-func mirrorNullProvider() error {
-	metadata, err := fetchNullProviderMetadata()
-	if err != nil {
-		return err
-	}
-
-	downloadURL, _ := metadata["download_url"].(string)
-	resp, err := http.Get(downloadURL)
-	if err != nil {
-		return fmt.Errorf("downloading provider package: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("provider package download returned %d", resp.StatusCode)
-	}
-
-	archive, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("reading provider package: %w", err)
-	}
-
-	h1, err := hashArchive(archive)
-	if err != nil {
-		return fmt.Errorf("hashing provider package: %w", err)
-	}
-
-	bootstrap.NullProviderArchive = archive
-	bootstrap.NullProviderH1 = h1
-
-	files := mirrorUploadFiles(nullProviderArchiveName(), h1, archive)
-
-	body, contentType, err := multipartBody(files)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, apiURL("/v1/api/mirror/registry.terraform.io/hashicorp/null/3.2.4/upload"), body)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("Authorization", "Bearer x-api-key:"+config.MasterAPIKey)
-
-	mirrorResp, err := httpClient().Do(req)
-	if err != nil {
-		return fmt.Errorf("uploading mirrored provider: %w", err)
-	}
-	defer mirrorResp.Body.Close()
-
-	if mirrorResp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(mirrorResp.Body)
-		return fmt.Errorf("mirrored provider upload failed (%d): %s", mirrorResp.StatusCode, string(respBody))
-	}
-
-	return nil
-}
-
-// nullProviderArchiveName returns the package file name for the current
-// platform, as produced by `terraform providers mirror`.
-func nullProviderArchiveName() string {
-	return fmt.Sprintf("terraform-provider-null_3.2.4_%s_%s.zip", runtime.GOOS, runtime.GOARCH)
-}
-
-// mirrorUploadFiles builds the multipart files of a mirror upload: the version
-// document listing the archive with the given h1 hash, and the archive itself.
-func mirrorUploadFiles(archiveName, h1 string, archive []byte) []multipartFile {
-	metadata, _ := json.Marshal(map[string]any{
-		"archives": map[string]any{
-			fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH): map[string]any{
-				"url":    archiveName,
-				"hashes": []string{h1},
-			},
-		},
-	})
-
-	return []multipartFile{
-		{Field: "metadata", FileName: "3.2.4.json", Content: metadata},
-		{Field: "archives", FileName: archiveName, Content: archive},
-	}
-}
-
-// hashArchive computes the h1 hash of a zip archive, as Terraform does.
-func hashArchive(archive []byte) (string, error) {
-	tmp, err := os.CreateTemp("", "terralist-e2e-*.zip")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(tmp.Name())
-	defer tmp.Close()
-
-	if _, err := tmp.Write(archive); err != nil {
-		return "", err
-	}
-
-	return dirhash.HashZip(tmp.Name(), dirhash.DefaultHash)
 }
 
 func uploadModule() error {

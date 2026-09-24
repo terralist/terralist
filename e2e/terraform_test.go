@@ -129,26 +129,26 @@ func TestTerraformNetworkMirrorInit(t *testing.T) {
 	requireTerraformCapable(t)
 	host := registryHost(t)
 
-	dir := setupTerraformMirrorProject(t, host, `
+	dir := setupTerraformMirrorProject(t, host, fmt.Sprintf(`
 terraform {
   required_providers {
     null = {
-      source  = "hashicorp/null"
+      source  = "%s/hashicorp/null"
       version = "3.2.4"
     }
   }
 }
 
 resource "null_resource" "test" {}
-`)
+`, host))
 
 	out := runTerraform(t, dir, "init")
-	assert.Contains(t, out, "Installed hashicorp/null v3.2.4")
+	assert.Contains(t, out, fmt.Sprintf("Installed %s/hashicorp/null v3.2.4", host))
 	assert.Contains(t, out, "Terraform has been successfully initialized")
 
 	lock, err := os.ReadFile(filepath.Join(dir, ".terraform.lock.hcl"))
 	require.NoError(t, err)
-	assert.Contains(t, string(lock), bootstrap.NullProviderH1)
+	assert.Contains(t, string(lock), "zh:"+bootstrap.NullProviderShaSum)
 }
 
 // requireTerraformCapable skips the test if the environment is not set up
