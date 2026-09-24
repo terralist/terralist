@@ -29,9 +29,10 @@ var (
 )
 
 // upstreamAuthority returns the authority when it has an enabled upstream and
-// the caller may fetch from it.
+// the caller may fetch from it. Fetched packages must be stored, so without a
+// storage resolver the upstream is never consulted.
 func (s *DefaultProviderService) upstreamAuthority(namespace string, withUpstream bool) *authority.Authority {
-	if !withUpstream || s.Upstream == nil {
+	if !withUpstream || s.Upstream == nil || s.Resolver == nil {
 		return nil
 	}
 

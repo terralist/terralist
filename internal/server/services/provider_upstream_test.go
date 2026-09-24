@@ -182,6 +182,22 @@ func TestGetProviderWithUpstream(t *testing.T) {
 	})
 }
 
+func TestUpstreamRequiresResolver(t *testing.T) {
+	Convey("Subject: Pulling through without a storage backend", t, func() {
+		f := newPullThroughFixture(t)
+		f.service.Resolver = nil
+		f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+
+		dto, err := f.service.Get("hashicorp", "null", true)
+
+		Convey("Then only the local versions are served and the upstream is not consulted", func() {
+			So(err, ShouldBeNil)
+			So(len(dto.Versions), ShouldEqual, 1)
+			f.upstream.AssertNotCalled(t, "ProviderVersions", mock.Anything, mock.Anything)
+		})
+	})
+}
+
 func TestListMirrorVersionsWithUpstream(t *testing.T) {
 	Convey("Subject: Listing mirror versions merged with the upstream", t, func() {
 		f := newPullThroughFixture(t)
