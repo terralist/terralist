@@ -44,6 +44,70 @@ curl -X POST \
 
 Every provider of that authority is then served by the mirror under both addresses, `terralist.example.com/hashicorp/<type>` and `registry.terraform.io/hashicorp/<type>`. Access control does not change: the policy object stays `<authority>/<type>`. An upstream hostname and namespace pair can be claimed by one authority only.
 
+## Pulling providers through from an upstream
+
+An authority standing for an upstream namespace can also fetch the providers it does not hold from that upstream registry, on first request, and keep them. Enable the upstream on the authority:
+
+```shell
+curl -X PATCH \
+  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  -d '{"name": "hashicorp", "policy_url": "", "upstream_hostname": "registry.terraform.io", "upstream_enabled": true}' \
+  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID
+```
+
+The upstream is reached at `https://<upstream_hostname>` unless `upstream_url` names another location, such as a private mirror of the public registry. A private upstream can be given an `upstream_token`, which Terralist sends as a bearer token and stores sealed with the [`upstream-secret`](../configuration.md#upstream-secret). The token is never returned by the API; `upstream_has_token` tells whether one is stored, and an update without a token keeps the stored one. Private upstreams on internal networks also need [`fetch-allow-private-addresses`](../configuration.md#fetch-allow-private-addresses).
+
+### What happens on a request
+
+- The version list, in both protocols, merges the versions the upstream offers with the versions Terralist holds. A version uploaded to Terralist always wins over the upstream one.
+- The network mirror version document lists the packages Terralist holds with their storage location, and the packages it does not hold yet with their `zh:` hash from the upstream `SHA256SUMS` file and a link back to the mirror. The registry protocol download metadata does the same for a single platform.
+- Following such a link downloads the package from the upstream with its digest enforced, stores it next to the `SHA256SUMS` file and its signature, records the platform with the `upstream` origin, and redirects to storage. Concurrent requests for the same package wait for one download. The next request is served from storage without touching the upstream.
+- Upstream metadata is cached for [`upstream-cache-ttl`](../configuration.md#upstream-cache-ttl) and kept for [`upstream-cache-retention`](../configuration.md#upstream-cache-retention). When the upstream is unreachable, the last known answer is served, and everything already stored stays available regardless.
+
+Terraform downloads packages without credentials, so the links Terralist lists carry a short-lived token that proves the document was served to a caller allowed to read the package, and whether that caller may fetch it. The links expire after fifteen minutes.
+
+### Who may pull through
+
+Reading a version list or a document only needs the `get` action on the provider, as before. Merging upstream versions and fetching packages writes to storage and to the database, so it needs the `create` action on the `<authority>/<type>` object of the `providers` resource. A caller with `get` only sees and downloads what Terralist already holds. The API key Terraform uses must therefore be allowed to `create` the providers it should pull through.
+
+### Rules
+
+The authority's `upstream_default_policy`, `allow` or `deny`, decides which upstream versions may be served when no rule says otherwise. Rules refine it per artifact:
+
+```shell
+curl -X POST \
+  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  -d '{"kind": "provider", "name": "aws", "version": "5.*", "effect": "deny"}' \
+  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID/rules
+```
+
+`name` and `version` are globs; `kind` is `provider` or `module`. A version is served when the upstream is enabled, no deny rule matches, and either the default policy is `allow` or an allow rule matches. Deny always wins. Rules filter the version list itself, so Terraform never selects a version it cannot download. They apply to upstream versions only; versions uploaded to Terralist are always served. Rules are removed with `DELETE /v1/api/authorities/<id>/rules/<rule id>`.
+
+A deny rule is the way to stop serving a version that was pulled through: deleting the stored version alone would only make the next request fetch it again.
+
+### Pre-warming
+
+A cold fetch of a large provider happens inside Terraform's download request. Terraform itself puts no timeout on it, but a reverse proxy or load balancer in front of Terralist may. Packages can be fetched ahead of time instead:
+
+```shell
+curl -X POST \
+  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  -d '{"platforms": ["linux_amd64", "darwin_arm64"]}' \
+  https://terralist.example.com/v1/api/providers/hashicorp/aws/5.0.0/fetch
+```
+
+The response reports the outcome per platform.
+
+### Trust
+
+Before anything from an upstream is trusted, Terralist fetches the version's `SHA256SUMS` file and its signature and verifies the signature against the keys the upstream advertises for that version, the way Terraform does. Only digests from a verified file are listed, every package download enforces its digest, and the signing keys are stored with the version so that Terraform installing through the registry protocol verifies the same chain.
+
+Registries keep advertising the key that signed a release after that key expired and do not re-sign old releases. Terralist accepts such signatures once every other check passed, as Terraform does, and logs a warning naming the key. Set [`upstream-reject-expired-signing-keys`](../configuration.md#upstream-reject-expired-signing-keys) to refuse them instead.
+
+### Creating authorities on demand
+
+With [`upstream-auto-create`](../configuration.md#upstream-auto-create) listing an upstream hostname, the first authenticated network mirror request for an unknown namespace of that hostname creates the authority: named after the namespace, standing for it, enabled, with the `allow` policy, owned by the caller. Anonymous requests never create authorities.
+
 ## Uploading provider packages
 
 Besides the [registry upload](../dev-guide/api-reference.md#upload-a-provider-version), which fetches the provider files from URLs, a provider version can be uploaded from its package files directly. This is how providers reach an air-gapped Terralist: an operator downloads them on a machine with internet access, moves them into the isolated network and uploads them.

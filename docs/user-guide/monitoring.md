@@ -186,6 +186,24 @@ sum(rate(terralist_cache_operations_total{operation="get", result="hit"}[5m]))
 sum(rate(terralist_cache_operations_total{operation="get"}[5m]))
 ```
 
+#### Upstream Registries
+
+```
+terralist_upstream_requests_total{hostname="registry.terraform.io", operation="versions|version|package", result="success|stale|error"}
+terralist_upstream_fetch_duration_seconds{hostname="registry.terraform.io"}
+```
+
+Requests to upstream registries by hostname, operation and result, where `stale` counts the answers served from the cache because the upstream failed, and the time taken to fetch a package from an upstream into storage.
+
+**Example queries:**
+```promql
+# Upstream failures per hostname
+sum(rate(terralist_upstream_requests_total{result="error"}[5m])) by (hostname)
+
+# Cold fetch duration, 95th percentile
+histogram_quantile(0.95, sum(rate(terralist_upstream_fetch_duration_seconds_bucket[5m])) by (le, hostname))
+```
+
 #### Data Transfer
 
 ```
