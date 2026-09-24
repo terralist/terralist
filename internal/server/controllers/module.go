@@ -1,17 +1,20 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/module"
+	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/file"
 	"terralist/pkg/rbac"
+	"terralist/pkg/registry"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -40,7 +43,23 @@ type DefaultModuleController struct {
 	Authorization    *handlers.Authorization
 
 	AnonymousRead bool
+
+	// Tokens signs the archive locations pointing back at Terralist, where
+	// versions not stored yet are fetched from the upstream, since go-getter
+	// downloads them without credentials. ArchiveBaseURL is where those
+	// locations start.
+	Tokens         *handlers.DownloadTokens
+	ArchiveBaseURL string
 }
+
+const (
+	// moduleFetchKey is the context key holding the fetch permission carried
+	// by a valid download token, when the request presented one.
+	moduleFetchKey = "moduleFetch"
+
+	// downloadTokenQuery is the query parameter carrying a download token.
+	downloadTokenQuery = "token"
+)
 
 func (c *DefaultModuleController) TerraformApi() string {
 	return modulesTerraformApiBase + "/"
@@ -68,9 +87,20 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 	// modules
 	// Docs: https://www.terraform.io/docs/internals/module-registry-protocol.html#list-available-versions-for-a-specific-module
 	tfApi := apis[0]
+	tfApi.Use(c.Authentication.AttemptAuthentication())
+	tfApi.Use(c.acceptDownloadToken())
 	if !c.AnonymousRead {
-		tfApi.Use(c.Authentication.AttemptAuthentication())
-		tfApi.Use(requireAuthorization(rbac.ActionGet, slugComposer))
+		authorize := requireAuthorization(rbac.ActionGet, slugComposer)
+		tfApi.Use(func(ctx *gin.Context) {
+			// A valid download token is the proof that the download location
+			// was served to an authorized caller.
+			if _, ok := ctx.Get(moduleFetchKey); ok {
+				ctx.Next()
+				return
+			}
+
+			authorize(ctx)
+		})
 	}
 
 	tfApi.GET(
@@ -101,7 +131,9 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			provider := ctx.Param("provider")
 			version := ctx.Param("version")
 
-			location, err := c.ModuleService.GetVersionURL(namespace, name, provider, version, c.mayFetch(ctx, namespace, name, provider))
+			fetch := c.mayFetch(ctx, namespace, name, provider)
+
+			location, err := c.ModuleService.GetVersionURL(namespace, name, provider, version, fetch)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -109,10 +141,54 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			ctx.Header("X-Terraform-Get", *location)
+			signed, err := c.signArchiveLocation(*location, namespace, name, provider, version, fetch)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.Header("X-Terraform-Get", signed)
 			ctx.JSON(http.StatusNoContent, gin.H{
 				"errors": []string{},
 			})
+		},
+	)
+
+	// Serve the archive of a version, fetching it from the upstream registry
+	// first when the caller may do so, by credentials or by the token of the
+	// location. go-getter follows the X-Terraform-Get header to storage.
+	tfApi.GET(
+		"/:namespace/:name/:provider/:version/archive",
+		func(ctx *gin.Context) {
+			namespace := ctx.Param("namespace")
+			name := ctx.Param("name")
+			provider := ctx.Param("provider")
+			version := ctx.Param("version")
+
+			fetch := c.mayFetch(ctx, namespace, name, provider)
+			if granted, err := handlers.GetFromContext[bool](ctx, moduleFetchKey); err == nil {
+				fetch = fetch || *granted
+			}
+
+			location, err := c.ModuleService.Download(namespace, name, provider, version, fetch)
+
+			switch {
+			case err == nil:
+				ctx.Header("X-Terraform-Get", location)
+				ctx.Status(http.StatusNoContent)
+			case errors.Is(err, services.ErrFetchRequiresCreate):
+				ctx.AbortWithStatus(http.StatusForbidden)
+			case errors.Is(err, repositories.ErrNotFound), errors.Is(err, registry.ErrNotFound), errors.Is(err, services.ErrUpstreamDenied):
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"errors": []string{err.Error()},
+				})
+			default:
+				ctx.JSON(http.StatusBadGateway, gin.H{
+					"errors": []string{err.Error()},
+				})
+			}
 		},
 	)
 
@@ -168,6 +244,25 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 	// This is a protected endpoint, every request should be authenticated.
 	api.Use(c.Authentication.RequireAuthentication())
+
+	// Fetch a version from the upstream registry
+	api.POST(
+		"/:namespace/:name/:provider/:version/fetch",
+		requireAuthorization(rbac.ActionCreate, slugComposer),
+		func(ctx *gin.Context) {
+			err := c.ModuleService.Fetch(ctx.Param("namespace"), ctx.Param("name"), ctx.Param("provider"), ctx.Param("version"))
+			if err != nil {
+				ctx.JSON(http.StatusBadGateway, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"errors": []string{},
+			})
+		},
+	)
 
 	// Upload a new module version
 	api.POST(
@@ -372,6 +467,40 @@ func (c *DefaultModuleController) resolveAuthorityID(ctx *gin.Context) (uuid.UUI
 	}
 
 	return authority.ID, true
+}
+
+// signArchiveLocation appends a download token to a location pointing at the
+// archive route, since go-getter downloads without credentials.
+func (c *DefaultModuleController) signArchiveLocation(location, namespace, name, provider, version string, fetch bool) (string, error) {
+	if c.ArchiveBaseURL == "" || !strings.HasPrefix(location, c.ArchiveBaseURL+"/") {
+		return location, nil
+	}
+
+	token, err := c.Tokens.Sign(module.ArchiveSubject(namespace, name, provider, version), fetch)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s?%s=%s", location, downloadTokenQuery, token), nil
+}
+
+// acceptDownloadToken verifies the token an archive request may carry and
+// records the fetch permission it grants.
+func (c *DefaultModuleController) acceptDownloadToken() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		token := ctx.Query(downloadTokenQuery)
+		if token == "" || !strings.HasSuffix(ctx.Request.URL.Path, "/archive") {
+			ctx.Next()
+			return
+		}
+
+		subject := module.ArchiveSubject(ctx.Param("namespace"), ctx.Param("name"), ctx.Param("provider"), ctx.Param("version"))
+		if fetch, ok := c.Tokens.Verify(token, subject); ok {
+			ctx.Set(moduleFetchKey, &fetch)
+		}
+
+		ctx.Next()
+	}
 }
 
 // mayFetch reports whether the caller may create versions of the module, which

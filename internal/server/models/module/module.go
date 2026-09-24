@@ -139,3 +139,9 @@ func (d CreateDTO) ToModule() Module {
 
 	return out
 }
+
+// ArchiveSubject names a module version within an authority, for download
+// tokens.
+func ArchiveSubject(namespace, name, provider, version string) string {
+	return fmt.Sprintf("modules/%s/%s/%s/%s", namespace, name, provider, version)
+}
