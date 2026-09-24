@@ -99,10 +99,12 @@ type DefaultProviderService struct {
 
 func (s *DefaultProviderService) Get(namespace, name string, withUpstream bool) (*provider.VersionListProviderDTO, error) {
 	dto := provider.VersionListProviderDTO{}
+	local := map[string]struct{}{}
 
 	p, err := s.ProviderRepository.Find(namespace, name)
 	if err == nil {
 		dto = p.ToVersionListProviderDTO()
+		local = localVersions(p)
 	}
 
 	upstream := s.upstreamVersions(s.upstreamAuthority(namespace, withUpstream), name)
@@ -110,7 +112,7 @@ func (s *DefaultProviderService) Get(namespace, name string, withUpstream bool) 
 		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
 
-	mergeUpstreamVersions(&dto, upstream)
+	mergeUpstreamVersions(&dto, local, upstream)
 
 	// Record list operation
 	metrics.RecordRequest(namespace, "list")
@@ -240,7 +242,15 @@ func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version str
 
 // upstreamVersionDownload answers a registry download request for a platform
 // Terralist does not hold yet, creating the version from the upstream first.
+// A version uploaded by an operator is never completed from the upstream
+// through the registry protocol.
 func (s *DefaultProviderService) upstreamVersionDownload(a *authority.Authority, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error) {
+	if current, err := s.ProviderRepository.Find(a.Name, name); err == nil {
+		if v := current.GetVersion(version); v != nil && v.Origin != provider.OriginUpstream {
+			return nil, fmt.Errorf("platform %s_%s of %s/%s %s: %w", system, architecture, a.Name, name, version, repositories.ErrNotFound)
+		}
+	}
+
 	v, err := s.ensureUpstreamVersion(a, name, version)
 	if err != nil {
 		return nil, err

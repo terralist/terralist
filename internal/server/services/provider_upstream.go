@@ -59,13 +59,18 @@ func (s *DefaultProviderService) upstreamVersions(a *authority.Authority, name s
 	return versions
 }
 
-// mergeUpstreamVersions appends the upstream versions the provider does not
-// hold locally to the registry version list.
-func mergeUpstreamVersions(dto *provider.VersionListProviderDTO, upstream []UpstreamVersion) {
-	local := lo.SliceToMap(dto.Versions, func(v provider.VersionListVersionDTO) (string, struct{}) {
+// localVersions returns the set of versions a provider holds, whether the
+// registry protocol can serve them or not. Uploaded versions always win over
+// the upstream ones.
+func localVersions(p *provider.Provider) map[string]struct{} {
+	return lo.SliceToMap(p.Versions, func(v provider.Version) (string, struct{}) {
 		return v.Version, struct{}{}
 	})
+}
 
+// mergeUpstreamVersions appends the upstream versions the provider does not
+// hold locally to the registry version list.
+func mergeUpstreamVersions(dto *provider.VersionListProviderDTO, local map[string]struct{}, upstream []UpstreamVersion) {
 	for _, v := range upstream {
 		if _, ok := local[v.Version]; ok {
 			continue

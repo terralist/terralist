@@ -118,6 +118,21 @@ func TestGetProviderWithUpstream(t *testing.T) {
 			})
 		})
 
+		Convey("Given a mirror-only local version that also exists upstream", func() {
+			local := f.localProvider()
+			local.Versions = append(local.Versions, provider.Version{Version: "3.2.5"})
+			f.repo.On("Find", "hashicorp", "null").Return(local, nil)
+			f.upstream.On("ProviderVersions", f.auth, "null").Return(upstreamVersions, nil)
+
+			dto, err := f.service.Get("hashicorp", "null", true)
+
+			Convey("Then the uploaded version wins and stays hidden from the registry", func() {
+				So(err, ShouldBeNil)
+				So(len(dto.Versions), ShouldEqual, 1)
+				So(dto.Versions[0].Version, ShouldEqual, "3.2.4")
+			})
+		})
+
 		Convey("Given the caller may not fetch", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
 
@@ -250,6 +265,7 @@ func TestGetVersionFromUpstream(t *testing.T) {
 
 		Convey("Given the caller may fetch and the upstream knows the version", func() {
 			local := f.localProvider()
+			local.Versions[0].Origin = provider.OriginUpstream
 			f.repo.On("Find", "hashicorp", "null").Return(local, nil)
 			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.4").Return(upstreamMetadata, nil)
 			f.resolver.On("Find", "providers/hashicorp/null/3.2.4/SHA256SUMS").Return("https://storage/SHA256SUMS", nil)
@@ -303,6 +319,17 @@ func TestGetVersionFromUpstream(t *testing.T) {
 				So(v.SigningKeys, ShouldContainSubstring, "UPSTREAMKEY")
 				So(len(v.Platforms), ShouldEqual, 0)
 				So(dto.SigningKeys.Keys[0].KeyId, ShouldEqual, "UPSTREAMKEY")
+			})
+		})
+
+		Convey("Given the version was uploaded by an operator", func() {
+			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+
+			_, err := f.service.GetVersion("hashicorp", "null", "3.2.4", "darwin", "arm64", true)
+
+			Convey("Then the missing platform is not completed from the upstream", func() {
+				So(errors.Is(err, repositories.ErrNotFound), ShouldBeTrue)
+				f.upstream.AssertNotCalled(t, "ProviderVersion", mock.Anything, mock.Anything, mock.Anything)
 			})
 		})
 

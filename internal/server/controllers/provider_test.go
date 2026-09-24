@@ -283,3 +283,70 @@ func TestProviderController_UploadPackages(t *testing.T) {
 		})
 	})
 }
+
+func TestProviderController_Fetch(t *testing.T) {
+	Convey("Subject: Fetching provider packages from the upstream on demand", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		url := "/v1/api/providers/hashicorp/null/3.2.4/fetch"
+		body := bytes.NewBufferString(`{"platforms": ["linux_amd64", "darwin_arm64"]}`)
+
+		post := func(router *gin.Engine, body *bytes.Buffer) *httptest.ResponseRecorder {
+			req := httptest.NewRequest(http.MethodPost, url, body)
+			req.Header.Set("Content-Type", "application/json")
+
+			return serve(router, req)
+		}
+
+		Convey("Given no authenticated user", func() {
+			router, _, _ := setupProviderRouter(t, nil, "")
+			w := post(router, body)
+
+			Convey("Then it should be unauthorized", func() {
+				So(w.Code, ShouldEqual, http.StatusUnauthorized)
+			})
+		})
+
+		Convey("Given a user without create permission", func() {
+			router, _, _ := setupProviderRouter(t, user, "")
+			w := post(router, body)
+
+			Convey("Then it should be forbidden", func() {
+				So(w.Code, ShouldEqual, http.StatusForbidden)
+			})
+		})
+
+		Convey("Given a user with create permission", func() {
+			router, mockService, _ := setupProviderRouter(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+
+			Convey("When the platforms are fetched", func() {
+				mockService.On("Fetch", "hashicorp", "null", "3.2.4", []string{"linux_amd64", "darwin_arm64"}).Return([]provider.FetchResultDTO{
+					{Platform: "linux_amd64"},
+					{Platform: "darwin_arm64", Error: "upstream down"},
+				})
+
+				w := post(router, body)
+
+				Convey("Then every outcome should be reported", func() {
+					So(w.Code, ShouldEqual, http.StatusOK)
+					So(w.Body.String(), ShouldEqual, `{"results":[{"platform":"linux_amd64"},{"platform":"darwin_arm64","error":"upstream down"}]}`)
+				})
+			})
+
+			Convey("When no platform is given", func() {
+				w := post(router, bytes.NewBufferString(`{"platforms": []}`))
+
+				Convey("Then it should be a bad request", func() {
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
+			})
+
+			Convey("When the body is not JSON", func() {
+				w := post(router, bytes.NewBufferString(`nope`))
+
+				Convey("Then it should be a bad request", func() {
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
+			})
+		})
+	})
+}

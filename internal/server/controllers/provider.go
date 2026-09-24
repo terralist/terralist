@@ -246,6 +246,36 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
+	// Fetch the packages of a version from the upstream registry
+	api.POST(
+		"/:namespace/:name/:version/fetch",
+		requireAuthorization(rbac.ActionCreate, slugComposer),
+		func(ctx *gin.Context) {
+			var body struct {
+				Platforms []string `json:"platforms"`
+			}
+			if err := ctx.BindJSON(&body); err != nil {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
+			if len(body.Platforms) == 0 {
+				ctx.JSON(http.StatusBadRequest, gin.H{
+					"errors": []string{"expecting at least one os_arch platform to fetch"},
+				})
+				return
+			}
+
+			results := c.ProviderService.Fetch(ctx.Param("namespace"), ctx.Param("name"), ctx.Param("version"), body.Platforms)
+
+			ctx.JSON(http.StatusOK, gin.H{
+				"results": results,
+			})
+		},
+	)
+
 	// Delete a provider
 	api.DELETE(
 		"/:namespace/:name/remove",
