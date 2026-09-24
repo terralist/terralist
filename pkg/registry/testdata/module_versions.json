@@ -1,0 +1,18 @@
+{
+  "modules": [
+    {
+      "source": "hashicorp/subnets/cidr",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "root": {
+            "providers": [],
+            "dependencies": []
+          },
+          "submodules": [],
+          "deprecation": null
+        }
+      ]
+    }
+  ]
+}

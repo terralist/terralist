@@ -72,6 +72,24 @@ func newRegistry(t *testing.T) (*httptest.Server, *[]*http.Request) {
 		requests = append(requests, r)
 		_, _ = w.Write(fixture(t, "download.json"))
 	})
+	mux.HandleFunc("/v1/modules/hashicorp/subnets/cidr/versions", func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r)
+		_, _ = w.Write(fixture(t, "module_versions.json"))
+	})
+	mux.HandleFunc("/v1/modules/hashicorp/subnets/cidr/1.0.0/download", func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r)
+		w.Header().Set("X-Terraform-Get", "git::https://github.com/hashicorp/terraform-cidr-subnets?ref=52ca061aaea2e8f58c91ac03ca1fae45e44c28bf")
+		w.WriteHeader(http.StatusNoContent)
+	})
+	mux.HandleFunc("/v1/modules/hashicorp/subnets/cidr/1.1.0/download", func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r)
+		w.Header().Set("X-Terraform-Get", "../../../../../../archives/subnets-1.1.0.tar.gz")
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("/v1/modules/hashicorp/subnets/cidr/1.2.0/download", func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r)
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("/v1/providers/hashicorp/broken/versions", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("not json"))
 	})
@@ -92,7 +110,7 @@ func TestVersions(t *testing.T) {
 		client := New(server.URL)
 
 		Convey("When the versions of an existing provider are requested", func() {
-			versions, err := client.Versions(context.Background(), "hashicorp", "null")
+			versions, err := client.ProviderVersions(context.Background(), "hashicorp", "null")
 
 			Convey("Then the versions should be returned with their protocols and platforms", func() {
 				So(err, ShouldBeNil)
@@ -110,8 +128,8 @@ func TestVersions(t *testing.T) {
 		})
 
 		Convey("When the versions are requested twice", func() {
-			_, _ = client.Versions(context.Background(), "hashicorp", "null")
-			_, _ = client.Versions(context.Background(), "hashicorp", "null")
+			_, _ = client.ProviderVersions(context.Background(), "hashicorp", "null")
+			_, _ = client.ProviderVersions(context.Background(), "hashicorp", "null")
 
 			Convey("Then service discovery should be performed once", func() {
 				var discoveries int
@@ -125,7 +143,7 @@ func TestVersions(t *testing.T) {
 		})
 
 		Convey("When the versions of an unknown provider are requested", func() {
-			_, err := client.Versions(context.Background(), "hashicorp", "missing")
+			_, err := client.ProviderVersions(context.Background(), "hashicorp", "missing")
 
 			Convey("Then it should report the provider as not found", func() {
 				So(errors.Is(err, ErrNotFound), ShouldBeTrue)
@@ -133,7 +151,7 @@ func TestVersions(t *testing.T) {
 		})
 
 		Convey("When the registry answers with an invalid document", func() {
-			_, err := client.Versions(context.Background(), "hashicorp", "broken")
+			_, err := client.ProviderVersions(context.Background(), "hashicorp", "broken")
 
 			Convey("Then an error should be returned", func() {
 				So(err, ShouldNotBeNil)
@@ -149,7 +167,7 @@ func TestVersionsWithToken(t *testing.T) {
 		client := New(server.URL, WithToken("secret"))
 
 		Convey("When the versions are requested", func() {
-			_, err := client.Versions(context.Background(), "hashicorp", "null")
+			_, err := client.ProviderVersions(context.Background(), "hashicorp", "null")
 
 			Convey("Then every request should carry the bearer token", func() {
 				So(err, ShouldBeNil)
@@ -170,7 +188,7 @@ func TestDiscoveryFailures(t *testing.T) {
 			defer server.Close()
 
 			Convey("When the versions are requested", func() {
-				_, err := New(server.URL).Versions(context.Background(), "hashicorp", "null")
+				_, err := New(server.URL).ProviderVersions(context.Background(), "hashicorp", "null")
 
 				Convey("Then an error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -185,7 +203,7 @@ func TestDiscoveryFailures(t *testing.T) {
 			defer server.Close()
 
 			Convey("When the versions are requested", func() {
-				_, err := New(server.URL).Versions(context.Background(), "hashicorp", "null")
+				_, err := New(server.URL).ProviderVersions(context.Background(), "hashicorp", "null")
 
 				Convey("Then an error should be returned", func() {
 					So(err, ShouldNotBeNil)
@@ -201,7 +219,7 @@ func TestDiscoveryFailures(t *testing.T) {
 			defer discovery.Close()
 
 			Convey("When the versions are requested", func() {
-				versions, err := New(discovery.URL).Versions(context.Background(), "hashicorp", "null")
+				versions, err := New(discovery.URL).ProviderVersions(context.Background(), "hashicorp", "null")
 
 				Convey("Then the providers URL should be followed", func() {
 					So(err, ShouldBeNil)
@@ -219,7 +237,7 @@ func TestDownload(t *testing.T) {
 		client := New(server.URL)
 
 		Convey("When the metadata of an existing package is requested", func() {
-			download, err := client.Download(context.Background(), "hashicorp", "null", "3.2.4", "linux", "amd64")
+			download, err := client.ProviderDownload(context.Background(), "hashicorp", "null", "3.2.4", "linux", "amd64")
 
 			Convey("Then the metadata should be returned", func() {
 				So(err, ShouldBeNil)
@@ -239,7 +257,7 @@ func TestDownload(t *testing.T) {
 		})
 
 		Convey("When the metadata of an unknown package is requested", func() {
-			_, err := client.Download(context.Background(), "hashicorp", "null", "3.2.4", "plan9", "mips")
+			_, err := client.ProviderDownload(context.Background(), "hashicorp", "null", "3.2.4", "plan9", "mips")
 
 			Convey("Then it should report the package as not found", func() {
 				So(errors.Is(err, ErrNotFound), ShouldBeTrue)
@@ -385,6 +403,92 @@ func TestVerifyShaSums(t *testing.T) {
 					So(err, ShouldNotBeNil)
 					So(errors.Is(err, ErrKeyExpired), ShouldBeFalse)
 				})
+			})
+		})
+	})
+}
+
+func TestModuleVersions(t *testing.T) {
+	Convey("Subject: Listing the versions of an upstream module", t, func() {
+		server, requests := newRegistry(t)
+		client := New(server.URL)
+
+		Convey("When the versions of an existing module are requested", func() {
+			versions, err := client.ModuleVersions(context.Background(), "hashicorp", "subnets", "cidr")
+
+			Convey("Then the versions should be returned", func() {
+				So(err, ShouldBeNil)
+				So(versions, ShouldResemble, []ModuleVersion{{Version: "1.0.0"}})
+			})
+
+			Convey("Then the modules service should have been discovered and queried", func() {
+				So((*requests)[0].URL.Path, ShouldEqual, "/.well-known/terraform.json")
+				So((*requests)[1].URL.Path, ShouldEqual, "/v1/modules/hashicorp/subnets/cidr/versions")
+			})
+		})
+
+		Convey("When the versions of an unknown module are requested", func() {
+			_, err := client.ModuleVersions(context.Background(), "hashicorp", "missing", "cidr")
+
+			Convey("Then it should report the module as not found", func() {
+				So(errors.Is(err, ErrNotFound), ShouldBeTrue)
+			})
+		})
+
+		Convey("When providers and modules are both requested", func() {
+			_, _ = client.ProviderVersions(context.Background(), "hashicorp", "null")
+			_, _ = client.ModuleVersions(context.Background(), "hashicorp", "subnets", "cidr")
+
+			Convey("Then service discovery should still be performed once", func() {
+				var discoveries int
+				for _, r := range *requests {
+					if r.URL.Path == "/.well-known/terraform.json" {
+						discoveries++
+					}
+				}
+				So(discoveries, ShouldEqual, 1)
+			})
+		})
+	})
+}
+
+func TestModuleLocation(t *testing.T) {
+	Convey("Subject: Resolving the source location of an upstream module version", t, func() {
+		server, _ := newRegistry(t)
+		client := New(server.URL)
+
+		Convey("When the registry answers with a go-getter location", func() {
+			location, err := client.ModuleLocation(context.Background(), "hashicorp", "subnets", "cidr", "1.0.0")
+
+			Convey("Then the location should be returned as is", func() {
+				So(err, ShouldBeNil)
+				So(location, ShouldEqual, "git::https://github.com/hashicorp/terraform-cidr-subnets?ref=52ca061aaea2e8f58c91ac03ca1fae45e44c28bf")
+			})
+		})
+
+		Convey("When the registry answers with a relative location", func() {
+			location, err := client.ModuleLocation(context.Background(), "hashicorp", "subnets", "cidr", "1.1.0")
+
+			Convey("Then the location should be resolved against the download URL", func() {
+				So(err, ShouldBeNil)
+				So(location, ShouldEqual, server.URL+"/archives/subnets-1.1.0.tar.gz")
+			})
+		})
+
+		Convey("When the registry answers without a location", func() {
+			_, err := client.ModuleLocation(context.Background(), "hashicorp", "subnets", "cidr", "1.2.0")
+
+			Convey("Then an error should be returned", func() {
+				So(err, ShouldNotBeNil)
+				So(errors.Is(err, ErrNotFound), ShouldBeFalse)
+			})
+		})
+
+		Convey("When the version does not exist", func() {
+			_, err := client.ModuleLocation(context.Background(), "hashicorp", "subnets", "cidr", "9.9.9")
+
+			Convey("Then it should report the version as not found", func() {
+				So(errors.Is(err, ErrNotFound), ShouldBeTrue)
 			})
 		})
 	})

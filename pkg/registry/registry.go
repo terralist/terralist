@@ -1,5 +1,5 @@
-// Package registry is a client for the Terraform provider registry protocol,
-// used to read upstream registries such as registry.terraform.io.
+// Package registry is a client for the Terraform provider and module registry
+// protocols, used to read upstream registries such as registry.terraform.io.
 package registry
 
 import (
@@ -19,9 +19,14 @@ const (
 	// discoveryPath is the service discovery document of a registry host.
 	discoveryPath = "/.well-known/terraform.json"
 
-	// providersService is the service discovery key of the provider registry
-	// protocol.
+	// providersService and modulesService are the service discovery keys of
+	// the provider and module registry protocols.
 	providersService = "providers.v1"
+	modulesService   = "modules.v1"
+
+	// locationHeader carries the source location of a module version in the
+	// module registry protocol download response.
+	locationHeader = "X-Terraform-Get"
 
 	defaultTimeout = 30 * time.Second
 )
@@ -32,14 +37,14 @@ var (
 	ErrNotFound = errors.New("not found in the upstream registry")
 )
 
-// Client reads providers from one upstream registry.
+// Client reads providers and modules from one upstream registry.
 type Client struct {
 	baseURL string
 	token   string
 	http    *http.Client
 
-	mu           sync.Mutex
-	providersURL *url.URL
+	mu       sync.Mutex
+	services map[string]*url.URL
 }
 
 // Option configures a Client.
@@ -115,82 +120,174 @@ type GPGPublicKey struct {
 	SourceURL      string `json:"source_url"`
 }
 
-// Versions lists the versions of a provider.
-func (c *Client) Versions(ctx context.Context, namespace, name string) ([]Version, error) {
+// ModuleVersion is an entry of the module registry protocol version list.
+type ModuleVersion struct {
+	Version string `json:"version"`
+}
+
+// ProviderVersions lists the versions of a provider.
+func (c *Client) ProviderVersions(ctx context.Context, namespace, name string) ([]Version, error) {
 	var body struct {
 		Versions []Version `json:"versions"`
 	}
 
-	if err := c.getProviders(ctx, path.Join(namespace, name, "versions"), &body); err != nil {
+	if err := c.getJSON(ctx, providersService, path.Join(namespace, name, "versions"), &body); err != nil {
 		return nil, err
 	}
 
 	return body.Versions, nil
 }
 
-// Download fetches the package metadata of a provider version for a platform.
-func (c *Client) Download(ctx context.Context, namespace, name, version, os, arch string) (*Download, error) {
+// ProviderDownload fetches the package metadata of a provider version for a
+// platform.
+func (c *Client) ProviderDownload(ctx context.Context, namespace, name, version, os, arch string) (*Download, error) {
 	var body Download
 
-	if err := c.getProviders(ctx, path.Join(namespace, name, version, "download", os, arch), &body); err != nil {
+	if err := c.getJSON(ctx, providersService, path.Join(namespace, name, version, "download", os, arch), &body); err != nil {
 		return nil, err
 	}
 
 	return &body, nil
 }
 
-// getProviders performs a GET under the providers service and decodes the JSON
-// response into out.
-func (c *Client) getProviders(ctx context.Context, relative string, out any) error {
-	base, err := c.discover(ctx)
-	if err != nil {
-		return err
+// ModuleVersions lists the versions of a module.
+func (c *Client) ModuleVersions(ctx context.Context, namespace, name, system string) ([]ModuleVersion, error) {
+	var body struct {
+		Modules []struct {
+			Versions []ModuleVersion `json:"versions"`
+		} `json:"modules"`
 	}
 
-	endpoint := base.JoinPath(relative)
+	if err := c.getJSON(ctx, modulesService, path.Join(namespace, name, system, "versions"), &body); err != nil {
+		return nil, err
+	}
 
-	return c.getJSON(ctx, endpoint.String(), out)
+	var versions []ModuleVersion
+	for _, m := range body.Modules {
+		versions = append(versions, m.Versions...)
+	}
+
+	return versions, nil
 }
 
-// discover resolves the providers service URL of the registry once.
-func (c *Client) discover(ctx context.Context) (*url.URL, error) {
+// ModuleLocation resolves the source location of a module version, a go-getter
+// address the module can be fetched from. A relative location is resolved
+// against the download endpoint, as Terraform does.
+func (c *Client) ModuleLocation(ctx context.Context, namespace, name, system, version string) (string, error) {
+	endpoint, err := c.endpoint(ctx, modulesService, path.Join(namespace, name, system, version, "download"))
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := c.get(ctx, endpoint.String())
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return "", fmt.Errorf("request to %s returned status %d", endpoint, resp.StatusCode)
+	}
+
+	location := resp.Header.Get(locationHeader)
+	if location == "" {
+		return "", fmt.Errorf("%s did not return a %s header", endpoint, locationHeader)
+	}
+
+	if strings.HasPrefix(location, "/") || strings.HasPrefix(location, "./") || strings.HasPrefix(location, "../") {
+		relative, err := url.Parse(location)
+		if err != nil {
+			return "", fmt.Errorf("invalid module location %q: %w", location, err)
+		}
+
+		location = endpoint.ResolveReference(relative).String()
+	}
+
+	return location, nil
+}
+
+// endpoint builds the URL of a path under one of the discovered services.
+func (c *Client) endpoint(ctx context.Context, service, relative string) (*url.URL, error) {
+	base, err := c.discover(ctx, service)
+	if err != nil {
+		return nil, err
+	}
+
+	return base.JoinPath(relative), nil
+}
+
+// discover resolves the URL of a registry service, fetching the service
+// discovery document once.
+func (c *Client) discover(ctx context.Context, service string) (*url.URL, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.providersURL != nil {
-		return c.providersURL, nil
+	if c.services == nil {
+		var announced map[string]string
+		if err := c.getJSONFrom(ctx, c.baseURL+discoveryPath, &announced); err != nil {
+			return nil, fmt.Errorf("service discovery failed: %w", err)
+		}
+
+		base, err := url.Parse(c.baseURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid registry URL %q: %w", c.baseURL, err)
+		}
+
+		c.services = make(map[string]*url.URL, len(announced))
+		for name, location := range announced {
+			serviceURL, err := url.Parse(location)
+			if err != nil {
+				return nil, fmt.Errorf("invalid %s service URL %q: %w", name, location, err)
+			}
+
+			c.services[name] = base.ResolveReference(serviceURL)
+		}
 	}
 
-	var services map[string]string
-	if err := c.getJSON(ctx, c.baseURL+discoveryPath, &services); err != nil {
-		return nil, fmt.Errorf("service discovery failed: %w", err)
+	serviceURL, ok := c.services[service]
+	if !ok {
+		return nil, fmt.Errorf("registry %s does not offer the %s service", c.baseURL, service)
 	}
 
-	service, ok := services[providersService]
-	if !ok || service == "" {
-		return nil, fmt.Errorf("registry %s does not offer the %s service", c.baseURL, providersService)
-	}
-
-	base, err := url.Parse(c.baseURL)
-	if err != nil {
-		return nil, fmt.Errorf("invalid registry URL %q: %w", c.baseURL, err)
-	}
-
-	serviceURL, err := url.Parse(service)
-	if err != nil {
-		return nil, fmt.Errorf("invalid %s service URL %q: %w", providersService, service, err)
-	}
-
-	c.providersURL = base.ResolveReference(serviceURL)
-
-	return c.providersURL, nil
+	return serviceURL, nil
 }
 
-// getJSON performs an authenticated GET and decodes the JSON response into out.
-func (c *Client) getJSON(ctx context.Context, endpoint string, out any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+// getJSON performs a GET under one of the discovered services and decodes the
+// JSON response into out.
+func (c *Client) getJSON(ctx context.Context, service, relative string, out any) error {
+	endpoint, err := c.endpoint(ctx, service, relative)
 	if err != nil {
 		return err
+	}
+
+	return c.getJSONFrom(ctx, endpoint.String(), out)
+}
+
+// getJSONFrom performs a GET and decodes the JSON response into out.
+func (c *Client) getJSONFrom(ctx context.Context, endpoint string, out any) error {
+	resp, err := c.get(ctx, endpoint)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("request to %s returned status %d", endpoint, resp.StatusCode)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return fmt.Errorf("could not decode the response of %s: %w", endpoint, err)
+	}
+
+	return nil
+}
+
+// get performs an authenticated GET. A 404 answer is reported as ErrNotFound;
+// any other status is left to the caller.
+func (c *Client) get(ctx context.Context, endpoint string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	req.Header.Set("Accept", "application/json")
@@ -200,20 +297,13 @@ func (c *Client) getJSON(ctx context.Context, endpoint string, out any) error {
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return fmt.Errorf("request to %s failed: %w", endpoint, err)
-	}
-	defer resp.Body.Close()
-
-	switch {
-	case resp.StatusCode == http.StatusNotFound:
-		return fmt.Errorf("%s: %w", endpoint, ErrNotFound)
-	case resp.StatusCode != http.StatusOK:
-		return fmt.Errorf("request to %s returned status %d", endpoint, resp.StatusCode)
+		return nil, fmt.Errorf("request to %s failed: %w", endpoint, err)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return fmt.Errorf("could not decode the response of %s: %w", endpoint, err)
+	if resp.StatusCode == http.StatusNotFound {
+		resp.Body.Close()
+		return nil, fmt.Errorf("%s: %w", endpoint, ErrNotFound)
 	}
 
-	return nil
+	return resp, nil
 }
