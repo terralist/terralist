@@ -237,7 +237,7 @@ tasks:
       COVER_PROFILE: "coverage/unit.txt"
       ALL_PACKAGES:
         sh: go list ./...
-      TEST_EXCLUSIONS: '{{list "mocks" "cmd" "models" "e2e" | join "|"}}'
+      TEST_EXCLUSIONS: '{{list "mocks" "cmd" "e2e" | join "|"}}'
       TEST_PACKAGES:
         sh: >-
           {{- $excl := .TEST_EXCLUSIONS -}}
