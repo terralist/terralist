@@ -844,3 +844,7 @@ func TestAuthorityRules(t *testing.T) {
 		})
 	})
 }
+
+func newTestSealer() *secret.Sealer {
+	return secret.NewSealer("test-secret")
+}
