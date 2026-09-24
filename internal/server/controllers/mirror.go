@@ -41,6 +41,10 @@ type DefaultMirrorController struct {
 	Authentication   *handlers.Authentication
 	Authorization    *handlers.Authorization
 
+	// Tokens signs the package links listed in version documents. Terraform
+	// downloads packages without credentials, so the link carries the proof.
+	Tokens *handlers.PackageTokens
+
 	// Hostname is the host under which Terralist serves its providers.
 	// Providers addressed with this hostname belong to the authority named
 	// by the namespace; providers addressed with any other hostname belong
@@ -53,9 +57,18 @@ type DefaultMirrorController struct {
 	AutoCreate []string
 }
 
-// mirrorNamespaceKey is the context key holding the name of the authority a
-// mirror request resolved to.
-const mirrorNamespaceKey = "mirrorNamespace"
+const (
+	// mirrorNamespaceKey is the context key holding the name of the authority
+	// a mirror request resolved to.
+	mirrorNamespaceKey = "mirrorNamespace"
+
+	// packageFetchKey is the context key holding the fetch permission carried
+	// by a valid package token, when the request presented one.
+	packageFetchKey = "packageFetch"
+
+	// packageTokenQuery is the query parameter carrying a package token.
+	packageTokenQuery = "token"
+)
 
 func (c *DefaultMirrorController) Paths() []string {
 	return []string{
@@ -79,8 +92,19 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	tfApi := apis[0]
 	tfApi.Use(c.Authentication.AttemptAuthentication())
 	tfApi.Use(c.resolveNamespace())
+	tfApi.Use(c.acceptPackageToken())
 	if !c.AnonymousRead {
-		tfApi.Use(requireAuthorization(rbac.ActionGet, slugComposer))
+		authorize := requireAuthorization(rbac.ActionGet, slugComposer)
+		tfApi.Use(func(ctx *gin.Context) {
+			// A valid package token is the proof that the version document
+			// listing the package was served to an authorized caller.
+			if _, ok := ctx.Get(packageFetchKey); ok {
+				ctx.Next()
+				return
+			}
+
+			authorize(ctx)
+		})
 	}
 
 	tfApi.GET(
@@ -126,9 +150,13 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 }
 
-// listArchives serves the network mirror version document.
+// listArchives serves the network mirror version document. Packages that are
+// not stored yet are listed relative to the document, with a token proving
+// the caller's permissions to the download that follows.
 func (c *DefaultMirrorController) listArchives(ctx *gin.Context, namespace, name, version string) {
-	dto, err := c.ProviderService.ListMirrorArchives(namespace, name, version, c.mayFetch(ctx, namespace, name))
+	fetch := c.mayFetch(ctx, namespace, name)
+
+	dto, err := c.ProviderService.ListMirrorArchives(namespace, name, version, fetch)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"errors": []string{err.Error()},
@@ -136,13 +164,62 @@ func (c *DefaultMirrorController) listArchives(ctx *gin.Context, namespace, name
 		return
 	}
 
+	for key, archive := range dto.Archives {
+		pkg, ok := provider.ParsePackageFileName(archive.URL)
+		if !ok {
+			continue
+		}
+
+		token, err := c.Tokens.Sign(namespace, pkg, fetch)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"errors": []string{err.Error()},
+			})
+			return
+		}
+
+		archive.URL = fmt.Sprintf("%s?%s=%s", archive.URL, packageTokenQuery, token)
+		dto.Archives[key] = archive
+	}
+
 	ctx.JSON(http.StatusOK, dto)
 }
 
+// acceptPackageToken verifies the token a package request may carry and
+// records the fetch permission it grants.
+func (c *DefaultMirrorController) acceptPackageToken() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		token := ctx.Query(packageTokenQuery)
+		if token == "" {
+			ctx.Next()
+			return
+		}
+
+		namespace := handlers.MustGetFromContext[string](ctx, mirrorNamespaceKey)
+		pkg, ok := provider.ParsePackageFileName(ctx.Param("version"))
+		if !ok || pkg.Name != ctx.Param("name") {
+			ctx.Next()
+			return
+		}
+
+		if fetch, ok := c.Tokens.Verify(token, *namespace, pkg); ok {
+			ctx.Set(packageFetchKey, &fetch)
+		}
+
+		ctx.Next()
+	}
+}
+
 // download redirects to the storage location of a package, fetching it from
-// the upstream registry first when the caller may do so.
+// the upstream registry first when the caller may do so, by credentials or by
+// the token of the link.
 func (c *DefaultMirrorController) download(ctx *gin.Context, namespace string, pkg provider.Package) {
-	url, err := c.ProviderService.Download(namespace, pkg.Name, pkg.Version, pkg.System, pkg.Architecture, c.mayFetch(ctx, namespace, pkg.Name))
+	fetch := c.mayFetch(ctx, namespace, pkg.Name)
+	if granted, err := handlers.GetFromContext[bool](ctx, packageFetchKey); err == nil {
+		fetch = fetch || *granted
+	}
+
+	url, err := c.ProviderService.Download(namespace, pkg.Name, pkg.Version, pkg.System, pkg.Architecture, fetch)
 
 	switch {
 	case err == nil:

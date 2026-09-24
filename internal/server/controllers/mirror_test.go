@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"terralist/internal/server/handlers"
@@ -72,6 +73,7 @@ func setupMirrorRouter(
 			Enforcer:         enforcer,
 			AuthorityService: mockAuthorityService,
 		},
+		Tokens:        testPackageTokens(t),
 		Hostname:      mirrorTestHostname,
 		AnonymousRead: anonymousRead,
 		AutoCreate:    autoCreate,
@@ -332,7 +334,7 @@ func TestMirrorController_DownloadArchive(t *testing.T) {
 		})
 
 		Convey("Given a user allowed to create the provider", func() {
-			router, mockService, _ := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+			router, mockService := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
 
 			Convey("When a package that needs fetching is requested", func() {
 				mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
@@ -428,7 +430,7 @@ func TestMirrorController_AutoCreate(t *testing.T) {
 
 // setupMirrorRouterWithPolicy is setupMirrorRouter for an authenticated user
 // with the given RBAC policy.
-func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string) (*gin.Engine, *services.MockProviderService, *services.MockAuthorityService) {
+func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string) (*gin.Engine, *services.MockProviderService) {
 	t.Helper()
 
 	gin.SetMode(gin.TestMode)
@@ -457,6 +459,7 @@ func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string
 		AuthorityService: mockAuthorityService,
 		Authentication:   &handlers.Authentication{JWT: jwtManager, Store: store},
 		Authorization:    &handlers.Authorization{Enforcer: enforcer, AuthorityService: mockAuthorityService},
+		Tokens:           testPackageTokens(t),
 		Hostname:         mirrorTestHostname,
 	}
 
@@ -469,5 +472,102 @@ func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string
 
 	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: ""}).Register(controller)
 
-	return router, mockService, mockAuthorityService
+	return router, mockService
+}
+
+func testPackageTokens(t *testing.T) *handlers.PackageTokens {
+	t.Helper()
+
+	tokens, err := handlers.NewPackageTokens("test-signing-secret")
+	if err != nil {
+		t.Fatalf("failed to create package tokens: %v", err)
+	}
+
+	return tokens
+}
+
+func TestMirrorController_PackageTokens(t *testing.T) {
+	Convey("Subject: Package download links carrying a capability token", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		base := "/providers/" + mirrorTestHostname + "/hashicorp/null/"
+		pkg := provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}
+		document := &provider.MirrorArchivesDTO{Archives: map[string]provider.MirrorArchiveDTO{
+			"linux_amd64":  {URL: "https://storage.example.com/linux.zip", Hashes: []string{"zh:aaaa"}},
+			"darwin_arm64": {URL: "terraform-provider-null_3.2.4_darwin_arm64.zip", Hashes: []string{"zh:bbbb"}},
+		}}
+
+		Convey("Given a user allowed to create the provider", func() {
+			router, mockService := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+			mockService.On("ListMirrorArchives", "hashicorp", "null", "3.2.4", true).Return(document, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"3.2.4.json", nil))
+
+			Convey("Then stored packages keep their URL and upstream ones get a token allowing the fetch", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+
+				var body provider.MirrorArchivesDTO
+				So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
+				So(body.Archives["linux_amd64"].URL, ShouldEqual, "https://storage.example.com/linux.zip")
+				So(body.Archives["darwin_arm64"].URL, ShouldStartWith, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+
+				token := strings.TrimPrefix(body.Archives["darwin_arm64"].URL, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+				fetch, ok := testPackageTokens(t).Verify(token, "hashicorp", pkg)
+				So(ok, ShouldBeTrue)
+				So(fetch, ShouldBeTrue)
+			})
+		})
+
+		Convey("Given a readonly user", func() {
+			router, mockService, _ := setupMirrorRouter(t, user, false, false)
+			mockService.On("ListMirrorArchives", "hashicorp", "null", "3.2.4", false).Return(document, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"3.2.4.json", nil))
+
+			Convey("Then upstream packages get a token without the fetch permission", func() {
+				var body provider.MirrorArchivesDTO
+				So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
+				token := strings.TrimPrefix(body.Archives["darwin_arm64"].URL, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+				fetch, ok := testPackageTokens(t).Verify(token, "hashicorp", pkg)
+				So(ok, ShouldBeTrue)
+				So(fetch, ShouldBeFalse)
+			})
+		})
+
+		Convey("Given no credentials but a valid token allowing the fetch", func() {
+			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
+			token, _ := testPackageTokens(t).Sign("hashicorp", pkg, true)
+			mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
+
+			Convey("Then the package should be served", func() {
+				So(w.Code, ShouldEqual, http.StatusFound)
+				So(w.Header().Get("Location"), ShouldEqual, "https://storage.example.com/darwin.zip")
+			})
+		})
+
+		Convey("Given no credentials but a read-only token", func() {
+			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
+			token, _ := testPackageTokens(t).Sign("hashicorp", pkg, false)
+			mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", false).Return("", services.ErrFetchRequiresCreate)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
+
+			Convey("Then fetching should be forbidden", func() {
+				So(w.Code, ShouldEqual, http.StatusForbidden)
+			})
+		})
+
+		Convey("Given no credentials and a token for another package", func() {
+			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
+			token, _ := testPackageTokens(t).Sign("hashicorp", provider.Package{Name: "null", Version: "3.2.4", System: "linux", Architecture: "amd64"}, true)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
+
+			Convey("Then it should be forbidden and the service not called", func() {
+				So(w.Code, ShouldEqual, http.StatusForbidden)
+				mockService.AssertNotCalled(t, "Download", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+			})
+		})
+	})
 }

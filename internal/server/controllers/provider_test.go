@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"terralist/internal/server/handlers"
@@ -58,9 +60,16 @@ func setupProviderRouter(t *testing.T, user *auth.User, policyCSV string) (*gin.
 		t.Fatalf("failed to create session store: %v", err)
 	}
 
+	tokens, err := handlers.NewPackageTokens("test-signing-secret")
+	if err != nil {
+		t.Fatalf("failed to create package tokens: %v", err)
+	}
+
 	controller := &DefaultProviderController{
 		ProviderService:  mockService,
 		AuthorityService: mockAuthorityService,
+		Tokens:           tokens,
+		MirrorBaseURL:    "https://terralist.example.com/providers/terralist.example.com",
 		Authentication: &handlers.Authentication{
 			JWT:   jwtManager,
 			Store: store,
@@ -345,6 +354,55 @@ func TestProviderController_Fetch(t *testing.T) {
 
 				Convey("Then it should be a bad request", func() {
 					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
+			})
+		})
+	})
+}
+
+func TestProviderController_DownloadFromUpstream(t *testing.T) {
+	Convey("Subject: Registry download metadata pointing at the mirror", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		url := "/v1/providers/hashicorp/null/3.2.4/download/darwin/arm64"
+
+		Convey("Given a user allowed to create the provider", func() {
+			router, mockService, mockAuthorityService := setupProviderRouter(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+			mockAuthorityService.On("GetByName", "hashicorp").Return(&authority.Authority{Name: "hashicorp"}, nil).Maybe()
+
+			Convey("When the platform is not stored yet", func() {
+				mockService.On("GetVersion", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return(&provider.DownloadPlatformDTO{
+					FileName:    "terraform-provider-null_3.2.4_darwin_arm64.zip",
+					DownloadUrl: "https://terralist.example.com/providers/terralist.example.com/hashicorp/null/terraform-provider-null_3.2.4_darwin_arm64.zip",
+				}, nil)
+
+				w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
+
+				Convey("Then the download URL should carry a token allowing the fetch", func() {
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					var body provider.DownloadPlatformDTO
+					So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
+					So(body.DownloadUrl, ShouldStartWith, "https://terralist.example.com/providers/terralist.example.com/hashicorp/null/terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+
+					tokens, _ := handlers.NewPackageTokens("test-signing-secret")
+					token := strings.SplitN(body.DownloadUrl, "?token=", 2)[1]
+					fetch, ok := tokens.Verify(token, "hashicorp", provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"})
+					So(ok, ShouldBeTrue)
+					So(fetch, ShouldBeTrue)
+				})
+			})
+
+			Convey("When the platform is stored", func() {
+				mockService.On("GetVersion", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return(&provider.DownloadPlatformDTO{
+					DownloadUrl: "https://storage.example.com/darwin.zip",
+				}, nil)
+
+				w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
+
+				Convey("Then the storage URL should be left untouched", func() {
+					var body provider.DownloadPlatformDTO
+					So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
+					So(body.DownloadUrl, ShouldEqual, "https://storage.example.com/darwin.zip")
 				})
 			})
 		})

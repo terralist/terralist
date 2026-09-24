@@ -48,6 +48,12 @@ type DefaultProviderController struct {
 	Authentication   *handlers.Authentication
 	Authorization    *handlers.Authorization
 	AnonymousRead    bool
+
+	// Tokens signs the download links that point at the network mirror, where
+	// packages not stored yet are fetched from. MirrorBaseURL is where those
+	// links start.
+	Tokens        *handlers.PackageTokens
+	MirrorBaseURL string
 }
 
 func (c *DefaultProviderController) Paths() []string {
@@ -108,13 +114,23 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			os := ctx.Param("os")
 			arch := ctx.Param("arch")
 
-			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch, c.mayFetch(ctx, namespace, name))
+			fetch := c.mayFetch(ctx, namespace, name)
+
+			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch, fetch)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
 			}
+
+			if err := c.signMirrorDownload(dto, namespace, fetch); err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"errors": []string{err.Error()},
+				})
+				return
+			}
+
 			ctx.JSON(http.StatusOK, dto)
 		},
 	)
@@ -326,6 +342,28 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			})
 		},
 	)
+}
+
+// signMirrorDownload appends a package token to a download URL pointing at the
+// network mirror, since Terraform downloads packages without credentials.
+func (c *DefaultProviderController) signMirrorDownload(dto *provider.DownloadPlatformDTO, namespace string, fetch bool) error {
+	if c.MirrorBaseURL == "" || !strings.HasPrefix(dto.DownloadUrl, c.MirrorBaseURL+"/") {
+		return nil
+	}
+
+	pkg, ok := provider.ParsePackageFileName(dto.FileName)
+	if !ok {
+		return nil
+	}
+
+	token, err := c.Tokens.Sign(namespace, pkg, fetch)
+	if err != nil {
+		return err
+	}
+
+	dto.DownloadUrl = fmt.Sprintf("%s?token=%s", dto.DownloadUrl, token)
+
+	return nil
 }
 
 // mayFetch reports whether the caller may create packages of the provider,

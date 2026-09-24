@@ -411,13 +411,20 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		return nil, err
 	}
 
+	packageTokens, err := handlers.NewPackageTokens(userConfig.TokenSigningSecret)
+	if err != nil {
+		return nil, fmt.Errorf("could not create the package token signer: %w", err)
+	}
+
+	mirrorBaseURL := strings.TrimRight(hostURL.String(), "/") + "/providers/" + hostURL.Host
+
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
 		AuthorityService:   authorityService,
 		Resolver:           config.ProvidersResolver,
 		Fetcher:            file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
 		Upstream:           upstreamService,
-		MirrorBaseURL:      strings.TrimRight(hostURL.String(), "/") + "/providers/" + hostURL.Host,
+		MirrorBaseURL:      mirrorBaseURL,
 	}
 
 	providerController := &controllers.DefaultProviderController{
@@ -427,6 +434,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
+		Tokens:           packageTokens,
+		MirrorBaseURL:    mirrorBaseURL,
 	}
 
 	apiV1Group.Register(providerController)
@@ -436,6 +445,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		Authentication:   authentication,
 		Authorization:    authorization,
+		Tokens:           packageTokens,
 		Hostname:         hostURL.Host,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
 		AutoCreate:       splitHostnames(userConfig.UpstreamAutoCreate),
