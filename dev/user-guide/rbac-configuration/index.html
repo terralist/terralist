@@ -1060,7 +1060,7 @@
 <p>Terralist has three pre-defined roles. All roles can be extended or overridden through the server-side policy configuration.</p>
 <ul>
 <li><code>role:anonymous</code>: has access to no resources (unless specified otherwise in the server-side configuration);</li>
-<li><code>role:readonly</code><sup>*</sup>: read-only access to <code>modules</code>, <code>providers</code>, <code>authorities</code>, and <code>mirror</code> (but not API keys or settings). Access to <code>settings</code> is policy-driven;</li>
+<li><code>role:readonly</code><sup>*</sup>: read-only access to <code>modules</code>, <code>providers</code>, and <code>authorities</code> (but not API keys or settings). Access to <code>settings</code> is policy-driven;</li>
 <li><code>role:admin</code><sup>*</sup>: unrestricted access to all resources;</li>
 </ul>
 <p><sup>*</sup> This role cannot be extended.</p>
@@ -1119,7 +1119,7 @@
 <p>Syntax: <code>p, role:&lt;role&gt;/&lt;username&gt;/&lt;useremail&gt;/role:&lt;group&gt;, &lt;resource&gt;, &lt;action&gt;, &lt;object&gt;, &lt;effect&gt;</code></p>
 <ul>
 <li><code>role:&lt;role&gt;/&lt;username&gt;/&lt;useremail&gt;/role:&lt;group&gt;</code>: The entity to whom the policy will be assigned</li>
-<li><code>&lt;resource&gt;</code><sup>*</sup>: The type of resource on which the action is performed. Can be one of: <code>modules</code>, <code>providers</code>, <code>authorities</code>, <code>api-keys</code>, <code>settings</code>, <code>mirror</code>. Supports glob matching.</li>
+<li><code>&lt;resource&gt;</code><sup>*</sup>: The type of resource on which the action is performed. Can be one of: <code>modules</code>, <code>providers</code>, <code>authorities</code>, <code>api-keys</code>, <code>settings</code>. Supports glob matching.</li>
 <li><code>&lt;action&gt;</code><sup>*</sup>: The operation that is being performed on the resource. Can be one of: <code>get</code>, <code>create</code>, <code>update</code>, <code>delete</code>. Supports glob matching.</li>
 <li><code>&lt;object&gt;</code><sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.</li>
 <li><code>&lt;effect&gt;</code>: Whether this policy should grant or restrict the operation on the target object. One of <code>allow</code> or <code>deny</code>.</li>
@@ -1154,13 +1154,9 @@
 <td><code>settings</code></td>
 <td><code>page</code></td>
 </tr>
-<tr>
-<td><code>mirror</code></td>
-<td><code>&lt;hostname&gt;/&lt;namespace&gt;/&lt;provider-name&gt;</code></td>
-</tr>
 </tbody>
 </table>
-<p>The <code>mirror</code> resource covers the providers served through the <a href="../network-mirror/">Provider Network Mirror</a>. Deleting a whole namespace or hostname is evaluated against the shorter objects <code>&lt;hostname&gt;/&lt;namespace&gt;</code> and <code>&lt;hostname&gt;</code>, so a policy such as <code>p, ops@example.com, mirror, delete, registry.terraform.io*, allow</code> grants all deletion scopes under that hostname.</p>
+<p>The <code>providers</code> resource covers both the Provider Registry Protocol and the <a href="../network-mirror/">Provider Network Mirror</a>.</p>
 <h2 id="api-key-scopes">API Key Scopes<a class="headerlink" href="#api-key-scopes" title="Permanent link">¶</a></h2>
 <p>Every API key has a <strong>scope</strong> — a required label that determines who can manage the key via RBAC policies.</p>
 <p>Unlike modules or providers, API keys have no natural organizational hierarchy. The API key's UUID cannot be used in policies because it is the authentication secret itself. The scope solves this by providing a human-readable, non-sensitive identifier that can be referenced in the server-side RBAC policy.</p>
@@ -1178,7 +1174,7 @@
 <p>API keys carry their own RBAC policies. When authenticating with an API key, the key's inline policies are evaluated directly -- the server-side policy file is not consulted.</p>
 <p>Each policy on an API key follows the same format as server-side policies:</p>
 <ul>
-<li><code>&lt;resource&gt;</code>: The resource type (<code>modules</code>, <code>providers</code>, <code>authorities</code>, <code>api-keys</code>, <code>settings</code>, <code>mirror</code>, or <code>*</code>)</li>
+<li><code>&lt;resource&gt;</code>: The resource type (<code>modules</code>, <code>providers</code>, <code>authorities</code>, <code>api-keys</code>, <code>settings</code>, or <code>*</code>)</li>
 <li><code>&lt;action&gt;</code>: The operation (<code>get</code>, <code>create</code>, <code>update</code>, <code>delete</code>, or <code>*</code>)</li>
 <li><code>&lt;object&gt;</code>: The object identifier (supports glob matching, same format as the table above)</li>
 <li><code>&lt;effect&gt;</code>: <code>allow</code> or <code>deny</code></li>

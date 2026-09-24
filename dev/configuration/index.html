@@ -1077,17 +1077,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mirror-storage-resolver" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        mirror-storage-resolver
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#modules-anonymous-read" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1103,17 +1092,6 @@
     <span class="md-ellipsis">
       
         providers-anonymous-read
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mirror-anonymous-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        mirror-anonymous-read
       
     </span>
   </a>
@@ -2619,17 +2597,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#mirror-storage-resolver" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        mirror-storage-resolver
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#modules-anonymous-read" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2645,17 +2612,6 @@
     <span class="md-ellipsis">
       
         providers-anonymous-read
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#mirror-anonymous-read" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        mirror-anonymous-read
       
     </span>
   </a>
@@ -4989,42 +4945,6 @@
 </tr>
 </tbody>
 </table>
-<h3 id="mirror-storage-resolver"><code>mirror-storage-resolver</code><a class="headerlink" href="#mirror-storage-resolver" title="Permanent link">¶</a></h3>
-<p>The storage resolver for mirrored providers, served through the <a href="../user-guide/network-mirror/">Provider Network Mirror Protocol</a>. Mirrored packages are always stored under the <code>mirror/</code> prefix, so the same bucket or directory can be shared with modules and providers. The network mirror endpoints are served only when a resolver is configured.</p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>type</td>
-<td>select</td>
-</tr>
-<tr>
-<td>choices</td>
-<td><code>disabled</code>, <code>local</code>, <code>s3</code>, <code>azure</code>, <code>gcs</code></td>
-</tr>
-<tr>
-<td>required</td>
-<td>no</td>
-</tr>
-<tr>
-<td>default</td>
-<td><code>disabled</code></td>
-</tr>
-<tr>
-<td>cli</td>
-<td><code>--mirror-storage-resolver</code></td>
-</tr>
-<tr>
-<td>env</td>
-<td><code>TERRALIST_MIRROR_STORAGE_RESOLVER</code></td>
-</tr>
-</tbody>
-</table>
 <h3 id="modules-anonymous-read"><code>modules-anonymous-read</code><a class="headerlink" href="#modules-anonymous-read" title="Permanent link">¶</a></h3>
 <p>Allows anonymous read and download of modules.</p>
 <table>
@@ -5086,38 +5006,6 @@
 <tr>
 <td>env</td>
 <td><code>TERRALIST_PROVIDERS_ANONYMOUS_READ</code></td>
-</tr>
-</tbody>
-</table>
-<h3 id="mirror-anonymous-read"><code>mirror-anonymous-read</code><a class="headerlink" href="#mirror-anonymous-read" title="Permanent link">¶</a></h3>
-<p>Allows anonymous read and download of mirrored providers through the <a href="../user-guide/network-mirror/">Provider Network Mirror Protocol</a>.</p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>type</td>
-<td>bool</td>
-</tr>
-<tr>
-<td>required</td>
-<td>no</td>
-</tr>
-<tr>
-<td>default</td>
-<td><code>false</code></td>
-</tr>
-<tr>
-<td>cli</td>
-<td><code>--mirror-anonymous-read</code></td>
-</tr>
-<tr>
-<td>env</td>
-<td><code>TERRALIST_MIRROR_ANONYMOUS_READ</code></td>
 </tr>
 </tbody>
 </table>
