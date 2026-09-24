@@ -704,20 +704,20 @@ curl -L -X DELETE \
     }
     ```
 
-## List mirrored provider versions
+## List provider versions (network mirror)
 
 ```
 GET /providers/:hostname/:namespace/:name/index.json
 ```
 
-List all versions of a provider mirrored from an upstream registry, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). See the [Provider Network Mirror](../user-guide/network-mirror.md) guide for details.
+List all versions of a provider, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). The `hostname` must be the one Terralist is served under; any other hostname is not found. See the [Provider Network Mirror](../user-guide/network-mirror.md) guide for details.
 
 ### Example Request
 
 ``` shell
 curl -L -X GET \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/providers/registry.terraform.io/hashicorp/null/index.json
+  http://localhost:5758/providers/localhost:5758/hashicorp/null/index.json
 ```
 
 ### Example Response
@@ -742,25 +742,25 @@ curl -L -X GET \
     ``` json
     {
       "errors": [
-        "no mirrored provider found with given arguments (provider registry.terraform.io/hashicorp/null)"
+        "requested provider was not found: no provider found with given arguments (provider hashicorp/null)"
       ]
     }
     ```
 
-## List mirrored provider installation packages
+## List provider installation packages (network mirror)
 
 ```
 GET /providers/:hostname/:namespace/:name/:version.json
 ```
 
-List the installation packages of a mirrored provider version, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). The `url` of each package points to the storage backend and may be temporary.
+List the installation packages of a provider version, as defined by the [Provider Network Mirror Protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol). The `url` of each package points to the storage backend and may be temporary. Each package carries its `zh:` hash, the sha256 published in the provider's `SHA256SUMS` file.
 
 ### Example Request
 
 ``` shell
 curl -L -X GET \
   -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/providers/registry.terraform.io/hashicorp/null/3.2.4.json
+  http://localhost:5758/providers/localhost:5758/hashicorp/null/3.2.4.json
 ```
 
 ### Example Response
@@ -771,15 +771,15 @@ curl -L -X GET \
     {
       "archives": {
         "darwin_arm64": {
-          "url": "https://bucket.s3.amazonaws.com/mirror/registry.terraform.io/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip?...",
+          "url": "https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip?...",
           "hashes": [
-            "h1:L5V05xwp/Gto1leRryuesxjMfgZwjb7oool4WS1UEFQ="
+            "zh:2a3f1f4b7b0d1e2c9a6f0c3e6d5b4a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b"
           ]
         },
         "linux_amd64": {
-          "url": "https://bucket.s3.amazonaws.com/mirror/registry.terraform.io/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip?...",
+          "url": "https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip?...",
           "hashes": [
-            "h1:hkf5w5B6q8e2A42ND2CjAvgvSN3puAosDmOJb3zCVQM="
+            "zh:9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b"
           ]
         }
       }
@@ -795,122 +795,7 @@ curl -L -X GET \
     ``` json
     {
       "errors": [
-        "provider registry.terraform.io/hashicorp/null does not contain version 3.2.4"
-      ]
-    }
-    ```
-
-## Upload mirrored provider packages
-
-```
-POST /v1/api/mirror/:hostname/:namespace/:name/:version/upload
-```
-
-Upload the packages of a mirrored provider version, as produced by `terraform providers mirror`. The request is a multipart form with two fields:
-
-- `metadata`: the `<version>.json` document listing the packages and their hashes;
-- `archives`: one or more package archives listed in the document.
-
-Every archive must match the `h1` hash declared for it in the document, otherwise the whole upload is rejected. Archives listed in the document but not attached are ignored, so platforms can be uploaded in separate requests. Uploading a platform that already exists for the version is rejected.
-
-### Example Request
-
-``` shell
-curl -L -X POST \
-  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  -F metadata=@3.2.4.json \
-  -F archives=@terraform-provider-null_3.2.4_linux_amd64.zip \
-  -F archives=@terraform-provider-null_3.2.4_darwin_arm64.zip \
-  http://localhost:5758/v1/api/mirror/registry.terraform.io/hashicorp/null/3.2.4/upload
-```
-
-### Example Response
-
-=== "Status 200"
-
-    ``` json
-    {
-      "errors": []
-    }
-    ```
-
-=== "Status 400"
-
-    ``` json
-    {
-      "errors": [
-        "expecting exactly one version document in the \"metadata\" field"
-      ]
-    }
-    ```
-
-=== "Status 401"
-
-    ``` json
-    {
-      "errors": [
-        "Authorization: missing",
-        "X-API-Key: missing"
-      ]
-    }
-    ```
-
-=== "Status 409"
-
-    ``` json
-    {
-      "errors": [
-        "archive terraform-provider-null_3.2.4_linux_amd64.zip does not match its declared h1 hash"
-      ]
-    }
-    ```
-
-## Remove mirrored providers
-
-```
-DELETE /v1/api/mirror/:hostname/:namespace/:name/:version
-DELETE /v1/api/mirror/:hostname/:namespace/:name
-DELETE /v1/api/mirror/:hostname/:namespace
-DELETE /v1/api/mirror/:hostname
-```
-
-Remove a mirrored provider version, a provider with all its versions, every provider of a namespace, or every provider mirrored from a hostname. The stored packages are removed as well.
-
-### Example Request
-
-``` shell
-curl -L -X DELETE \
-  -H "Authorization: Bearer x-api-key:<YOUR-TOKEN>" \
-  http://localhost:5758/v1/api/mirror/registry.terraform.io/hashicorp/null/3.2.4
-```
-
-### Example Response
-
-=== "Status 200"
-
-    ``` json
-    {
-      "errors": []
-    }
-    ```
-
-=== "Status 401"
-
-    ``` json
-    {
-      "errors": [
-        "Authorization: missing",
-        "X-API-Key: missing"
-      ]
-    }
-    ```
-
-=== "Status 404"
-
-    ``` json
-    {
-      "errors": [
-        "provider registry.terraform.io/hashicorp/null does not contain version 3.2.4"
+        "provider hashicorp/null does not contain version 3.2.4"
       ]
     }
     ```

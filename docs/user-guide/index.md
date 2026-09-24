@@ -8,5 +8,5 @@ The Terralist User Guide provides documentation for users of Terralist. Various 
 - [RBAC Configuration](rbac-configuration.md) - Set up role-based access control
 - [SAML Configuration](saml-configuration.md) - Configure SAML SSO authentication
 - [Monitoring and Observability](monitoring.md) - Prometheus metrics and monitoring setup
-- [Provider Network Mirror](network-mirror.md) - Serve mirrored providers to air-gapped environments
+- [Provider Network Mirror](network-mirror.md) - Install Terralist providers through a network mirror
 - [VCS release webhooks](webhook-vcs-releases.md) - Publish module and provider versions from GitHub releases

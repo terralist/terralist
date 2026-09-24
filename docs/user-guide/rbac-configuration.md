@@ -12,7 +12,7 @@ There are two main components where RBAC configuration can be defined:
 Terralist has three pre-defined roles. All roles can be extended or overridden through the server-side policy configuration.
 
 - `role:anonymous`: has access to no resources (unless specified otherwise in the server-side configuration);
-- `role:readonly`<sup>*</sup>: read-only access to `modules`, `providers`, `authorities`, and `mirror` (but not API keys or settings). Access to `settings` is policy-driven;
+- `role:readonly`<sup>*</sup>: read-only access to `modules`, `providers`, and `authorities` (but not API keys or settings). Access to `settings` is policy-driven;
 - `role:admin`<sup>*</sup>: unrestricted access to all resources;
 
 <sup>*</sup> This role cannot be extended.
@@ -52,7 +52,7 @@ Below is a table that defines claims meaning for each OAuth provider.
 Syntax: `p, role:<role>/<username>/<useremail>/role:<group>, <resource>, <action>, <object>, <effect>`
 
 - `role:<role>/<username>/<useremail>/role:<group>`: The entity to whom the policy will be assigned
-- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `api-keys`, `settings`, `mirror`. Supports glob matching.
+- `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `api-keys`, `settings`. Supports glob matching.
 - `<action>`<sup>*</sup>: The operation that is being performed on the resource. Can be one of: `get`, `create`, `update`, `delete`. Supports glob matching.
 - `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
@@ -68,9 +68,8 @@ Below is a table that defines the correct object syntax for each resource group.
 | `providers`    | `<authority-name>/<provider-name>`               |
 | `api-keys`     | `<scope>`                                        |
 | `settings`     | `page`                                           |
-| `mirror`       | `<hostname>/<namespace>/<provider-name>`         |
 
-The `mirror` resource covers the providers served through the [Provider Network Mirror](network-mirror.md). Deleting a whole namespace or hostname is evaluated against the shorter objects `<hostname>/<namespace>` and `<hostname>`, so a policy such as `p, ops@example.com, mirror, delete, registry.terraform.io*, allow` grants all deletion scopes under that hostname.
+The `providers` resource covers both the Provider Registry Protocol and the [Provider Network Mirror](network-mirror.md).
 
 ## API Key Scopes
 
@@ -103,7 +102,7 @@ API keys carry their own RBAC policies. When authenticating with an API key, the
 
 Each policy on an API key follows the same format as server-side policies:
 
-- `<resource>`: The resource type (`modules`, `providers`, `authorities`, `api-keys`, `settings`, `mirror`, or `*`)
+- `<resource>`: The resource type (`modules`, `providers`, `authorities`, `api-keys`, `settings`, or `*`)
 - `<action>`: The operation (`get`, `create`, `update`, `delete`, or `*`)
 - `<object>`: The object identifier (supports glob matching, same format as the table above)
 - `<effect>`: `allow` or `deny`
