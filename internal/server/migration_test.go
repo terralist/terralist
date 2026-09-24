@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"terralist/internal/server/models/apikey"
-	"terralist/internal/server/models/mirror"
 
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
@@ -78,19 +77,26 @@ func documentationColumnDefault(db *gorm.DB) (sql.NullString, error) {
 	return sql.NullString{}, gorm.ErrRecordNotFound
 }
 
-func TestInitialMigrationCreatesMirrorTables(t *testing.T) {
+func TestInitialMigrationDropsMirrorTables(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite database: %v", err)
+	}
+
+	tables := []string{"mirror_providers", "mirror_versions", "mirror_platforms"}
+	for _, table := range tables {
+		if err := db.Exec("CREATE TABLE " + table + " (id TEXT PRIMARY KEY)").Error; err != nil {
+			t.Fatalf("failed to create table %s: %v", table, err)
+		}
 	}
 
 	if err := (&InitialMigration{}).Migrate(db); err != nil {
 		t.Fatalf("failed to run initial migration: %v", err)
 	}
 
-	for _, model := range []any{&mirror.Provider{}, &mirror.Version{}, &mirror.Platform{}} {
-		if !db.Migrator().HasTable(model) {
-			t.Errorf("expected table for %T to be created", model)
+	for _, table := range tables {
+		if db.Migrator().HasTable(table) {
+			t.Errorf("expected table %s to be dropped", table)
 		}
 	}
 }

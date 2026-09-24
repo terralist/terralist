@@ -63,7 +63,6 @@ type Config struct {
 	Provider          auth.Provider
 	ModulesResolver   storage.Resolver
 	ProvidersResolver storage.Resolver
-	MirrorResolver    storage.Resolver
 	VcsProvider       vcs.Provider
 	Store             session.Store
 }
@@ -465,8 +464,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	modulesLocal := local.UnwrapResolver(config.ModulesResolver)
 	providersLocal := local.UnwrapResolver(config.ProvidersResolver)
-	mirrorLocal := local.UnwrapResolver(config.MirrorResolver)
-	if modulesLocal != nil || providersLocal != nil || mirrorLocal != nil {
+	if modulesLocal != nil || providersLocal != nil {
 		localJWTManager, err := jwt.New(userConfig.LocalTokenSigningSecret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create local JWT manager: %v", err)
@@ -475,7 +473,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		filesController := &controllers.DefaultFileServer{
 			ModulesResolver:   config.ModulesResolver,
 			ProvidersResolver: config.ProvidersResolver,
-			MirrorResolver:    config.MirrorResolver,
 			JWT:               localJWTManager,
 		}
 
