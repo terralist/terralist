@@ -170,6 +170,22 @@ sum(rate(terralist_storage_operations_total{status="success"}[5m]))
 sum(rate(terralist_storage_operations_total[5m])) * 100
 ```
 
+#### Cache Operations
+
+```
+terralist_cache_operations_total{operation="get|set|delete", backend="memory", result="hit|miss|success|error"}
+```
+
+Total cache operations by type, backend, and result. Reads are counted as hits or misses, writes and deletes as successes or errors.
+
+**Example queries:**
+```promql
+# Hit ratio
+sum(rate(terralist_cache_operations_total{operation="get", result="hit"}[5m]))
+/
+sum(rate(terralist_cache_operations_total{operation="get"}[5m]))
+```
+
 #### Data Transfer
 
 ```

@@ -21,6 +21,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/auth/saml"
+	"terralist/pkg/cache"
 	"terralist/pkg/database"
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
@@ -65,6 +66,7 @@ type Config struct {
 	ProvidersResolver storage.Resolver
 	VcsProvider       vcs.Provider
 	Store             session.Store
+	Cache             cache.Cache
 }
 
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {

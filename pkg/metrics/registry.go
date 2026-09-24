@@ -46,7 +46,8 @@ func NewRegistry(cfg *RegistryConfig) *prometheus.Registry {
 		RequestsByAuthorityTotal,
 		ApiKeysTotal, StorageOperationsTotal,
 		StorageBytesTotal,
-		StorageOperationDuration)
+		StorageOperationDuration,
+		CacheOperationsTotal)
 
 	// Register database metrics if SQL DB is provided
 	if cfg != nil && cfg.SqlDB != nil {
