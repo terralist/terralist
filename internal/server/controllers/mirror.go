@@ -28,15 +28,22 @@ type MirrorController interface {
 
 // DefaultMirrorController is a concrete implementation of MirrorController.
 type DefaultMirrorController struct {
-	ProviderService services.ProviderService
-	Authentication  *handlers.Authentication
-	Authorization   *handlers.Authorization
+	ProviderService  services.ProviderService
+	AuthorityService services.AuthorityService
+	Authentication   *handlers.Authentication
+	Authorization    *handlers.Authorization
 
-	// Hostname is the host under which Terralist serves its providers. The
-	// mirror answers only for providers addressed with this hostname.
+	// Hostname is the host under which Terralist serves its providers.
+	// Providers addressed with this hostname belong to the authority named
+	// by the namespace; providers addressed with any other hostname belong
+	// to the authority standing for that upstream hostname and namespace.
 	Hostname      string
 	AnonymousRead bool
 }
+
+// mirrorNamespaceKey is the context key holding the name of the authority a
+// mirror request resolved to.
+const mirrorNamespaceKey = "mirrorNamespace"
 
 func (c *DefaultMirrorController) Paths() []string {
 	return []string{
@@ -48,17 +55,17 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	requireAuthorization := c.Authorization.RequireAuthorization(rbac.ResourceProviders)
 
 	slugComposer := func(ctx *gin.Context) string {
-		namespace := ctx.Param("namespace")
+		namespace := handlers.MustGetFromContext[string](ctx, mirrorNamespaceKey)
 		name := ctx.Param("name")
 
-		return fmt.Sprintf("%s/%s", namespace, name)
+		return fmt.Sprintf("%s/%s", *namespace, name)
 	}
 
 	// tfApi should be compliant with the Terraform Provider Network Mirror
 	// Protocol.
 	// Docs: https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol
 	tfApi := apis[0]
-	tfApi.Use(c.requireHostname())
+	tfApi.Use(c.resolveNamespace())
 	if !c.AnonymousRead {
 		tfApi.Use(c.Authentication.AttemptAuthentication())
 		tfApi.Use(requireAuthorization(rbac.ActionGet, slugComposer))
@@ -67,10 +74,10 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	tfApi.GET(
 		"/:hostname/:namespace/:name/index.json",
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
+			namespace := handlers.MustGetFromContext[string](ctx, mirrorNamespaceKey)
 			name := ctx.Param("name")
 
-			dto, err := c.ProviderService.ListMirrorVersions(namespace, name)
+			dto, err := c.ProviderService.ListMirrorVersions(*namespace, name)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -85,7 +92,7 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	tfApi.GET(
 		"/:hostname/:namespace/:name/:version",
 		func(ctx *gin.Context) {
-			namespace := ctx.Param("namespace")
+			namespace := handlers.MustGetFromContext[string](ctx, mirrorNamespaceKey)
 			name := ctx.Param("name")
 
 			version, ok := strings.CutSuffix(ctx.Param("version"), ".json")
@@ -94,7 +101,7 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			dto, err := c.ProviderService.ListMirrorArchives(namespace, name, version)
+			dto, err := c.ProviderService.ListMirrorArchives(*namespace, name, version)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -107,15 +114,25 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 	)
 }
 
-// requireHostname rejects requests for providers addressed with a hostname
-// other than the one Terralist serves.
-func (c *DefaultMirrorController) requireHostname() gin.HandlerFunc {
+// resolveNamespace maps the hostname and namespace of a mirror request to the
+// name of the authority holding the provider, and rejects requests nobody
+// stands for.
+func (c *DefaultMirrorController) resolveNamespace() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if !strings.EqualFold(ctx.Param("hostname"), c.Hostname) {
-			ctx.AbortWithStatus(http.StatusNotFound)
-			return
+		hostname := ctx.Param("hostname")
+		namespace := ctx.Param("namespace")
+
+		if !strings.EqualFold(hostname, c.Hostname) {
+			a, err := c.AuthorityService.GetByUpstream(hostname, namespace)
+			if err != nil {
+				ctx.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+
+			namespace = a.Name
 		}
 
+		ctx.Set(mirrorNamespaceKey, &namespace)
 		ctx.Next()
 	}
 }
