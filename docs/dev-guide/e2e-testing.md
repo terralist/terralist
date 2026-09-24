@@ -80,8 +80,7 @@ Tests bootstrap their own data at startup. No database snapshots or fixture file
 1. Creates an S3 bucket via the AWS SDK
 2. Creates a `hashicorp` authority via the master API key
 3. Fetches the null provider (v3.2.4) metadata from the Terraform registry and uploads it
-4. Downloads the null provider (v3.2.4) package for the current platform, computes its `h1` hash and uploads it to the provider network mirror under `registry.terraform.io/hashicorp/null`
-5. Uploads the `hashicorp/subnets/cidr` module (v1.0.0) from GitHub
+4. Uploads the `hashicorp/subnets/cidr` module (v1.0.0) from GitHub
 
 ## Coverage
 

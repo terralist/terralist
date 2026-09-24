@@ -87,11 +87,9 @@ const (
 
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
 	ProvidersStorageResolverFlag = "providers-storage-resolver"
-	MirrorStorageResolverFlag    = "mirror-storage-resolver"
 
 	ModulesAnonymousReadFlag   = "modules-anonymous-read"
 	ProvidersAnonymousReadFlag = "providers-anonymous-read"
-	MirrorAnonymousReadFlag    = "mirror-anonymous-read"
 
 	FetchAllowPrivateAddressesFlag = "fetch-allow-private-addresses"
 
@@ -403,12 +401,6 @@ var flags = map[string]cli.Flag{
 		DefaultValue: "proxy",
 	},
 
-	MirrorStorageResolverFlag: &cli.StringFlag{
-		Description:  "The mirrored providers storage resolver. The provider network mirror is served only when a resolver is configured.",
-		Choices:      []string{"disabled", "local", "s3", "azure", "gcs"},
-		DefaultValue: "disabled",
-	},
-
 	ModulesAnonymousReadFlag: &cli.BoolFlag{
 		Description:  "Allow anonymous read to modules.",
 		DefaultValue: false,
@@ -416,11 +408,6 @@ var flags = map[string]cli.Flag{
 
 	ProvidersAnonymousReadFlag: &cli.BoolFlag{
 		Description:  "Allow anonymous read to providers.",
-		DefaultValue: false,
-	},
-
-	MirrorAnonymousReadFlag: &cli.BoolFlag{
-		Description:  "Allow anonymous read to mirrored providers.",
 		DefaultValue: false,
 	},
 

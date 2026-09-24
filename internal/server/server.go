@@ -63,7 +63,6 @@ type Config struct {
 	Provider          auth.Provider
 	ModulesResolver   storage.Resolver
 	ProvidersResolver storage.Resolver
-	MirrorResolver    storage.Resolver
 	VcsProvider       vcs.Provider
 	Store             session.Store
 }
@@ -418,33 +417,21 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(providerController)
 
-	// The provider network mirror needs a place to store the mirrored
-	// packages, so it is served only when a storage resolver is configured.
-	if config.MirrorResolver != nil {
-		mirrorRepository := &repositories.DefaultMirrorRepository{
-			Database: config.Database,
-		}
-
-		mirrorService := &services.DefaultMirrorService{
-			MirrorRepository: mirrorRepository,
-			Resolver:         config.MirrorResolver,
-		}
-
-		mirrorController := &controllers.DefaultMirrorController{
-			MirrorService:  mirrorService,
-			Authentication: authentication,
-			Authorization:  authorization,
-			AnonymousRead:  userConfig.MirrorAnonymousRead,
-		}
-
-		// The Provider Network Mirror Protocol does not use service discovery,
-		// so its routes live at the root instead of under the API version
-		// prefix.
-		rootGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
-			Prefix: "",
-		})
-		rootGroup.Register(mirrorController)
+	mirrorController := &controllers.DefaultMirrorController{
+		ProviderService: providerService,
+		Authentication:  authentication,
+		Authorization:   authorization,
+		Hostname:        hostURL.Host,
+		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
+
+	// The Provider Network Mirror Protocol does not use service discovery,
+	// so its routes live at the root instead of under the API version
+	// prefix.
+	rootGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "",
+	})
+	rootGroup.Register(mirrorController)
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
@@ -477,8 +464,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	modulesLocal := local.UnwrapResolver(config.ModulesResolver)
 	providersLocal := local.UnwrapResolver(config.ProvidersResolver)
-	mirrorLocal := local.UnwrapResolver(config.MirrorResolver)
-	if modulesLocal != nil || providersLocal != nil || mirrorLocal != nil {
+	if modulesLocal != nil || providersLocal != nil {
 		localJWTManager, err := jwt.New(userConfig.LocalTokenSigningSecret)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create local JWT manager: %v", err)
@@ -487,7 +473,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		filesController := &controllers.DefaultFileServer{
 			ModulesResolver:   config.ModulesResolver,
 			ProvidersResolver: config.ProvidersResolver,
-			MirrorResolver:    config.MirrorResolver,
 			JWT:               localJWTManager,
 		}
 

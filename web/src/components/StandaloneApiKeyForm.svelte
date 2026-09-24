@@ -319,45 +319,6 @@
                       bind:value={policy.apiKey} />
                   </div>
                 </div>
-              {:else if policy.resource === 'mirror'}
-                <div class="grid grid-cols-3 gap-2">
-                  <div>
-                    <label
-                      for="policy-host-{index}"
-                      class="text-xs text-zinc-500 dark:text-zinc-400"
-                      >Hostname</label>
-                    <input
-                      id="policy-host-{index}"
-                      type="text"
-                      class={inputClass}
-                      placeholder="* (all)"
-                      bind:value={policy.hostname} />
-                  </div>
-                  <div>
-                    <label
-                      for="policy-ns-{index}"
-                      class="text-xs text-zinc-500 dark:text-zinc-400"
-                      >Namespace</label>
-                    <input
-                      id="policy-ns-{index}"
-                      type="text"
-                      class={inputClass}
-                      placeholder="* (all)"
-                      bind:value={policy.namespace} />
-                  </div>
-                  <div>
-                    <label
-                      for="policy-prov-{index}"
-                      class="text-xs text-zinc-500 dark:text-zinc-400"
-                      >Provider</label>
-                    <input
-                      id="policy-prov-{index}"
-                      type="text"
-                      class={inputClass}
-                      placeholder="* (all)"
-                      bind:value={policy.provider} />
-                  </div>
-                </div>
               {/if}
             </div>
           </div>

@@ -655,3 +655,183 @@ func TestDeleteProviderVersion(t *testing.T) {
 		})
 	})
 }
+
+func TestListMirrorVersions(t *testing.T) {
+	Convey("Subject: List the versions of a provider for the network mirror", t, func() {
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+
+		providerService := &DefaultProviderService{
+			ProviderRepository: mockProviderRepository,
+		}
+
+		Convey("Given a namespace and name", func() {
+			namespace, _ := random.String(16)
+			name, _ := random.String(16)
+
+			Convey("If the provider exists in the database", func() {
+				mockProviderRepository.
+					On("Find", namespace, name).
+					Return(&provider.Provider{
+						Name: name,
+						Versions: []provider.Version{
+							{Version: "1.0.0"},
+							{Version: "1.1.0"},
+						},
+					}, nil)
+
+				Convey("When the service is queried", func() {
+					resp, err := providerService.ListMirrorVersions(namespace, name)
+
+					Convey("Every version should map to an empty object", func() {
+						So(err, ShouldBeNil)
+						So(resp.Versions, ShouldResemble, map[string]struct{}{
+							"1.0.0": {},
+							"1.1.0": {},
+						})
+					})
+				})
+			})
+
+			Convey("If the provider does not exist in the database", func() {
+				mockProviderRepository.
+					On("Find", namespace, name).
+					Return(nil, errors.New(""))
+
+				Convey("When the service is queried", func() {
+					resp, err := providerService.ListMirrorVersions(namespace, name)
+
+					Convey("An error should be returned", func() {
+						So(err, ShouldNotBeNil)
+						So(resp, ShouldBeNil)
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestListMirrorArchives(t *testing.T) {
+	Convey("Subject: List the installation packages of a provider version for the network mirror", t, func() {
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+		mockResolver := storage.NewMockResolver(t)
+
+		providerService := &DefaultProviderService{
+			ProviderRepository: mockProviderRepository,
+			Resolver:           mockResolver,
+		}
+
+		Convey("Given a namespace, name and version", func() {
+			namespace, _ := random.String(16)
+			name, _ := random.String(16)
+
+			Convey("If the provider does not exist in the database", func() {
+				mockProviderRepository.
+					On("Find", namespace, name).
+					Return(nil, errors.New(""))
+
+				Convey("When the service is queried", func() {
+					resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+
+					Convey("An error should be returned", func() {
+						So(err, ShouldNotBeNil)
+						So(resp, ShouldBeNil)
+					})
+				})
+			})
+
+			Convey("If the provider exists in the database", func() {
+				mockProviderRepository.
+					On("Find", namespace, name).
+					Return(&provider.Provider{
+						Name: name,
+						Versions: []provider.Version{
+							{
+								Version: "1.0.0",
+								Platforms: []provider.Platform{
+									{System: "linux", Architecture: "amd64", Location: "providers/linux.zip", ShaSum: "aaaa"},
+									{System: "darwin", Architecture: "arm64", Location: "providers/darwin.zip", ShaSum: "bbbb"},
+								},
+							},
+						},
+					}, nil)
+
+				Convey("If the version does not exist", func() {
+					Convey("When the service is queried", func() {
+						resp, err := providerService.ListMirrorArchives(namespace, name, "9.9.9")
+
+						Convey("An error should be returned", func() {
+							So(err, ShouldNotBeNil)
+							So(resp, ShouldBeNil)
+						})
+					})
+				})
+
+				Convey("If the version exists and the locations can be resolved", func() {
+					mockResolver.On("Find", "providers/linux.zip").Return("https://storage/linux.zip", nil)
+					mockResolver.On("Find", "providers/darwin.zip").Return("https://storage/darwin.zip", nil)
+
+					Convey("When the service is queried", func() {
+						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+
+						Convey("Every platform should be listed with its resolved url and zh hash", func() {
+							So(err, ShouldBeNil)
+							So(resp.Archives, ShouldResemble, map[string]provider.MirrorArchiveDTO{
+								"linux_amd64":  {URL: "https://storage/linux.zip", Hashes: []string{"zh:aaaa"}},
+								"darwin_arm64": {URL: "https://storage/darwin.zip", Hashes: []string{"zh:bbbb"}},
+							})
+						})
+					})
+				})
+
+				Convey("If a location cannot be resolved", func() {
+					mockResolver.On("Find", mock.Anything).Return("", errors.New(""))
+
+					Convey("When the service is queried", func() {
+						resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+
+						Convey("An error should be returned", func() {
+							So(err, ShouldNotBeNil)
+							So(resp, ShouldBeNil)
+						})
+					})
+				})
+			})
+		})
+	})
+}
+
+func TestListMirrorArchivesWithoutResolver(t *testing.T) {
+	Convey("Subject: List the installation packages of a provider version without a storage resolver", t, func() {
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+
+		providerService := &DefaultProviderService{
+			ProviderRepository: mockProviderRepository,
+		}
+
+		namespace, _ := random.String(16)
+		name, _ := random.String(16)
+
+		mockProviderRepository.
+			On("Find", namespace, name).
+			Return(&provider.Provider{
+				Name: name,
+				Versions: []provider.Version{
+					{
+						Version: "1.0.0",
+						Platforms: []provider.Platform{
+							{System: "linux", Architecture: "amd64", Location: "https://releases/linux.zip", ShaSum: "aaaa"},
+						},
+					},
+				},
+			}, nil)
+
+		Convey("When the service is queried", func() {
+			resp, err := providerService.ListMirrorArchives(namespace, name, "1.0.0")
+
+			Convey("The stored location should be served as is", func() {
+				So(err, ShouldBeNil)
+				So(resp.Archives["linux_amd64"].URL, ShouldEqual, "https://releases/linux.zip")
+			})
+		})
+	})
+}

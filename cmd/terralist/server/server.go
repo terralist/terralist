@@ -194,7 +194,6 @@ func (s *Command) run() error {
 		CustomCompanyName:          flags[CustomCompanyNameFlag].(*cli.StringFlag).Value,
 		ModulesAnonymousRead:       flags[ModulesAnonymousReadFlag].(*cli.BoolFlag).Value,
 		ProvidersAnonymousRead:     flags[ProvidersAnonymousReadFlag].(*cli.BoolFlag).Value,
-		MirrorAnonymousRead:        flags[MirrorAnonymousReadFlag].(*cli.BoolFlag).Value,
 		FetchAllowPrivateAddresses: flags[FetchAllowPrivateAddressesFlag].(*cli.BoolFlag).Value,
 		LocalTokenSigningSecret:    flags[LocalTokenSigningSecretFlag].(*cli.StringFlag).Value,
 		SamlDisplayName:            flags[SamlDisplayNameFlag].(*cli.StringFlag).Value,
@@ -418,12 +417,10 @@ func (s *Command) run() error {
 	resolvers := map[string]storage.Resolver{
 		"modules":   nil,
 		"providers": nil,
-		"mirror":    nil,
 	}
 	resolversFlags := map[string]string{
 		"modules":   ModulesStorageResolverFlag,
 		"providers": ProvidersStorageResolverFlag,
-		"mirror":    MirrorStorageResolverFlag,
 	}
 
 	for name, key := range resolversFlags {
@@ -535,7 +532,6 @@ func (s *Command) run() error {
 		Provider:          provider,
 		ModulesResolver:   resolvers["modules"],
 		ProvidersResolver: resolvers["providers"],
-		MirrorResolver:    resolvers["mirror"],
 		VcsProvider:       vcsProvider,
 		Store:             store,
 		RunningMode:       s.RunningMode,

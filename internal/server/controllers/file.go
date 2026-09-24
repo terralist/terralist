@@ -24,7 +24,6 @@ type FileServer interface {
 type DefaultFileServer struct {
 	ModulesResolver   storage.Resolver
 	ProvidersResolver storage.Resolver
-	MirrorResolver    storage.Resolver
 
 	JWT jwt.JWT
 }
@@ -56,7 +55,6 @@ func (c *DefaultFileServer) Subscribe(apis ...*gin.RouterGroup) {
 
 	localModulesResolver := local.UnwrapResolver(c.ModulesResolver)
 	localProvidersResolver := local.UnwrapResolver(c.ProvidersResolver)
-	localMirrorResolver := local.UnwrapResolver(c.MirrorResolver)
 
 	api.GET("/*filepath", func(ctx *gin.Context) {
 		fileKey := strings.TrimPrefix(ctx.Param("filepath"), "/")
@@ -84,8 +82,6 @@ func (c *DefaultFileServer) Subscribe(apis ...*gin.RouterGroup) {
 			resolver = localModulesResolver
 		case strings.HasPrefix(fileKey, "providers/"):
 			resolver = localProvidersResolver
-		case strings.HasPrefix(fileKey, "mirror/"):
-			resolver = localMirrorResolver
 		default:
 			ctx.AbortWithStatus(http.StatusNotFound)
 			return

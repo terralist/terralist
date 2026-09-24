@@ -9,9 +9,7 @@ describe('buildPolicyObject', () => {
       authority: 'hashicorp',
       module: 'subnets',
       provider: 'aws',
-      apiKey: 'team-a',
-      hostname: 'registry.terraform.io',
-      namespace: 'hashicorp'
+      apiKey: 'team-a'
     };
 
     expect(buildPolicyObject({ ...row, resource: 'modules' })).toBe(
@@ -24,9 +22,6 @@ describe('buildPolicyObject', () => {
       'hashicorp'
     );
     expect(buildPolicyObject({ ...row, resource: 'api-keys' })).toBe('team-a');
-    expect(buildPolicyObject({ ...row, resource: 'mirror' })).toBe(
-      'registry.terraform.io/hashicorp/aws'
-    );
     expect(buildPolicyObject({ ...row, resource: '*' })).toBe('*');
   });
 
@@ -38,7 +33,7 @@ describe('buildPolicyObject', () => {
     }
   });
 
-  it('offers the mirror resource', (): void => {
-    expect(resources).toContain('mirror');
+  it('does not offer the mirror resource', (): void => {
+    expect(resources).not.toContain('mirror');
   });
 });

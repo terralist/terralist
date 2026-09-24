@@ -252,30 +252,21 @@ func TestProtect_SettingsRequiresExplicitPolicy(t *testing.T) {
 	}
 }
 
-func TestProtect_MirrorResource(t *testing.T) {
-	Convey("Subject: Protect the mirror resource", t, func() {
-		enforcer, err := NewEnforcer("", "readonly")
-		So(err, ShouldBeNil)
+func TestProtect_RejectsMirrorResource(t *testing.T) {
+	t.Parallel()
 
-		user := auth.User{
-			Name:  "alice",
-			Email: "alice@example.com",
-		}
+	enforcer, err := NewEnforcer("", "readonly")
+	if err != nil {
+		t.Fatalf("failed to create enforcer: %v", err)
+	}
 
-		Convey("When a readonly user reads a mirrored provider", func() {
-			err := enforcer.Protect(user, ResourceMirror, ActionGet, "registry.terraform.io/hashicorp/null")
+	user := auth.User{
+		Name:  "alice",
+		Email: "alice@example.com",
+	}
 
-			Convey("Then it should be allowed by the built-in readonly role", func() {
-				So(err, ShouldBeNil)
-			})
-		})
-
-		Convey("When a readonly user deletes a mirrored provider", func() {
-			err := enforcer.Protect(user, ResourceMirror, ActionDelete, "registry.terraform.io/hashicorp/null")
-
-			Convey("Then it should be denied", func() {
-				So(errors.Is(err, ErrUnauthorizedSubject), ShouldBeTrue)
-			})
-		})
-	})
+	err = enforcer.Protect(user, "mirror", ActionGet, "registry.terraform.io/hashicorp/null")
+	if !errors.Is(err, ErrUnsupported) {
+		t.Fatalf("expected the mirror resource to be unsupported, got: %v", err)
+	}
 }

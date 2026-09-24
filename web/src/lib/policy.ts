@@ -4,7 +4,6 @@ export const resources = [
   'providers',
   'authorities',
   'api-keys',
-  'mirror',
   '*'
 ];
 
@@ -18,8 +17,6 @@ export type PolicyRow = {
   module: string;
   provider: string;
   apiKey: string;
-  hostname: string;
-  namespace: string;
 };
 
 export function emptyPolicyRow(): PolicyRow {
@@ -30,9 +27,7 @@ export function emptyPolicyRow(): PolicyRow {
     authority: '*',
     module: '*',
     provider: '*',
-    apiKey: '*',
-    hostname: '*',
-    namespace: '*'
+    apiKey: '*'
   };
 }
 
@@ -48,8 +43,6 @@ export function buildPolicyObject(policy: PolicyRow): string {
       return policy.authority;
     case 'api-keys':
       return policy.apiKey;
-    case 'mirror':
-      return `${policy.hostname}/${policy.namespace}/${policy.provider}`;
     case '*':
       return '*';
     default:
