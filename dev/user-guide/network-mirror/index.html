@@ -658,6 +658,78 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#standing-for-an-upstream-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standing for an upstream namespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uploading-provider-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uploading provider packages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Uploading provider packages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-download-the-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Download the providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-optionally-download-the-signature-material" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Optionally, download the signature material
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-the-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create the authority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-upload-each-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Upload each version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuring-terraform" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -931,6 +1003,78 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#standing-for-an-upstream-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standing for an upstream namespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uploading-provider-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uploading provider packages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Uploading provider packages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-download-the-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Download the providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-optionally-download-the-signature-material" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Optionally, download the signature material
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-the-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create the authority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-upload-each-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Upload each version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#configuring-terraform" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1013,46 +1157,131 @@
 </tr>
 </tbody>
 </table>
-<p>The <code>&lt;hostname&gt;</code> is the hostname of the provider's source address. Terralist answers only for its own hostname, the one configured with the <a href="../../configuration/#url"><code>url</code></a> option; providers addressed with any other hostname are not found. The <code>&lt;namespace&gt;</code> is the authority name and the <code>&lt;type&gt;</code> is the provider name, exactly as in the registry protocol.</p>
-<p>Both documents are generated from the Terralist database. Package download URLs point to the configured providers storage, or to the location given at upload time when the <a href="../../configuration/#providers-storage-resolver"><code>providers-storage-resolver</code></a> is <code>proxy</code>. Each package is listed with its <code>zh:</code> hash, the sha256 published in the provider's <code>SHA256SUMS</code> file, which Terraform verifies before installing the package.</p>
+<p>The <code>&lt;hostname&gt;</code> and <code>&lt;namespace&gt;</code> come from the provider's source address and are mapped to an authority:</p>
+<ul>
+<li>Under Terralist's own hostname, the one configured with the <a href="../../configuration/#url"><code>url</code></a> option, the namespace is the authority name, exactly as in the registry protocol.</li>
+<li>Under any other hostname, the request is served by the authority that <a href="#standing-for-an-upstream-namespace">stands for that upstream namespace</a>. Without such an authority the provider is not found.</li>
+</ul>
+<p>Both documents are generated from the Terralist database. Package download URLs point to the configured providers storage, or to the location given at upload time when the <a href="../../configuration/#providers-storage-resolver"><code>providers-storage-resolver</code></a> is <code>proxy</code>. Each package is listed with its <code>zh:</code> hash, the sha256 of the package, and with its <code>h1:</code> hash when the uploader provided one. Terraform verifies the package against these hashes before installing it.</p>
+<h2 id="standing-for-an-upstream-namespace">Standing for an upstream namespace<a class="headerlink" href="#standing-for-an-upstream-namespace" title="Permanent link">¶</a></h2>
+<p>Terraform identifies a provider by its full source address, <code>registry.terraform.io/hashicorp/aws</code> for the public <code>hashicorp/aws</code>. A module that requires <code>hashicorp/aws</code> and a root configuration that requires <code>terralist.example.com/hashicorp/aws</code> ask for two different providers, so a mirror that only answered under Terralist's own hostname could not serve public providers to configurations that were not written for it.</p>
+<p>An authority can therefore stand for a namespace of an upstream registry. Set its upstream hostname, and optionally the upstream namespace when it differs from the authority name:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"name": "hashicorp", "upstream_hostname": "registry.terraform.io"}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities
+</span></code></pre></div>
+<p>Every provider of that authority is then served by the mirror under both addresses, <code>terralist.example.com/hashicorp/&lt;type&gt;</code> and <code>registry.terraform.io/hashicorp/&lt;type&gt;</code>. Access control does not change: the policy object stays <code>&lt;authority&gt;/&lt;type&gt;</code>. An upstream hostname and namespace pair can be claimed by one authority only.</p>
+<h2 id="uploading-provider-packages">Uploading provider packages<a class="headerlink" href="#uploading-provider-packages" title="Permanent link">¶</a></h2>
+<p>Besides the <a href="../../dev-guide/api-reference/#upload-a-provider-version">registry upload</a>, which fetches the provider files from URLs, a provider version can be uploaded from its package files directly. This is how providers reach an air-gapped Terralist: an operator downloads them on a machine with internet access, moves them into the isolated network and uploads them.</p>
+<h3 id="1-download-the-providers">1. Download the providers<a class="headerlink" href="#1-download-the-providers" title="Permanent link">¶</a></h3>
+<p>On a connected machine, let Terraform download the providers required by a configuration, together with their metadata:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>terraform<span class="w"> </span>providers<span class="w"> </span>mirror<span class="w"> </span>-platform<span class="o">=</span>linux_amd64<span class="w"> </span>-platform<span class="o">=</span>darwin_arm64<span class="w"> </span>./mirror
+</span></code></pre></div>
+<p>The command writes one directory per provider, containing a <code>&lt;version&gt;.json</code> document and one package archive per platform:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mirror/registry.terraform.io/hashicorp/null/
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>├── 3.2.4.json
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>├── index.json
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>├── terraform-provider-null_3.2.4_darwin_arm64.zip
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>└── terraform-provider-null_3.2.4_linux_amd64.zip
+</span></code></pre></div>
+<p>Terraform verifies the signatures of the packages it downloads, so the <code>h1</code> hashes listed in <code>&lt;version&gt;.json</code> can be trusted as long as the files are not altered afterwards.</p>
+<h3 id="2-optionally-download-the-signature-material">2. Optionally, download the signature material<a class="headerlink" href="#2-optionally-download-the-signature-material" title="Permanent link">¶</a></h3>
+<p>The registry protocol requires the provider's <code>SHA256SUMS</code> file, its signature and the signing key. <code>terraform providers mirror</code> does not download them, so a version uploaded without them is served through the network mirror only. To serve it through both protocols, fetch them from the upstream registry's download endpoint and add the signing key to the authority:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">version</span><span class="o">=</span><span class="m">3</span>.2.4
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">platform</span><span class="o">=</span>linux_amd64
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nv">meta</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"https://registry.terraform.io/v1/providers/hashicorp/null/</span><span class="nv">$version</span><span class="s2">/download/</span><span class="si">${</span><span class="nv">platform</span><span class="p">%_*</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">platform</span><span class="p">#*_</span><span class="si">}</span><span class="s2">"</span><span class="k">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>SHA256SUMS<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$meta</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.shasums_url<span class="k">)</span><span class="s2">"</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>SHA256SUMS.sig<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$meta</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.shasums_signature_url<span class="k">)</span><span class="s2">"</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$meta</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.signing_keys.gpg_public_keys[0] | {key_id, ascii_armor}'</span><span class="w"> </span>&gt;<span class="w"> </span>key.json
+</span></code></pre></div>
+<h3 id="3-create-the-authority">3. Create the authority<a class="headerlink" href="#3-create-the-authority" title="Permanent link">¶</a></h3>
+<p>Create the authority once, standing for the upstream namespace so that Terraform can install the providers under their original address:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"name": "hashicorp", "upstream_hostname": "registry.terraform.io"}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities
+</span></code></pre></div>
+<p>When serving through the registry protocol as well, add the signing key from step 2 to the authority through its keys endpoint or the web UI.</p>
+<h3 id="4-upload-each-version">4. Upload each version<a class="headerlink" href="#4-upload-each-version" title="Permanent link">¶</a></h3>
+<p>The upload is a multipart request with the version document in the <code>metadata</code> field and the packages in the <code>archives</code> field. The <code>shasums</code> and <code>shasums_signature</code> files and the <code>protocols</code> value are given together when the version should be served through the registry protocol too:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">metadata</span><span class="o">=</span>@3.2.4.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">archives</span><span class="o">=</span>@terraform-provider-null_3.2.4_linux_amd64.zip<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">archives</span><span class="o">=</span>@terraform-provider-null_3.2.4_darwin_arm64.zip<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">shasums</span><span class="o">=</span>@SHA256SUMS<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">shasums_signature</span><span class="o">=</span>@SHA256SUMS.sig<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">protocols</span><span class="o">=</span><span class="m">5</span>.0,6.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span>https://terralist.example.com/v1/api/providers/hashicorp/null/3.2.4/upload-files
+</span></code></pre></div>
+<p>Terralist matches every archive with the entry of the same file name in the version document, records its sha256 and its <code>h1</code> hash, and, when a <code>SHA256SUMS</code> file is given, rejects the upload if any archive does not match it. The <code>index.json</code> file is not uploaded; the version list is computed by Terralist.</p>
+<p>A whole mirror directory can be uploaded as mirror-only versions with a small loop:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">cd</span><span class="w"> </span>mirror
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>find<span class="w"> </span>.<span class="w"> </span>-name<span class="w"> </span><span class="s1">'*.json'</span><span class="w"> </span>!<span class="w"> </span>-name<span class="w"> </span><span class="s1">'index.json'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>metadata<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nv">dir</span><span class="o">=</span><span class="k">$(</span>dirname<span class="w"> </span><span class="s2">"</span><span class="nv">$metadata</span><span class="s2">"</span><span class="k">)</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nv">version</span><span class="o">=</span><span class="k">$(</span>basename<span class="w"> </span><span class="s2">"</span><span class="nv">$metadata</span><span class="s2">"</span><span class="w"> </span>.json<span class="k">)</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nv">path</span><span class="o">=</span><span class="si">${</span><span class="nv">dir</span><span class="p">#./*/</span><span class="si">}</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="nv">args</span><span class="o">=()</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>archive<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">"</span><span class="nv">$dir</span><span class="s2">"</span>/*_<span class="s2">"</span><span class="nv">$version</span><span class="s2">"</span>_*.zip<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span><span class="nv">args</span><span class="o">+=(</span>-F<span class="w"> </span><span class="s2">"archives=@</span><span class="nv">$archive</span><span class="s2">"</span><span class="o">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">  </span><span class="k">done</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">    </span>-F<span class="w"> </span><span class="s2">"metadata=@</span><span class="nv">$metadata</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">args</span><span class="p">[@]</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">    </span><span class="s2">"https://terralist.example.com/v1/api/providers/</span><span class="nv">$path</span><span class="s2">/</span><span class="nv">$version</span><span class="s2">/upload-files"</span>
+</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="k">done</span>
+</span></code></pre></div>
+<p>The loop strips the hostname from the mirror directory, so <code>registry.terraform.io/hashicorp/null</code> uploads to the <code>hashicorp</code> authority, which must exist beforehand.</p>
+<p>Mirror-only versions are omitted from the registry protocol version list, since Terraform refuses unsigned packages from a registry. They are removed like any other version, through the <a href="../../dev-guide/api-reference/#remove-a-provider-version">provider deletion endpoints</a>.</p>
 <h2 id="configuring-terraform">Configuring Terraform<a class="headerlink" href="#configuring-terraform" title="Permanent link">¶</a></h2>
 <p>Point Terraform at the mirror in the <a href="https://developer.hashicorp.com/terraform/cli/config/config-file#provider-installation">CLI configuration file</a>. The trailing slash in the URL is required.</p>
-<div class="language-hcl highlight"><span class="filename">.terraformrc</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">provider_installation</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nb">network_mirror</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="na">url</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://terralist.example.com/providers/"</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="na">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"terralist.example.com/*/*"</span><span class="p">]</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nb">direct</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="na">exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"terralist.example.com/*/*"</span><span class="p">]</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="p">}</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="err">credentials</span><span class="w"> </span><span class="s2">"terralist.example.com"</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span><span class="na">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"x-api-key:YOUR_API_KEY"</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">}</span>
+<div class="language-hcl highlight"><span class="filename">.terraformrc</span><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">provider_installation</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nb">network_mirror</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="na">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://terralist.example.com/providers/"</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="p">}</span>
+</span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+</span><span id="__span-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="err">credentials</span><span class="w"> </span><span class="s2">"terralist.example.com"</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="na">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"x-api-key:YOUR_API_KEY"</span>
+</span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">}</span>
 </span></code></pre></div>
-<p>With this configuration, providers published on Terralist are installed through the mirror and every other provider is installed directly from its origin registry. Provider addresses in the configuration stay unchanged:</p>
-<div class="language-hcl highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">terraform</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nb">required_providers</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nb">null</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">      </span><span class="na">source</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"terralist.example.com/hashicorp/null"</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="na">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"3.2.4"</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="p">}</span>
+<p>With this configuration, Terraform installs every provider from the mirror. Provider addresses in the configuration stay unchanged, and providers of authorities standing for an upstream namespace keep their upstream address:</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">terraform</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nb">required_providers</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="nb">null</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">      </span><span class="na">source</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"hashicorp/null"</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">      </span><span class="na">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"3.2.4"</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>To mirror only some providers and install the rest directly, combine the <code>network_mirror</code> and <code>direct</code> methods with <code>include</code> and <code>exclude</code>:</p>
+<div class="language-hcl highlight"><span class="filename">.terraformrc</span><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nb">provider_installation</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nb">network_mirror</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="na">url</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://terralist.example.com/providers/"</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="na">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"terralist.example.com/*/*", "registry.terraform.io/hashicorp/*"</span><span class="p">]</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span><span class="nb">direct</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="na">exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"terralist.example.com/*/*", "registry.terraform.io/hashicorp/*"</span><span class="p">]</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>Terraform verifies each package against the <code>zh:</code> hash listed by the mirror and reports it as <code>verified checksum</code>. The dependency lock file then records only the <code>h1:</code> hash Terraform computes for the installed platform, and <code>terraform init</code> warns about incomplete lock file information. Run <a href="https://developer.hashicorp.com/terraform/cli/commands/providers/lock"><code>terraform providers lock</code></a> to record the hashes of every platform your team uses.</p>
 <p>Terraform requires HTTPS for network mirrors. The <code>credentials</code> block is not needed when <a href="../../configuration/#providers-anonymous-read"><code>providers-anonymous-read</code></a> is enabled or the authority is public.</p>
 <div class="admonition warning">
 <p class="admonition-title">Hostnames with a port</p>
-<p>Terraform builds the mirror request URL from the provider hostname and mistakes a hostname that carries a port, such as <code>terralist.example.com:8443</code>, for a URL scheme. Providers served under such a hostname cannot be installed through the mirror. Serve Terralist on the default HTTPS port to use the mirror protocol.</p>
+<p>Terraform builds the mirror request URL from the provider hostname and mistakes a hostname that carries a port, such as <code>terralist.example.com:8443</code>, for a URL scheme. Providers addressed with such a hostname cannot be installed through the mirror. Serve Terralist on the default HTTPS port, or address the providers with the upstream hostname their authority stands for.</p>
 </div>
 <h2 id="access-control">Access control<a class="headerlink" href="#access-control" title="Permanent link">¶</a></h2>
 <p>The mirror serves the same providers as the registry protocol and is governed by the same <code>providers</code> <a href="../rbac-configuration/">RBAC resource</a>, with the <code>&lt;authority&gt;/&lt;provider-name&gt;</code> object syntax. A policy that grants <code>get</code> on a provider grants it through both protocols.</p>
 <h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">¶</a></h2>
 <ul>
 <li><a href="https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol">Terraform Provider Network Mirror Protocol</a></li>
+<li><a href="https://developer.hashicorp.com/terraform/cli/commands/providers/mirror"><code>terraform providers mirror</code></a></li>
 <li><a href="../../dev-guide/api-reference/#list-provider-versions-network-mirror">API reference</a></li>
 </ul>
 
