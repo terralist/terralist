@@ -24,6 +24,13 @@ func (Version) TableName() string {
 	return "provider_versions"
 }
 
+// MirrorOnly reports whether the version lacks the SHA256SUMS file and its
+// signature. Terraform refuses unsigned packages from a provider registry, so
+// such a version is served through the network mirror protocol only.
+func (v Version) MirrorOnly() bool {
+	return v.ShaSumsUrl == "" || v.ShaSumsSignatureUrl == ""
+}
+
 func (v Version) ToVersionListVersionDTO() VersionListVersionDTO {
 	var platforms []VersionListPlatformDTO
 	for _, p := range v.Platforms {

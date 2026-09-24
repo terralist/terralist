@@ -21,8 +21,13 @@ const (
 
 // ProviderService describes a service that holds the business logic for providers registry.
 type ProviderService interface {
-	// Get returns a specific provider.
+	// Get returns a specific provider, with the versions the provider registry
+	// protocol can serve.
 	Get(namespace, name string) (*provider.VersionListProviderDTO, error)
+
+	// ListVersions returns every version of a provider, including the ones
+	// served through the network mirror only.
+	ListVersions(namespace, name string) ([]string, error)
 
 	// GetVersion returns a specific installation for a provider.
 	GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error)
@@ -74,10 +79,28 @@ func (s *DefaultProviderService) Get(namespace, name string) (*provider.VersionL
 	return &dto, nil
 }
 
+func (s *DefaultProviderService) ListVersions(namespace, name string) ([]string, error) {
+	p, err := s.ProviderRepository.Find(namespace, name)
+	if err != nil {
+		return nil, fmt.Errorf("requested provider was not found: %v", err)
+	}
+
+	versions := make([]string, 0, len(p.Versions))
+	for _, v := range p.Versions {
+		versions = append(versions, v.Version)
+	}
+
+	return versions, nil
+}
+
 func (s *DefaultProviderService) GetVersion(namespace, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error) {
 	p, err := s.ProviderRepository.FindVersionPlatform(namespace, name, version, system, architecture)
 	if err != nil {
 		return nil, err
+	}
+
+	if p.Version.MirrorOnly() {
+		return nil, fmt.Errorf("version %s of provider %s/%s is served through the network mirror only", version, namespace, name)
 	}
 
 	a, err := s.AuthorityService.GetByID(p.Version.Provider.AuthorityID)

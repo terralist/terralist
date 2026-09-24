@@ -8,7 +8,6 @@ import (
 	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
-	"terralist/internal/server/models/provider"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
@@ -176,20 +175,13 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 			namespace := ctx.Param("namespace")
 			name := ctx.Param("name")
 
-			dto, err := c.ProviderService.Get(namespace, name)
+			versions, err := c.ProviderService.ListVersions(namespace, name)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
 			}
-
-			versions := lo.Map(
-				dto.Versions,
-				func(v provider.VersionListVersionDTO, _ int) string {
-					return v.Version
-				},
-			)
 
 			ctx.JSON(http.StatusOK, versions)
 		},

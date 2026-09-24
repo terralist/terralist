@@ -45,6 +45,28 @@ func TestGetProvider(t *testing.T) {
 				})
 			})
 
+			Convey("If the provider has a version without signature material", func() {
+				mockProviderRepository.
+					On("Find", namespace, name).
+					Return(&provider.Provider{
+						Name: name,
+						Versions: []provider.Version{
+							{Version: "1.0.0", Protocols: "5.0", ShaSumsUrl: "providers/SHA256SUMS", ShaSumsSignatureUrl: "providers/SHA256SUMS.sig"},
+							{Version: "1.1.0", Protocols: ""},
+						},
+					}, nil)
+
+				Convey("When the service is queried", func() {
+					resp, err := providerService.Get(namespace, name)
+
+					Convey("Only the signed version should be listed", func() {
+						So(err, ShouldBeNil)
+						So(len(resp.Versions), ShouldEqual, 1)
+						So(resp.Versions[0].Version, ShouldEqual, "1.0.0")
+					})
+				})
+			})
+
 			Convey("If the provider does not exist in the database", func() {
 				mockProviderRepository.
 					On("Find", namespace, name).
@@ -86,6 +108,24 @@ func TestGetProviderVersionDownloadInfo(t *testing.T) {
 				mockProviderRepository.
 					On("FindVersionPlatform", namespace, name, version, system, architecture).
 					Return(nil, errors.New(""))
+
+				Convey("When the service is queried", func() {
+					info, err := providerService.GetVersion(namespace, name, version, system, architecture)
+
+					Convey("An error should be returned", func() {
+						So(info, ShouldBeNil)
+						So(err, ShouldNotBeNil)
+					})
+				})
+			})
+
+			Convey("If the version has no signature material", func() {
+				mockProviderRepository.
+					On("FindVersionPlatform", namespace, name, version, system, architecture).
+					Return(&provider.Platform{
+						Location: "providers/linux.zip",
+						Version:  provider.Version{Version: version},
+					}, nil)
 
 				Convey("When the service is queried", func() {
 					info, err := providerService.GetVersion(namespace, name, version, system, architecture)
@@ -831,6 +871,55 @@ func TestListMirrorArchivesWithoutResolver(t *testing.T) {
 			Convey("The stored location should be served as is", func() {
 				So(err, ShouldBeNil)
 				So(resp.Archives["linux_amd64"].URL, ShouldEqual, "https://releases/linux.zip")
+			})
+		})
+	})
+}
+
+func TestListProviderVersions(t *testing.T) {
+	Convey("Subject: List every version of a provider", t, func() {
+		mockProviderRepository := repositories.NewMockProviderRepository(t)
+
+		providerService := &DefaultProviderService{
+			ProviderRepository: mockProviderRepository,
+		}
+
+		namespace, _ := random.String(16)
+		name, _ := random.String(16)
+
+		Convey("If the provider exists with signed and unsigned versions", func() {
+			mockProviderRepository.
+				On("Find", namespace, name).
+				Return(&provider.Provider{
+					Name: name,
+					Versions: []provider.Version{
+						{Version: "1.0.0", ShaSumsUrl: "providers/SHA256SUMS", ShaSumsSignatureUrl: "providers/SHA256SUMS.sig"},
+						{Version: "1.1.0"},
+					},
+				}, nil)
+
+			Convey("When the service is queried", func() {
+				versions, err := providerService.ListVersions(namespace, name)
+
+				Convey("Every version should be listed", func() {
+					So(err, ShouldBeNil)
+					So(versions, ShouldResemble, []string{"1.0.0", "1.1.0"})
+				})
+			})
+		})
+
+		Convey("If the provider does not exist", func() {
+			mockProviderRepository.
+				On("Find", namespace, name).
+				Return(nil, errors.New(""))
+
+			Convey("When the service is queried", func() {
+				versions, err := providerService.ListVersions(namespace, name)
+
+				Convey("An error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(versions, ShouldBeNil)
+				})
 			})
 		})
 	})
