@@ -418,33 +418,21 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(providerController)
 
-	// The provider network mirror needs a place to store the mirrored
-	// packages, so it is served only when a storage resolver is configured.
-	if config.MirrorResolver != nil {
-		mirrorRepository := &repositories.DefaultMirrorRepository{
-			Database: config.Database,
-		}
-
-		mirrorService := &services.DefaultMirrorService{
-			MirrorRepository: mirrorRepository,
-			Resolver:         config.MirrorResolver,
-		}
-
-		mirrorController := &controllers.DefaultMirrorController{
-			MirrorService:  mirrorService,
-			Authentication: authentication,
-			Authorization:  authorization,
-			AnonymousRead:  userConfig.MirrorAnonymousRead,
-		}
-
-		// The Provider Network Mirror Protocol does not use service discovery,
-		// so its routes live at the root instead of under the API version
-		// prefix.
-		rootGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
-			Prefix: "",
-		})
-		rootGroup.Register(mirrorController)
+	mirrorController := &controllers.DefaultMirrorController{
+		ProviderService: providerService,
+		Authentication:  authentication,
+		Authorization:   authorization,
+		Hostname:        hostURL.Host,
+		AnonymousRead:   userConfig.ProvidersAnonymousRead,
 	}
+
+	// The Provider Network Mirror Protocol does not use service discovery,
+	// so its routes live at the root instead of under the API version
+	// prefix.
+	rootGroup := api.NewRouterGroup(router, &api.RouterGroupOptions{
+		Prefix: "",
+	})
+	rootGroup.Register(mirrorController)
 
 	authorityController := &controllers.DefaultAuthorityController{
 		AuthorityService: authorityService,
