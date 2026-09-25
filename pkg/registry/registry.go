@@ -220,36 +220,63 @@ func (c *Client) endpoint(ctx context.Context, service, relative string) (*url.U
 // discovery document once.
 func (c *Client) discover(ctx context.Context, service string) (*url.URL, error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
+	services := c.services
+	c.mu.Unlock()
 
-	if c.services == nil {
-		var announced map[string]string
-		if err := c.getJSONFrom(ctx, c.baseURL+discoveryPath, &announced); err != nil {
-			return nil, fmt.Errorf("service discovery failed: %w", err)
+	if services == nil {
+		var err error
+		if services, err = c.fetchServices(ctx); err != nil {
+			return nil, err
 		}
 
-		base, err := url.Parse(c.baseURL)
-		if err != nil {
-			return nil, fmt.Errorf("invalid registry URL %q: %w", c.baseURL, err)
-		}
-
-		c.services = make(map[string]*url.URL, len(announced))
-		for name, location := range announced {
-			serviceURL, err := url.Parse(location)
-			if err != nil {
-				return nil, fmt.Errorf("invalid %s service URL %q: %w", name, location, err)
-			}
-
-			c.services[name] = base.ResolveReference(serviceURL)
-		}
+		c.mu.Lock()
+		c.services = services
+		c.mu.Unlock()
 	}
 
-	serviceURL, ok := c.services[service]
+	serviceURL, ok := services[service]
 	if !ok {
 		return nil, fmt.Errorf("registry %s does not offer the %s service", c.baseURL, service)
 	}
 
 	return serviceURL, nil
+}
+
+// fetchServices reads the service discovery document and resolves the URL of
+// every service it announces.
+func (c *Client) fetchServices(ctx context.Context) (map[string]*url.URL, error) {
+	var announced map[string]json.RawMessage
+	if err := c.getJSONFrom(ctx, c.baseURL+discoveryPath, &announced); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return nil, fmt.Errorf("service discovery failed: %s serves no discovery document", c.baseURL)
+		}
+
+		return nil, fmt.Errorf("service discovery failed: %w", err)
+	}
+
+	base, err := url.Parse(c.baseURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid registry URL %q: %w", c.baseURL, err)
+	}
+
+	services := make(map[string]*url.URL, len(announced))
+	for name, raw := range announced {
+		// Services such as login.v1 are announced as objects; only the ones
+		// announced as URLs are kept.
+		var location string
+		if json.Unmarshal(raw, &location) != nil {
+			continue
+		}
+
+		serviceURL, err := url.Parse(location)
+		if err != nil {
+			return nil, fmt.Errorf("invalid %s service URL %q: %w", name, location, err)
+		}
+
+		services[name] = base.ResolveReference(serviceURL)
+	}
+
+	return services, nil
 }
 
 // getJSON performs a GET under one of the discovered services and decodes the

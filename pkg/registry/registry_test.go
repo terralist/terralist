@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
@@ -211,6 +212,39 @@ func TestDiscoveryFailures(t *testing.T) {
 			})
 		})
 
+		Convey("Given a registry without a discovery document", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			}))
+			defer server.Close()
+
+			Convey("When the versions are requested", func() {
+				_, err := New(server.URL).ProviderVersions(context.Background(), "hashicorp", "null")
+
+				Convey("Then an error other than not found should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(errors.Is(err, ErrNotFound), ShouldBeFalse)
+				})
+			})
+		})
+
+		Convey("Given a registry announcing services that are not URLs", func() {
+			server, _ := newRegistry(t)
+			discovery := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(`{"login.v1":{"client":"terraform-cli","grant_types":["authz_code"]},"providers.v1":"` + server.URL + `/v1/providers/"}`))
+			}))
+			defer discovery.Close()
+
+			Convey("When the versions are requested", func() {
+				versions, err := New(discovery.URL).ProviderVersions(context.Background(), "hashicorp", "null")
+
+				Convey("Then the providers service should still be used", func() {
+					So(err, ShouldBeNil)
+					So(len(versions), ShouldEqual, 2)
+				})
+			})
+		})
+
 		Convey("Given a registry announcing an absolute providers URL", func() {
 			server, requests := newRegistry(t)
 			discovery := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -226,6 +260,50 @@ func TestDiscoveryFailures(t *testing.T) {
 					So(len(versions), ShouldEqual, 2)
 					So((*requests)[0].URL.Path, ShouldEqual, "/v1/providers/hashicorp/null/versions")
 				})
+			})
+		})
+	})
+}
+
+func TestConcurrentDiscovery(t *testing.T) {
+	Convey("Subject: Service discovery under concurrent requests", t, func() {
+		// The discovery document is only served once two requests for it are
+		// in flight together, so a client serializing discovery fails.
+		arrived := make(chan struct{}, 2)
+		mux := http.NewServeMux()
+		mux.HandleFunc("/.well-known/terraform.json", func(w http.ResponseWriter, _ *http.Request) {
+			arrived <- struct{}{}
+			deadline := time.After(2 * time.Second)
+			for len(arrived) < 2 {
+				select {
+				case <-deadline:
+					w.WriteHeader(http.StatusServiceUnavailable)
+					return
+				case <-time.After(10 * time.Millisecond):
+				}
+			}
+			_, _ = w.Write([]byte(`{"providers.v1":"/v1/providers/"}`))
+		})
+		mux.HandleFunc("/v1/providers/hashicorp/null/versions", func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write(fixture(t, "versions.json"))
+		})
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		client := New(server.URL)
+
+		Convey("When two requests discover the services at the same time", func() {
+			errs := make(chan error, 2)
+			for range 2 {
+				go func() {
+					_, err := client.ProviderVersions(context.Background(), "hashicorp", "null")
+					errs <- err
+				}()
+			}
+
+			Convey("Then neither should wait for the other", func() {
+				So(<-errs, ShouldBeNil)
+				So(<-errs, ShouldBeNil)
 			})
 		})
 	})
