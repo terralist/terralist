@@ -393,6 +393,16 @@ func TestUpstreamProviderVersion(t *testing.T) {
 			})
 		})
 
+		Convey("When the SHA256SUMS document is larger than a document may be", func() {
+			upstream.shaSums["1.0.0"] = bytes.Repeat([]byte("a"), 1<<20+1)
+			_, err := service.ProviderVersion(a, "null", "1.0.0")
+
+			Convey("Then it should be refused as too large", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "exceeds")
+			})
+		})
+
 		Convey("When the version is unknown upstream", func() {
 			_, err := service.ProviderVersion(a, "null", "9.9.9")
 
