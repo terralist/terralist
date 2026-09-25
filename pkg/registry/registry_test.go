@@ -211,6 +211,22 @@ func TestDiscoveryFailures(t *testing.T) {
 			})
 		})
 
+		Convey("Given a registry without a discovery document", func() {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			}))
+			defer server.Close()
+
+			Convey("When the versions are requested", func() {
+				_, err := New(server.URL).ProviderVersions(context.Background(), "hashicorp", "null")
+
+				Convey("Then an error other than not found should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(errors.Is(err, ErrNotFound), ShouldBeFalse)
+				})
+			})
+		})
+
 		Convey("Given a registry announcing services that are not URLs", func() {
 			server, _ := newRegistry(t)
 			discovery := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

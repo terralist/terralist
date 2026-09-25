@@ -225,6 +225,10 @@ func (c *Client) discover(ctx context.Context, service string) (*url.URL, error)
 	if c.services == nil {
 		var announced map[string]json.RawMessage
 		if err := c.getJSONFrom(ctx, c.baseURL+discoveryPath, &announced); err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return nil, fmt.Errorf("service discovery failed: %s serves no discovery document", c.baseURL)
+			}
+
 			return nil, fmt.Errorf("service discovery failed: %w", err)
 		}
 
