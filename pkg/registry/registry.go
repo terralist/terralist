@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -35,6 +36,9 @@ var (
 	// ErrNotFound is returned when the registry does not know the requested
 	// provider, version or platform.
 	ErrNotFound = errors.New("not found in the upstream registry")
+
+	// maxResponseSize bounds the JSON documents read from a registry.
+	maxResponseSize int64 = 16 << 20
 )
 
 // Client reads providers and modules from one upstream registry.
@@ -302,11 +306,30 @@ func (c *Client) getJSONFrom(ctx context.Context, endpoint string, out any) erro
 		return fmt.Errorf("request to %s returned status %d", endpoint, resp.StatusCode)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+	body, err := ReadLimited(resp.Body, maxResponseSize)
+	if err != nil {
+		return fmt.Errorf("could not read the response of %s: %w", endpoint, err)
+	}
+
+	if err := json.Unmarshal(body, out); err != nil {
 		return fmt.Errorf("could not decode the response of %s: %w", endpoint, err)
 	}
 
 	return nil
+}
+
+// ReadLimited reads r to the end, failing when it holds more than limit bytes.
+func ReadLimited(r io.Reader, limit int64) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(r, limit+1))
+	if err != nil {
+		return nil, err
+	}
+
+	if int64(len(body)) > limit {
+		return nil, fmt.Errorf("response exceeds %d bytes", limit)
+	}
+
+	return body, nil
 }
 
 // get performs an authenticated GET. A 404 answer is reported as ErrNotFound;

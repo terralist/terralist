@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -399,7 +398,7 @@ func (s *DefaultUpstreamService) fetch(ctx context.Context, url string) ([]byte,
 		return nil, fmt.Errorf("request to %s returned status %d", url, resp.StatusCode)
 	}
 
-	return io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	return registry.ReadLimited(resp.Body, 1<<20)
 }
 
 func (s *DefaultUpstreamService) key(a *authority.Authority, name, suffix string) string {

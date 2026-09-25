@@ -309,6 +309,29 @@ func TestConcurrentDiscovery(t *testing.T) {
 	})
 }
 
+func TestOversizedResponse(t *testing.T) {
+	Convey("Subject: Reading a response larger than a registry document may be", t, func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/.well-known/terraform.json", func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte(`{"providers.v1":"/v1/providers/"}`))
+		})
+		mux.HandleFunc("/v1/providers/hashicorp/null/versions", func(w http.ResponseWriter, _ *http.Request) {
+			_, _ = w.Write([]byte(`{"versions":[` + strings.Repeat(" ", int(maxResponseSize)) + `]}`))
+		})
+		server := httptest.NewServer(mux)
+		defer server.Close()
+
+		Convey("When the versions are requested", func() {
+			_, err := New(server.URL).ProviderVersions(context.Background(), "hashicorp", "null")
+
+			Convey("Then the response should be refused as too large", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "exceeds")
+			})
+		})
+	})
+}
+
 func TestDownload(t *testing.T) {
 	Convey("Subject: Fetching the download metadata of an upstream package", t, func() {
 		server, _ := newRegistry(t)
