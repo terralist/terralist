@@ -13,9 +13,9 @@ import (
 
 type Module struct {
 	entity.Entity
-	AuthorityID uuid.UUID
-	Name        string    `gorm:"not null"`
-	Provider    string    `gorm:"not null"`
+	AuthorityID uuid.UUID `gorm:"uniqueIndex:idx_modules_authority_name_provider"`
+	Name        string    `gorm:"not null;uniqueIndex:idx_modules_authority_name_provider"`
+	Provider    string    `gorm:"not null;uniqueIndex:idx_modules_authority_name_provider"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 

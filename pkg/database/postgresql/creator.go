@@ -31,7 +31,8 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN: dsn,
 	}), &gorm.Config{
-		Logger: &logger.Logger{},
+		TranslateError: true,
+		Logger:         &logger.Logger{},
 	})
 
 	if err != nil {

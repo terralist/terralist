@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -94,5 +95,35 @@ func TestProviderRepository_UpsertRejectsDuplicatePlatform(t *testing.T) {
 
 	if _, err := repo.Upsert(*current); err == nil {
 		t.Fatalf("expected a second platform for the same system and architecture to be rejected")
+	}
+}
+
+func TestProviderRepository_UpsertRejectsDuplicateProvider(t *testing.T) {
+	repo, a := newTestProviderRepository(t)
+
+	for i, want := range []error{nil, ErrAlreadyExists} {
+		_, err := repo.Upsert(provider.Provider{AuthorityID: a.ID, Name: "random"})
+		if !errors.Is(err, want) {
+			t.Fatalf("upsert %d: expected %v, got %v", i, want, err)
+		}
+	}
+}
+
+func TestProviderRepository_UpsertRejectsDuplicateVersion(t *testing.T) {
+	repo, a := newTestProviderRepository(t)
+
+	if _, err := repo.Upsert(provider.Provider{
+		AuthorityID: a.ID,
+		Name:        "random",
+		Versions:    []provider.Version{{Version: "3.6.2", Protocols: "5.0"}},
+	}); err != nil {
+		t.Fatalf("failed to create provider: %v", err)
+	}
+
+	current, _ := repo.Find("hashicorp", "random")
+	current.Versions = append(current.Versions, provider.Version{Version: "3.6.2", Protocols: "5.0"})
+
+	if _, err := repo.Upsert(*current); !errors.Is(err, ErrAlreadyExists) {
+		t.Fatalf("expected a second 3.6.2 version to be rejected as existing, got %v", err)
 	}
 }

@@ -36,7 +36,8 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 		DontSupportRenameColumn:   true,  // `change` when rename column, rename column not supported before MySQL 8, MariaDB
 		SkipInitializeWithVersion: false, // auto configure based on currently MySQL version
 	}), &gorm.Config{
-		Logger: &logger.Logger{},
+		TranslateError: true,
+		Logger:         &logger.Logger{},
 	})
 
 	if err != nil {

@@ -30,7 +30,8 @@ func (t *Creator) New(config database.Configurator) (database.Engine, error) {
 	dsn := cfg.DSN()
 
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
-		Logger: &logger.Logger{},
+		TranslateError: true,
+		Logger:         &logger.Logger{},
 	})
 
 	if err != nil {
