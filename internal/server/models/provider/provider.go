@@ -13,8 +13,8 @@ import (
 
 type Provider struct {
 	entity.Entity
-	AuthorityID uuid.UUID
-	Name        string    `gorm:"not null;index"`
+	AuthorityID uuid.UUID `gorm:"uniqueIndex:idx_providers_authority_name"`
+	Name        string    `gorm:"not null;index;uniqueIndex:idx_providers_authority_name"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 

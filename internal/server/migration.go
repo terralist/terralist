@@ -1,6 +1,9 @@
 package server
 
 import (
+	"fmt"
+	"strings"
+
 	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
@@ -14,6 +17,10 @@ import (
 type InitialMigration struct{}
 
 func (*InitialMigration) Migrate(db *database.DB) error {
+	if err := refuseDuplicateArtifacts(db); err != nil {
+		return err
+	}
+
 	if err := db.AutoMigrate(
 		&authority.Authority{},
 		&authority.Key{},
@@ -44,6 +51,47 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 	}
 
 	return hashLegacyApiKeys(db)
+}
+
+// uniqueArtifacts lists the columns identifying a row of each artifact table,
+// which the schema holds unique.
+var uniqueArtifacts = []struct {
+	table   string
+	columns []string
+}{
+	{"providers", []string{"authority_id", "name"}},
+	{"provider_versions", []string{"provider_id", "version"}},
+	{"modules", []string{"authority_id", "name", "provider"}},
+	{"module_versions", []string{"module_id", "version"}},
+}
+
+// refuseDuplicateArtifacts fails when an artifact table holds rows the unique
+// indexes would reject, naming them so they can be removed before Terralist
+// starts; no data is changed.
+func refuseDuplicateArtifacts(db *database.DB) error {
+	for _, unique := range uniqueArtifacts {
+		if !db.Migrator().HasTable(unique.table) {
+			continue
+		}
+
+		columns := strings.Join(unique.columns, ", ")
+
+		var duplicates []map[string]any
+		if err := db.Table(unique.table).
+			Select(columns).
+			Group(columns).
+			Having("COUNT(*) > 1").
+			Find(&duplicates).
+			Error; err != nil {
+			return err
+		}
+
+		if len(duplicates) > 0 {
+			return fmt.Errorf("table %s holds duplicate rows for (%s): %v; remove the duplicates before starting Terralist", unique.table, columns, duplicates)
+		}
+	}
+
+	return nil
 }
 
 // hashLegacyApiKeys converts API keys that still use their row id as the

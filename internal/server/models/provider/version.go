@@ -19,9 +19,9 @@ const (
 
 type Version struct {
 	entity.Entity
-	ProviderID          uuid.UUID
+	ProviderID          uuid.UUID `gorm:"uniqueIndex:idx_provider_versions_version"`
 	Provider            Provider
-	Version             string     `gorm:"not null"`
+	Version             string     `gorm:"not null;uniqueIndex:idx_provider_versions_version"`
 	Protocols           string     `gorm:"not null"`
 	ShaSumsUrl          string     `gorm:"shasums_url"`
 	ShaSumsSignatureUrl string     `gorm:"shasums_signature_url"`

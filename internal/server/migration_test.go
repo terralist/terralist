@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"strings"
 	"testing"
 	"time"
 
@@ -188,5 +189,44 @@ func TestInitialMigrationLeavesHashedApiKeysAlone(t *testing.T) {
 	var found apikey.ApiKey
 	if err := db.Where("id = ?", key.ID).First(&found).Error; err != nil {
 		t.Fatalf("expected the hashed key to keep its id: %v", err)
+	}
+}
+
+func TestInitialMigrationRefusesDuplicateArtifacts(t *testing.T) {
+	for _, tc := range []struct {
+		table   string
+		columns string
+		values  string
+	}{
+		{"providers", "authority_id TEXT, name TEXT", "'a1', 'null'"},
+		{"provider_versions", "provider_id TEXT, version TEXT", "'p1', '3.2.4'"},
+		{"modules", "authority_id TEXT, name TEXT, provider TEXT", "'a1', 'vpc', 'aws'"},
+		{"module_versions", "module_id TEXT, version TEXT", "'m1', '1.0.0'"},
+	} {
+		t.Run(tc.table, func(t *testing.T) {
+			db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+			if err != nil {
+				t.Fatalf("failed to open sqlite database: %v", err)
+			}
+
+			if err := db.Exec("CREATE TABLE " + tc.table + " (id TEXT PRIMARY KEY, " + tc.columns + ")").Error; err != nil {
+				t.Fatalf("failed to create table: %v", err)
+			}
+
+			for _, id := range []string{"1", "2"} {
+				if err := db.Exec("INSERT INTO " + tc.table + " VALUES ('" + id + "', " + tc.values + ")").Error; err != nil {
+					t.Fatalf("failed to insert row: %v", err)
+				}
+			}
+
+			err = (&InitialMigration{}).Migrate(db)
+			if err == nil {
+				t.Fatal("expected the migration to refuse the duplicate rows")
+			}
+
+			if !strings.Contains(err.Error(), tc.table) {
+				t.Errorf("expected the error to name the %s table, got %v", tc.table, err)
+			}
+		})
 	}
 }

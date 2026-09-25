@@ -16,9 +16,9 @@ const (
 
 type Version struct {
 	entity.Entity
-	ModuleID      uuid.UUID
+	ModuleID      uuid.UUID `gorm:"uniqueIndex:idx_module_versions_version"`
 	Module        Module
-	Version       string `gorm:"not null"`
+	Version       string `gorm:"not null;uniqueIndex:idx_module_versions_version"`
 	Location      string `gorm:"not null"`
 	Origin        string `gorm:"not null;default:manual"`
 	Documentation *string

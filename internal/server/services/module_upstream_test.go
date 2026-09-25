@@ -229,6 +229,55 @@ func TestDownloadModule(t *testing.T) {
 				})
 			})
 
+			Convey("When another request stores the version at the same time", func() {
+				f.upstream.On("ModuleLocation", f.auth, "dir", "template", "1.0.2").Return("git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2", nil)
+				stored := false
+				concurrent := "modules/hashicorp/dir/template/concurrent.zip"
+				f.repo.On("FindVersionLocation", "hashicorp", "dir", "template", "1.0.2").Return(func(string, string, string, string) (*string, error) {
+					if stored {
+						return &concurrent, nil
+					}
+
+					return nil, repositories.ErrNotFound
+				})
+				f.repo.On("Find", "hashicorp", "dir", "template").Return(f.localModule(), nil)
+				f.fetcher.On("Fetch", "1.0.2", mock.Anything).Return(file.NewInMemoryFile("1.0.2.zip", []byte("archive")), func() {}, nil)
+				f.resolver.
+					On("Store", mock.AnythingOfType("*storage.StoreInput")).
+					Return(func(in *storage.StoreInput) (string, error) { return in.KeyPrefix + "/" + in.FileName, nil })
+				f.repo.
+					On("Upsert", mock.AnythingOfType("module.Module")).
+					Run(func(mock.Arguments) { stored = true }).
+					Return(nil, repositories.ErrAlreadyExists)
+				f.resolver.On("Find", concurrent).Return("https://storage/concurrent.zip", nil)
+
+				url, err := f.service.Download("hashicorp", "dir", "template", "1.0.2", true)
+
+				Convey("Then the version stored by the other request is served", func() {
+					So(err, ShouldBeNil)
+					So(url, ShouldEqual, "https://storage/concurrent.zip")
+				})
+			})
+
+			Convey("When another request committed the version right before the upload", func() {
+				f.upstream.On("ModuleLocation", f.auth, "dir", "template", "1.0.2").Return("git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2", nil)
+				concurrent := "modules/hashicorp/dir/template/concurrent.zip"
+				f.repo.On("FindVersionLocation", "hashicorp", "dir", "template", "1.0.2").Return(nil, repositories.ErrNotFound).Once()
+				f.repo.On("FindVersionLocation", "hashicorp", "dir", "template", "1.0.2").Return(&concurrent, nil)
+				withVersion := f.localModule()
+				withVersion.Versions = append(withVersion.Versions, module.Version{Version: "1.0.2", Location: concurrent})
+				f.repo.On("Find", "hashicorp", "dir", "template").Return(withVersion, nil)
+				f.resolver.On("Find", concurrent).Return("https://storage/concurrent.zip", nil)
+
+				url, err := f.service.Download("hashicorp", "dir", "template", "1.0.2", true)
+
+				Convey("Then the version stored by the other request is served", func() {
+					So(err, ShouldBeNil)
+					So(url, ShouldEqual, "https://storage/concurrent.zip")
+					f.fetcher.AssertNotCalled(t, "Fetch", mock.Anything, mock.Anything)
+				})
+			})
+
 			Convey("When the upstream denies the version", func() {
 				f.upstream.On("ModuleLocation", f.auth, "dir", "template", "1.0.2").Return("", ErrUpstreamDenied)
 
