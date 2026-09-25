@@ -139,7 +139,7 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 			}
 
 			pkg, ok := provider.ParsePackageFileName(document)
-			if !ok || pkg.Name != name {
+			if !ok || !strings.EqualFold(pkg.Name, name) {
 				ctx.AbortWithStatus(http.StatusNotFound)
 				return
 			}
@@ -196,7 +196,7 @@ func (c *DefaultMirrorController) acceptPackageToken() gin.HandlerFunc {
 
 		namespace := handlers.MustGetFromContext[string](ctx, mirrorNamespaceKey)
 		pkg, ok := provider.ParsePackageFileName(ctx.Param("version"))
-		if !ok || pkg.Name != ctx.Param("name") {
+		if !ok || !strings.EqualFold(pkg.Name, ctx.Param("name")) {
 			ctx.Next()
 			return
 		}

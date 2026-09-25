@@ -2,6 +2,7 @@ package module
 
 import (
 	"fmt"
+	"strings"
 
 	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database"
@@ -148,7 +149,8 @@ func (d CreateDTO) ToModule() Module {
 }
 
 // ArchiveSubject names a module version within an authority, for download
-// tokens.
+// tokens. The authority, module and provider names do not depend on case, as
+// they are looked up.
 func ArchiveSubject(namespace, name, provider, version string) string {
-	return fmt.Sprintf("modules/%s/%s/%s/%s", namespace, name, provider, version)
+	return fmt.Sprintf("modules/%s/%s/%s/%s", strings.ToLower(namespace), strings.ToLower(name), strings.ToLower(provider), version)
 }
