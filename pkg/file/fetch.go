@@ -23,12 +23,19 @@ const (
 	tempDirPattern = "tl-fetch"
 )
 
+// sharedAddressSpace is the carrier-grade NAT range (RFC 6598), which also
+// holds cloud metadata endpoints such as Alibaba Cloud's 100.100.100.200.
+var sharedAddressSpace = netip.MustParsePrefix("100.64.0.0/10")
+
 // isPrivateAddress reports whether the given IP belongs to a range that
 // must not be reachable from a user-supplied download URL: loopback,
-// private (RFC 1918 and IPv6 ULA), link-local (including the cloud
-// metadata address 169.254.169.254) and the unspecified address.
+// private (RFC 1918 and IPv6 ULA), shared (RFC 6598), link-local (including
+// the cloud metadata address 169.254.169.254) and the unspecified address.
 func isPrivateAddress(ip netip.Addr) bool {
+	ip = ip.Unmap()
+
 	return ip.IsLoopback() ||
+		sharedAddressSpace.Contains(ip) ||
 		ip.IsPrivate() ||
 		ip.IsLinkLocalUnicast() ||
 		ip.IsLinkLocalMulticast() ||
