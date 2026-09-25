@@ -2826,7 +2826,7 @@
 <h2 id="upload-a-provider-version">Upload a provider version<a class="headerlink" href="#upload-a-provider-version" title="Permanent link">¶</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>POST /v1/api/providers/:namespace/:name/:version/upload
 </span></code></pre></div>
-<p>Upload a new provider version.</p>
+<p>Upload a new provider version. When a storage backend holds the files, the <code>SHA256SUMS</code> signature must verify with one of the authority keys.</p>
 <p>If the URLs from which the provider files should be downloaded are of types <code>http</code> or <code>https</code>, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.</p>
 <h3 id="example-request_5">Example Request<a class="headerlink" href="#example-request_5" title="Permanent link">¶</a></h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
@@ -2887,7 +2887,7 @@
 <ul>
 <li><code>metadata</code>: the <code>&lt;version&gt;.json</code> document listing the packages and their <code>h1</code> hashes;</li>
 <li><code>archives</code>: one or more package archives listed in the document;</li>
-<li><code>shasums</code> and <code>shasums_signature</code> (optional): the provider's <code>SHA256SUMS</code> file and its signature, always together;</li>
+<li><code>shasums</code> and <code>shasums_signature</code> (optional): the provider's <code>SHA256SUMS</code> file and its signature, always together; the signature must verify with one of the authority keys;</li>
 <li><code>protocols</code> (required with <code>shasums</code>): comma separated provider protocol versions.</li>
 </ul>
 <p>Every archive must be listed in the document under its file name. When a <code>SHA256SUMS</code> file is given, every archive must match its entry. A version uploaded without <code>shasums</code> is served through the <a href="../../user-guide/network-mirror/">network mirror</a> only and does not appear in the registry protocol version list. A providers storage resolver must be configured.</p>
