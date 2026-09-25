@@ -109,11 +109,11 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 	q := u.Query()
 	if kind == file {
 		// Force go-getter to avoid decompressing
-		q.Add("archive", "false")
+		q.Set("archive", "false")
 	}
 	if checksum != "" {
 		// Add a checksum to be checked if we have one
-		q.Add("checksum", checksum)
+		q.Set("checksum", checksum)
 	}
 	u.RawQuery = q.Encode()
 

@@ -33,6 +33,8 @@ type fakeUpstream struct {
 	shaSums   map[string][]byte // version → SHA256SUMS document
 	signature map[string][]byte // version → detached signature
 	packages  map[string][]byte // file name → archive bytes
+	names     map[string]string // file name → file name advertised in the download document
+	entity    *openpgp.Entity
 	requests  atomic.Int32
 	failing   atomic.Bool
 	tokens    []string
@@ -56,6 +58,8 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 		shaSums:   map[string][]byte{},
 		signature: map[string][]byte{},
 		packages:  map[string][]byte{},
+		names:     map[string]string{},
+		entity:    entity,
 	}
 
 	for _, version := range []string{"1.0.0", "1.1.0"} {
@@ -68,13 +72,7 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 			fmt.Fprintf(&sums, "%s  %s\n", hex.EncodeToString(digest[:]), name)
 		}
 
-		u.shaSums[version] = []byte(sums.String())
-
-		var sig bytes.Buffer
-		if err := openpgp.DetachSign(&sig, entity, strings.NewReader(sums.String()), nil); err != nil {
-			t.Fatalf("could not sign: %v", err)
-		}
-		u.signature[version] = sig.Bytes()
+		u.publishShaSums(t, version, sums.String())
 	}
 
 	mux := http.NewServeMux()
@@ -111,11 +109,15 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 			return
 		}
 		digest := sha256.Sum256(content)
+		advertised := name
+		if n, ok := u.names[name]; ok {
+			advertised = n
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"protocols":             []string{"5.0"},
 			"os":                    os,
 			"arch":                  arch,
-			"filename":              name,
+			"filename":              advertised,
 			"download_url":          u.server.URL + "/files/" + name,
 			"shasums_url":           u.server.URL + "/files/SHA256SUMS-" + version,
 			"shasums_signature_url": u.server.URL + "/files/SHA256SUMS-" + version + ".sig",
@@ -149,6 +151,20 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 	t.Cleanup(u.server.Close)
 
 	return u
+}
+
+// publishShaSums replaces the SHA256SUMS document of a version with sums,
+// signed with the upstream key.
+func (u *fakeUpstream) publishShaSums(t *testing.T, version, sums string) {
+	t.Helper()
+
+	var sig bytes.Buffer
+	if err := openpgp.DetachSign(&sig, u.entity, strings.NewReader(sums), nil); err != nil {
+		t.Fatalf("could not sign: %v", err)
+	}
+
+	u.shaSums[version] = []byte(sums)
+	u.signature[version] = sig.Bytes()
 }
 
 func (u *fakeUpstream) authority() *authority.Authority {
@@ -371,6 +387,20 @@ func TestUpstreamProviderPackage(t *testing.T) {
 
 			Convey("Then it should be rejected", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("When the upstream advertises a file name other than the package name", func() {
+			name := "terraform-provider-null_1.0.0_linux_amd64.zip"
+			upstream.names[name] = "../../evil.zip"
+			digest := sha256.Sum256(upstream.packages[name])
+			upstream.publishShaSums(t, "1.0.0", fmt.Sprintf("%s  ../../evil.zip\n", hex.EncodeToString(digest[:])))
+
+			_, err := service.ProviderPackage(a, "null", "1.0.0", "linux", "amd64")
+
+			Convey("Then it should be rejected", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "../../evil.zip")
 			})
 		})
 

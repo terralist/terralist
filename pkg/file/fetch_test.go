@@ -2,7 +2,10 @@ package file
 
 import (
 	"archive/zip"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -121,6 +124,65 @@ func TestFetch_AllowsPrivateAddressWhenEnabled(t *testing.T) {
 	}
 	defer cleanup()
 	defer result.Close()
+}
+
+func TestFetch_ChecksumOverridesTheURLChecksum(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("served content"))
+	}))
+	defer server.Close()
+
+	served := sha256.Sum256([]byte("served content"))
+	expected := sha256.Sum256([]byte("expected content"))
+
+	// The URL carries the digest of what the server returns, the caller
+	// expects another one: the caller's digest must be the one checked
+	url := server.URL + "/test.txt?checksum=sha256:" + hex.EncodeToString(served[:])
+	_, cleanup, err := fetch("test.txt", url, hex.EncodeToString(expected[:]), file, nil, true)
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if err == nil {
+		t.Fatal("Expected fetch to fail the checksum check, but it succeeded")
+	}
+}
+
+func TestFetch_FileIsNeverDecompressed(t *testing.T) {
+	var archive strings.Builder
+	zw := zip.NewWriter(&archive)
+	w, err := zw.Create("main.tf")
+	if err != nil {
+		t.Fatalf("Failed to add zip entry: %v", err)
+	}
+	if _, err := w.Write([]byte("# content")); err != nil {
+		t.Fatalf("Failed to write zip entry: %v", err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatalf("Failed to close zip writer: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(archive.String()))
+	}))
+	defer server.Close()
+
+	// The URL asks go-getter to decompress: the file must still be kept as is
+	result, cleanup, err := fetch("test.zip", server.URL+"/test.zip?archive=zip", "", file, nil, true)
+	if err != nil {
+		t.Fatalf("fetch failed: %v", err)
+	}
+	defer cleanup()
+	defer result.Close()
+
+	content, err := io.ReadAll(result)
+	if err != nil {
+		t.Fatalf("Failed to read the fetched file: %v", err)
+	}
+
+	if string(content) != archive.String() {
+		t.Error("Expected the fetched file to be the archive itself")
+	}
 }
 
 func TestFetch_CleanupRemovesTempDir(t *testing.T) {
