@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"terralist/internal/server/models/authority"
+	"terralist/internal/server/models/provider"
 	"terralist/pkg/cache"
 	"terralist/pkg/metrics"
 	"terralist/pkg/registry"
@@ -154,6 +155,11 @@ func (s *DefaultUpstreamService) ProviderPackage(a *authority.Authority, name, v
 	if err != nil {
 		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
 		return nil, err
+	}
+
+	if want := provider.PackageFileName(name, version, os, arch); download.Filename != want {
+		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
+		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s as %q", want, a.Name, name, version, download.Filename)
 	}
 
 	expected, ok := metadata.ShaSums[download.Filename]
