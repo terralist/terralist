@@ -3,6 +3,7 @@ package authority
 import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
+	"terralist/pkg/database"
 	"terralist/pkg/database/entity"
 
 	"github.com/samber/lo"
@@ -11,17 +12,17 @@ import (
 type Authority struct {
 	entity.Entity
 
-	Name      string `gorm:"not null;uniqueIndex"`
+	Name      string `gorm:"not null"`
 	PolicyURL string `gorm:"not null"`
 	Public    bool   `gorm:"not null;default:false"`
 	Owner     string `gorm:"not null;index"`
 
 	// UpstreamHostname is the upstream registry this authority stands for.
-	UpstreamHostname *string `gorm:"uniqueIndex:idx_authorities_upstream"`
+	UpstreamHostname *string
 	// UpstreamNamespace is the namespace of that registry whose artifacts the
 	// authority serves; its providers are addressed through the network mirror
 	// with the upstream address.
-	UpstreamNamespace *string `gorm:"uniqueIndex:idx_authorities_upstream"`
+	UpstreamNamespace *string
 	// UpstreamURL is where the upstream registry is reached; empty means
 	// https://<UpstreamHostname>.
 	UpstreamURL *string
@@ -44,6 +45,13 @@ type Authority struct {
 
 func (Authority) TableName() string {
 	return "authorities"
+}
+
+// UniqueIndexes hold the name of an authority and the upstream namespace it
+// stands for unique, regardless of case, as they are looked up.
+var UniqueIndexes = []database.CaseInsensitiveUniqueIndex{
+	{Table: "authorities", Name: "idx_authorities_lower_name", Columns: []string{"name"}},
+	{Table: "authorities", Name: "idx_authorities_lower_upstream", Columns: []string{"upstream_hostname", "upstream_namespace"}},
 }
 
 // AllowsUpstream reports whether a version of an upstream artifact may be

@@ -69,7 +69,7 @@ func (r *DefaultAuthorityRepository) FindByName(name string) (*authority.Authori
 	a := &authority.Authority{}
 
 	err := r.Database.Handler().
-		Where("name = ?", name).
+		Where("LOWER(name) = LOWER(?)", name).
 		Preload("Keys").
 		Preload("Rules").
 		First(&a).
