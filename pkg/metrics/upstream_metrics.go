@@ -28,7 +28,7 @@ var (
 )
 
 // RecordUpstreamRequest records a request to an upstream registry.
-// operation: "versions", "version", "package"
+// operation: "versions", "version", "package", "module_versions", "module_location"
 // result: "success", "stale", "error"
 func RecordUpstreamRequest(hostname, operation, result string) {
 	UpstreamRequestsTotal.WithLabelValues(hostname, operation, result).Inc()
