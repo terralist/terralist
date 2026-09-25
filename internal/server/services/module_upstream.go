@@ -10,6 +10,7 @@ import (
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -30,25 +31,32 @@ func (s *DefaultModuleService) upstreamAuthority(namespace string, withUpstream 
 }
 
 // upstreamModuleVersions lists the upstream versions an authority allows for a
-// module, or nothing when the upstream cannot be consulted.
-func (s *DefaultModuleService) upstreamModuleVersions(a *authority.Authority, name, system string) []string {
+// module, or reports the upstream unavailable.
+func (s *DefaultModuleService) upstreamModuleVersions(a *authority.Authority, name, system string) ([]string, error) {
 	if a == nil {
-		return nil
+		return nil, nil
 	}
 
 	versions, err := s.Upstream.ModuleVersions(a, name, system)
 	if err != nil {
 		metrics.RecordError("upstream", "error")
-		return nil
+		log.Warn().Err(err).Str("authority", a.Name).Str("module", name+"/"+system).Msg("Could not list the upstream versions.")
+
+		return nil, upstreamFailure(err)
 	}
 
-	return versions
+	return versions, nil
 }
 
 // upstreamArchiveURL points a download at the archive route, which fetches the
 // version from the upstream on first request, when the upstream offers it.
 func (s *DefaultModuleService) upstreamArchiveURL(a *authority.Authority, name, system, version string) (*string, error) {
-	if !lo.Contains(s.upstreamModuleVersions(a, name, system), version) {
+	versions, err := s.upstreamModuleVersions(a, name, system)
+	if err != nil {
+		return nil, err
+	}
+
+	if !lo.Contains(versions, version) {
 		return nil, fmt.Errorf("version %s of %s/%s/%s: %w", version, a.Name, name, system, repositories.ErrNotFound)
 	}
 

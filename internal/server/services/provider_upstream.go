@@ -14,6 +14,7 @@ import (
 	"terralist/pkg/metrics"
 	"terralist/pkg/registry"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
 )
 
@@ -45,19 +46,21 @@ func (s *DefaultProviderService) upstreamAuthority(namespace string, withUpstrea
 }
 
 // upstreamVersions lists the upstream versions an authority allows for a
-// provider, or nothing when the upstream cannot be consulted.
-func (s *DefaultProviderService) upstreamVersions(a *authority.Authority, name string) []UpstreamVersion {
+// provider, or reports the upstream unavailable.
+func (s *DefaultProviderService) upstreamVersions(a *authority.Authority, name string) ([]UpstreamVersion, error) {
 	if a == nil {
-		return nil
+		return nil, nil
 	}
 
 	versions, err := s.Upstream.ProviderVersions(a, name)
 	if err != nil {
 		metrics.RecordError("upstream", "error")
-		return nil
+		log.Warn().Err(err).Str("authority", a.Name).Str("provider", name).Msg("Could not list the upstream versions.")
+
+		return nil, upstreamFailure(err)
 	}
 
-	return versions
+	return versions, nil
 }
 
 // localVersions returns the set of versions a provider holds, whether the
@@ -135,7 +138,7 @@ func (s *DefaultProviderService) ensureUpstreamVersion(a *authority.Authority, n
 
 	metadata, err := s.Upstream.ProviderVersion(a, name, version)
 	if err != nil {
-		return nil, err
+		return nil, upstreamFailure(err)
 	}
 
 	keys, err := json.Marshal(provider.SigningKeysDTO{
@@ -204,7 +207,7 @@ func (s *DefaultProviderService) storedUpstreamVersion(a *authority.Authority, n
 func (s *DefaultProviderService) upstreamDownloadDTO(a *authority.Authority, v *provider.Version, name, system, architecture string) (*provider.DownloadPlatformDTO, error) {
 	metadata, err := s.Upstream.ProviderVersion(a, name, v.Version)
 	if err != nil {
-		return nil, err
+		return nil, upstreamFailure(err)
 	}
 
 	fileName := provider.PackageFileName(name, v.Version, system, architecture)
