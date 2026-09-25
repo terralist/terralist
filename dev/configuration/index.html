@@ -3420,7 +3420,7 @@
 </tbody>
 </table>
 <h3 id="upstream-secret"><code>upstream-secret</code><a class="headerlink" href="#upstream-secret" title="Permanent link">¶</a></h3>
-<p>The secret used to seal the tokens of upstream registries at rest, when an authority <a href="../user-guide/network-mirror/">pulls providers through</a> from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream.</p>
+<p>The secret used to seal the tokens of upstream registries at rest, when an authority <a href="../user-guide/network-mirror/">pulls providers through</a> from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream. Must be at least 32 characters long; Terralist refuses to start otherwise. Each token is sealed for its authority and cannot be moved to another one.</p>
 <table>
 <thead>
 <tr>
