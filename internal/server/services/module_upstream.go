@@ -70,13 +70,13 @@ func (s *DefaultModuleService) Download(namespace, name, provider, version strin
 		return "", err
 	}
 
-	if !allowFetch {
-		return "", ErrFetchRequiresCreate
-	}
-
 	a := s.upstreamAuthority(namespace, true)
 	if a == nil {
 		return "", fmt.Errorf("version %s of %s/%s/%s: %w", version, namespace, name, provider, repositories.ErrNotFound)
+	}
+
+	if !allowFetch {
+		return "", ErrFetchRequiresCreate
 	}
 
 	key := fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)

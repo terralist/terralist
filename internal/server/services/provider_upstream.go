@@ -242,13 +242,13 @@ func (s *DefaultProviderService) Download(namespace, name, version, system, arch
 		return "", err
 	}
 
-	if !allowFetch {
-		return "", ErrFetchRequiresCreate
-	}
-
 	a := s.upstreamAuthority(namespace, true)
 	if a == nil {
 		return "", fmt.Errorf("platform %s_%s of %s/%s %s: %w", system, architecture, namespace, name, version, repositories.ErrNotFound)
+	}
+
+	if !allowFetch {
+		return "", ErrFetchRequiresCreate
 	}
 
 	key := fmt.Sprintf("%s/%s/%s/%s_%s", namespace, name, version, system, architecture)

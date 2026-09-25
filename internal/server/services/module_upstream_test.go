@@ -185,6 +185,15 @@ func TestDownloadModule(t *testing.T) {
 				})
 			})
 
+			Convey("When the authority has no enabled upstream and the caller may not fetch", func() {
+				f.auth.UpstreamEnabled = false
+				_, err := f.service.Download("hashicorp", "dir", "template", "1.0.2", false)
+
+				Convey("Then the version is not found", func() {
+					So(errors.Is(err, repositories.ErrNotFound), ShouldBeTrue)
+				})
+			})
+
 			Convey("When the caller may fetch", func() {
 				f.upstream.On("ModuleLocation", f.auth, "dir", "template", "1.0.2").Return("git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2", nil)
 				// Checked once more under the single flight, in case another
