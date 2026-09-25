@@ -3516,7 +3516,7 @@
 </tbody>
 </table>
 <h3 id="upstream-auto-create"><code>upstream-auto-create</code><a class="headerlink" href="#upstream-auto-create" title="Permanent link">¶</a></h3>
-<p>Comma separated upstream hostnames for which Terralist creates an authority on the first authenticated network mirror request for an unknown namespace. The authority takes the namespace as its name, stands for that upstream namespace with the upstream enabled and the <code>allow</code> policy, and is owned by the caller. Anonymous requests never create authorities. Entries are hostnames, such as <code>registry.terraform.io</code>, and Terralist refuses to start on anything else.</p>
+<p>Comma separated upstream hostnames for which Terralist creates an authority on the first network mirror request for an unknown namespace, from a caller allowed to <code>create</code> that authority. The authority takes the namespace as its name, stands for that upstream namespace with the upstream enabled and the <code>allow</code> policy, and is owned by the caller. Other callers, anonymous ones included, never create authorities. Entries are hostnames, such as <code>registry.terraform.io</code>, and Terralist refuses to start on anything else.</p>
 <table>
 <thead>
 <tr>
