@@ -21,6 +21,10 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		return err
 	}
 
+	if err := refuseDuplicatesIgnoringCase(db, authority.UniqueIndexes); err != nil {
+		return err
+	}
+
 	if err := db.AutoMigrate(
 		&authority.Authority{},
 		&authority.Key{},
@@ -42,6 +46,20 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 
 	if err := db.Migrator().DropTable("mirror_platforms", "mirror_versions", "mirror_providers"); err != nil {
 		return err
+	}
+
+	// The authority name and upstream identity were held unique by
+	// case-sensitive indexes, which the case-insensitive ones replace.
+	for _, legacy := range []string{"idx_authorities_name", "idx_authorities_upstream"} {
+		if err := database.DropIndex(db, "authorities", legacy); err != nil {
+			return err
+		}
+	}
+
+	for _, index := range authority.UniqueIndexes {
+		if err := index.Create(db); err != nil {
+			return err
+		}
 	}
 
 	// Remove default empty string column in Version.Documentation
@@ -91,6 +109,24 @@ func refuseDuplicateArtifacts(db *database.DB) error {
 
 		if len(duplicates) > 0 {
 			return fmt.Errorf("table %s holds duplicate rows for (%s): %v; remove the duplicates before starting Terralist", unique.table, columns, duplicates)
+		}
+	}
+
+	return nil
+}
+
+// refuseDuplicatesIgnoringCase fails when a table holds rows that differ only
+// in case where a case-insensitive unique index is to be created, naming them
+// so they can be removed before Terralist starts; no data is changed.
+func refuseDuplicatesIgnoringCase(db *database.DB, indexes []database.CaseInsensitiveUniqueIndex) error {
+	for _, index := range indexes {
+		duplicates, err := index.Duplicates(db)
+		if err != nil {
+			return err
+		}
+
+		if len(duplicates) > 0 {
+			return fmt.Errorf("table %s holds rows differing only in case for (%s): %v; remove the duplicates before starting Terralist", index.Table, strings.Join(index.Columns, ", "), duplicates)
 		}
 	}
 

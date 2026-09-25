@@ -26,6 +26,12 @@ func newTestAuthorityRepository(t *testing.T) *DefaultAuthorityRepository {
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
+	for _, index := range authority.UniqueIndexes {
+		if err := index.Create(engine.Handler()); err != nil {
+			t.Fatalf("failed to create index %s: %v", index.Name, err)
+		}
+	}
+
 	return &DefaultAuthorityRepository{Database: engine}
 }
 
@@ -73,6 +79,10 @@ func TestAuthorityRepository_UpstreamIdentityIsUnique(t *testing.T) {
 
 	if _, err := repo.Upsert(upstreamAuthority("second", "hashicorp")); err == nil {
 		t.Fatalf("expected a second authority with the same upstream identity to be rejected")
+	}
+
+	if _, err := repo.Upsert(upstreamAuthority("second", "HashiCorp")); err == nil {
+		t.Fatalf("expected an upstream identity differing only in case to be rejected")
 	}
 
 	if _, err := repo.Upsert(upstreamAuthority("third", "integrations")); err != nil {
@@ -169,5 +179,17 @@ func TestAuthorityRepository_FindByNameIgnoresCase(t *testing.T) {
 		if found.Name != "HashiCorp" {
 			t.Fatalf("expected the name to be kept as stored, got %q", found.Name)
 		}
+	}
+}
+
+func TestAuthorityRepository_NameIsUniqueRegardlessOfCase(t *testing.T) {
+	repo := newTestAuthorityRepository(t)
+
+	if _, err := repo.Upsert(authority.Authority{Name: "hashicorp", PolicyURL: "https://example.com/hashicorp", Owner: "owner@example.com"}); err != nil {
+		t.Fatalf("failed to create authority: %v", err)
+	}
+
+	if _, err := repo.Upsert(authority.Authority{Name: "HashiCorp", PolicyURL: "https://example.com/hashicorp", Owner: "owner@example.com"}); err == nil {
+		t.Fatalf("expected a name differing only in case to be rejected")
 	}
 }
