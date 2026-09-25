@@ -79,7 +79,14 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/.well-known/terraform.json", func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"providers.v1":"/v1/providers/"}`))
+		_, _ = w.Write([]byte(`{"providers.v1":"/v1/providers/","modules.v1":"/v1/modules/"}`))
+	})
+	mux.HandleFunc("/v1/modules/hashicorp/dir/template/versions", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"modules":[{"source":"hashicorp/dir/template","versions":[{"version":"1.0.1"},{"version":"1.0.2"}]}]}`))
+	})
+	mux.HandleFunc("/v1/modules/hashicorp/dir/template/1.0.2/download", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("X-Terraform-Get", "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2")
+		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("/v1/providers/hashicorp/null/versions", func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -419,6 +426,111 @@ func TestUpstreamToken(t *testing.T) {
 
 			Convey("Then an error should be returned", func() {
 				So(err, ShouldNotBeNil)
+			})
+		})
+	})
+}
+
+func TestUpstreamModuleVersions(t *testing.T) {
+	Convey("Subject: Listing the module versions an authority may serve from its upstream", t, func() {
+		upstream := newFakeUpstream(t)
+		now := time.Now()
+		service := newUpstreamService(t, &now)
+		a := upstream.authority()
+		a.ID = uuid.New()
+
+		Convey("When the versions are requested", func() {
+			versions, err := service.ModuleVersions(a, "dir", "template")
+
+			Convey("Then every upstream version should be returned", func() {
+				So(err, ShouldBeNil)
+				So(versions, ShouldResemble, []string{"1.0.1", "1.0.2"})
+			})
+		})
+
+		Convey("When a module rule denies a version", func() {
+			a.Rules = []authority.Rule{{Kind: authority.RuleKindModule, Name: "dir/template", Version: "1.0.1", Effect: authority.EffectDeny}}
+			versions, err := service.ModuleVersions(a, "dir", "template")
+
+			Convey("Then that version should be left out", func() {
+				So(err, ShouldBeNil)
+				So(versions, ShouldResemble, []string{"1.0.2"})
+			})
+		})
+
+		Convey("When a provider rule denies everything", func() {
+			a.Rules = []authority.Rule{{Kind: authority.RuleKindProvider, Name: "*", Version: "*", Effect: authority.EffectDeny}}
+			versions, err := service.ModuleVersions(a, "dir", "template")
+
+			Convey("Then modules are not affected", func() {
+				So(err, ShouldBeNil)
+				So(len(versions), ShouldEqual, 2)
+			})
+		})
+
+		Convey("When the versions are requested twice", func() {
+			_, _ = service.ModuleVersions(a, "dir", "template")
+			requests := upstream.requests.Load()
+			_, err := service.ModuleVersions(a, "dir", "template")
+
+			Convey("Then the second answer should come from the cache", func() {
+				So(err, ShouldBeNil)
+				So(upstream.requests.Load(), ShouldEqual, requests)
+			})
+		})
+
+		Convey("When the module is unknown upstream", func() {
+			versions, err := service.ModuleVersions(a, "missing", "template")
+
+			Convey("Then no versions should be returned without an error", func() {
+				So(err, ShouldBeNil)
+				So(versions, ShouldBeEmpty)
+			})
+		})
+
+		Convey("When the upstream is disabled", func() {
+			a.UpstreamEnabled = false
+			versions, err := service.ModuleVersions(a, "dir", "template")
+
+			Convey("Then nothing should be returned", func() {
+				So(err, ShouldBeNil)
+				So(versions, ShouldBeEmpty)
+			})
+		})
+	})
+}
+
+func TestUpstreamModuleLocation(t *testing.T) {
+	Convey("Subject: Locating an upstream module version", t, func() {
+		upstream := newFakeUpstream(t)
+		now := time.Now()
+		service := newUpstreamService(t, &now)
+		a := upstream.authority()
+		a.ID = uuid.New()
+
+		Convey("When an allowed version is located", func() {
+			location, err := service.ModuleLocation(a, "dir", "template", "1.0.2")
+
+			Convey("Then its go-getter source should be returned", func() {
+				So(err, ShouldBeNil)
+				So(location, ShouldEqual, "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2")
+			})
+		})
+
+		Convey("When a rule denies the version", func() {
+			a.Rules = []authority.Rule{{Kind: authority.RuleKindModule, Name: "dir/*", Version: "*", Effect: authority.EffectDeny}}
+			_, err := service.ModuleLocation(a, "dir", "template", "1.0.2")
+
+			Convey("Then it should be denied", func() {
+				So(errors.Is(err, ErrUpstreamDenied), ShouldBeTrue)
+			})
+		})
+
+		Convey("When the version is unknown upstream", func() {
+			_, err := service.ModuleLocation(a, "dir", "template", "9.9.9")
+
+			Convey("Then it should be reported as not found", func() {
+				So(errors.Is(err, registry.ErrNotFound), ShouldBeTrue)
 			})
 		})
 	})

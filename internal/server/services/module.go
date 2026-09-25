@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -18,12 +19,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/singleflight"
 )
 
 // ModuleService describes a service that holds the business logic for modules registry.
 type ModuleService interface {
-	// Get returns a specific module.
-	Get(namespace, name, provider string) (*module.ListResponseDTO, error)
+	// Get returns a specific module. With withUpstream, the versions the
+	// authority's upstream registry offers are merged in.
+	Get(namespace, name, provider string, withUpstream bool) (*module.ListResponseDTO, error)
 
 	// GetVersion returns a module version.
 	GetVersion(namespace, name, provider, version string) (*module.VersionDTO, error)
@@ -32,8 +35,17 @@ type ModuleService interface {
 	GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath string) (string, error)
 
 	// GetVersionURL returns a public URL from which a specific a module version can be
-	// downloaded.
-	GetVersionURL(namespace, name, provider, version string) (*string, error)
+	// downloaded. With withUpstream, a version the authority's upstream registry
+	// offers but Terralist does not hold yet points at the archive route that
+	// fetches it on demand.
+	GetVersionURL(namespace, name, provider, version string, withUpstream bool) (*string, error)
+
+	// Download resolves the download URL of a module version, fetching it from
+	// the upstream registry first when it is not stored and allowFetch is set.
+	Download(namespace, name, provider, version string, allowFetch bool) (string, error)
+
+	// Fetch downloads a module version from the upstream registry into storage.
+	Fetch(namespace, name, provider, version string) error
 
 	// Upload loads a new module version to the system from the given file. A
 	// file.RemoteFile is downloaded from its URL; any other file is treated as
@@ -56,18 +68,43 @@ type DefaultModuleService struct {
 	AuthorityService AuthorityService
 	Resolver         storage.Resolver
 	Fetcher          file.Fetcher
+	Upstream         UpstreamService
+
+	// ArchiveBaseURL is the module registry base of this Terralist instance,
+	// under which the archive route fetching upstream modules lives.
+	ArchiveBaseURL string
+
+	fetches singleflight.Group
 }
 
-func (s *DefaultModuleService) Get(namespace, name, provider string) (*module.ListResponseDTO, error) {
+func (s *DefaultModuleService) Get(namespace, name, provider string, withUpstream bool) (*module.ListResponseDTO, error) {
+	dto := module.ListResponseDTO{Modules: []module.ModuleDTO{{}}}
+	local := map[string]struct{}{}
+
 	m, err := s.ModuleRepository.Find(namespace, name, provider)
-	if err != nil {
+	if err == nil {
+		dto = m.ToListResponseDTO()
+		for _, v := range m.Versions {
+			local[v.Version] = struct{}{}
+		}
+	}
+
+	upstream := s.upstreamModuleVersions(s.upstreamAuthority(namespace, withUpstream), name, provider)
+	if err != nil && len(upstream) == 0 {
 		return nil, err
+	}
+
+	for _, v := range upstream {
+		if _, ok := local[v]; ok {
+			continue
+		}
+
+		dto.Modules[0].Versions = append(dto.Modules[0].Versions, module.VersionListDTO{Version: v})
 	}
 
 	// Record list operation
 	metrics.RecordRequest(namespace, "list")
 
-	dto := m.ToListResponseDTO()
 	return &dto, nil
 }
 
@@ -272,8 +309,13 @@ func resolveSubmodulePath(moduleFS *file.FS, submodulePath string) string {
 	return resolvedPath
 }
 
-func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version string) (*string, error) {
+func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version string, withUpstream bool) (*string, error) {
 	location, err := s.ModuleRepository.FindVersionLocation(namespace, name, provider, version)
+	if errors.Is(err, repositories.ErrNotFound) {
+		if a := s.upstreamAuthority(namespace, withUpstream); a != nil {
+			return s.upstreamArchiveURL(a, name, provider, version)
+		}
+	}
 	if err != nil {
 		return nil, err
 	}

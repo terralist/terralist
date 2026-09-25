@@ -43,7 +43,7 @@ type DefaultMirrorController struct {
 
 	// Tokens signs the package links listed in version documents. Terraform
 	// downloads packages without credentials, so the link carries the proof.
-	Tokens *handlers.PackageTokens
+	Tokens *handlers.DownloadTokens
 
 	// Hostname is the host under which Terralist serves its providers.
 	// Providers addressed with this hostname belong to the authority named
@@ -169,7 +169,7 @@ func (c *DefaultMirrorController) listArchives(ctx *gin.Context, namespace, name
 			continue
 		}
 
-		token, err := c.Tokens.Sign(namespace, pkg, fetch)
+		token, err := c.Tokens.Sign(pkg.Subject(namespace), fetch)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"errors": []string{err.Error()},
@@ -201,7 +201,7 @@ func (c *DefaultMirrorController) acceptPackageToken() gin.HandlerFunc {
 			return
 		}
 
-		if fetch, ok := c.Tokens.Verify(token, *namespace, pkg); ok {
+		if fetch, ok := c.Tokens.Verify(token, pkg.Subject(*namespace)); ok {
 			ctx.Set(packageFetchKey, &fetch)
 		}
 

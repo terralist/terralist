@@ -5,7 +5,7 @@ Terralist serves its providers through the [Provider Network Mirror Protocol](ht
 The mirror protocol lets a Terraform CLI configuration route provider installation through Terralist with a single `network_mirror` block, without service discovery and without changing anything in the Terraform configurations themselves.
 
 !!! note "Providers only"
-    The network mirror protocol is defined by Terraform for providers only. Modules keep using the [Module Registry Protocol](../getting-started.md#upload-a-new-module).
+    The network mirror protocol is defined by Terraform for providers only. Modules keep using the [Module Registry Protocol](../getting-started.md#upload-a-new-module), through which they can also be [pulled through from an upstream](#pulling-modules-through-from-an-upstream).
 
 ## How it works
 
@@ -105,6 +105,29 @@ The response reports the outcome per platform.
 Before anything from an upstream is trusted, Terralist fetches the version's `SHA256SUMS` file and its signature and verifies the signature against the keys the upstream advertises for that version, the way Terraform does. Only digests from a verified file are listed, every package download enforces its digest, and the signing keys are stored with the version so that Terraform installing through the registry protocol verifies the same chain.
 
 Registries keep advertising the key that signed a release after that key expired and do not re-sign old releases. Terralist accepts such signatures once every other check passed, as Terraform does, and logs a warning naming the key. Set [`upstream-reject-expired-signing-keys`](../configuration.md#upstream-reject-expired-signing-keys) to refuse them instead.
+
+### Pulling modules through from an upstream
+
+Modules have no network mirror protocol and no identity problem: a module is fetched from whatever registry its source names, so consumers point the source at Terralist, `terralist.example.com/hashicorp/dir/template`, and Terralist fills the gaps from the upstream namespace the authority stands for, under the same rules and the same `create` requirement.
+
+The version list of the module registry protocol merges the upstream versions the rules allow. The download endpoint of a version Terralist does not hold answers with an `X-Terraform-Get` location pointing at Terralist's own archive route, carrying the same kind of short-lived token as provider packages, because Terraform hands module locations to go-getter, which downloads without credentials. Following that location fetches the module from its upstream source, a git repository or an archive, stores it exactly as an uploaded module is stored, documentation included, and hands go-getter the storage location. The next download of that version goes to storage directly.
+
+Module rules use `kind` `module` and name the module as `<name>/<system>`:
+
+```shell
+curl -X POST \
+  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  -d '{"kind": "module", "name": "dir/template", "version": "*", "effect": "allow"}' \
+  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID/rules
+```
+
+A module version can be pre-warmed as well:
+
+```shell
+curl -X POST \
+  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  https://terralist.example.com/v1/api/modules/hashicorp/dir/template/1.0.2/fetch
+```
 
 ### Creating authorities on demand
 

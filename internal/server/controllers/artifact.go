@@ -128,7 +128,7 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 
-			dto, err := c.ModuleService.Get(namespace, name, provider)
+			dto, err := c.ModuleService.Get(namespace, name, provider, false)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},

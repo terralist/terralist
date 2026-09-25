@@ -33,6 +33,11 @@ const (
 	// from registry.terraform.io, except upstreamDeniedVersion.
 	upstreamProvider      = "random"
 	upstreamDeniedVersion = "3.5.0"
+
+	// upstreamModule is never uploaded and is served by pulling it through
+	// from registry.terraform.io; the name carries the system, as module
+	// rules do.
+	upstreamModule = "dir/template"
 )
 
 // bootstrapState holds data created during bootstrap that tests can reference.
@@ -166,6 +171,7 @@ func createAuthorities() error {
 	for _, rule := range []map[string]string{
 		{"kind": "provider", "name": upstreamProvider, "version": "*", "effect": "allow"},
 		{"kind": "provider", "name": upstreamProvider, "version": upstreamDeniedVersion, "effect": "deny"},
+		{"kind": "module", "name": upstreamModule, "version": "*", "effect": "allow"},
 	} {
 		if _, err := addRule(id, rule); err != nil {
 			return err

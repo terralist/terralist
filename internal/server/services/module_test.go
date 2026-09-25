@@ -40,7 +40,7 @@ func TestGetModule(t *testing.T) {
 					}, nil)
 
 				Convey("When the service is queried", func() {
-					resp, err := moduleService.Get(namespace, name, provider)
+					resp, err := moduleService.Get(namespace, name, provider, false)
 
 					Convey("A module should be returned", func() {
 						So(err, ShouldBeNil)
@@ -56,7 +56,7 @@ func TestGetModule(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					resp, err := moduleService.Get(namespace, name, provider)
+					resp, err := moduleService.Get(namespace, name, provider, false)
 
 					Convey("An error should be returned", func() {
 						So(err, ShouldNotBeNil)
@@ -95,7 +95,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 					moduleService.Resolver = nil
 
 					Convey("When the service is queried", func() {
-						url, err := moduleService.GetVersionURL(namespace, name, provider, version)
+						url, err := moduleService.GetVersionURL(namespace, name, provider, version, false)
 
 						Convey("A download URL should be returned", func() {
 							So(url, ShouldNotBeNil)
@@ -113,7 +113,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 						Return(location, nil)
 
 					Convey("When the service is queried", func() {
-						url, err := moduleService.GetVersionURL(namespace, name, provider, version)
+						url, err := moduleService.GetVersionURL(namespace, name, provider, version, false)
 
 						Convey("A download URL should be returned", func() {
 							So(url, ShouldNotBeNil)
@@ -129,7 +129,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 						Return("", errors.New(""))
 
 					Convey("When the service is queried", func() {
-						url, err := moduleService.GetVersionURL(namespace, name, provider, version)
+						url, err := moduleService.GetVersionURL(namespace, name, provider, version, false)
 
 						Convey("An error should be returned", func() {
 							So(url, ShouldBeNil)
@@ -145,7 +145,7 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 					Return(nil, errors.New(""))
 
 				Convey("When the service is queried", func() {
-					url, err := moduleService.GetVersionURL(namespace, name, provider, version)
+					url, err := moduleService.GetVersionURL(namespace, name, provider, version, false)
 
 					Convey("An error should be returned", func() {
 						So(url, ShouldBeNil)

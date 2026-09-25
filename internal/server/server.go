@@ -384,11 +384,27 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Fetcher:  file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
 	}
 
+	upstreamService, err := newUpstreamService(userConfig, config.Cache, authorityService.Sealer)
+	if err != nil {
+		return nil, err
+	}
+
+	downloadTokens, err := handlers.NewDownloadTokens(userConfig.TokenSigningSecret)
+	if err != nil {
+		return nil, fmt.Errorf("could not create the download token signer: %w", err)
+	}
+
+	baseURL := strings.TrimRight(hostURL.String(), "/")
+	mirrorBaseURL := baseURL + "/providers/" + hostURL.Host
+	moduleArchiveBaseURL := baseURL + apiV1Group.Prefix() + "/modules"
+
 	moduleService := &services.DefaultModuleService{
 		ModuleRepository: moduleRepository,
 		AuthorityService: authorityService,
 		Resolver:         config.ModulesResolver,
 		Fetcher:          file.NewFetcher(userConfig.FetchAllowPrivateAddresses),
+		Upstream:         upstreamService,
+		ArchiveBaseURL:   moduleArchiveBaseURL,
 	}
 
 	moduleController := &controllers.DefaultModuleController{
@@ -398,6 +414,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ModulesAnonymousRead,
+		Tokens:           downloadTokens,
+		ArchiveBaseURL:   moduleArchiveBaseURL,
 	}
 
 	apiV1Group.Register(moduleController)
@@ -405,18 +423,6 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	providerRepository := &repositories.DefaultProviderRepository{
 		Database: config.Database,
 	}
-
-	upstreamService, err := newUpstreamService(userConfig, config.Cache, authorityService.Sealer)
-	if err != nil {
-		return nil, err
-	}
-
-	packageTokens, err := handlers.NewPackageTokens(userConfig.TokenSigningSecret)
-	if err != nil {
-		return nil, fmt.Errorf("could not create the package token signer: %w", err)
-	}
-
-	mirrorBaseURL := strings.TrimRight(hostURL.String(), "/") + "/providers/" + hostURL.Host
 
 	providerService := &services.DefaultProviderService{
 		ProviderRepository: providerRepository,
@@ -434,7 +440,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Authentication:   authentication,
 		Authorization:    authorization,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
-		Tokens:           packageTokens,
+		Tokens:           downloadTokens,
 		MirrorBaseURL:    mirrorBaseURL,
 	}
 
@@ -445,7 +451,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityService: authorityService,
 		Authentication:   authentication,
 		Authorization:    authorization,
-		Tokens:           packageTokens,
+		Tokens:           downloadTokens,
 		Hostname:         hostURL.Host,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
 		AutoCreate:       splitHostnames(userConfig.UpstreamAutoCreate),

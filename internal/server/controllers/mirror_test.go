@@ -475,10 +475,10 @@ func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string
 	return router, mockService
 }
 
-func testPackageTokens(t *testing.T) *handlers.PackageTokens {
+func testPackageTokens(t *testing.T) *handlers.DownloadTokens {
 	t.Helper()
 
-	tokens, err := handlers.NewPackageTokens("test-signing-secret")
+	tokens, err := handlers.NewDownloadTokens("test-signing-secret")
 	if err != nil {
 		t.Fatalf("failed to create package tokens: %v", err)
 	}
@@ -511,7 +511,7 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 				So(body.Archives["darwin_arm64"].URL, ShouldStartWith, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
 
 				token := strings.TrimPrefix(body.Archives["darwin_arm64"].URL, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
-				fetch, ok := testPackageTokens(t).Verify(token, "hashicorp", pkg)
+				fetch, ok := testPackageTokens(t).Verify(token, pkg.Subject("hashicorp"))
 				So(ok, ShouldBeTrue)
 				So(fetch, ShouldBeTrue)
 			})
@@ -527,7 +527,7 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 				var body provider.MirrorArchivesDTO
 				So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
 				token := strings.TrimPrefix(body.Archives["darwin_arm64"].URL, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
-				fetch, ok := testPackageTokens(t).Verify(token, "hashicorp", pkg)
+				fetch, ok := testPackageTokens(t).Verify(token, pkg.Subject("hashicorp"))
 				So(ok, ShouldBeTrue)
 				So(fetch, ShouldBeFalse)
 			})
@@ -535,7 +535,7 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 
 		Convey("Given no credentials but a valid token allowing the fetch", func() {
 			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
-			token, _ := testPackageTokens(t).Sign("hashicorp", pkg, true)
+			token, _ := testPackageTokens(t).Sign(pkg.Subject("hashicorp"), true)
 			mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
 
 			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
@@ -548,7 +548,7 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 
 		Convey("Given no credentials but a read-only token", func() {
 			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
-			token, _ := testPackageTokens(t).Sign("hashicorp", pkg, false)
+			token, _ := testPackageTokens(t).Sign(pkg.Subject("hashicorp"), false)
 			mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", false).Return("", services.ErrFetchRequiresCreate)
 
 			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
@@ -560,7 +560,7 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 
 		Convey("Given no credentials and a token for another package", func() {
 			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
-			token, _ := testPackageTokens(t).Sign("hashicorp", provider.Package{Name: "null", Version: "3.2.4", System: "linux", Architecture: "amd64"}, true)
+			token, _ := testPackageTokens(t).Sign(provider.Package{Name: "null", Version: "3.2.4", System: "linux", Architecture: "amd64"}.Subject("hashicorp"), true)
 
 			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
 
