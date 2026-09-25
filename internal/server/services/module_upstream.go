@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
@@ -87,8 +88,7 @@ func (s *DefaultModuleService) Download(namespace, name, provider, version strin
 		return "", ErrFetchRequiresCreate
 	}
 
-	key := fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)
-	stored, err, _ := s.fetches.Do(key, func() (any, error) {
+	stored, err, _ := s.fetches.Do(moduleFetchKey(namespace, name, provider, version), func() (any, error) {
 		return s.fetchVersion(a, name, provider, version)
 	})
 	if err != nil {
@@ -160,4 +160,10 @@ func (s *DefaultModuleService) locationURL(location string) (string, error) {
 	}
 
 	return url, nil
+}
+
+// moduleFetchKey names a module version for coalescing concurrent fetches,
+// regardless of the case of its names.
+func moduleFetchKey(namespace, name, system, version string) string {
+	return fmt.Sprintf("%s/%s/%s/%s", strings.ToLower(namespace), strings.ToLower(name), strings.ToLower(system), version)
 }

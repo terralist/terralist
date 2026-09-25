@@ -378,6 +378,21 @@ func TestListMirrorArchivesWithUpstream(t *testing.T) {
 			})
 		})
 
+		Convey("Given an upstream-only version of a provider named in another case", func() {
+			f.repo.On("Find", "hashicorp", "Null").Return(nil, repositories.ErrNotFound)
+			f.upstream.On("ProviderVersions", f.auth, "Null").Return(upstreamVersions, nil)
+			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.5").Return(&UpstreamVersionMetadata{
+				ShaSums: map[string]string{"terraform-provider-null_3.2.5_linux_amd64.zip": "cccc"},
+			}, nil)
+
+			dto, err := f.service.ListMirrorArchives("hashicorp", "Null", "3.2.5", true)
+
+			Convey("Then the upstream digests should still be found", func() {
+				So(err, ShouldBeNil)
+				So(dto.Archives["linux_amd64"].Hashes, ShouldResemble, []string{"zh:cccc"})
+			})
+		})
+
 		Convey("Given the caller may not fetch", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
 			f.resolver.On("Find", "providers/hashicorp/null/3.2.4/linux.zip").Return("https://storage/linux.zip", nil)
@@ -505,6 +520,22 @@ func TestGetVersionFromUpstream(t *testing.T) {
 			Convey("Then the version created by the other request is served", func() {
 				So(err, ShouldBeNil)
 				So(dto.ShaSumsUrl, ShouldEqual, "https://storage/concurrent")
+			})
+		})
+
+		Convey("Given a pulled version of a provider named in another case", func() {
+			pulled := f.localProvider()
+			pulled.Versions[0].Origin = provider.OriginUpstream
+			f.repo.On("FindVersionPlatform", "hashicorp", "Null", "3.2.4", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
+			f.repo.On("Find", "hashicorp", "Null").Return(pulled, nil)
+			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.4").Return(upstreamMetadata, nil)
+			f.resolver.On("Find", mock.Anything).Return("https://storage/resolved", nil)
+
+			dto, err := f.service.GetVersion("hashicorp", "Null", "3.2.4", "darwin", "arm64", true)
+
+			Convey("Then the upstream digest should still be found", func() {
+				So(err, ShouldBeNil)
+				So(dto.ShaSum, ShouldEqual, "bbbb")
 			})
 		})
 
