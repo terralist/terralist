@@ -57,7 +57,7 @@ Syntax: `p, role:<role>/<username>/<useremail>/group:<group>, <resource>, <actio
 - `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
 
-<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
+<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`. Matching ignores case, as authorities, modules and providers are looked up regardless of case: `my-authority/*` also matches `My-Authority/aws`.
 
 Below is a table that defines the correct object syntax for each resource group.
 

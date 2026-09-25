@@ -94,6 +94,17 @@ func TestAllowsUpstream(t *testing.T) {
 				So(a.AllowsUpstream(RuleKindModule, "vpc/google", "1.0.0"), ShouldBeFalse)
 			})
 		})
+
+		Convey("Given a rule whose name differs in case from the artifact", func() {
+			a := Authority{UpstreamEnabled: true, UpstreamDefaultPolicy: PolicyAllow, Rules: []Rule{
+				{Kind: RuleKindProvider, Name: "AWS", Version: "5.0.0-RC1", Effect: EffectDeny},
+			}}
+
+			Convey("Then the name matches regardless of case, while the version stays exact", func() {
+				So(a.AllowsUpstream(RuleKindProvider, "aws", "5.0.0-RC1"), ShouldBeFalse)
+				So(a.AllowsUpstream(RuleKindProvider, "aws", "5.0.0-rc1"), ShouldBeTrue)
+			})
+		})
 	})
 }
 

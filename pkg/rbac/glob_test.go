@@ -40,6 +40,11 @@ func TestGlobMatchRBACCases(t *testing.T) {
 		{"provider slug wildcard provider", "myspace/aws", "myspace/*", true},
 		{"provider slug no match", "myspace/aws", "otherspace/*", false},
 
+		// Objects are matched regardless of case
+		{"provider slug in another case", "HashiCorp/AWS", "hashicorp/aws", true},
+		{"provider pattern in another case", "hashicorp/aws", "HashiCorp/*", true},
+		{"module slug in another case", "MySpace/My-Module/AWS", "myspace/*/aws", true},
+
 		// Invalid pattern
 		{"invalid pattern", "foo.txt", "[*.txt", false},
 	}
