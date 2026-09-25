@@ -102,6 +102,10 @@ func (s *DefaultModuleService) fetchVersion(a *authority.Authority, name, system
 		return *stored, nil
 	}
 
+	if err := s.Fetcher.CheckUpstreamSource(location); err != nil {
+		return "", err
+	}
+
 	dto := module.CreateDTO{
 		AuthorityID:      a.ID,
 		Name:             name,
