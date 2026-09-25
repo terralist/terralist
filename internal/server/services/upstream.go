@@ -362,7 +362,7 @@ func (s *DefaultUpstreamService) client(a *authority.Authority) (*registry.Clien
 			return nil, fmt.Errorf("authority %s has an upstream token but the upstream-secret option is not set", a.Name)
 		}
 
-		opened, err := s.Sealer.Open(*a.UpstreamToken)
+		opened, err := s.Sealer.Open(*a.UpstreamToken, a.ID.String())
 		if err != nil {
 			return nil, fmt.Errorf("could not open the upstream token of authority %s: %w", a.Name, err)
 		}

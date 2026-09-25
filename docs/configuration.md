@@ -130,7 +130,7 @@ The secret to use when signing the OAuth state passed to the identity provider. 
 
 ### `upstream-secret`
 
-The secret used to seal the tokens of upstream registries at rest, when an authority [pulls providers through](user-guide/network-mirror.md) from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream.
+The secret used to seal the tokens of upstream registries at rest, when an authority [pulls providers through](user-guide/network-mirror.md) from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream. Must be at least 32 characters long; Terralist refuses to start otherwise. Each token is sealed for its authority and cannot be moved to another one.
 
 | Name | Value |
 | --- | --- |

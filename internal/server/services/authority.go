@@ -96,6 +96,9 @@ func (s *DefaultAuthorityService) GetAllByOwner(owner string) ([]*authority.Auth
 
 func (s *DefaultAuthorityService) Create(in authority.AuthorityCreateDTO) (*authority.AuthorityDTO, error) {
 	a := in.ToAuthority()
+	// The upstream token is sealed for the authority, so it needs its ID
+	// before it is stored.
+	a.ID = uuid.New()
 
 	if err := s.normalizeUpstream(&a); err != nil {
 		return nil, err
@@ -290,7 +293,7 @@ func (s *DefaultAuthorityService) normalizeUpstream(a *authority.Authority) erro
 			return fmt.Errorf("storing an upstream token requires the upstream-secret option")
 		}
 
-		sealed, err := s.Sealer.Seal(*a.UpstreamToken)
+		sealed, err := s.Sealer.Seal(*a.UpstreamToken, a.ID.String())
 		if err != nil {
 			return fmt.Errorf("could not seal the upstream token: %w", err)
 		}
