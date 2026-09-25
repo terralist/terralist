@@ -1,6 +1,15 @@
 package file
 
-import "net/http"
+import (
+	"context"
+	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"regexp"
+
+	getter "github.com/hashicorp/go-getter"
+)
 
 type Fetcher interface {
 	// Fetch resolves a File into a module archive along with a cleanup
@@ -29,7 +38,17 @@ type Fetcher interface {
 	// checking a given checksum and returns them as an archive
 	// along with a cleanup function.
 	FetchDirChecksum(name string, url string, checksum string, header http.Header) (File, func(), error)
+
+	// CheckUpstreamSource reports whether a module source announced by an
+	// upstream registry may be fetched: only over HTTP(S) or git, and, unless
+	// private addresses are allowed, from a git host resolving to public
+	// addresses only.
+	CheckUpstreamSource(src string) error
 }
+
+// forcedGetterRegexp finds the getter forced by a go-getter source, as in
+// git::https://example.com/repo.
+var forcedGetterRegexp = regexp.MustCompile(`^([A-Za-z0-9]+)::(.+)$`)
 
 const (
 	file = iota
@@ -86,4 +105,54 @@ func CreateHeader(headers map[string]string) http.Header {
 	}
 
 	return header
+}
+
+func (f *defaultFetcher) CheckUpstreamSource(src string) error {
+	detected, err := getter.Detect(src, "", getter.Detectors)
+	if err != nil {
+		return fmt.Errorf("invalid source %q: %w", src, err)
+	}
+
+	forced := ""
+	if ms := forcedGetterRegexp.FindStringSubmatch(detected); ms != nil {
+		forced, detected = ms[1], ms[2]
+	}
+
+	detected, _ = getter.SourceDirSubdir(detected)
+
+	u, err := url.Parse(detected)
+	if err != nil {
+		return fmt.Errorf("invalid source %q: %w", src, err)
+	}
+
+	switch {
+	case forced == "" && (u.Scheme == "http" || u.Scheme == "https"):
+		// The HTTP getter refuses private addresses when dialing.
+		return nil
+	case forced == "git" && (u.Scheme == "http" || u.Scheme == "https" || u.Scheme == "ssh"):
+		return f.checkHost(u.Hostname())
+	default:
+		return fmt.Errorf("refusing to fetch %q: only HTTP(S) and git sources are fetched from an upstream", src)
+	}
+}
+
+// checkHost refuses a host resolving to a private address, unless private
+// addresses are allowed.
+func (f *defaultFetcher) checkHost(host string) error {
+	if f.allowPrivateAddresses {
+		return nil
+	}
+
+	addresses, err := net.DefaultResolver.LookupNetIP(context.Background(), "ip", host)
+	if err != nil {
+		return fmt.Errorf("could not resolve %s: %w", host, err)
+	}
+
+	for _, address := range addresses {
+		if isPrivateAddress(address.Unmap()) {
+			return fmt.Errorf("refusing to fetch from non-public address %s of %s", address, host)
+		}
+	}
+
+	return nil
 }
