@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/file"
@@ -17,6 +19,7 @@ import (
 
 var (
 	ErrFileNotFound = errors.New("file not found")
+	ErrInvalidKey   = errors.New("key escapes the registry directory")
 )
 
 // Resolver is the concrete implementation of storage.Resolver.
@@ -32,11 +35,27 @@ type downloadTokenPayload struct {
 	Key string `json:"key"`
 }
 
+// filePath returns the path of the file stored under key, refusing keys that
+// resolve outside the registry directory.
+func (r *Resolver) filePath(key string) (string, error) {
+	filePath := path.Join(r.RegistryDir, key)
+
+	rel, err := filepath.Rel(r.RegistryDir, filePath)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, "../") {
+		return "", fmt.Errorf("%w: %v", ErrInvalidKey, key)
+	}
+
+	return filePath, nil
+}
+
 func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 	fileKey := path.Join(in.KeyPrefix, in.FileName)
-	filePath := path.Join(r.RegistryDir, fileKey)
+	filePath, err := r.filePath(fileKey)
+	if err != nil {
+		return "", err
+	}
 
-	_, err := os.Stat(filePath)
+	_, err = os.Stat(filePath)
 
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return "", err
@@ -69,9 +88,12 @@ func (r *Resolver) Store(in *storage.StoreInput) (string, error) {
 
 // ObjectExists checks if a given path exists on the disk.
 func (r *Resolver) ObjectExists(key string) (string, error) {
-	filePath := path.Join(r.RegistryDir, key)
+	filePath, err := r.filePath(key)
+	if err != nil {
+		return "", err
+	}
 
-	_, err := os.Stat(filePath)
+	_, err = os.Stat(filePath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return "", ErrFileNotFound
