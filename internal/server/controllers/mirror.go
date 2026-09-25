@@ -114,7 +114,7 @@ func (c *DefaultMirrorController) Subscribe(apis ...*gin.RouterGroup) {
 
 			dto, err := c.ProviderService.ListMirrorVersions(*namespace, name, c.mayFetch(ctx, *namespace, name))
 			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
+				ctx.JSON(lookupStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
@@ -157,7 +157,7 @@ func (c *DefaultMirrorController) listArchives(ctx *gin.Context, namespace, name
 
 	dto, err := c.ProviderService.ListMirrorArchives(namespace, name, version, fetch)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{
+		ctx.JSON(lookupStatus(err), gin.H{
 			"errors": []string{err.Error()},
 		})
 		return
@@ -234,6 +234,16 @@ func (c *DefaultMirrorController) download(ctx *gin.Context, namespace string, p
 			"errors": []string{err.Error()},
 		})
 	}
+}
+
+// lookupStatus is the status answering a failed lookup: a bad gateway when
+// the upstream is unavailable, not found otherwise.
+func lookupStatus(err error) int {
+	if errors.Is(err, services.ErrUpstreamUnavailable) {
+		return http.StatusBadGateway
+	}
+
+	return http.StatusNotFound
 }
 
 // isNotFound reports whether err means the artifact is held neither by

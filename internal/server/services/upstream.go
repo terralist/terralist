@@ -26,7 +26,21 @@ var (
 	// ErrUpstreamDenied is returned when the rules of an authority do not allow
 	// serving a version from its upstream.
 	ErrUpstreamDenied = errors.New("version not allowed by the upstream rules")
+
+	// ErrUpstreamUnavailable is returned when the upstream registry cannot be
+	// read and nothing Terralist holds answers the request.
+	ErrUpstreamUnavailable = errors.New("the upstream registry is unavailable")
 )
+
+// upstreamFailure marks err as an unavailable upstream, unless it says the
+// upstream does not have or may not serve what was asked.
+func upstreamFailure(err error) error {
+	if err == nil || errors.Is(err, registry.ErrNotFound) || errors.Is(err, ErrUpstreamDenied) {
+		return err
+	}
+
+	return fmt.Errorf("%w: %v", ErrUpstreamUnavailable, err)
+}
 
 // UpstreamVersion is a provider version an authority may serve from its
 // upstream registry.

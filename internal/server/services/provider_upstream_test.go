@@ -191,6 +191,110 @@ func TestGetProviderWithUpstream(t *testing.T) {
 	})
 }
 
+func TestUpstreamOutage(t *testing.T) {
+	Convey("Subject: Serving providers while the upstream is unavailable", t, func() {
+		f := newPullThroughFixture(t)
+		down := errors.New("upstream down")
+
+		Convey("Given the provider is not held locally", func() {
+			f.repo.On("Find", "hashicorp", "random").Return(nil, repositories.ErrNotFound)
+			f.upstream.On("ProviderVersions", f.auth, "random").Return(nil, down)
+
+			Convey("When the registry versions are listed", func() {
+				_, err := f.service.Get("hashicorp", "random", true)
+
+				Convey("Then the upstream should be reported unavailable", func() {
+					So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
+				})
+			})
+
+			Convey("When the mirror versions are listed", func() {
+				_, err := f.service.ListMirrorVersions("hashicorp", "random", true)
+
+				Convey("Then the upstream should be reported unavailable", func() {
+					So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
+				})
+			})
+
+			Convey("When the mirror packages of a version are listed", func() {
+				_, err := f.service.ListMirrorArchives("hashicorp", "random", "3.2.5", true)
+
+				Convey("Then the upstream should be reported unavailable", func() {
+					So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
+				})
+			})
+		})
+
+		Convey("Given the provider is held locally", func() {
+			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+			f.upstream.On("ProviderVersions", f.auth, "null").Return(nil, down)
+
+			Convey("When the mirror versions are listed", func() {
+				dto, err := f.service.ListMirrorVersions("hashicorp", "null", true)
+
+				Convey("Then the local versions should be served", func() {
+					So(err, ShouldBeNil)
+					So(dto.Versions, ShouldResemble, map[string]struct{}{"3.2.4": {}})
+				})
+			})
+		})
+
+		Convey("Given a pulled version whose upstream metadata cannot be read", func() {
+			pulled := f.localProvider()
+			pulled.Versions[0].Origin = provider.OriginUpstream
+			f.repo.On("Find", "hashicorp", "null").Return(pulled, nil)
+			f.resolver.On("Find", "providers/hashicorp/null/3.2.4/linux.zip").Return("https://storage/linux.zip", nil)
+			f.upstream.On("ProviderVersions", f.auth, "null").Return(upstreamVersions, nil)
+			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.4").Return(nil, down)
+
+			dto, err := f.service.ListMirrorArchives("hashicorp", "null", "3.2.4", true)
+
+			Convey("Then the stored packages should be served", func() {
+				So(err, ShouldBeNil)
+				So(dto.Archives, ShouldResemble, map[string]provider.MirrorArchiveDTO{
+					"linux_amd64": {URL: "https://storage/linux.zip", Hashes: []string{"zh:aaaa"}},
+				})
+			})
+		})
+
+		Convey("Given an upstream-only version whose upstream metadata cannot be read", func() {
+			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+			f.upstream.On("ProviderVersions", f.auth, "null").Return(upstreamVersions, nil).Maybe()
+			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.5").Return(nil, down)
+			f.repo.On("FindVersionPlatform", "hashicorp", "null", "3.2.5", "linux", "amd64").Return(nil, repositories.ErrNotFound).Maybe()
+
+			Convey("When its mirror packages are listed", func() {
+				_, err := f.service.ListMirrorArchives("hashicorp", "null", "3.2.5", true)
+
+				Convey("Then the upstream should be reported unavailable", func() {
+					So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
+				})
+			})
+
+			Convey("When its registry download metadata is requested", func() {
+				_, err := f.service.GetVersion("hashicorp", "null", "3.2.5", "linux", "amd64", true)
+
+				Convey("Then the upstream should be reported unavailable", func() {
+					So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
+				})
+			})
+		})
+
+		Convey("Given a version the upstream does not know", func() {
+			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+			f.repo.On("FindVersionPlatform", "hashicorp", "null", "9.9.9", "linux", "amd64").Return(nil, repositories.ErrNotFound)
+			f.upstream.On("ProviderVersion", f.auth, "null", "9.9.9").Return(nil, registry.ErrNotFound)
+
+			_, err := f.service.GetVersion("hashicorp", "null", "9.9.9", "linux", "amd64", true)
+
+			Convey("Then it should be not found rather than unavailable", func() {
+				So(errors.Is(err, registry.ErrNotFound), ShouldBeTrue)
+				So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeFalse)
+			})
+		})
+	})
+}
+
 func TestUpstreamRequiresResolver(t *testing.T) {
 	Convey("Subject: Pulling through without a storage backend", t, func() {
 		f := newPullThroughFixture(t)

@@ -307,3 +307,29 @@ func TestModuleController_Fetch(t *testing.T) {
 		})
 	})
 }
+
+func TestModuleController_UpstreamUnavailable(t *testing.T) {
+	Convey("Subject: Module registry requests while the upstream is unavailable", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		router, mockService := setupModuleRouter(t, user, "p, test-user, modules, create, hashicorp/*, allow")
+		unavailable := fmt.Errorf("%w: upstream down", services.ErrUpstreamUnavailable)
+
+		Convey("When the versions are listed", func() {
+			mockService.On("Get", "hashicorp", "dir", "template", true).Return(nil, unavailable)
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/modules/hashicorp/dir/template/versions", nil))
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+
+		Convey("When the download location is requested", func() {
+			mockService.On("GetVersionURL", "hashicorp", "dir", "template", "1.0.2", true).Return(nil, unavailable)
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/modules/hashicorp/dir/template/1.0.2/download", nil))
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+	})
+}

@@ -107,8 +107,12 @@ func (s *DefaultProviderService) Get(namespace, name string, withUpstream bool) 
 		local = localVersions(p)
 	}
 
-	upstream := s.upstreamVersions(s.upstreamAuthority(namespace, withUpstream), name)
+	upstream, upstreamErr := s.upstreamVersions(s.upstreamAuthority(namespace, withUpstream), name)
 	if err != nil && len(upstream) == 0 {
+		if upstreamErr != nil {
+			return nil, upstreamErr
+		}
+
 		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
 
@@ -182,8 +186,12 @@ func (s *DefaultProviderService) ListMirrorVersions(namespace, name string, with
 		dto = p.ToMirrorVersionListDTO()
 	}
 
-	upstream := s.upstreamVersions(s.upstreamAuthority(namespace, withUpstream), name)
+	upstream, upstreamErr := s.upstreamVersions(s.upstreamAuthority(namespace, withUpstream), name)
 	if err != nil && len(upstream) == 0 {
+		if upstreamErr != nil {
+			return nil, upstreamErr
+		}
+
 		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
 
@@ -223,11 +231,20 @@ func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version str
 	}
 
 	if a := s.upstreamAuthority(namespace, withUpstream && !uploaded); a != nil {
-		upstream := s.upstreamVersions(a, name)
+		upstream, err := s.upstreamVersions(a, name)
+		if err != nil && len(dto.Archives) == 0 {
+			return nil, err
+		}
+
 		if lo.ContainsBy(upstream, func(v UpstreamVersion) bool { return v.Version == version }) {
 			metadata, err := s.Upstream.ProviderVersion(a, name, version)
 			if err != nil {
 				metrics.RecordError("upstream", "error")
+				log.Warn().Err(err).Str("authority", a.Name).Str("provider", name).Str("version", version).Msg("Could not read the upstream version.")
+
+				if len(dto.Archives) == 0 {
+					return nil, upstreamFailure(err)
+				}
 			}
 
 			mergeUpstreamArchives(&dto, name, version, upstream, metadata)

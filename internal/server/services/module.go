@@ -89,8 +89,12 @@ func (s *DefaultModuleService) Get(namespace, name, provider string, withUpstrea
 		}
 	}
 
-	upstream := s.upstreamModuleVersions(s.upstreamAuthority(namespace, withUpstream), name, provider)
+	upstream, upstreamErr := s.upstreamModuleVersions(s.upstreamAuthority(namespace, withUpstream), name, provider)
 	if err != nil && len(upstream) == 0 {
+		if upstreamErr != nil {
+			return nil, upstreamErr
+		}
+
 		return nil, err
 	}
 

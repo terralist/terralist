@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -447,6 +448,42 @@ func TestProviderController_DownloadFromUpstream(t *testing.T) {
 					So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
 					So(body.DownloadUrl, ShouldEqual, "https://storage.example.com/darwin.zip")
 				})
+			})
+		})
+	})
+}
+
+func TestProviderController_UpstreamUnavailable(t *testing.T) {
+	Convey("Subject: Registry requests while the upstream is unavailable", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		router, mockService, mockAuthorityService := setupProviderRouter(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+		mockAuthorityService.On("GetByName", "hashicorp").Return(&authority.Authority{Name: "hashicorp"}, nil).Maybe()
+		unavailable := fmt.Errorf("%w: upstream down", services.ErrUpstreamUnavailable)
+
+		Convey("When the versions are listed", func() {
+			mockService.On("Get", "hashicorp", "null", true).Return(nil, unavailable)
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/versions", nil))
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+
+		Convey("When the download metadata is requested", func() {
+			mockService.On("GetVersion", "hashicorp", "null", "3.2.4", "linux", "amd64", true).Return(nil, unavailable)
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/3.2.4/download/linux/amd64", nil))
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+
+		Convey("When the provider is not found", func() {
+			mockService.On("Get", "hashicorp", "null", true).Return(nil, errors.New("requested provider was not found"))
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/versions", nil))
+
+			Convey("Then it should still be not found", func() {
+				So(w.Code, ShouldEqual, http.StatusNotFound)
 			})
 		})
 	})

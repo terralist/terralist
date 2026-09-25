@@ -118,6 +118,29 @@ func TestGetModuleWithUpstream(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 		})
+
+		Convey("Given the upstream fails and the module exists locally", func() {
+			f.repo.On("Find", "hashicorp", "dir", "template").Return(f.localModule(), nil)
+			f.upstream.On("ModuleVersions", f.auth, "dir", "template").Return(nil, errors.New("upstream down"))
+
+			dto, err := f.service.Get("hashicorp", "dir", "template", true)
+
+			Convey("Then the local versions are still served", func() {
+				So(err, ShouldBeNil)
+				So(dto.Modules[0].Versions, ShouldResemble, []module.VersionListDTO{{Version: "1.0.0"}})
+			})
+		})
+
+		Convey("Given the upstream fails and the module is not held locally", func() {
+			f.repo.On("Find", "hashicorp", "dir", "template").Return(nil, repositories.ErrNotFound)
+			f.upstream.On("ModuleVersions", f.auth, "dir", "template").Return(nil, errors.New("upstream down"))
+
+			_, err := f.service.Get("hashicorp", "dir", "template", true)
+
+			Convey("Then the upstream is reported unavailable", func() {
+				So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
+			})
+		})
 	})
 }
 
@@ -144,6 +167,16 @@ func TestGetModuleVersionURLFromUpstream(t *testing.T) {
 
 			Convey("Then it is not found", func() {
 				So(errors.Is(err, repositories.ErrNotFound), ShouldBeTrue)
+			})
+		})
+
+		Convey("Given the upstream fails", func() {
+			f.upstream.On("ModuleVersions", f.auth, "dir", "template").Return(nil, errors.New("upstream down"))
+
+			_, err := f.service.GetVersionURL("hashicorp", "dir", "template", "1.0.2", true)
+
+			Convey("Then the upstream is reported unavailable", func() {
+				So(errors.Is(err, ErrUpstreamUnavailable), ShouldBeTrue)
 			})
 		})
 
