@@ -132,3 +132,23 @@ func TestAuthorityRepository_Rules(t *testing.T) {
 		t.Fatalf("expected no rules after deletion, got %+v", found.Rules)
 	}
 }
+
+func TestAuthorityRepository_UpsertCreatesWithGivenID(t *testing.T) {
+	repo := newTestAuthorityRepository(t)
+
+	a := upstreamAuthority("hashicorp", "hashicorp")
+	a.ID = uuid.New()
+
+	if _, err := repo.Upsert(a); err != nil {
+		t.Fatalf("failed to create authority with a given ID: %v", err)
+	}
+
+	found, err := repo.FindByID(a.ID)
+	if err != nil {
+		t.Fatalf("expected the authority to be stored under its ID: %v", err)
+	}
+
+	if found.Name != "hashicorp" {
+		t.Fatalf("expected the stored authority, got %+v", found)
+	}
+}

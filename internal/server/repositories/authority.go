@@ -171,15 +171,14 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 	toDeleteKeys := make([]authority.Key, 0, len(a.Keys))
 
 	if !a.Empty() {
-		current, err := r.FindByID(a.ID)
-		if err == nil {
+		if current, err := r.FindByID(a.ID); err == nil {
 			a.Name = current.Name
 			a.Owner = current.Owner
-		}
 
-		for _, key := range current.Keys {
-			if !slices.Contains(a.Keys, key) {
-				toDeleteKeys = append(toDeleteKeys, key)
+			for _, key := range current.Keys {
+				if !slices.Contains(a.Keys, key) {
+					toDeleteKeys = append(toDeleteKeys, key)
+				}
 			}
 		}
 	}
