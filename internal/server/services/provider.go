@@ -14,6 +14,7 @@ import (
 	"terralist/internal/server/repositories"
 	"terralist/pkg/file"
 	"terralist/pkg/metrics"
+	"terralist/pkg/registry"
 	"terralist/pkg/storage"
 	"terralist/pkg/version"
 
@@ -294,6 +295,10 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 		}
 		defer cleanup()
 
+		if err := verifySignature(a, files[shaSumsKey], files[shaSumsSigKey]); err != nil {
+			return err
+		}
+
 		// Upload provider files
 		keys, err := s.uploadFiles(a.Name, p.Name, d.Version, files)
 		if err != nil {
@@ -366,6 +371,10 @@ func (s *DefaultProviderService) UploadPackages(d *provider.PackagesUploadDTO) e
 	files := map[string]file.File{}
 
 	if d.Signed() {
+		if err := verifySignature(a, d.ShaSums, d.ShaSumsSignature); err != nil {
+			return err
+		}
+
 		files[shaSumsKey] = d.ShaSums
 		files[shaSumsSigKey] = d.ShaSumsSignature
 	}
@@ -456,6 +465,41 @@ func (s *DefaultProviderService) verifyPackages(d *provider.PackagesUploadDTO) (
 
 // parseShaSums reads a SHA256SUMS file into a map from file name to hex digest
 // and rewinds the file afterwards.
+// verifySignature checks that the SHA256SUMS document is signed by a key of
+// the authority, which the registry serves the version with. Expired keys are
+// accepted, as they sign releases that cannot be signed again, such as the
+// HashiCorp providers.
+func verifySignature(a *authority.Authority, shaSums, signature file.File) error {
+	document, err := readAndRewind(shaSums)
+	if err != nil {
+		return fmt.Errorf("could not read the SHA256SUMS file: %v", err)
+	}
+
+	sig, err := readAndRewind(signature)
+	if err != nil {
+		return fmt.Errorf("could not read the SHA256SUMS signature: %v", err)
+	}
+
+	keys := lo.Map(a.Keys, func(k authority.Key, _ int) registry.GPGPublicKey {
+		return registry.GPGPublicKey{KeyID: k.KeyId, ASCIIArmor: k.AsciiArmor}
+	})
+
+	if _, err := (registry.SignatureVerifier{AcceptExpiredKeys: true}).VerifyShaSums(document, sig, keys); err != nil {
+		return fmt.Errorf("the SHA256SUMS signature does not verify with the keys of authority %s: %w", a.Name, err)
+	}
+
+	return nil
+}
+
+// readAndRewind reads a file to the end and rewinds it for the next reader.
+func readAndRewind(f file.File) ([]byte, error) {
+	defer func() {
+		_, _ = f.Seek(0, io.SeekStart)
+	}()
+
+	return io.ReadAll(f)
+}
+
 func parseShaSums(f file.File) (map[string]string, error) {
 	defer func() {
 		_, _ = f.Seek(0, io.SeekStart)

@@ -4,7 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"net/http"
+	"strings"
 	"testing"
+	"time"
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/provider"
@@ -324,9 +327,10 @@ func TestUploadProvider(t *testing.T) {
 				})
 
 				Convey("If the authority exists", func() {
+					signer := newTestSigner(t, 0)
 					mockAuthorityService.
 						On("GetByID", mock.AnythingOfType("uuid.UUID")).
-						Return(&authority.Authority{}, nil)
+						Return(&authority.Authority{Keys: []authority.Key{signer.key(t)}}, nil)
 
 					Convey("If the provider exists and already has the given version", func() {
 						mockProviderRepository.
@@ -418,7 +422,10 @@ func TestUploadProvider(t *testing.T) {
 									})
 								})
 
-								Convey("If the provider files can be downloaded", func() {
+								// fetchSignedWith serves a SHA256SUMS file and its
+								// signature made by the given signer.
+								fetchSignedWith := func(by *testSigner) {
+									sums := []byte("0000  terraform-provider_1.0.0_linux_amd64.zip\n")
 									mockFetcher.
 										On(
 											"FetchFile",
@@ -426,7 +433,40 @@ func TestUploadProvider(t *testing.T) {
 											mock.AnythingOfType("string"),
 											mock.AnythingOfType("http.Header"),
 										).
-										Return(file.NewEmptyFile("test.txt"), func() {}, nil)
+										Return(func(name, _ string, _ http.Header) (file.File, func(), error) {
+											if strings.HasSuffix(name, ".sig") {
+												return file.NewInMemoryFile(name, by.sign(t, sums)), func() {}, nil
+											}
+
+											return file.NewInMemoryFile(name, sums), func() {}, nil
+										})
+								}
+
+								Convey("If the SHA256SUMS file is signed with a key the authority does not hold", func() {
+									fetchSignedWith(newTestSigner(t, 0))
+									mockFetcher.
+										On(
+											"FetchFileChecksum",
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("string"),
+											mock.AnythingOfType("http.Header"),
+										).
+										Return(file.NewEmptyFile("test-with-checksum.txt"), func() {}, nil)
+
+									Convey("When the service is queried", func() {
+										err := providerService.Upload(&dto)
+
+										Convey("The upload should be rejected and nothing stored", func() {
+											So(err, ShouldNotBeNil)
+											So(err.Error(), ShouldContainSubstring, "signature")
+											mockResolver.AssertNotCalled(t, "Store", mock.Anything)
+										})
+									})
+								})
+
+								Convey("If the provider files can be downloaded", func() {
+									fetchSignedWith(signer)
 
 									mockFetcher.
 										On(
@@ -944,6 +984,8 @@ func TestUploadProviderPackages(t *testing.T) {
 		darwin := []byte("darwin package")
 		linuxSum := sha256Hex(linux)
 		darwinSum := sha256Hex(darwin)
+		signer := newTestSigner(t, 0)
+		hashicorp := &authority.Authority{Name: "hashicorp", Keys: []authority.Key{signer.key(t)}}
 
 		newDTO := func() provider.PackagesUploadDTO {
 			return provider.PackagesUploadDTO{
@@ -965,7 +1007,7 @@ func TestUploadProviderPackages(t *testing.T) {
 
 		expectStore := func() *provider.Provider {
 			var saved provider.Provider
-			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
 			mockResolver.
 				On("Store", mock.AnythingOfType("*storage.StoreInput")).
@@ -1015,11 +1057,12 @@ func TestUploadProviderPackages(t *testing.T) {
 		Convey("Given packages with a matching SHA256SUMS, its signature and protocols", func() {
 			dto := newDTO()
 			dto.Protocols = []string{"5.0", "6.0"}
-			dto.ShaSums = file.NewInMemoryFile("terraform-provider-null_3.2.4_SHA256SUMS", []byte(
-				linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"+
-					darwinSum+"  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
-			))
-			dto.ShaSumsSignature = file.NewInMemoryFile("terraform-provider-null_3.2.4_SHA256SUMS.sig", []byte("signature"))
+			sums := []byte(
+				linuxSum + "  terraform-provider-null_3.2.4_linux_amd64.zip\n" +
+					darwinSum + "  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
+			)
+			dto.ShaSums = file.NewInMemoryFile("terraform-provider-null_3.2.4_SHA256SUMS", sums)
+			dto.ShaSumsSignature = file.NewInMemoryFile("terraform-provider-null_3.2.4_SHA256SUMS.sig", signer.sign(t, sums))
 			saved := expectStore()
 
 			Convey("When the packages are uploaded", func() {
@@ -1037,15 +1080,77 @@ func TestUploadProviderPackages(t *testing.T) {
 			})
 		})
 
+		signedDTO := func(sign func([]byte) []byte) provider.PackagesUploadDTO {
+			dto := newDTO()
+			dto.Protocols = []string{"5.0"}
+			sums := []byte(
+				linuxSum + "  terraform-provider-null_3.2.4_linux_amd64.zip\n" +
+					darwinSum + "  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
+			)
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", sums)
+			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", sign(sums))
+
+			return dto
+		}
+
+		for _, tc := range []struct {
+			desc string
+			sign func([]byte) []byte
+		}{
+			{"a key the authority does not hold", func(sums []byte) []byte { return newTestSigner(t, 0).sign(t, sums) }},
+			{"the authority key over another document", func([]byte) []byte { return signer.sign(t, []byte("other")) }},
+		} {
+			Convey("Given a SHA256SUMS signed with "+tc.desc, func() {
+				dto := signedDTO(tc.sign)
+				mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
+				mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
+
+				Convey("When the packages are uploaded", func() {
+					err := providerService.UploadPackages(&dto)
+
+					Convey("The upload should be rejected and nothing stored", func() {
+						So(err, ShouldNotBeNil)
+						So(err.Error(), ShouldContainSubstring, "signature")
+						mockResolver.AssertNotCalled(t, "Store", mock.Anything)
+					})
+				})
+			})
+		}
+
+		Convey("Given a SHA256SUMS signed with an expired key of the authority", func() {
+			expired := newTestSigner(t, time.Hour)
+			dto := signedDTO(func(sums []byte) []byte { return expired.sign(t, sums) })
+			var saved provider.Provider
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp", Keys: []authority.Key{expired.key(t)}}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
+			mockResolver.
+				On("Store", mock.AnythingOfType("*storage.StoreInput")).
+				Return(func(in *storage.StoreInput) (string, error) { return in.KeyPrefix + "/" + in.FileName, nil })
+			mockProviderRepository.
+				On("Upsert", mock.AnythingOfType("provider.Provider")).
+				Run(func(args mock.Arguments) { saved, _ = args.Get(0).(provider.Provider) }).
+				Return(&provider.Provider{}, nil)
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The version should be stored, as releases signed by expired keys cannot be signed again", func() {
+					So(err, ShouldBeNil)
+					So(saved.Versions[0].MirrorOnly(), ShouldBeFalse)
+				})
+			})
+		})
+
 		Convey("Given a SHA256SUMS that does not match a package", func() {
 			dto := newDTO()
 			dto.Protocols = []string{"5.0"}
-			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", []byte(
-				linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"+
-					sha256Hex([]byte("tampered"))+"  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
-			))
-			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", []byte("signature"))
-			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			sums := []byte(
+				linuxSum + "  terraform-provider-null_3.2.4_linux_amd64.zip\n" +
+					sha256Hex([]byte("tampered")) + "  terraform-provider-null_3.2.4_darwin_arm64.zip\n",
+			)
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", sums)
+			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", signer.sign(t, sums))
+			mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
 
 			Convey("When the packages are uploaded", func() {
@@ -1061,9 +1166,10 @@ func TestUploadProviderPackages(t *testing.T) {
 		Convey("Given a SHA256SUMS that does not list a package", func() {
 			dto := newDTO()
 			dto.Protocols = []string{"5.0"}
-			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", []byte(linuxSum+"  terraform-provider-null_3.2.4_linux_amd64.zip\n"))
-			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", []byte("signature"))
-			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			sums := []byte(linuxSum + "  terraform-provider-null_3.2.4_linux_amd64.zip\n")
+			dto.ShaSums = file.NewInMemoryFile("SHA256SUMS", sums)
+			dto.ShaSumsSignature = file.NewInMemoryFile("SHA256SUMS.sig", signer.sign(t, sums))
+			mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
 
 			Convey("When the packages are uploaded", func() {
@@ -1106,7 +1212,7 @@ func TestUploadProviderPackages(t *testing.T) {
 		Convey("Given a package that is not listed in the metadata", func() {
 			dto := newDTO()
 			dto.Archives = append(dto.Archives, file.NewInMemoryFile("terraform-provider-null_3.2.4_windows_amd64.zip", []byte("windows")))
-			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(nil, errors.New("not found"))
 
 			Convey("When the packages are uploaded", func() {
@@ -1165,7 +1271,7 @@ func TestUploadProviderPackages(t *testing.T) {
 
 		Convey("Given a version that already exists", func() {
 			dto := newDTO()
-			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(&provider.Provider{
 				Name:     "null",
 				Versions: []provider.Version{{Version: "3.2.4"}},
@@ -1183,7 +1289,7 @@ func TestUploadProviderPackages(t *testing.T) {
 		Convey("Given a provider that already has other versions", func() {
 			dto := newDTO()
 			var saved provider.Provider
-			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockAuthorityService.On("GetByID", authorityID).Return(hashicorp, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(&provider.Provider{
 				Name:     "null",
 				Versions: []provider.Version{{Version: "3.2.3"}},
