@@ -260,9 +260,9 @@ func (s *DefaultAuthorityService) normalizeUpstream(a *authority.Authority) erro
 		return nil
 	}
 
-	hostname := strings.ToLower(*a.UpstreamHostname)
-	if !upstreamHostnameRegexp.MatchString(hostname) {
-		return fmt.Errorf("invalid upstream hostname %q", *a.UpstreamHostname)
+	hostname, err := NormalizeUpstreamHostname(*a.UpstreamHostname)
+	if err != nil {
+		return err
 	}
 
 	a.UpstreamHostname = &hostname
@@ -300,4 +300,15 @@ func (s *DefaultAuthorityService) normalizeUpstream(a *authority.Authority) erro
 	}
 
 	return nil
+}
+
+// NormalizeUpstreamHostname lowercases an upstream registry hostname and
+// rejects anything that is not a DNS hostname with an optional port.
+func NormalizeUpstreamHostname(hostname string) (string, error) {
+	normalized := strings.ToLower(hostname)
+	if !upstreamHostnameRegexp.MatchString(normalized) {
+		return "", fmt.Errorf("invalid upstream hostname %q", hostname)
+	}
+
+	return normalized, nil
 }
