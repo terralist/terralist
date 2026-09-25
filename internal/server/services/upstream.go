@@ -20,6 +20,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"golang.org/x/sync/singleflight"
 )
 
 var (
@@ -85,8 +86,9 @@ type DefaultUpstreamService struct {
 	Verifier   registry.SignatureVerifier
 	Sealer     *secret.Sealer
 
-	now     func() time.Time
-	clients sync.Map
+	now       func() time.Time
+	clients   sync.Map
+	refreshes singleflight.Group
 }
 
 // envelope wraps a cached payload with the time it was read from upstream, so
@@ -307,7 +309,10 @@ func (s *DefaultUpstreamService) cached(a *authority.Authority, operation, key s
 		return err
 	}
 
-	payload, err := read(ctx, client)
+	// Concurrent requests for the same entry wait for one upstream read.
+	raw, err, _ := s.refreshes.Do(key, func() (any, error) {
+		return s.refresh(ctx, client, key, read)
+	})
 	if err != nil {
 		if ok {
 			metrics.RecordUpstreamRequest(*a.UpstreamHostname, operation, "stale")
@@ -323,21 +328,31 @@ func (s *DefaultUpstreamService) cached(a *authority.Authority, operation, key s
 
 	metrics.RecordUpstreamRequest(*a.UpstreamHostname, operation, "success")
 
+	return json.Unmarshal(raw.([]byte), out) //nolint:forcetypeassert
+}
+
+// refresh reads an entry from the upstream and stores it in the cache.
+func (s *DefaultUpstreamService) refresh(ctx context.Context, client *registry.Client, key string, read func(context.Context, *registry.Client) (any, error)) ([]byte, error) {
+	payload, err := read(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
 	raw, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	sealed, err := json.Marshal(envelope{FetchedAt: s.clock(), Payload: raw})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := s.Cache.Set(ctx, key, sealed, s.Retention); err != nil {
 		log.Warn().Err(err).Str("key", key).Msg("Could not write the upstream cache.")
 	}
 
-	return json.Unmarshal(raw, out)
+	return raw, nil
 }
 
 // client returns the registry client of an authority, created on first use.

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -37,6 +38,8 @@ type fakeUpstream struct {
 	entity    *openpgp.Entity
 	requests  atomic.Int32
 	failing   atomic.Bool
+	listings  atomic.Int32  // version list requests
+	held      chan struct{} // when set, version lists wait for it to close
 	tokens    []string
 }
 
@@ -87,6 +90,10 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 		w.WriteHeader(http.StatusNoContent)
 	})
 	mux.HandleFunc("/v1/providers/hashicorp/null/versions", func(w http.ResponseWriter, _ *http.Request) {
+		u.listings.Add(1)
+		if u.held != nil {
+			<-u.held
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"versions": []map[string]any{
 				{"version": "1.0.0", "protocols": []string{"5.0"}, "platforms": []map[string]string{{"os": "linux", "arch": "amd64"}, {"os": "darwin", "arch": "arm64"}}},
@@ -292,6 +299,41 @@ func TestUpstreamProviderVersions(t *testing.T) {
 			Convey("Then no versions should be returned without an error", func() {
 				So(err, ShouldBeNil)
 				So(versions, ShouldBeEmpty)
+			})
+		})
+	})
+}
+
+func TestUpstreamProviderVersionsConcurrently(t *testing.T) {
+	Convey("Subject: Listing the versions of a provider from several requests at once", t, func() {
+		upstream := newFakeUpstream(t)
+		upstream.held = make(chan struct{})
+		now := time.Now()
+		service := newUpstreamService(t, &now)
+		a := upstream.authority()
+		a.ID = uuid.New()
+
+		Convey("When the versions are not cached yet", func() {
+			const callers = 5
+			var wg sync.WaitGroup
+			for range callers {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					_, _ = service.ProviderVersions(a, "null")
+				}()
+			}
+
+			// Give every caller the time to reach the upstream on its own.
+			deadline := time.Now().Add(500 * time.Millisecond)
+			for upstream.listings.Load() < callers && time.Now().Before(deadline) {
+				time.Sleep(10 * time.Millisecond)
+			}
+			close(upstream.held)
+			wg.Wait()
+
+			Convey("Then the upstream should be asked once", func() {
+				So(upstream.listings.Load(), ShouldEqual, 1)
 			})
 		})
 	})
