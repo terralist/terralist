@@ -34,6 +34,25 @@ import (
 func setupProviderRouter(t *testing.T, user *auth.User, policyCSV string) (*gin.Engine, *services.MockProviderService, *services.MockAuthorityService) {
 	t.Helper()
 
+	controller, mockService, mockAuthorityService := newProviderController(t, policyCSV)
+
+	router := gin.New()
+	if user != nil {
+		router.Use(func(ctx *gin.Context) {
+			ctx.Set("user", user)
+			ctx.Set("userName", user.Name)
+			ctx.Set("userEmail", user.Email)
+		})
+	}
+
+	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
+
+	return router, mockService, mockAuthorityService
+}
+
+func newProviderController(t *testing.T, policyCSV string) (*DefaultProviderController, *services.MockProviderService, *services.MockAuthorityService) {
+	t.Helper()
+
 	gin.SetMode(gin.TestMode)
 
 	mockService := services.NewMockProviderService(t)
@@ -80,18 +99,7 @@ func setupProviderRouter(t *testing.T, user *auth.User, policyCSV string) (*gin.
 		},
 	}
 
-	router := gin.New()
-	if user != nil {
-		router.Use(func(ctx *gin.Context) {
-			ctx.Set("user", user)
-			ctx.Set("userName", user.Name)
-			ctx.Set("userEmail", user.Email)
-		})
-	}
-
-	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
-
-	return router, mockService, mockAuthorityService
+	return controller, mockService, mockAuthorityService
 }
 
 // packagesUpload builds a multipart request body for the package upload
@@ -355,6 +363,41 @@ func TestProviderController_Fetch(t *testing.T) {
 				Convey("Then it should be a bad request", func() {
 					So(w.Code, ShouldEqual, http.StatusBadRequest)
 				})
+			})
+		})
+	})
+}
+
+func TestProviderController_AnonymousReadPullThrough(t *testing.T) {
+	Convey("Subject: Pulling providers through when anonymous read is allowed", t, func() {
+		controller, mockService, _ := newProviderController(t, "p, test-user, providers, create, hashicorp/*, allow")
+		controller.AnonymousRead = true
+
+		router := gin.New()
+		api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
+
+		Convey("When a user allowed to create the provider lists its versions", func() {
+			token, err := controller.Authentication.JWT.Build(auth.User{Name: "test-user", Email: "test@example.com"}, 60)
+			So(err, ShouldBeNil)
+
+			mockService.On("Get", "hashicorp", "null", true).Return(&provider.VersionListProviderDTO{}, nil)
+
+			req := httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/versions", nil)
+			req.Header.Set("Authorization", "Bearer "+token)
+			w := serve(router, req)
+
+			Convey("Then the upstream versions should be included", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+		})
+
+		Convey("When an anonymous caller lists the versions", func() {
+			mockService.On("Get", "hashicorp", "null", false).Return(&provider.VersionListProviderDTO{}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/versions", nil))
+
+			Convey("Then only the stored versions should be served", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
 			})
 		})
 	})
