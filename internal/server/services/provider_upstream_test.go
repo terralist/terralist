@@ -398,6 +398,15 @@ func TestDownloadProviderPackage(t *testing.T) {
 				})
 			})
 
+			Convey("When the authority has no enabled upstream and the caller may not fetch", func() {
+				f.auth.UpstreamEnabled = false
+				_, err := f.service.Download("hashicorp", "null", "3.2.4", "darwin", "arm64", false)
+
+				Convey("Then the package is not found", func() {
+					So(errors.Is(err, repositories.ErrNotFound), ShouldBeTrue)
+				})
+			})
+
 			Convey("When the caller may fetch", func() {
 				f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil).Maybe()
 				f.upstream.On("ProviderPackage", f.auth, "null", "3.2.4", "darwin", "arm64").Return(&UpstreamPackage{
