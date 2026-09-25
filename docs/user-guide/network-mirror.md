@@ -134,7 +134,7 @@ curl -X POST \
 
 ### Creating authorities on demand
 
-With [`upstream-auto-create`](../configuration.md#upstream-auto-create) listing an upstream hostname, the first authenticated network mirror request for an unknown namespace of that hostname creates the authority: named after the namespace, standing for it, enabled, with the `allow` policy, owned by the caller. Anonymous requests never create authorities.
+With [`upstream-auto-create`](../configuration.md#upstream-auto-create) listing an upstream hostname, the first network mirror request for an unknown namespace of that hostname, from a caller allowed to `create` that authority, creates it: named after the namespace, standing for it, enabled, with the `allow` policy, owned by the caller. Other callers, anonymous ones included, never create authorities.
 
 ## Uploading provider packages
 

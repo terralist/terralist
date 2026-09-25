@@ -166,7 +166,7 @@ How long the metadata read from upstream registries is kept once stale, to be se
 
 ### `upstream-auto-create`
 
-Comma separated upstream hostnames for which Terralist creates an authority on the first authenticated network mirror request for an unknown namespace. The authority takes the namespace as its name, stands for that upstream namespace with the upstream enabled and the `allow` policy, and is owned by the caller. Anonymous requests never create authorities. Entries are hostnames, such as `registry.terraform.io`, and Terralist refuses to start on anything else.
+Comma separated upstream hostnames for which Terralist creates an authority on the first network mirror request for an unknown namespace, from a caller allowed to `create` that authority. The authority takes the namespace as its name, stands for that upstream namespace with the upstream enabled and the `allow` policy, and is owned by the caller. Other callers, anonymous ones included, never create authorities. Entries are hostnames, such as `registry.terraform.io`, and Terralist refuses to start on anything else.
 
 | Name | Value |
 | --- | --- |
