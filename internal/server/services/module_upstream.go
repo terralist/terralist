@@ -111,6 +111,13 @@ func (s *DefaultModuleService) fetchVersion(a *authority.Authority, name, system
 	}
 
 	if err := s.Upload(&dto, file.NewRemoteFile(location, nil)); err != nil {
+		if errors.Is(err, repositories.ErrAlreadyExists) {
+			// Another request stored the version meanwhile.
+			if stored, findErr := s.ModuleRepository.FindVersionLocation(a.Name, name, system, version); findErr == nil {
+				return *stored, nil
+			}
+		}
+
 		return "", fmt.Errorf("could not fetch %s/%s/%s %s from %s: %v", a.Name, name, system, version, location, err)
 	}
 

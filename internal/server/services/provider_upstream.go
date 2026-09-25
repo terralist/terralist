@@ -167,10 +167,31 @@ func (s *DefaultProviderService) ensureUpstreamVersion(a *authority.Authority, n
 	})
 
 	if _, err := s.ProviderRepository.Upsert(*current); err != nil {
+		if errors.Is(err, repositories.ErrAlreadyExists) {
+			// Another request created the version meanwhile.
+			return s.storedUpstreamVersion(a, name, version, err)
+		}
+
 		return nil, err
 	}
 
 	return &current.Versions[len(current.Versions)-1], nil
+}
+
+// storedUpstreamVersion re-reads a version pulled from the upstream by another
+// request, failing with cause when there is none.
+func (s *DefaultProviderService) storedUpstreamVersion(a *authority.Authority, name, version string, cause error) (*provider.Version, error) {
+	current, err := s.ProviderRepository.Find(a.Name, name)
+	if err != nil {
+		return nil, cause
+	}
+
+	v := current.GetVersion(version)
+	if v == nil || v.Origin != provider.OriginUpstream {
+		return nil, cause
+	}
+
+	return v, nil
 }
 
 // upstreamDownloadDTO describes a platform that is not stored yet, pointing
@@ -313,6 +334,15 @@ func (s *DefaultProviderService) fetchPackage(a *authority.Authority, name, vers
 	})
 
 	if _, err := s.ProviderRepository.Upsert(*current); err != nil {
+		if errors.Is(err, repositories.ErrAlreadyExists) {
+			// Another request stored the platform meanwhile.
+			if v, findErr := s.storedUpstreamVersion(a, name, version, err); findErr == nil {
+				if p := v.GetPlatform(system, architecture); p != nil {
+					return p.Location, nil
+				}
+			}
+		}
+
 		return "", err
 	}
 

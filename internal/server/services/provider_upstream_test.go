@@ -338,6 +338,49 @@ func TestGetVersionFromUpstream(t *testing.T) {
 			})
 		})
 
+		Convey("Given another request creates the version at the same time", func() {
+			concurrent := f.localProvider()
+			concurrent.Versions = append(concurrent.Versions, provider.Version{
+				Version:             "3.2.5",
+				Protocols:           "6.0",
+				ShaSumsUrl:          "providers/hashicorp/null/3.2.5/concurrent_SHA256SUMS",
+				ShaSumsSignatureUrl: "providers/hashicorp/null/3.2.5/concurrent_SHA256SUMS.sig",
+				Origin:              provider.OriginUpstream,
+			})
+			// The other request stores the version right before this one.
+			stored := false
+			f.repo.On("Find", "hashicorp", "null").Return(func(string, string) (*provider.Provider, error) {
+				if stored {
+					return concurrent, nil
+				}
+
+				return f.localProvider(), nil
+			})
+			f.repo.On("FindVersionPlatform", "hashicorp", "null", "3.2.5", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
+			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.5").Return(&UpstreamVersionMetadata{
+				Protocols:       []string{"6.0"},
+				ShaSums:         map[string]string{"terraform-provider-null_3.2.5_darwin_arm64.zip": "dddd"},
+				ShaSumsDocument: []byte("sums"),
+				Signature:       []byte("sig"),
+			}, nil)
+			f.resolver.
+				On("Store", mock.AnythingOfType("*storage.StoreInput")).
+				Return(func(in *storage.StoreInput) (string, error) { return in.KeyPrefix + "/" + in.FileName, nil })
+			f.repo.
+				On("Upsert", mock.AnythingOfType("provider.Provider")).
+				Run(func(mock.Arguments) { stored = true }).
+				Return(nil, repositories.ErrAlreadyExists)
+			f.resolver.On("Find", "providers/hashicorp/null/3.2.5/concurrent_SHA256SUMS").Return("https://storage/concurrent", nil)
+			f.resolver.On("Find", "providers/hashicorp/null/3.2.5/concurrent_SHA256SUMS.sig").Return("https://storage/concurrent.sig", nil)
+
+			dto, err := f.service.GetVersion("hashicorp", "null", "3.2.5", "darwin", "arm64", true)
+
+			Convey("Then the version created by the other request is served", func() {
+				So(err, ShouldBeNil)
+				So(dto.ShaSumsUrl, ShouldEqual, "https://storage/concurrent")
+			})
+		})
+
 		Convey("Given the version was uploaded by an operator", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
 
@@ -442,6 +485,44 @@ func TestDownloadProviderPackage(t *testing.T) {
 					So(p.ShaSum, ShouldEqual, "bbbb")
 					So(p.Origin, ShouldEqual, provider.OriginUpstream)
 					So(p.Location, ShouldEqual, "providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip")
+				})
+			})
+
+			Convey("When another request stores the platform at the same time", func() {
+				stored := false
+				f.repo.On("Find", "hashicorp", "null").Return(func(string, string) (*provider.Provider, error) {
+					p := f.localProvider()
+					p.Versions[0].Origin = provider.OriginUpstream
+					if stored {
+						p.Versions[0].Platforms = append(p.Versions[0].Platforms, provider.Platform{
+							System: "darwin", Architecture: "arm64", Location: "providers/hashicorp/null/3.2.4/concurrent.zip",
+						})
+					}
+
+					return p, nil
+				})
+				f.upstream.On("ProviderPackage", f.auth, "null", "3.2.4", "darwin", "arm64").Return(&UpstreamPackage{
+					FileName: "terraform-provider-null_3.2.4_darwin_arm64.zip",
+					URL:      "https://releases.example.com/darwin.zip",
+					ShaSum:   "bbbb",
+				}, nil)
+				f.fetcher.
+					On("FetchFileChecksum", "terraform-provider-null_3.2.4_darwin_arm64.zip", "https://releases.example.com/darwin.zip", "bbbb", mock.Anything).
+					Return(file.NewInMemoryFile("terraform-provider-null_3.2.4_darwin_arm64.zip", []byte("zip")), func() {}, nil)
+				f.resolver.
+					On("Store", mock.AnythingOfType("*storage.StoreInput")).
+					Return(func(in *storage.StoreInput) (string, error) { return in.KeyPrefix + "/" + in.FileName, nil })
+				f.repo.
+					On("Upsert", mock.AnythingOfType("provider.Provider")).
+					Run(func(mock.Arguments) { stored = true }).
+					Return(nil, repositories.ErrAlreadyExists)
+				f.resolver.On("Find", "providers/hashicorp/null/3.2.4/concurrent.zip").Return("https://storage/concurrent.zip", nil)
+
+				url, err := f.service.Download("hashicorp", "null", "3.2.4", "darwin", "arm64", true)
+
+				Convey("Then the platform stored by the other request is served", func() {
+					So(err, ShouldBeNil)
+					So(url, ShouldEqual, "https://storage/concurrent.zip")
 				})
 			})
 
