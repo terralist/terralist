@@ -3287,7 +3287,7 @@
 </span><span id="__span-70-3"><a id="__codelineno-70-3" name="__codelineno-70-3" href="#__codelineno-70-3"></a><span class="w">  </span>http://localhost:5758/v1/api/modules/hashicorp/dir/template/1.0.2/fetch
 </span></code></pre></div>
 <h3 id="example-response_14">Example Response<a class="headerlink" href="#example-response_14" title="Permanent link">¶</a></h3>
-<div class="tabbed-set tabbed-alternate" data-tabs="17:2"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">Status 200</label><label for="__tabbed_17_2">Status 502</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="17:3"><input checked="checked" id="__tabbed_17_1" name="__tabbed_17" type="radio" /><input id="__tabbed_17_2" name="__tabbed_17" type="radio" /><input id="__tabbed_17_3" name="__tabbed_17" type="radio" /><div class="tabbed-labels"><label for="__tabbed_17_1">Status 200</label><label for="__tabbed_17_2">Status 404</label><label for="__tabbed_17_3">Status 502</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <div class="language-json highlight"><pre><span></span><code><span id="__span-71-1"><a id="__codelineno-71-1" name="__codelineno-71-1" href="#__codelineno-71-1"></a><span class="p">{</span>
@@ -3303,297 +3303,305 @@
 </span><span id="__span-72-5"><a id="__codelineno-72-5" name="__codelineno-72-5" href="#__codelineno-72-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
+<div class="tabbed-block">
+<div class="language-json highlight"><pre><span></span><code><span id="__span-73-1"><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a><span class="p">{</span>
+</span><span id="__span-73-2"><a id="__codelineno-73-2" name="__codelineno-73-2" href="#__codelineno-73-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-73-3"><a id="__codelineno-73-3" name="__codelineno-73-3" href="#__codelineno-73-3"></a><span class="w">    </span><span class="s2">"could not fetch hashicorp/dir/template 1.0.2 from git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2: ..."</span>
+</span><span id="__span-73-4"><a id="__codelineno-73-4" name="__codelineno-73-4" href="#__codelineno-73-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-73-5"><a id="__codelineno-73-5" name="__codelineno-73-5" href="#__codelineno-73-5"></a><span class="p">}</span>
+</span></code></pre></div>
+</div>
 </div>
 </div>
 <h2 id="remove-a-module">Remove a module<a class="headerlink" href="#remove-a-module" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-73-1"><a id="__codelineno-73-1" name="__codelineno-73-1" href="#__codelineno-73-1"></a>DELETE /v1/api/modules/:namespace/:name/:provider/remove
+<div class="language-text highlight"><pre><span></span><code><span id="__span-74-1"><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a>DELETE /v1/api/modules/:namespace/:name/:provider/remove
 </span></code></pre></div>
 <p>Remove a module together with all its uploaded versions.</p>
 <h3 id="example-request_16">Example Request<a class="headerlink" href="#example-request_16" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-74-1"><a id="__codelineno-74-1" name="__codelineno-74-1" href="#__codelineno-74-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-74-2"><a id="__codelineno-74-2" name="__codelineno-74-2" href="#__codelineno-74-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-74-3"><a id="__codelineno-74-3" name="__codelineno-74-3" href="#__codelineno-74-3"></a><span class="w">  </span>http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/remove
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-75-1"><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-75-2"><a id="__codelineno-75-2" name="__codelineno-75-2" href="#__codelineno-75-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-75-3"><a id="__codelineno-75-3" name="__codelineno-75-3" href="#__codelineno-75-3"></a><span class="w">  </span>http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/remove
 </span></code></pre></div>
 <div class="tabbed-set tabbed-alternate" data-tabs="18:3"><input checked="checked" id="__tabbed_18_1" name="__tabbed_18" type="radio" /><input id="__tabbed_18_2" name="__tabbed_18" type="radio" /><input id="__tabbed_18_3" name="__tabbed_18" type="radio" /><div class="tabbed-labels"><label for="__tabbed_18_1">Status 200</label><label for="__tabbed_18_2">Status 401</label><label for="__tabbed_18_3">Status 4xx/5xx</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-75-1"><a id="__codelineno-75-1" name="__codelineno-75-1" href="#__codelineno-75-1"></a><span class="p">{</span>
-</span><span id="__span-75-2"><a id="__codelineno-75-2" name="__codelineno-75-2" href="#__codelineno-75-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
-</span><span id="__span-75-3"><a id="__codelineno-75-3" name="__codelineno-75-3" href="#__codelineno-75-3"></a><span class="p">}</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
 <div class="language-json highlight"><pre><span></span><code><span id="__span-76-1"><a id="__codelineno-76-1" name="__codelineno-76-1" href="#__codelineno-76-1"></a><span class="p">{</span>
-</span><span id="__span-76-2"><a id="__codelineno-76-2" name="__codelineno-76-2" href="#__codelineno-76-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-76-3"><a id="__codelineno-76-3" name="__codelineno-76-3" href="#__codelineno-76-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
-</span><span id="__span-76-4"><a id="__codelineno-76-4" name="__codelineno-76-4" href="#__codelineno-76-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
-</span><span id="__span-76-5"><a id="__codelineno-76-5" name="__codelineno-76-5" href="#__codelineno-76-5"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-76-6"><a id="__codelineno-76-6" name="__codelineno-76-6" href="#__codelineno-76-6"></a><span class="p">}</span>
+</span><span id="__span-76-2"><a id="__codelineno-76-2" name="__codelineno-76-2" href="#__codelineno-76-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+</span><span id="__span-76-3"><a id="__codelineno-76-3" name="__codelineno-76-3" href="#__codelineno-76-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="language-json highlight"><pre><span></span><code><span id="__span-77-1"><a id="__codelineno-77-1" name="__codelineno-77-1" href="#__codelineno-77-1"></a><span class="p">{</span>
 </span><span id="__span-77-2"><a id="__codelineno-77-2" name="__codelineno-77-2" href="#__codelineno-77-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-77-3"><a id="__codelineno-77-3" name="__codelineno-77-3" href="#__codelineno-77-3"></a><span class="w">    </span><span class="s2">"..."</span><span class="p">,</span>
-</span><span id="__span-77-4"><a id="__codelineno-77-4" name="__codelineno-77-4" href="#__codelineno-77-4"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-77-5"><a id="__codelineno-77-5" name="__codelineno-77-5" href="#__codelineno-77-5"></a><span class="p">}</span>
+</span><span id="__span-77-3"><a id="__codelineno-77-3" name="__codelineno-77-3" href="#__codelineno-77-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
+</span><span id="__span-77-4"><a id="__codelineno-77-4" name="__codelineno-77-4" href="#__codelineno-77-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
+</span><span id="__span-77-5"><a id="__codelineno-77-5" name="__codelineno-77-5" href="#__codelineno-77-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-77-6"><a id="__codelineno-77-6" name="__codelineno-77-6" href="#__codelineno-77-6"></a><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-json highlight"><pre><span></span><code><span id="__span-78-1"><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a><span class="p">{</span>
+</span><span id="__span-78-2"><a id="__codelineno-78-2" name="__codelineno-78-2" href="#__codelineno-78-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-78-3"><a id="__codelineno-78-3" name="__codelineno-78-3" href="#__codelineno-78-3"></a><span class="w">    </span><span class="s2">"..."</span><span class="p">,</span>
+</span><span id="__span-78-4"><a id="__codelineno-78-4" name="__codelineno-78-4" href="#__codelineno-78-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-78-5"><a id="__codelineno-78-5" name="__codelineno-78-5" href="#__codelineno-78-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="remove-a-module-version">Remove a module version<a class="headerlink" href="#remove-a-module-version" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-78-1"><a id="__codelineno-78-1" name="__codelineno-78-1" href="#__codelineno-78-1"></a>DELETE /v1/api/modules/:namespace/:name/:provider/:version/remove
+<div class="language-text highlight"><pre><span></span><code><span id="__span-79-1"><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a>DELETE /v1/api/modules/:namespace/:name/:provider/:version/remove
 </span></code></pre></div>
 <p>Remove a specific module version.</p>
 <h3 id="example-request_17">Example Request<a class="headerlink" href="#example-request_17" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-79-1"><a id="__codelineno-79-1" name="__codelineno-79-1" href="#__codelineno-79-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-79-2"><a id="__codelineno-79-2" name="__codelineno-79-2" href="#__codelineno-79-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-79-3"><a id="__codelineno-79-3" name="__codelineno-79-3" href="#__codelineno-79-3"></a><span class="w">  </span>http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/remove
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-80-1"><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-80-2"><a id="__codelineno-80-2" name="__codelineno-80-2" href="#__codelineno-80-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-80-3"><a id="__codelineno-80-3" name="__codelineno-80-3" href="#__codelineno-80-3"></a><span class="w">  </span>http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/remove
 </span></code></pre></div>
 <h3 id="example-response_15">Example Response<a class="headerlink" href="#example-response_15" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="19:3"><input checked="checked" id="__tabbed_19_1" name="__tabbed_19" type="radio" /><input id="__tabbed_19_2" name="__tabbed_19" type="radio" /><input id="__tabbed_19_3" name="__tabbed_19" type="radio" /><div class="tabbed-labels"><label for="__tabbed_19_1">Status 200</label><label for="__tabbed_19_2">Status 401</label><label for="__tabbed_19_3">Status 4xx/5xx</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-80-1"><a id="__codelineno-80-1" name="__codelineno-80-1" href="#__codelineno-80-1"></a><span class="p">{</span>
-</span><span id="__span-80-2"><a id="__codelineno-80-2" name="__codelineno-80-2" href="#__codelineno-80-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
-</span><span id="__span-80-3"><a id="__codelineno-80-3" name="__codelineno-80-3" href="#__codelineno-80-3"></a><span class="p">}</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
 <div class="language-json highlight"><pre><span></span><code><span id="__span-81-1"><a id="__codelineno-81-1" name="__codelineno-81-1" href="#__codelineno-81-1"></a><span class="p">{</span>
-</span><span id="__span-81-2"><a id="__codelineno-81-2" name="__codelineno-81-2" href="#__codelineno-81-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-81-3"><a id="__codelineno-81-3" name="__codelineno-81-3" href="#__codelineno-81-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
-</span><span id="__span-81-4"><a id="__codelineno-81-4" name="__codelineno-81-4" href="#__codelineno-81-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
-</span><span id="__span-81-5"><a id="__codelineno-81-5" name="__codelineno-81-5" href="#__codelineno-81-5"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-81-6"><a id="__codelineno-81-6" name="__codelineno-81-6" href="#__codelineno-81-6"></a><span class="p">}</span>
+</span><span id="__span-81-2"><a id="__codelineno-81-2" name="__codelineno-81-2" href="#__codelineno-81-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+</span><span id="__span-81-3"><a id="__codelineno-81-3" name="__codelineno-81-3" href="#__codelineno-81-3"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="language-json highlight"><pre><span></span><code><span id="__span-82-1"><a id="__codelineno-82-1" name="__codelineno-82-1" href="#__codelineno-82-1"></a><span class="p">{</span>
 </span><span id="__span-82-2"><a id="__codelineno-82-2" name="__codelineno-82-2" href="#__codelineno-82-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-82-3"><a id="__codelineno-82-3" name="__codelineno-82-3" href="#__codelineno-82-3"></a><span class="w">    </span><span class="s2">"..."</span><span class="p">,</span>
-</span><span id="__span-82-4"><a id="__codelineno-82-4" name="__codelineno-82-4" href="#__codelineno-82-4"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-82-5"><a id="__codelineno-82-5" name="__codelineno-82-5" href="#__codelineno-82-5"></a><span class="p">}</span>
+</span><span id="__span-82-3"><a id="__codelineno-82-3" name="__codelineno-82-3" href="#__codelineno-82-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
+</span><span id="__span-82-4"><a id="__codelineno-82-4" name="__codelineno-82-4" href="#__codelineno-82-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
+</span><span id="__span-82-5"><a id="__codelineno-82-5" name="__codelineno-82-5" href="#__codelineno-82-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-82-6"><a id="__codelineno-82-6" name="__codelineno-82-6" href="#__codelineno-82-6"></a><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-json highlight"><pre><span></span><code><span id="__span-83-1"><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a><span class="p">{</span>
+</span><span id="__span-83-2"><a id="__codelineno-83-2" name="__codelineno-83-2" href="#__codelineno-83-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-83-3"><a id="__codelineno-83-3" name="__codelineno-83-3" href="#__codelineno-83-3"></a><span class="w">    </span><span class="s2">"..."</span><span class="p">,</span>
+</span><span id="__span-83-4"><a id="__codelineno-83-4" name="__codelineno-83-4" href="#__codelineno-83-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-83-5"><a id="__codelineno-83-5" name="__codelineno-83-5" href="#__codelineno-83-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="list-provider-versions-network-mirror">List provider versions (network mirror)<a class="headerlink" href="#list-provider-versions-network-mirror" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-83-1"><a id="__codelineno-83-1" name="__codelineno-83-1" href="#__codelineno-83-1"></a>GET /providers/:hostname/:namespace/:name/index.json
+<div class="language-text highlight"><pre><span></span><code><span id="__span-84-1"><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a>GET /providers/:hostname/:namespace/:name/index.json
 </span></code></pre></div>
 <p>List all versions of a provider, as defined by the <a href="https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol">Provider Network Mirror Protocol</a>. Under Terralist's own hostname the namespace is the authority name; under any other hostname the request is served by the authority standing for that upstream hostname and namespace. See the <a href="../../user-guide/network-mirror/">Provider Network Mirror</a> guide for details.</p>
 <h3 id="example-request_18">Example Request<a class="headerlink" href="#example-request_18" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-84-1"><a id="__codelineno-84-1" name="__codelineno-84-1" href="#__codelineno-84-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-84-2"><a id="__codelineno-84-2" name="__codelineno-84-2" href="#__codelineno-84-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-84-3"><a id="__codelineno-84-3" name="__codelineno-84-3" href="#__codelineno-84-3"></a><span class="w">  </span>http://localhost:5758/providers/localhost:5758/hashicorp/null/index.json
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-85-1"><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-85-2"><a id="__codelineno-85-2" name="__codelineno-85-2" href="#__codelineno-85-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-85-3"><a id="__codelineno-85-3" name="__codelineno-85-3" href="#__codelineno-85-3"></a><span class="w">  </span>http://localhost:5758/providers/localhost:5758/hashicorp/null/index.json
 </span></code></pre></div>
 <h3 id="example-response_16">Example Response<a class="headerlink" href="#example-response_16" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="20:3"><input checked="checked" id="__tabbed_20_1" name="__tabbed_20" type="radio" /><input id="__tabbed_20_2" name="__tabbed_20" type="radio" /><input id="__tabbed_20_3" name="__tabbed_20" type="radio" /><div class="tabbed-labels"><label for="__tabbed_20_1">Status 200</label><label for="__tabbed_20_2">Status 403</label><label for="__tabbed_20_3">Status 404</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-85-1"><a id="__codelineno-85-1" name="__codelineno-85-1" href="#__codelineno-85-1"></a><span class="p">{</span>
-</span><span id="__span-85-2"><a id="__codelineno-85-2" name="__codelineno-85-2" href="#__codelineno-85-2"></a><span class="w">  </span><span class="nt">"versions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-85-3"><a id="__codelineno-85-3" name="__codelineno-85-3" href="#__codelineno-85-3"></a><span class="w">    </span><span class="nt">"3.2.3"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
-</span><span id="__span-85-4"><a id="__codelineno-85-4" name="__codelineno-85-4" href="#__codelineno-85-4"></a><span class="w">    </span><span class="nt">"3.2.4"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
-</span><span id="__span-85-5"><a id="__codelineno-85-5" name="__codelineno-85-5" href="#__codelineno-85-5"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-85-6"><a id="__codelineno-85-6" name="__codelineno-85-6" href="#__codelineno-85-6"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-86-1"><a id="__codelineno-86-1" name="__codelineno-86-1" href="#__codelineno-86-1"></a><span class="p">{</span>
+</span><span id="__span-86-2"><a id="__codelineno-86-2" name="__codelineno-86-2" href="#__codelineno-86-2"></a><span class="w">  </span><span class="nt">"versions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-86-3"><a id="__codelineno-86-3" name="__codelineno-86-3" href="#__codelineno-86-3"></a><span class="w">    </span><span class="nt">"3.2.3"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span>
+</span><span id="__span-86-4"><a id="__codelineno-86-4" name="__codelineno-86-4" href="#__codelineno-86-4"></a><span class="w">    </span><span class="nt">"3.2.4"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+</span><span id="__span-86-5"><a id="__codelineno-86-5" name="__codelineno-86-5" href="#__codelineno-86-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-86-6"><a id="__codelineno-86-6" name="__codelineno-86-6" href="#__codelineno-86-6"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p><em>Empty body.</em></p>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-86-1"><a id="__codelineno-86-1" name="__codelineno-86-1" href="#__codelineno-86-1"></a><span class="p">{</span>
-</span><span id="__span-86-2"><a id="__codelineno-86-2" name="__codelineno-86-2" href="#__codelineno-86-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-86-3"><a id="__codelineno-86-3" name="__codelineno-86-3" href="#__codelineno-86-3"></a><span class="w">    </span><span class="s2">"requested provider was not found: no provider found with given arguments (provider hashicorp/null)"</span>
-</span><span id="__span-86-4"><a id="__codelineno-86-4" name="__codelineno-86-4" href="#__codelineno-86-4"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-86-5"><a id="__codelineno-86-5" name="__codelineno-86-5" href="#__codelineno-86-5"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-87-1"><a id="__codelineno-87-1" name="__codelineno-87-1" href="#__codelineno-87-1"></a><span class="p">{</span>
+</span><span id="__span-87-2"><a id="__codelineno-87-2" name="__codelineno-87-2" href="#__codelineno-87-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-87-3"><a id="__codelineno-87-3" name="__codelineno-87-3" href="#__codelineno-87-3"></a><span class="w">    </span><span class="s2">"requested provider was not found: no provider found with given arguments (provider hashicorp/null)"</span>
+</span><span id="__span-87-4"><a id="__codelineno-87-4" name="__codelineno-87-4" href="#__codelineno-87-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-87-5"><a id="__codelineno-87-5" name="__codelineno-87-5" href="#__codelineno-87-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="list-provider-installation-packages-network-mirror">List provider installation packages (network mirror)<a class="headerlink" href="#list-provider-installation-packages-network-mirror" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-87-1"><a id="__codelineno-87-1" name="__codelineno-87-1" href="#__codelineno-87-1"></a>GET /providers/:hostname/:namespace/:name/:version.json
+<div class="language-text highlight"><pre><span></span><code><span id="__span-88-1"><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a>GET /providers/:hostname/:namespace/:name/:version.json
 </span></code></pre></div>
 <p>List the installation packages of a provider version, as defined by the <a href="https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol">Provider Network Mirror Protocol</a>. The <code>url</code> of each package points to the storage backend and may be temporary. Each package carries its <code>zh:</code> hash, the sha256 of the package, preceded by its <code>h1:</code> hash when the uploader provided one.</p>
 <h3 id="example-request_19">Example Request<a class="headerlink" href="#example-request_19" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-88-1"><a id="__codelineno-88-1" name="__codelineno-88-1" href="#__codelineno-88-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-88-2"><a id="__codelineno-88-2" name="__codelineno-88-2" href="#__codelineno-88-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-88-3"><a id="__codelineno-88-3" name="__codelineno-88-3" href="#__codelineno-88-3"></a><span class="w">  </span>http://localhost:5758/providers/localhost:5758/hashicorp/null/3.2.4.json
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-89-1"><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>GET<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-89-2"><a id="__codelineno-89-2" name="__codelineno-89-2" href="#__codelineno-89-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-89-3"><a id="__codelineno-89-3" name="__codelineno-89-3" href="#__codelineno-89-3"></a><span class="w">  </span>http://localhost:5758/providers/localhost:5758/hashicorp/null/3.2.4.json
 </span></code></pre></div>
 <h3 id="example-response_17">Example Response<a class="headerlink" href="#example-response_17" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="21:3"><input checked="checked" id="__tabbed_21_1" name="__tabbed_21" type="radio" /><input id="__tabbed_21_2" name="__tabbed_21" type="radio" /><input id="__tabbed_21_3" name="__tabbed_21" type="radio" /><div class="tabbed-labels"><label for="__tabbed_21_1">Status 200</label><label for="__tabbed_21_2">Status 403</label><label for="__tabbed_21_3">Status 404</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-89-1"><a id="__codelineno-89-1" name="__codelineno-89-1" href="#__codelineno-89-1"></a><span class="p">{</span>
-</span><span id="__span-89-2"><a id="__codelineno-89-2" name="__codelineno-89-2" href="#__codelineno-89-2"></a><span class="w">  </span><span class="nt">"archives"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-89-3"><a id="__codelineno-89-3" name="__codelineno-89-3" href="#__codelineno-89-3"></a><span class="w">    </span><span class="nt">"darwin_arm64"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-89-4"><a id="__codelineno-89-4" name="__codelineno-89-4" href="#__codelineno-89-4"></a><span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip?..."</span><span class="p">,</span>
-</span><span id="__span-89-5"><a id="__codelineno-89-5" name="__codelineno-89-5" href="#__codelineno-89-5"></a><span class="w">      </span><span class="nt">"hashes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-89-6"><a id="__codelineno-89-6" name="__codelineno-89-6" href="#__codelineno-89-6"></a><span class="w">        </span><span class="s2">"zh:2a3f1f4b7b0d1e2c9a6f0c3e6d5b4a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b"</span>
-</span><span id="__span-89-7"><a id="__codelineno-89-7" name="__codelineno-89-7" href="#__codelineno-89-7"></a><span class="w">      </span><span class="p">]</span>
-</span><span id="__span-89-8"><a id="__codelineno-89-8" name="__codelineno-89-8" href="#__codelineno-89-8"></a><span class="w">    </span><span class="p">},</span>
-</span><span id="__span-89-9"><a id="__codelineno-89-9" name="__codelineno-89-9" href="#__codelineno-89-9"></a><span class="w">    </span><span class="nt">"linux_amd64"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-89-10"><a id="__codelineno-89-10" name="__codelineno-89-10" href="#__codelineno-89-10"></a><span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip?..."</span><span class="p">,</span>
-</span><span id="__span-89-11"><a id="__codelineno-89-11" name="__codelineno-89-11" href="#__codelineno-89-11"></a><span class="w">      </span><span class="nt">"hashes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-89-12"><a id="__codelineno-89-12" name="__codelineno-89-12" href="#__codelineno-89-12"></a><span class="w">        </span><span class="s2">"zh:9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b"</span>
-</span><span id="__span-89-13"><a id="__codelineno-89-13" name="__codelineno-89-13" href="#__codelineno-89-13"></a><span class="w">      </span><span class="p">]</span>
-</span><span id="__span-89-14"><a id="__codelineno-89-14" name="__codelineno-89-14" href="#__codelineno-89-14"></a><span class="w">    </span><span class="p">}</span>
-</span><span id="__span-89-15"><a id="__codelineno-89-15" name="__codelineno-89-15" href="#__codelineno-89-15"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-89-16"><a id="__codelineno-89-16" name="__codelineno-89-16" href="#__codelineno-89-16"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-90-1"><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a><span class="p">{</span>
+</span><span id="__span-90-2"><a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a><span class="w">  </span><span class="nt">"archives"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-90-3"><a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a><span class="w">    </span><span class="nt">"darwin_arm64"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-90-4"><a id="__codelineno-90-4" name="__codelineno-90-4" href="#__codelineno-90-4"></a><span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip?..."</span><span class="p">,</span>
+</span><span id="__span-90-5"><a id="__codelineno-90-5" name="__codelineno-90-5" href="#__codelineno-90-5"></a><span class="w">      </span><span class="nt">"hashes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-90-6"><a id="__codelineno-90-6" name="__codelineno-90-6" href="#__codelineno-90-6"></a><span class="w">        </span><span class="s2">"zh:2a3f1f4b7b0d1e2c9a6f0c3e6d5b4a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b"</span>
+</span><span id="__span-90-7"><a id="__codelineno-90-7" name="__codelineno-90-7" href="#__codelineno-90-7"></a><span class="w">      </span><span class="p">]</span>
+</span><span id="__span-90-8"><a id="__codelineno-90-8" name="__codelineno-90-8" href="#__codelineno-90-8"></a><span class="w">    </span><span class="p">},</span>
+</span><span id="__span-90-9"><a id="__codelineno-90-9" name="__codelineno-90-9" href="#__codelineno-90-9"></a><span class="w">    </span><span class="nt">"linux_amd64"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-90-10"><a id="__codelineno-90-10" name="__codelineno-90-10" href="#__codelineno-90-10"></a><span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip?..."</span><span class="p">,</span>
+</span><span id="__span-90-11"><a id="__codelineno-90-11" name="__codelineno-90-11" href="#__codelineno-90-11"></a><span class="w">      </span><span class="nt">"hashes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-90-12"><a id="__codelineno-90-12" name="__codelineno-90-12" href="#__codelineno-90-12"></a><span class="w">        </span><span class="s2">"zh:9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b"</span>
+</span><span id="__span-90-13"><a id="__codelineno-90-13" name="__codelineno-90-13" href="#__codelineno-90-13"></a><span class="w">      </span><span class="p">]</span>
+</span><span id="__span-90-14"><a id="__codelineno-90-14" name="__codelineno-90-14" href="#__codelineno-90-14"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-90-15"><a id="__codelineno-90-15" name="__codelineno-90-15" href="#__codelineno-90-15"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-90-16"><a id="__codelineno-90-16" name="__codelineno-90-16" href="#__codelineno-90-16"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <p><em>Empty body.</em></p>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-90-1"><a id="__codelineno-90-1" name="__codelineno-90-1" href="#__codelineno-90-1"></a><span class="p">{</span>
-</span><span id="__span-90-2"><a id="__codelineno-90-2" name="__codelineno-90-2" href="#__codelineno-90-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-90-3"><a id="__codelineno-90-3" name="__codelineno-90-3" href="#__codelineno-90-3"></a><span class="w">    </span><span class="s2">"provider hashicorp/null does not contain version 3.2.4"</span>
-</span><span id="__span-90-4"><a id="__codelineno-90-4" name="__codelineno-90-4" href="#__codelineno-90-4"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-90-5"><a id="__codelineno-90-5" name="__codelineno-90-5" href="#__codelineno-90-5"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-91-1"><a id="__codelineno-91-1" name="__codelineno-91-1" href="#__codelineno-91-1"></a><span class="p">{</span>
+</span><span id="__span-91-2"><a id="__codelineno-91-2" name="__codelineno-91-2" href="#__codelineno-91-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-91-3"><a id="__codelineno-91-3" name="__codelineno-91-3" href="#__codelineno-91-3"></a><span class="w">    </span><span class="s2">"provider hashicorp/null does not contain version 3.2.4"</span>
+</span><span id="__span-91-4"><a id="__codelineno-91-4" name="__codelineno-91-4" href="#__codelineno-91-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-91-5"><a id="__codelineno-91-5" name="__codelineno-91-5" href="#__codelineno-91-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="list-api-keys">List API keys<a class="headerlink" href="#list-api-keys" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-91-1"><a id="__codelineno-91-1" name="__codelineno-91-1" href="#__codelineno-91-1"></a>GET /v1/api/api-keys/
+<div class="language-text highlight"><pre><span></span><code><span id="__span-92-1"><a id="__codelineno-92-1" name="__codelineno-92-1" href="#__codelineno-92-1"></a>GET /v1/api/api-keys/
 </span></code></pre></div>
 <p>List all API keys visible to the authenticated user. Results are filtered based on the caller's RBAC policies — only keys for which the user has <code>get</code> permission on <code>api-keys</code> are returned.</p>
 <h3 id="example-request_20">Example Request<a class="headerlink" href="#example-request_20" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-92-1"><a id="__codelineno-92-1" name="__codelineno-92-1" href="#__codelineno-92-1"></a>curl<span class="w"> </span>-L<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-92-2"><a id="__codelineno-92-2" name="__codelineno-92-2" href="#__codelineno-92-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-92-3"><a id="__codelineno-92-3" name="__codelineno-92-3" href="#__codelineno-92-3"></a><span class="w">  </span>http://localhost:5758/v1/api/api-keys/
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-93-1"><a id="__codelineno-93-1" name="__codelineno-93-1" href="#__codelineno-93-1"></a>curl<span class="w"> </span>-L<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-93-2"><a id="__codelineno-93-2" name="__codelineno-93-2" href="#__codelineno-93-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-93-3"><a id="__codelineno-93-3" name="__codelineno-93-3" href="#__codelineno-93-3"></a><span class="w">  </span>http://localhost:5758/v1/api/api-keys/
 </span></code></pre></div>
 <h3 id="example-response_18">Example Response<a class="headerlink" href="#example-response_18" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="22:2"><input checked="checked" id="__tabbed_22_1" name="__tabbed_22" type="radio" /><input id="__tabbed_22_2" name="__tabbed_22" type="radio" /><div class="tabbed-labels"><label for="__tabbed_22_1">Status 200</label><label for="__tabbed_22_2">Status 401</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-93-1"><a id="__codelineno-93-1" name="__codelineno-93-1" href="#__codelineno-93-1"></a><span class="p">[</span>
-</span><span id="__span-93-2"><a id="__codelineno-93-2" name="__codelineno-93-2" href="#__codelineno-93-2"></a><span class="w">  </span><span class="p">{</span>
-</span><span id="__span-93-3"><a id="__codelineno-93-3" name="__codelineno-93-3" href="#__codelineno-93-3"></a><span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
-</span><span id="__span-93-4"><a id="__codelineno-93-4" name="__codelineno-93-4" href="#__codelineno-93-4"></a><span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ci-key"</span><span class="p">,</span>
-</span><span id="__span-93-5"><a id="__codelineno-93-5" name="__codelineno-93-5" href="#__codelineno-93-5"></a><span class="w">    </span><span class="nt">"scope"</span><span class="p">:</span><span class="w"> </span><span class="s2">"team-a"</span><span class="p">,</span>
-</span><span id="__span-93-6"><a id="__codelineno-93-6" name="__codelineno-93-6" href="#__codelineno-93-6"></a><span class="w">    </span><span class="nt">"created_by"</span><span class="p">:</span><span class="w"> </span><span class="s2">"admin@example.com"</span><span class="p">,</span>
-</span><span id="__span-93-7"><a id="__codelineno-93-7" name="__codelineno-93-7" href="#__codelineno-93-7"></a><span class="w">    </span><span class="nt">"expiration"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
-</span><span id="__span-93-8"><a id="__codelineno-93-8" name="__codelineno-93-8" href="#__codelineno-93-8"></a><span class="w">    </span><span class="nt">"policies"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-93-9"><a id="__codelineno-93-9" name="__codelineno-93-9" href="#__codelineno-93-9"></a><span class="w">      </span><span class="p">{</span>
-</span><span id="__span-93-10"><a id="__codelineno-93-10" name="__codelineno-93-10" href="#__codelineno-93-10"></a><span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"660e8400-e29b-41d4-a716-446655440001"</span><span class="p">,</span>
-</span><span id="__span-93-11"><a id="__codelineno-93-11" name="__codelineno-93-11" href="#__codelineno-93-11"></a><span class="w">        </span><span class="nt">"resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules"</span><span class="p">,</span>
-</span><span id="__span-93-12"><a id="__codelineno-93-12" name="__codelineno-93-12" href="#__codelineno-93-12"></a><span class="w">        </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="p">,</span>
-</span><span id="__span-93-13"><a id="__codelineno-93-13" name="__codelineno-93-13" href="#__codelineno-93-13"></a><span class="w">        </span><span class="nt">"object"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-authority/*/*"</span><span class="p">,</span>
-</span><span id="__span-93-14"><a id="__codelineno-93-14" name="__codelineno-93-14" href="#__codelineno-93-14"></a><span class="w">        </span><span class="nt">"effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"allow"</span>
-</span><span id="__span-93-15"><a id="__codelineno-93-15" name="__codelineno-93-15" href="#__codelineno-93-15"></a><span class="w">      </span><span class="p">}</span>
-</span><span id="__span-93-16"><a id="__codelineno-93-16" name="__codelineno-93-16" href="#__codelineno-93-16"></a><span class="w">    </span><span class="p">]</span>
-</span><span id="__span-93-17"><a id="__codelineno-93-17" name="__codelineno-93-17" href="#__codelineno-93-17"></a><span class="w">  </span><span class="p">}</span>
-</span><span id="__span-93-18"><a id="__codelineno-93-18" name="__codelineno-93-18" href="#__codelineno-93-18"></a><span class="p">]</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-94-1"><a id="__codelineno-94-1" name="__codelineno-94-1" href="#__codelineno-94-1"></a><span class="p">[</span>
+</span><span id="__span-94-2"><a id="__codelineno-94-2" name="__codelineno-94-2" href="#__codelineno-94-2"></a><span class="w">  </span><span class="p">{</span>
+</span><span id="__span-94-3"><a id="__codelineno-94-3" name="__codelineno-94-3" href="#__codelineno-94-3"></a><span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
+</span><span id="__span-94-4"><a id="__codelineno-94-4" name="__codelineno-94-4" href="#__codelineno-94-4"></a><span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ci-key"</span><span class="p">,</span>
+</span><span id="__span-94-5"><a id="__codelineno-94-5" name="__codelineno-94-5" href="#__codelineno-94-5"></a><span class="w">    </span><span class="nt">"scope"</span><span class="p">:</span><span class="w"> </span><span class="s2">"team-a"</span><span class="p">,</span>
+</span><span id="__span-94-6"><a id="__codelineno-94-6" name="__codelineno-94-6" href="#__codelineno-94-6"></a><span class="w">    </span><span class="nt">"created_by"</span><span class="p">:</span><span class="w"> </span><span class="s2">"admin@example.com"</span><span class="p">,</span>
+</span><span id="__span-94-7"><a id="__codelineno-94-7" name="__codelineno-94-7" href="#__codelineno-94-7"></a><span class="w">    </span><span class="nt">"expiration"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+</span><span id="__span-94-8"><a id="__codelineno-94-8" name="__codelineno-94-8" href="#__codelineno-94-8"></a><span class="w">    </span><span class="nt">"policies"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-94-9"><a id="__codelineno-94-9" name="__codelineno-94-9" href="#__codelineno-94-9"></a><span class="w">      </span><span class="p">{</span>
+</span><span id="__span-94-10"><a id="__codelineno-94-10" name="__codelineno-94-10" href="#__codelineno-94-10"></a><span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"660e8400-e29b-41d4-a716-446655440001"</span><span class="p">,</span>
+</span><span id="__span-94-11"><a id="__codelineno-94-11" name="__codelineno-94-11" href="#__codelineno-94-11"></a><span class="w">        </span><span class="nt">"resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"modules"</span><span class="p">,</span>
+</span><span id="__span-94-12"><a id="__codelineno-94-12" name="__codelineno-94-12" href="#__codelineno-94-12"></a><span class="w">        </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="p">,</span>
+</span><span id="__span-94-13"><a id="__codelineno-94-13" name="__codelineno-94-13" href="#__codelineno-94-13"></a><span class="w">        </span><span class="nt">"object"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my-authority/*/*"</span><span class="p">,</span>
+</span><span id="__span-94-14"><a id="__codelineno-94-14" name="__codelineno-94-14" href="#__codelineno-94-14"></a><span class="w">        </span><span class="nt">"effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"allow"</span>
+</span><span id="__span-94-15"><a id="__codelineno-94-15" name="__codelineno-94-15" href="#__codelineno-94-15"></a><span class="w">      </span><span class="p">}</span>
+</span><span id="__span-94-16"><a id="__codelineno-94-16" name="__codelineno-94-16" href="#__codelineno-94-16"></a><span class="w">    </span><span class="p">]</span>
+</span><span id="__span-94-17"><a id="__codelineno-94-17" name="__codelineno-94-17" href="#__codelineno-94-17"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-94-18"><a id="__codelineno-94-18" name="__codelineno-94-18" href="#__codelineno-94-18"></a><span class="p">]</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-94-1"><a id="__codelineno-94-1" name="__codelineno-94-1" href="#__codelineno-94-1"></a><span class="p">{</span>
-</span><span id="__span-94-2"><a id="__codelineno-94-2" name="__codelineno-94-2" href="#__codelineno-94-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-94-3"><a id="__codelineno-94-3" name="__codelineno-94-3" href="#__codelineno-94-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
-</span><span id="__span-94-4"><a id="__codelineno-94-4" name="__codelineno-94-4" href="#__codelineno-94-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
-</span><span id="__span-94-5"><a id="__codelineno-94-5" name="__codelineno-94-5" href="#__codelineno-94-5"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-94-6"><a id="__codelineno-94-6" name="__codelineno-94-6" href="#__codelineno-94-6"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-95-1"><a id="__codelineno-95-1" name="__codelineno-95-1" href="#__codelineno-95-1"></a><span class="p">{</span>
+</span><span id="__span-95-2"><a id="__codelineno-95-2" name="__codelineno-95-2" href="#__codelineno-95-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-95-3"><a id="__codelineno-95-3" name="__codelineno-95-3" href="#__codelineno-95-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
+</span><span id="__span-95-4"><a id="__codelineno-95-4" name="__codelineno-95-4" href="#__codelineno-95-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
+</span><span id="__span-95-5"><a id="__codelineno-95-5" name="__codelineno-95-5" href="#__codelineno-95-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-95-6"><a id="__codelineno-95-6" name="__codelineno-95-6" href="#__codelineno-95-6"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="create-an-api-key">Create an API key<a class="headerlink" href="#create-an-api-key" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-95-1"><a id="__codelineno-95-1" name="__codelineno-95-1" href="#__codelineno-95-1"></a>POST /v1/api/api-keys/
+<div class="language-text highlight"><pre><span></span><code><span id="__span-96-1"><a id="__codelineno-96-1" name="__codelineno-96-1" href="#__codelineno-96-1"></a>POST /v1/api/api-keys/
 </span></code></pre></div>
 <p>Create a API key with RBAC policies. Requires <code>create</code> permission on <code>api-keys</code> for the specified scope.</p>
 <p>The <code>scope</code> field is required and determines who can manage the key via RBAC policies (see <a href="../../user-guide/rbac-configuration/#api-key-scopes">API Key Scopes</a>).</p>
 <p>The <code>expire_in</code> field is optional and specifies the expiration in hours. If omitted or set to <code>0</code>, the key does not expire.</p>
 <h3 id="example-request_21">Example Request<a class="headerlink" href="#example-request_21" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-96-1"><a id="__codelineno-96-1" name="__codelineno-96-1" href="#__codelineno-96-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-96-2"><a id="__codelineno-96-2" name="__codelineno-96-2" href="#__codelineno-96-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-96-3"><a id="__codelineno-96-3" name="__codelineno-96-3" href="#__codelineno-96-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
-</span><span id="__span-96-4"><a id="__codelineno-96-4" name="__codelineno-96-4" href="#__codelineno-96-4"></a><span class="s1">    "name": "ci-deploy-key",</span>
-</span><span id="__span-96-5"><a id="__codelineno-96-5" name="__codelineno-96-5" href="#__codelineno-96-5"></a><span class="s1">    "scope": "team-a",</span>
-</span><span id="__span-96-6"><a id="__codelineno-96-6" name="__codelineno-96-6" href="#__codelineno-96-6"></a><span class="s1">    "expire_in": 720,</span>
-</span><span id="__span-96-7"><a id="__codelineno-96-7" name="__codelineno-96-7" href="#__codelineno-96-7"></a><span class="s1">    "policies": [</span>
-</span><span id="__span-96-8"><a id="__codelineno-96-8" name="__codelineno-96-8" href="#__codelineno-96-8"></a><span class="s1">      {</span>
-</span><span id="__span-96-9"><a id="__codelineno-96-9" name="__codelineno-96-9" href="#__codelineno-96-9"></a><span class="s1">        "resource": "modules",</span>
-</span><span id="__span-96-10"><a id="__codelineno-96-10" name="__codelineno-96-10" href="#__codelineno-96-10"></a><span class="s1">        "action": "create",</span>
-</span><span id="__span-96-11"><a id="__codelineno-96-11" name="__codelineno-96-11" href="#__codelineno-96-11"></a><span class="s1">        "object": "my-authority/*/*",</span>
-</span><span id="__span-96-12"><a id="__codelineno-96-12" name="__codelineno-96-12" href="#__codelineno-96-12"></a><span class="s1">        "effect": "allow"</span>
-</span><span id="__span-96-13"><a id="__codelineno-96-13" name="__codelineno-96-13" href="#__codelineno-96-13"></a><span class="s1">      },</span>
-</span><span id="__span-96-14"><a id="__codelineno-96-14" name="__codelineno-96-14" href="#__codelineno-96-14"></a><span class="s1">      {</span>
-</span><span id="__span-96-15"><a id="__codelineno-96-15" name="__codelineno-96-15" href="#__codelineno-96-15"></a><span class="s1">        "resource": "modules",</span>
-</span><span id="__span-96-16"><a id="__codelineno-96-16" name="__codelineno-96-16" href="#__codelineno-96-16"></a><span class="s1">        "action": "get",</span>
-</span><span id="__span-96-17"><a id="__codelineno-96-17" name="__codelineno-96-17" href="#__codelineno-96-17"></a><span class="s1">        "object": "my-authority/*/*",</span>
-</span><span id="__span-96-18"><a id="__codelineno-96-18" name="__codelineno-96-18" href="#__codelineno-96-18"></a><span class="s1">        "effect": "allow"</span>
-</span><span id="__span-96-19"><a id="__codelineno-96-19" name="__codelineno-96-19" href="#__codelineno-96-19"></a><span class="s1">      }</span>
-</span><span id="__span-96-20"><a id="__codelineno-96-20" name="__codelineno-96-20" href="#__codelineno-96-20"></a><span class="s1">    ]</span>
-</span><span id="__span-96-21"><a id="__codelineno-96-21" name="__codelineno-96-21" href="#__codelineno-96-21"></a><span class="s1">  }'</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-96-22"><a id="__codelineno-96-22" name="__codelineno-96-22" href="#__codelineno-96-22"></a><span class="w">  </span>http://localhost:5758/v1/api/api-keys/
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-97-1"><a id="__codelineno-97-1" name="__codelineno-97-1" href="#__codelineno-97-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-97-2"><a id="__codelineno-97-2" name="__codelineno-97-2" href="#__codelineno-97-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-97-3"><a id="__codelineno-97-3" name="__codelineno-97-3" href="#__codelineno-97-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+</span><span id="__span-97-4"><a id="__codelineno-97-4" name="__codelineno-97-4" href="#__codelineno-97-4"></a><span class="s1">    "name": "ci-deploy-key",</span>
+</span><span id="__span-97-5"><a id="__codelineno-97-5" name="__codelineno-97-5" href="#__codelineno-97-5"></a><span class="s1">    "scope": "team-a",</span>
+</span><span id="__span-97-6"><a id="__codelineno-97-6" name="__codelineno-97-6" href="#__codelineno-97-6"></a><span class="s1">    "expire_in": 720,</span>
+</span><span id="__span-97-7"><a id="__codelineno-97-7" name="__codelineno-97-7" href="#__codelineno-97-7"></a><span class="s1">    "policies": [</span>
+</span><span id="__span-97-8"><a id="__codelineno-97-8" name="__codelineno-97-8" href="#__codelineno-97-8"></a><span class="s1">      {</span>
+</span><span id="__span-97-9"><a id="__codelineno-97-9" name="__codelineno-97-9" href="#__codelineno-97-9"></a><span class="s1">        "resource": "modules",</span>
+</span><span id="__span-97-10"><a id="__codelineno-97-10" name="__codelineno-97-10" href="#__codelineno-97-10"></a><span class="s1">        "action": "create",</span>
+</span><span id="__span-97-11"><a id="__codelineno-97-11" name="__codelineno-97-11" href="#__codelineno-97-11"></a><span class="s1">        "object": "my-authority/*/*",</span>
+</span><span id="__span-97-12"><a id="__codelineno-97-12" name="__codelineno-97-12" href="#__codelineno-97-12"></a><span class="s1">        "effect": "allow"</span>
+</span><span id="__span-97-13"><a id="__codelineno-97-13" name="__codelineno-97-13" href="#__codelineno-97-13"></a><span class="s1">      },</span>
+</span><span id="__span-97-14"><a id="__codelineno-97-14" name="__codelineno-97-14" href="#__codelineno-97-14"></a><span class="s1">      {</span>
+</span><span id="__span-97-15"><a id="__codelineno-97-15" name="__codelineno-97-15" href="#__codelineno-97-15"></a><span class="s1">        "resource": "modules",</span>
+</span><span id="__span-97-16"><a id="__codelineno-97-16" name="__codelineno-97-16" href="#__codelineno-97-16"></a><span class="s1">        "action": "get",</span>
+</span><span id="__span-97-17"><a id="__codelineno-97-17" name="__codelineno-97-17" href="#__codelineno-97-17"></a><span class="s1">        "object": "my-authority/*/*",</span>
+</span><span id="__span-97-18"><a id="__codelineno-97-18" name="__codelineno-97-18" href="#__codelineno-97-18"></a><span class="s1">        "effect": "allow"</span>
+</span><span id="__span-97-19"><a id="__codelineno-97-19" name="__codelineno-97-19" href="#__codelineno-97-19"></a><span class="s1">      }</span>
+</span><span id="__span-97-20"><a id="__codelineno-97-20" name="__codelineno-97-20" href="#__codelineno-97-20"></a><span class="s1">    ]</span>
+</span><span id="__span-97-21"><a id="__codelineno-97-21" name="__codelineno-97-21" href="#__codelineno-97-21"></a><span class="s1">  }'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-97-22"><a id="__codelineno-97-22" name="__codelineno-97-22" href="#__codelineno-97-22"></a><span class="w">  </span>http://localhost:5758/v1/api/api-keys/
 </span></code></pre></div>
 <h3 id="example-response_19">Example Response<a class="headerlink" href="#example-response_19" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="23:3"><input checked="checked" id="__tabbed_23_1" name="__tabbed_23" type="radio" /><input id="__tabbed_23_2" name="__tabbed_23" type="radio" /><input id="__tabbed_23_3" name="__tabbed_23" type="radio" /><div class="tabbed-labels"><label for="__tabbed_23_1">Status 201</label><label for="__tabbed_23_2">Status 400</label><label for="__tabbed_23_3">Status 401</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-97-1"><a id="__codelineno-97-1" name="__codelineno-97-1" href="#__codelineno-97-1"></a><span class="p">{</span>
-</span><span id="__span-97-2"><a id="__codelineno-97-2" name="__codelineno-97-2" href="#__codelineno-97-2"></a><span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
-</span><span id="__span-97-3"><a id="__codelineno-97-3" name="__codelineno-97-3" href="#__codelineno-97-3"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ci-deploy-key"</span><span class="p">,</span>
-</span><span id="__span-97-4"><a id="__codelineno-97-4" name="__codelineno-97-4" href="#__codelineno-97-4"></a><span class="w">  </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tlk_9rJ0mQ3xK8vN2pL5wT7yB1cD4fG6hJ0kM3nP5qR8sU"</span>
-</span><span id="__span-97-5"><a id="__codelineno-97-5" name="__codelineno-97-5" href="#__codelineno-97-5"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-98-1"><a id="__codelineno-98-1" name="__codelineno-98-1" href="#__codelineno-98-1"></a><span class="p">{</span>
+</span><span id="__span-98-2"><a id="__codelineno-98-2" name="__codelineno-98-2" href="#__codelineno-98-2"></a><span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
+</span><span id="__span-98-3"><a id="__codelineno-98-3" name="__codelineno-98-3" href="#__codelineno-98-3"></a><span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ci-deploy-key"</span><span class="p">,</span>
+</span><span id="__span-98-4"><a id="__codelineno-98-4" name="__codelineno-98-4" href="#__codelineno-98-4"></a><span class="w">  </span><span class="nt">"key"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tlk_9rJ0mQ3xK8vN2pL5wT7yB1cD4fG6hJ0kM3nP5qR8sU"</span>
+</span><span id="__span-98-5"><a id="__codelineno-98-5" name="__codelineno-98-5" href="#__codelineno-98-5"></a><span class="p">}</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">The <code>key</code> is the API key value and is returned only in this response. Store it securely, it cannot be retrieved again. Only a hash of it is kept on the server. The <code>id</code> identifies the key for listing and deletion.</p>
 </div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-98-1"><a id="__codelineno-98-1" name="__codelineno-98-1" href="#__codelineno-98-1"></a><span class="p">{</span>
-</span><span id="__span-98-2"><a id="__codelineno-98-2" name="__codelineno-98-2" href="#__codelineno-98-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-98-3"><a id="__codelineno-98-3" name="__codelineno-98-3" href="#__codelineno-98-3"></a><span class="w">    </span><span class="s2">"policy 0: invalid resource \"foo\"; must be one of: modules, providers, authorities, api-keys"</span>
-</span><span id="__span-98-4"><a id="__codelineno-98-4" name="__codelineno-98-4" href="#__codelineno-98-4"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-98-5"><a id="__codelineno-98-5" name="__codelineno-98-5" href="#__codelineno-98-5"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-99-1"><a id="__codelineno-99-1" name="__codelineno-99-1" href="#__codelineno-99-1"></a><span class="p">{</span>
+</span><span id="__span-99-2"><a id="__codelineno-99-2" name="__codelineno-99-2" href="#__codelineno-99-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-99-3"><a id="__codelineno-99-3" name="__codelineno-99-3" href="#__codelineno-99-3"></a><span class="w">    </span><span class="s2">"policy 0: invalid resource \"foo\"; must be one of: modules, providers, authorities, api-keys"</span>
+</span><span id="__span-99-4"><a id="__codelineno-99-4" name="__codelineno-99-4" href="#__codelineno-99-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-99-5"><a id="__codelineno-99-5" name="__codelineno-99-5" href="#__codelineno-99-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-99-1"><a id="__codelineno-99-1" name="__codelineno-99-1" href="#__codelineno-99-1"></a><span class="p">{</span>
-</span><span id="__span-99-2"><a id="__codelineno-99-2" name="__codelineno-99-2" href="#__codelineno-99-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-99-3"><a id="__codelineno-99-3" name="__codelineno-99-3" href="#__codelineno-99-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
-</span><span id="__span-99-4"><a id="__codelineno-99-4" name="__codelineno-99-4" href="#__codelineno-99-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
-</span><span id="__span-99-5"><a id="__codelineno-99-5" name="__codelineno-99-5" href="#__codelineno-99-5"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-99-6"><a id="__codelineno-99-6" name="__codelineno-99-6" href="#__codelineno-99-6"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-100-1"><a id="__codelineno-100-1" name="__codelineno-100-1" href="#__codelineno-100-1"></a><span class="p">{</span>
+</span><span id="__span-100-2"><a id="__codelineno-100-2" name="__codelineno-100-2" href="#__codelineno-100-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-100-3"><a id="__codelineno-100-3" name="__codelineno-100-3" href="#__codelineno-100-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
+</span><span id="__span-100-4"><a id="__codelineno-100-4" name="__codelineno-100-4" href="#__codelineno-100-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
+</span><span id="__span-100-5"><a id="__codelineno-100-5" name="__codelineno-100-5" href="#__codelineno-100-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-100-6"><a id="__codelineno-100-6" name="__codelineno-100-6" href="#__codelineno-100-6"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
 </div>
 <h2 id="delete-an-api-key">Delete an API key<a class="headerlink" href="#delete-an-api-key" title="Permanent link">¶</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-100-1"><a id="__codelineno-100-1" name="__codelineno-100-1" href="#__codelineno-100-1"></a>DELETE /v1/api/api-keys/:id
+<div class="language-text highlight"><pre><span></span><code><span id="__span-101-1"><a id="__codelineno-101-1" name="__codelineno-101-1" href="#__codelineno-101-1"></a>DELETE /v1/api/api-keys/:id
 </span></code></pre></div>
 <p>Delete a API key. Requires <code>delete</code> permission on <code>api-keys</code>.</p>
 <h3 id="example-request_22">Example Request<a class="headerlink" href="#example-request_22" title="Permanent link">¶</a></h3>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-101-1"><a id="__codelineno-101-1" name="__codelineno-101-1" href="#__codelineno-101-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-101-2"><a id="__codelineno-101-2" name="__codelineno-101-2" href="#__codelineno-101-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-101-3"><a id="__codelineno-101-3" name="__codelineno-101-3" href="#__codelineno-101-3"></a><span class="w">  </span>http://localhost:5758/v1/api/api-keys/550e8400-e29b-41d4-a716-446655440000
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-102-1"><a id="__codelineno-102-1" name="__codelineno-102-1" href="#__codelineno-102-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-102-2"><a id="__codelineno-102-2" name="__codelineno-102-2" href="#__codelineno-102-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-102-3"><a id="__codelineno-102-3" name="__codelineno-102-3" href="#__codelineno-102-3"></a><span class="w">  </span>http://localhost:5758/v1/api/api-keys/550e8400-e29b-41d4-a716-446655440000
 </span></code></pre></div>
 <h3 id="example-response_20">Example Response<a class="headerlink" href="#example-response_20" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="24:3"><input checked="checked" id="__tabbed_24_1" name="__tabbed_24" type="radio" /><input id="__tabbed_24_2" name="__tabbed_24" type="radio" /><input id="__tabbed_24_3" name="__tabbed_24" type="radio" /><div class="tabbed-labels"><label for="__tabbed_24_1">Status 200</label><label for="__tabbed_24_2">Status 401</label><label for="__tabbed_24_3">Status 404</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-102-1"><a id="__codelineno-102-1" name="__codelineno-102-1" href="#__codelineno-102-1"></a><span class="kc">true</span>
-</span></code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="language-json highlight"><pre><span></span><code><span id="__span-103-1"><a id="__codelineno-103-1" name="__codelineno-103-1" href="#__codelineno-103-1"></a><span class="p">{</span>
-</span><span id="__span-103-2"><a id="__codelineno-103-2" name="__codelineno-103-2" href="#__codelineno-103-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-103-3"><a id="__codelineno-103-3" name="__codelineno-103-3" href="#__codelineno-103-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
-</span><span id="__span-103-4"><a id="__codelineno-103-4" name="__codelineno-103-4" href="#__codelineno-103-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
-</span><span id="__span-103-5"><a id="__codelineno-103-5" name="__codelineno-103-5" href="#__codelineno-103-5"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-103-6"><a id="__codelineno-103-6" name="__codelineno-103-6" href="#__codelineno-103-6"></a><span class="p">}</span>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-103-1"><a id="__codelineno-103-1" name="__codelineno-103-1" href="#__codelineno-103-1"></a><span class="kc">true</span>
 </span></code></pre></div>
 </div>
 <div class="tabbed-block">
 <div class="language-json highlight"><pre><span></span><code><span id="__span-104-1"><a id="__codelineno-104-1" name="__codelineno-104-1" href="#__codelineno-104-1"></a><span class="p">{</span>
 </span><span id="__span-104-2"><a id="__codelineno-104-2" name="__codelineno-104-2" href="#__codelineno-104-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-</span><span id="__span-104-3"><a id="__codelineno-104-3" name="__codelineno-104-3" href="#__codelineno-104-3"></a><span class="w">    </span><span class="s2">"cannot parse api key"</span>
-</span><span id="__span-104-4"><a id="__codelineno-104-4" name="__codelineno-104-4" href="#__codelineno-104-4"></a><span class="w">  </span><span class="p">]</span>
-</span><span id="__span-104-5"><a id="__codelineno-104-5" name="__codelineno-104-5" href="#__codelineno-104-5"></a><span class="p">}</span>
+</span><span id="__span-104-3"><a id="__codelineno-104-3" name="__codelineno-104-3" href="#__codelineno-104-3"></a><span class="w">    </span><span class="s2">"Authorization: missing"</span><span class="p">,</span>
+</span><span id="__span-104-4"><a id="__codelineno-104-4" name="__codelineno-104-4" href="#__codelineno-104-4"></a><span class="w">    </span><span class="s2">"X-API-Key: missing"</span>
+</span><span id="__span-104-5"><a id="__codelineno-104-5" name="__codelineno-104-5" href="#__codelineno-104-5"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-104-6"><a id="__codelineno-104-6" name="__codelineno-104-6" href="#__codelineno-104-6"></a><span class="p">}</span>
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-json highlight"><pre><span></span><code><span id="__span-105-1"><a id="__codelineno-105-1" name="__codelineno-105-1" href="#__codelineno-105-1"></a><span class="p">{</span>
+</span><span id="__span-105-2"><a id="__codelineno-105-2" name="__codelineno-105-2" href="#__codelineno-105-2"></a><span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-105-3"><a id="__codelineno-105-3" name="__codelineno-105-3" href="#__codelineno-105-3"></a><span class="w">    </span><span class="s2">"cannot parse api key"</span>
+</span><span id="__span-105-4"><a id="__codelineno-105-4" name="__codelineno-105-4" href="#__codelineno-105-4"></a><span class="w">  </span><span class="p">]</span>
+</span><span id="__span-105-5"><a id="__codelineno-105-5" name="__codelineno-105-5" href="#__codelineno-105-5"></a><span class="p">}</span>
 </span></code></pre></div>
 </div>
 </div>
