@@ -223,7 +223,7 @@ func (c *Client) discover(ctx context.Context, service string) (*url.URL, error)
 	defer c.mu.Unlock()
 
 	if c.services == nil {
-		var announced map[string]string
+		var announced map[string]json.RawMessage
 		if err := c.getJSONFrom(ctx, c.baseURL+discoveryPath, &announced); err != nil {
 			return nil, fmt.Errorf("service discovery failed: %w", err)
 		}
@@ -234,7 +234,14 @@ func (c *Client) discover(ctx context.Context, service string) (*url.URL, error)
 		}
 
 		c.services = make(map[string]*url.URL, len(announced))
-		for name, location := range announced {
+		for name, raw := range announced {
+			// Services such as login.v1 are announced as objects; only the
+			// ones announced as URLs are kept.
+			var location string
+			if json.Unmarshal(raw, &location) != nil {
+				continue
+			}
+
 			serviceURL, err := url.Parse(location)
 			if err != nil {
 				return nil, fmt.Errorf("invalid %s service URL %q: %w", name, location, err)

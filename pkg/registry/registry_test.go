@@ -211,6 +211,23 @@ func TestDiscoveryFailures(t *testing.T) {
 			})
 		})
 
+		Convey("Given a registry announcing services that are not URLs", func() {
+			server, _ := newRegistry(t)
+			discovery := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(`{"login.v1":{"client":"terraform-cli","grant_types":["authz_code"]},"providers.v1":"` + server.URL + `/v1/providers/"}`))
+			}))
+			defer discovery.Close()
+
+			Convey("When the versions are requested", func() {
+				versions, err := New(discovery.URL).ProviderVersions(context.Background(), "hashicorp", "null")
+
+				Convey("Then the providers service should still be used", func() {
+					So(err, ShouldBeNil)
+					So(len(versions), ShouldEqual, 2)
+				})
+			})
+		})
+
 		Convey("Given a registry announcing an absolute providers URL", func() {
 			server, requests := newRegistry(t)
 			discovery := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
