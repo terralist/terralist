@@ -152,3 +152,22 @@ func TestAuthorityRepository_UpsertCreatesWithGivenID(t *testing.T) {
 		t.Fatalf("expected the stored authority, got %+v", found)
 	}
 }
+
+func TestAuthorityRepository_FindByNameIgnoresCase(t *testing.T) {
+	repo := newTestAuthorityRepository(t)
+
+	if _, err := repo.Upsert(authority.Authority{Name: "HashiCorp", PolicyURL: "https://example.com/hashicorp", Owner: "owner@example.com"}); err != nil {
+		t.Fatalf("failed to create authority: %v", err)
+	}
+
+	for _, name := range []string{"HashiCorp", "hashicorp", "HASHICORP"} {
+		found, err := repo.FindByName(name)
+		if err != nil {
+			t.Fatalf("expected %q to find the authority, got: %v", name, err)
+		}
+
+		if found.Name != "HashiCorp" {
+			t.Fatalf("expected the name to be kept as stored, got %q", found.Name)
+		}
+	}
+}
