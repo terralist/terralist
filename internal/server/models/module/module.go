@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"terralist/internal/server/models/artifact"
+	"terralist/pkg/database"
 	"terralist/pkg/database/entity"
 	"terralist/pkg/version"
 
@@ -13,14 +14,20 @@ import (
 
 type Module struct {
 	entity.Entity
-	AuthorityID uuid.UUID `gorm:"uniqueIndex:idx_modules_authority_name_provider"`
-	Name        string    `gorm:"not null;uniqueIndex:idx_modules_authority_name_provider"`
-	Provider    string    `gorm:"not null;uniqueIndex:idx_modules_authority_name_provider"`
+	AuthorityID uuid.UUID `gorm:"index"`
+	Name        string    `gorm:"not null"`
+	Provider    string    `gorm:"not null"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Module) TableName() string {
 	return "modules"
+}
+
+// UniqueIndexes hold the name and provider of a module unique within its
+// authority, regardless of case, as they are looked up.
+var UniqueIndexes = []database.CaseInsensitiveUniqueIndex{
+	{Table: "modules", Name: "idx_modules_lower_authority_name_provider", Columns: []string{"authority_id", "name", "provider"}},
 }
 
 func (m Module) String() string {
