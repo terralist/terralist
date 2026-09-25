@@ -33,6 +33,12 @@ func newTestModuleRepository(t *testing.T) (*DefaultModuleRepository, *authority
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
+	for _, index := range module.UniqueIndexes {
+		if err := index.Create(engine.Handler()); err != nil {
+			t.Fatalf("failed to create index %s: %v", index.Name, err)
+		}
+	}
+
 	a := &authority.Authority{Name: "hashicorp", PolicyURL: "https://example.com", Owner: "owner@example.com"}
 	if err := engine.Handler().Create(a).Error; err != nil {
 		t.Fatalf("failed to create authority: %v", err)
@@ -44,15 +50,22 @@ func newTestModuleRepository(t *testing.T) (*DefaultModuleRepository, *authority
 func TestModuleRepository_UpsertRejectsDuplicateModule(t *testing.T) {
 	repo, a := newTestModuleRepository(t)
 
-	for i, want := range []error{nil, ErrAlreadyExists} {
+	for i, tc := range []struct {
+		name, system string
+		want         error
+	}{
+		{"dir", "template", nil},
+		{"dir", "template", ErrAlreadyExists},
+		{"Dir", "Template", ErrAlreadyExists},
+	} {
 		_, err := repo.Upsert(module.Module{
 			AuthorityID: a.ID,
-			Name:        "dir",
-			Provider:    "template",
+			Name:        tc.name,
+			Provider:    tc.system,
 			Versions:    []module.Version{{Version: "1.0.0", Location: "1.0.0.zip"}},
 		})
-		if !errors.Is(err, want) {
-			t.Fatalf("upsert %d: expected %v, got %v", i, want, err)
+		if !errors.Is(err, tc.want) {
+			t.Fatalf("upsert %d of %s/%s: expected %v, got %v", i, tc.name, tc.system, tc.want, err)
 		}
 	}
 }
