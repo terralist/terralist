@@ -362,8 +362,8 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, f file.File) error {
 	// Check if the module already exists and has this version
 	current, err := s.ModuleRepository.Find(a.Name, m.Name, m.Provider)
 	if err == nil {
-		if current.GetVersion(d.Version) != nil {
-			return fmt.Errorf("version %s %w", d.Version, repositories.ErrAlreadyExists)
+		if v := current.GetVersion(d.Version); v != nil {
+			return versionExists(d.Version, v.Origin == module.OriginUpstream)
 		}
 	}
 

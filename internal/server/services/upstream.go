@@ -12,6 +12,7 @@ import (
 
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/provider"
+	"terralist/internal/server/repositories"
 	"terralist/pkg/cache"
 	"terralist/pkg/metrics"
 	"terralist/pkg/registry"
@@ -40,6 +41,16 @@ func upstreamFailure(err error) error {
 	}
 
 	return fmt.Errorf("%w: %v", ErrUpstreamUnavailable, err)
+}
+
+// versionExists refuses an upload of a version Terralist already holds,
+// telling how to replace one pulled from the upstream.
+func versionExists(version string, pulled bool) error {
+	if pulled {
+		return fmt.Errorf("version %s %w: it was pulled from the upstream, delete it before uploading your own", version, repositories.ErrAlreadyExists)
+	}
+
+	return fmt.Errorf("version %s %w", version, repositories.ErrAlreadyExists)
 }
 
 // UpstreamVersion is a provider version an authority may serve from its
