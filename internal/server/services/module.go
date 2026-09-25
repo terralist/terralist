@@ -208,11 +208,7 @@ func (s *DefaultModuleService) GetSubmoduleDocumentation(namespace, name, provid
 		return docs.GetModuleDocumentation(archiveFile.FS(), targetPath)
 	}
 
-	// Construct the documentation file path
-	docsFileName := fmt.Sprintf("%s_%s.md", version, strings.ReplaceAll(submodulePath, "/", "__"))
-	docsKey := fmt.Sprintf("modules/%s/%s/%s/submodules/%s", namespace, name, provider, docsFileName)
-
-	url, err := s.Resolver.Find(docsKey)
+	url, err := s.Resolver.Find(submoduleDocsKey(v, submodulePath))
 	if err != nil {
 		log.Warn().
 			Str("moduleSlug", fmt.Sprintf("%s/%s/%s/%s", namespace, name, provider, version)).
@@ -554,7 +550,7 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 
 	if s.Resolver != nil {
 		for _, ver := range m.Versions {
-			s.deleteVersion(a.Name, &ver)
+			s.deleteVersion(m, &ver)
 		}
 	}
 
@@ -587,7 +583,7 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 	}
 
 	if s.Resolver != nil {
-		s.deleteVersion(a.Name, v)
+		s.deleteVersion(m, v)
 	}
 
 	if len(m.Versions) == 1 {
@@ -606,12 +602,12 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 }
 
 // deleteVersion removes the files for a specific module version.
-func (s *DefaultModuleService) deleteVersion(namespace string, v *module.Version) {
+func (s *DefaultModuleService) deleteVersion(m *module.Module, v *module.Version) {
 	// Delete the module archive
 	if err := s.Resolver.Purge(v.Location); err != nil {
 		log.Warn().
 			AnErr("Error", err).
-			Str("Module", v.Module.String()).
+			Str("Module", m.String()).
 			Str("Version", v.Version).
 			Str("Key", v.Location).
 			Msg("Could not purge module archive, require manual clean-up")
@@ -622,7 +618,7 @@ func (s *DefaultModuleService) deleteVersion(namespace string, v *module.Version
 		if err := s.Resolver.Purge(*v.Documentation); err != nil {
 			log.Warn().
 				AnErr("Error", err).
-				Str("Module", v.Module.String()).
+				Str("Module", m.String()).
 				Str("Version", v.Version).
 				Str("Key", *v.Documentation).
 				Msg("Could not purge module documentation, require manual clean-up")
@@ -631,22 +627,21 @@ func (s *DefaultModuleService) deleteVersion(namespace string, v *module.Version
 
 	// Delete documentation for all submodules
 	for _, sm := range v.Submodules {
-		// Construct the documentation file path using the same convention as Upload
-		docsFileName := fmt.Sprintf("%s_%s.md", v.Version, strings.ReplaceAll(sm.Path, "/", "__"))
-		docsKey := fmt.Sprintf("modules/%s/%s/%s/submodules/%s",
-			namespace,
-			v.Module.Name,
-			v.Module.Provider,
-			docsFileName)
-
+		docsKey := submoduleDocsKey(v, sm.Path)
 		if err := s.Resolver.Purge(docsKey); err != nil {
 			log.Warn().
 				AnErr("Error", err).
-				Str("Module", v.Module.String()).
+				Str("Module", m.String()).
 				Str("Version", v.Version).
 				Str("SubmodulePath", sm.Path).
 				Str("Key", docsKey).
 				Msg("Could not purge submodule documentation, require manual clean-up")
 		}
 	}
+}
+
+// submoduleDocsKey returns where the documentation of a submodule is stored:
+// next to the module archive, as Upload stores it.
+func submoduleDocsKey(v *module.Version, submodulePath string) string {
+	return path.Join(path.Dir(v.Location), "submodules", fmt.Sprintf("%s_%s.md", v.Version, strings.ReplaceAll(submodulePath, "/", "__")))
 }
