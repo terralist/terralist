@@ -334,7 +334,7 @@ func TestMirrorController_DownloadArchive(t *testing.T) {
 		})
 
 		Convey("Given a user allowed to create the provider", func() {
-			router, mockService := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+			router, mockService, _ := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
 
 			Convey("When a package that needs fetching is requested", func() {
 				mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
@@ -377,8 +377,8 @@ func TestMirrorController_AutoCreate(t *testing.T) {
 		url := "/providers/registry.terraform.io/integrations/github/index.json"
 		versions := &provider.MirrorVersionListDTO{Versions: map[string]struct{}{"6.0.0": {}}}
 
-		Convey("Given the hostname is allowlisted and the user is authenticated", func() {
-			router, mockService, mockAuthorityService := setupMirrorRouter(t, user, false, false, "registry.terraform.io")
+		Convey("Given the hostname is allowlisted and the user may create authorities", func() {
+			router, mockService, mockAuthorityService := setupMirrorRouterWithPolicy(t, user, "p, test-user, authorities, create, integrations, allow", "registry.terraform.io")
 			mockAuthorityService.On("GetByUpstream", "registry.terraform.io", "integrations").Return(nil, errors.New("no authority found"))
 			mockAuthorityService.On("GetByName", "integrations").Return(&authority.Authority{}, nil).Maybe()
 
@@ -398,6 +398,19 @@ func TestMirrorController_AutoCreate(t *testing.T) {
 				So(created.UpstreamNamespace, ShouldEqual, "integrations")
 				So(created.UpstreamEnabled, ShouldBeTrue)
 				So(created.Owner, ShouldEqual, "test@example.com")
+			})
+		})
+
+		Convey("Given the hostname is allowlisted but the user may not create authorities", func() {
+			router, mockService, mockAuthorityService := setupMirrorRouter(t, user, false, false, "registry.terraform.io")
+			mockAuthorityService.On("GetByUpstream", "registry.terraform.io", "integrations").Return(nil, errors.New("no authority found"))
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, url, nil))
+
+			Convey("Then it should be not found and nothing created", func() {
+				So(w.Code, ShouldEqual, http.StatusNotFound)
+				mockAuthorityService.AssertNotCalled(t, "Create", mock.Anything)
+				mockService.AssertNotCalled(t, "ListMirrorVersions", mock.Anything, mock.Anything, mock.Anything)
 			})
 		})
 
@@ -430,7 +443,7 @@ func TestMirrorController_AutoCreate(t *testing.T) {
 
 // setupMirrorRouterWithPolicy is setupMirrorRouter for an authenticated user
 // with the given RBAC policy.
-func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string) (*gin.Engine, *services.MockProviderService) {
+func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string, autoCreate ...string) (*gin.Engine, *services.MockProviderService, *services.MockAuthorityService) {
 	t.Helper()
 
 	gin.SetMode(gin.TestMode)
@@ -461,6 +474,7 @@ func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string
 		Authorization:    &handlers.Authorization{Enforcer: enforcer, AuthorityService: mockAuthorityService},
 		Tokens:           testPackageTokens(t),
 		Hostname:         mirrorTestHostname,
+		AutoCreate:       autoCreate,
 	}
 
 	router := gin.New()
@@ -472,7 +486,7 @@ func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string
 
 	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: ""}).Register(controller)
 
-	return router, mockService
+	return router, mockService, mockAuthorityService
 }
 
 func testPackageTokens(t *testing.T) *handlers.DownloadTokens {
@@ -497,7 +511,7 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 		}}
 
 		Convey("Given a user allowed to create the provider", func() {
-			router, mockService := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+			router, mockService, _ := setupMirrorRouterWithPolicy(t, user, "p, test-user, providers, create, hashicorp/*, allow")
 			mockService.On("ListMirrorArchives", "hashicorp", "null", "3.2.4", true).Return(document, nil)
 
 			w := serve(router, httptest.NewRequest(http.MethodGet, base+"3.2.4.json", nil))

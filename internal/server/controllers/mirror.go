@@ -243,7 +243,8 @@ func isNotFound(err error) bool {
 }
 
 // autoCreate creates the authority standing for an allowlisted upstream
-// namespace on behalf of the authenticated caller, and reports whether it did.
+// namespace on behalf of the authenticated caller, when the caller may create
+// that authority, and reports whether it did.
 func (c *DefaultMirrorController) autoCreate(ctx *gin.Context, hostname, namespace string) bool {
 	if !lo.ContainsBy(c.AutoCreate, func(allowed string) bool { return strings.EqualFold(allowed, hostname) }) {
 		return false
@@ -251,6 +252,10 @@ func (c *DefaultMirrorController) autoCreate(ctx *gin.Context, hostname, namespa
 
 	user, err := handlers.GetFromContext[auth.User](ctx, "user")
 	if err != nil || user.Email == "" {
+		return false
+	}
+
+	if !c.Authorization.CanPerform(*user, rbac.ResourceAuthorities, rbac.ActionCreate, namespace) {
 		return false
 	}
 
