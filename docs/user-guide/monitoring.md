@@ -189,7 +189,7 @@ sum(rate(terralist_cache_operations_total{operation="get"}[5m]))
 #### Upstream Registries
 
 ```
-terralist_upstream_requests_total{hostname="registry.terraform.io", operation="versions|version|package", result="success|stale|error"}
+terralist_upstream_requests_total{hostname="registry.terraform.io", operation="versions|version|package|module_versions|module_location", result="success|stale|error"}
 terralist_upstream_fetch_duration_seconds{hostname="registry.terraform.io"}
 ```
 

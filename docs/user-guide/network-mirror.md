@@ -46,13 +46,16 @@ Every provider of that authority is then served by the mirror under both address
 
 ## Pulling providers through from an upstream
 
-An authority standing for an upstream namespace can also fetch the providers it does not hold from that upstream registry, on first request, and keep them. Enable the upstream on the authority:
+An authority standing for an upstream namespace can also fetch the providers it does not hold from that upstream registry, on first request, and keep them. Enable the upstream on the authority. An update replaces the whole authority, its signing keys included, so send it back as read with the upstream enabled:
 
 ```shell
-curl -X PATCH \
-  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-  -d '{"name": "hashicorp", "policy_url": "", "upstream_hostname": "registry.terraform.io", "upstream_enabled": true}' \
-  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID
+curl -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID \
+  | jq '.upstream_enabled = true' \
+  | curl -X PATCH \
+      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+      -d @- \
+      https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID
 ```
 
 Pulling through needs a storage backend for providers, since fetched packages are stored and then served from there like uploaded ones. With the `proxy` [`providers-storage-resolver`](../configuration.md#providers-storage-resolver) the upstream is never consulted. Terralist never streams a package to a client: a stored package is answered with a redirect to storage, and a package not stored yet is downloaded from the upstream, verified and stored first, then answered with the same redirect.
