@@ -446,6 +446,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 
 	apiV1Group.Register(providerController)
 
+	autoCreate, err := splitHostnames(userConfig.UpstreamAutoCreate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid upstream auto-create option: %w", err)
+	}
+
 	mirrorController := &controllers.DefaultMirrorController{
 		ProviderService:  providerService,
 		AuthorityService: authorityService,
@@ -454,7 +459,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Tokens:           downloadTokens,
 		Hostname:         hostURL.Host,
 		AnonymousRead:    userConfig.ProvidersAnonymousRead,
-		AutoCreate:       splitHostnames(userConfig.UpstreamAutoCreate),
+		AutoCreate:       autoCreate,
 	}
 
 	// The Provider Network Mirror Protocol does not use service discovery,
@@ -688,13 +693,20 @@ func newUpstreamService(userConfig UserConfig, c cache.Cache, sealer *secret.Sea
 	}, nil
 }
 
-func splitHostnames(value string) []string {
+func splitHostnames(value string) ([]string, error) {
 	var hostnames []string
 	for _, hostname := range strings.Split(value, ",") {
-		if hostname = strings.TrimSpace(hostname); hostname != "" {
-			hostnames = append(hostnames, hostname)
+		if hostname = strings.TrimSpace(hostname); hostname == "" {
+			continue
 		}
+
+		normalized, err := services.NormalizeUpstreamHostname(hostname)
+		if err != nil {
+			return nil, err
+		}
+
+		hostnames = append(hostnames, normalized)
 	}
 
-	return hostnames
+	return hostnames, nil
 }
