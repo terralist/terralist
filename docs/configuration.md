@@ -130,7 +130,7 @@ The secret to use when signing the OAuth state passed to the identity provider. 
 
 ### `upstream-secret`
 
-The secret used to seal the tokens of upstream registries at rest, when an authority [pulls providers through](user-guide/network-mirror.md) from a private upstream. Required only to store an upstream token.
+The secret used to seal the tokens of upstream registries at rest, when an authority [pulls providers through](user-guide/network-mirror.md) from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream.
 
 | Name | Value |
 | --- | --- |
@@ -142,7 +142,7 @@ The secret used to seal the tokens of upstream registries at rest, when an autho
 
 ### `upstream-cache-ttl`
 
-How long the metadata read from upstream registries, version lists and SHA256SUMS documents, stays fresh before Terralist refreshes it. See [pulling providers through](user-guide/network-mirror.md#pulling-providers-through-from-an-upstream).
+How long the metadata read from upstream registries, provider and module version lists and provider SHA256SUMS documents, stays fresh before Terralist refreshes it. See [pulling providers through](user-guide/network-mirror.md#pulling-providers-through-from-an-upstream).
 
 | Name | Value |
 | --- | --- |
@@ -834,7 +834,7 @@ Allows anonymous read and download of modules.
 
 ### `providers-anonymous-read`
 
-Allows anonymous read and download of providers.
+Allows anonymous read and download of providers, through both the provider registry and the [network mirror](user-guide/network-mirror.md) protocols.
 
 | Name | Value |
 | --- | --- |
