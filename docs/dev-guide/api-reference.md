@@ -790,12 +790,22 @@ curl -L -X POST \
     }
     ```
 
-=== "Status 502"
+=== "Status 404"
 
     ``` json
     {
       "errors": [
         "version not allowed by the upstream rules"
+      ]
+    }
+    ```
+
+=== "Status 502"
+
+    ``` json
+    {
+      "errors": [
+        "could not fetch hashicorp/dir/template 1.0.2 from git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2: ..."
       ]
     }
     ```

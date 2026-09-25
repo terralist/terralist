@@ -126,7 +126,7 @@ func TestUpstreamModuleFetch(t *testing.T) {
 		resp := doAuthRequest(t, http.MethodPost, apiURL("/v1/api/modules/hashicorp/consul/aws/0.1.0/fetch"), map[string]any{})
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusBadGateway, resp.StatusCode)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 }
 

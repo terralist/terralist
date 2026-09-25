@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/rbac"
+	"terralist/pkg/registry"
 	"terralist/pkg/session/cookie"
 
 	"github.com/gin-gonic/gin"
@@ -282,6 +284,24 @@ func TestModuleController_Fetch(t *testing.T) {
 				Convey("Then it should report a bad gateway with the reason", func() {
 					So(w.Code, ShouldEqual, http.StatusBadGateway)
 					So(w.Body.String(), ShouldContainSubstring, "upstream down")
+				})
+			})
+
+			Convey("When the version is unknown upstream", func() {
+				mockService.On("Fetch", "hashicorp", "dir", "template", "1.0.2").Return(fmt.Errorf("hashicorp/dir/template 1.0.2: %w", registry.ErrNotFound))
+				w := post(router)
+
+				Convey("Then it should be not found", func() {
+					So(w.Code, ShouldEqual, http.StatusNotFound)
+				})
+			})
+
+			Convey("When a rule denies the version", func() {
+				mockService.On("Fetch", "hashicorp", "dir", "template", "1.0.2").Return(fmt.Errorf("hashicorp/dir/template 1.0.2: %w", services.ErrUpstreamDenied))
+				w := post(router)
+
+				Convey("Then it should be not found", func() {
+					So(w.Code, ShouldEqual, http.StatusNotFound)
 				})
 			})
 		})

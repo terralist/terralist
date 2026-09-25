@@ -225,7 +225,7 @@ func (c *DefaultMirrorController) download(ctx *gin.Context, namespace string, p
 		ctx.Redirect(http.StatusFound, url)
 	case errors.Is(err, services.ErrFetchRequiresCreate):
 		ctx.AbortWithStatus(http.StatusForbidden)
-	case errors.Is(err, repositories.ErrNotFound), errors.Is(err, registry.ErrNotFound), errors.Is(err, services.ErrUpstreamDenied):
+	case isNotFound(err):
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"errors": []string{err.Error()},
 		})
@@ -234,6 +234,12 @@ func (c *DefaultMirrorController) download(ctx *gin.Context, namespace string, p
 			"errors": []string{err.Error()},
 		})
 	}
+}
+
+// isNotFound reports whether err means the artifact is held neither by
+// Terralist nor by the upstream, or that the rules keep it from being served.
+func isNotFound(err error) bool {
+	return errors.Is(err, repositories.ErrNotFound) || errors.Is(err, registry.ErrNotFound) || errors.Is(err, services.ErrUpstreamDenied)
 }
 
 // autoCreate creates the authority standing for an allowlisted upstream

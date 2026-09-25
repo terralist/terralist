@@ -8,13 +8,11 @@ import (
 
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/module"
-	"terralist/internal/server/repositories"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/file"
 	"terralist/pkg/rbac"
-	"terralist/pkg/registry"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -180,7 +178,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 				ctx.Status(http.StatusNoContent)
 			case errors.Is(err, services.ErrFetchRequiresCreate):
 				ctx.AbortWithStatus(http.StatusForbidden)
-			case errors.Is(err, repositories.ErrNotFound), errors.Is(err, registry.ErrNotFound), errors.Is(err, services.ErrUpstreamDenied):
+			case isNotFound(err):
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
 				})
@@ -252,7 +250,12 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 		func(ctx *gin.Context) {
 			err := c.ModuleService.Fetch(ctx.Param("namespace"), ctx.Param("name"), ctx.Param("provider"), ctx.Param("version"))
 			if err != nil {
-				ctx.JSON(http.StatusBadGateway, gin.H{
+				status := http.StatusBadGateway
+				if isNotFound(err) {
+					status = http.StatusNotFound
+				}
+
+				ctx.JSON(status, gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
