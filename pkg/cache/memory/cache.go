@@ -3,15 +3,19 @@ package memory
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
-// Cache keeps entries in process memory. Entries past their retention are
-// never served and are removed by a periodic sweep.
+// maxEntries bounds the number of entries the cache holds; storing more
+// evicts the least recently used ones.
+const maxEntries = 10000
+
+// Cache keeps entries in process memory, up to maxEntries of them. Entries
+// past their retention are never served and are removed by a periodic sweep.
 type Cache struct {
-	mu      sync.Mutex
-	entries map[string]entry
+	entries *lru.Cache[string, entry]
 	now     func() time.Time
 }
 
@@ -20,17 +24,24 @@ type entry struct {
 	expiresAt time.Time
 }
 
-func (c *Cache) Get(_ context.Context, key string) ([]byte, bool, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func newCache(capacity int, now func() time.Time) *Cache {
+	// lru.New only fails on a size that is not positive.
+	entries, _ := lru.New[string, entry](capacity)
 
-	e, ok := c.entries[key]
+	return &Cache{
+		entries: entries,
+		now:     now,
+	}
+}
+
+func (c *Cache) Get(_ context.Context, key string) ([]byte, bool, error) {
+	e, ok := c.entries.Get(key)
 	if !ok {
 		return nil, false, nil
 	}
 
 	if !c.now().Before(e.expiresAt) {
-		delete(c.entries, key)
+		c.entries.Remove(key)
 		return nil, false, nil
 	}
 
@@ -48,22 +59,16 @@ func (c *Cache) Set(_ context.Context, key string, value []byte, retention time.
 	stored := make([]byte, len(value))
 	copy(stored, value)
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.entries[key] = entry{
+	c.entries.Add(key, entry{
 		value:     stored,
 		expiresAt: c.now().Add(retention),
-	}
+	})
 
 	return nil
 }
 
 func (c *Cache) Delete(_ context.Context, key string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	delete(c.entries, key)
+	c.entries.Remove(key)
 
 	return nil
 }
@@ -78,15 +83,12 @@ func (c *Cache) run(interval time.Duration) {
 	}
 }
 
-// sweep removes every expired entry.
+// sweep removes every expired entry, without counting as a use of the others.
 func (c *Cache) sweep() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	now := c.now()
-	for key, e := range c.entries {
-		if !now.Before(e.expiresAt) {
-			delete(c.entries, key)
+	for _, key := range c.entries.Keys() {
+		if e, ok := c.entries.Peek(key); ok && !now.Before(e.expiresAt) {
+			c.entries.Remove(key)
 		}
 	}
 }
