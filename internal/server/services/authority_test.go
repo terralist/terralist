@@ -589,7 +589,7 @@ func TestGetAuthorityByUpstream(t *testing.T) {
 func TestAuthorityUpstreamSettings(t *testing.T) {
 	Convey("Subject: Validating the upstream connection settings of an authority", t, func() {
 		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
-		sealer := secret.NewSealer("test-secret")
+		sealer := newTestSealer()
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,
@@ -676,10 +676,11 @@ func TestAuthorityUpstreamSettings(t *testing.T) {
 			expectUpsert()
 			_, err := authorityService.Create(dto)
 
-			Convey("Then it should be sealed before it is stored", func() {
+			Convey("Then it should be sealed for the authority before it is stored", func() {
 				So(err, ShouldBeNil)
+				So(saved.Empty(), ShouldBeFalse)
 				So(*saved.UpstreamToken, ShouldNotContainSubstring, "ghp_secret")
-				opened, err := sealer.Open(*saved.UpstreamToken)
+				opened, err := sealer.Open(*saved.UpstreamToken, saved.ID.String())
 				So(err, ShouldBeNil)
 				So(opened, ShouldEqual, "ghp_secret")
 			})
@@ -702,7 +703,7 @@ func TestAuthorityUpstreamSettings(t *testing.T) {
 func TestUpdateAuthorityKeepsToken(t *testing.T) {
 	Convey("Subject: Updating an authority that has an upstream token", t, func() {
 		mockAuthorityRepository := repositories.NewMockAuthorityRepository(t)
-		sealer := secret.NewSealer("test-secret")
+		sealer := newTestSealer()
 
 		authorityService := &DefaultAuthorityService{
 			AuthorityRepository: mockAuthorityRepository,
@@ -710,7 +711,7 @@ func TestUpdateAuthorityKeepsToken(t *testing.T) {
 		}
 
 		id, _ := uuid.NewRandom()
-		sealed, _ := sealer.Seal("ghp_old")
+		sealed, _ := sealer.Seal("ghp_old", id.String())
 		hostname := "registry.terraform.io"
 
 		mockAuthorityRepository.On("FindByID", id).Return(&authority.Authority{
@@ -753,7 +754,7 @@ func TestUpdateAuthorityKeepsToken(t *testing.T) {
 
 			Convey("Then the new token should be sealed and stored", func() {
 				So(err, ShouldBeNil)
-				opened, _ := sealer.Open(*saved.UpstreamToken)
+				opened, _ := sealer.Open(*saved.UpstreamToken, id.String())
 				So(opened, ShouldEqual, "ghp_new")
 			})
 		})
@@ -846,5 +847,10 @@ func TestAuthorityRules(t *testing.T) {
 }
 
 func newTestSealer() *secret.Sealer {
-	return secret.NewSealer("test-secret")
+	sealer, err := secret.NewSealer("test-secret-of-at-least-32-characters")
+	if err != nil {
+		panic(err)
+	}
+
+	return sealer
 }

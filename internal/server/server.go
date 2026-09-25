@@ -330,7 +330,12 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		AuthorityRepository: authorityRepository,
 	}
 	if userConfig.UpstreamSecret != "" {
-		authorityService.Sealer = secret.NewSealer(userConfig.UpstreamSecret)
+		sealer, err := secret.NewSealer(userConfig.UpstreamSecret)
+		if err != nil {
+			return nil, fmt.Errorf("invalid upstream-secret: %w", err)
+		}
+
+		authorityService.Sealer = sealer
 	}
 
 	apiKeyRepository := &repositories.DefaultApiKeyRepository{

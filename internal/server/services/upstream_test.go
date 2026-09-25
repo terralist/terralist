@@ -485,7 +485,7 @@ func TestUpstreamToken(t *testing.T) {
 
 		Convey("Given a sealed token and the matching sealer", func() {
 			sealer := newTestSealer()
-			sealed, _ := sealer.Seal("ghp_upstream")
+			sealed, _ := sealer.Seal("ghp_upstream", a.ID.String())
 			a.UpstreamToken = &sealed
 			service.Sealer = sealer
 
@@ -497,6 +497,20 @@ func TestUpstreamToken(t *testing.T) {
 				for _, token := range upstream.tokens {
 					So(token, ShouldEqual, "Bearer ghp_upstream")
 				}
+			})
+		})
+
+		Convey("Given a token sealed for another authority", func() {
+			sealer := newTestSealer()
+			sealed, _ := sealer.Seal("ghp_upstream", uuid.New().String())
+			a.UpstreamToken = &sealed
+			service.Sealer = sealer
+
+			_, err := service.ProviderVersions(a, "null")
+
+			Convey("Then it should not open and nothing be sent upstream", func() {
+				So(err, ShouldNotBeNil)
+				So(upstream.tokens, ShouldBeEmpty)
 			})
 		})
 

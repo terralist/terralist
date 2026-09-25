@@ -192,7 +192,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
-	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/crypto v0.56.0
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.41.0
 	google.golang.org/protobuf v1.36.12 // indirect
