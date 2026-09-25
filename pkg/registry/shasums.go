@@ -112,10 +112,9 @@ func (v SignatureVerifier) acceptExpired(entity *openpgp.Entity) (string, error)
 
 // checkDetachedSignature verifies a binary or armored detached signature.
 func checkDetachedSignature(keyring openpgp.KeyRing, document, signature []byte) (*openpgp.Entity, error) {
-	entity, err := openpgp.CheckDetachedSignature(keyring, bytes.NewReader(document), bytes.NewReader(signature), nil)
-	if err != nil && !errors.Is(err, openpgpErrors.ErrUnknownIssuer) && !errors.Is(err, openpgpErrors.ErrKeyExpired) {
-		entity, err = openpgp.CheckArmoredDetachedSignature(keyring, bytes.NewReader(document), bytes.NewReader(signature), nil)
+	if bytes.HasPrefix(bytes.TrimSpace(signature), []byte("-----BEGIN")) {
+		return openpgp.CheckArmoredDetachedSignature(keyring, bytes.NewReader(document), bytes.NewReader(signature), nil)
 	}
 
-	return entity, err
+	return openpgp.CheckDetachedSignature(keyring, bytes.NewReader(document), bytes.NewReader(signature), nil)
 }

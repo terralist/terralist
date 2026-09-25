@@ -375,6 +375,32 @@ func TestParseShaSums(t *testing.T) {
 	})
 }
 
+func TestVerifyArmoredShaSums(t *testing.T) {
+	Convey("Subject: Verifying an armored signature of a SHA256SUMS file", t, func() {
+		entity, err := openpgp.NewEntity("Signer", "", "signer@example.com", nil)
+		So(err, ShouldBeNil)
+
+		var key bytes.Buffer
+		encoder, err := armor.Encode(&key, openpgp.PublicKeyType, nil)
+		So(err, ShouldBeNil)
+		So(entity.Serialize(encoder), ShouldBeNil)
+		So(encoder.Close(), ShouldBeNil)
+
+		document := []byte("0000  terraform-provider-null_1.0.0_linux_amd64.zip\n")
+		var signature bytes.Buffer
+		So(openpgp.ArmoredDetachSign(&signature, entity, bytes.NewReader(document), nil), ShouldBeNil)
+
+		Convey("When the armored signature is checked against the signing key", func() {
+			keyID, err := SignatureVerifier{}.VerifyShaSums(document, signature.Bytes(), []GPGPublicKey{{KeyID: entity.PrimaryKey.KeyIdString(), ASCIIArmor: key.String()}})
+
+			Convey("Then it should be accepted", func() {
+				So(err, ShouldBeNil)
+				So(keyID, ShouldEqual, entity.PrimaryKey.KeyIdString())
+			})
+		})
+	})
+}
+
 func TestVerifyShaSums(t *testing.T) {
 	Convey("Subject: Verifying the signature of a SHA256SUMS file", t, func() {
 		document := fixture(t, "terraform-provider-null_3.2.4_SHA256SUMS")
@@ -423,10 +449,11 @@ func TestVerifyShaSums(t *testing.T) {
 				tampered := bytes.Replace(document, []byte("9d32ac36"), []byte("00000000"), 1)
 				_, err := lenient.VerifyShaSums(tampered, signature, []GPGPublicKey{hashicorp})
 
-				Convey("Then it should be rejected", func() {
+				Convey("Then it should be rejected as an invalid signature", func() {
 					So(err, ShouldNotBeNil)
 					So(errors.Is(err, ErrUnknownIssuer), ShouldBeFalse)
 					So(errors.Is(err, ErrKeyExpired), ShouldBeFalse)
+					So(err.Error(), ShouldContainSubstring, "invalid signature")
 				})
 			})
 
