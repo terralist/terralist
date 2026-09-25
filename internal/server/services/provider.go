@@ -298,8 +298,8 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 	// Check if the provider already exists and has this version
 	current, err := s.ProviderRepository.Find(a.Name, p.Name)
 	if err == nil {
-		if current.GetVersion(d.Version) != nil {
-			return fmt.Errorf("version %s already exists", d.Version)
+		if v := current.GetVersion(d.Version); v != nil {
+			return versionExists(d.Version, v.Origin == provider.OriginUpstream)
 		}
 	}
 
@@ -375,8 +375,10 @@ func (s *DefaultProviderService) UploadPackages(d *provider.PackagesUploadDTO) e
 	}
 
 	current, err := s.ProviderRepository.Find(a.Name, d.Name)
-	if err == nil && current.GetVersion(d.Version) != nil {
-		return fmt.Errorf("version %s already exists", d.Version)
+	if err == nil {
+		if v := current.GetVersion(d.Version); v != nil {
+			return versionExists(d.Version, v.Origin == provider.OriginUpstream)
+		}
 	}
 
 	v := d.ToVersion()

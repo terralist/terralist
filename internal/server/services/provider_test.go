@@ -1168,14 +1168,33 @@ func TestUploadProviderPackages(t *testing.T) {
 			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
 			mockProviderRepository.On("Find", "hashicorp", "null").Return(&provider.Provider{
 				Name:     "null",
-				Versions: []provider.Version{{Version: "3.2.4"}},
+				Versions: []provider.Version{{Version: "3.2.4", Origin: provider.OriginManual}},
 			}, nil)
 
 			Convey("When the packages are uploaded", func() {
 				err := providerService.UploadPackages(&dto)
 
 				Convey("The upload should be rejected", func() {
-					So(err, ShouldNotBeNil)
+					So(errors.Is(err, repositories.ErrAlreadyExists), ShouldBeTrue)
+					So(err.Error(), ShouldNotContainSubstring, "upstream")
+				})
+			})
+		})
+
+		Convey("Given a version pulled from the upstream", func() {
+			dto := newDTO()
+			mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Name: "hashicorp"}, nil)
+			mockProviderRepository.On("Find", "hashicorp", "null").Return(&provider.Provider{
+				Name:     "null",
+				Versions: []provider.Version{{Version: "3.2.4", Origin: provider.OriginUpstream}},
+			}, nil)
+
+			Convey("When the packages are uploaded", func() {
+				err := providerService.UploadPackages(&dto)
+
+				Convey("The upload should be rejected with a way out", func() {
+					So(errors.Is(err, repositories.ErrAlreadyExists), ShouldBeTrue)
+					So(err.Error(), ShouldEqual, "version 3.2.4 already exists: it was pulled from the upstream, delete it before uploading your own")
 				})
 			})
 		})
