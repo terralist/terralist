@@ -117,7 +117,8 @@ func mergeUpstreamArchives(dto *provider.MirrorArchivesDTO, name, version string
 // ensureUpstreamVersion returns the local version row, creating it from the
 // upstream metadata when the provider does not hold the version yet: the
 // SHA256SUMS document and its signature are stored and the upstream signing
-// keys recorded, so the registry protocol can serve the version.
+// keys recorded, so the registry protocol can serve the version. A version
+// uploaded by an operator is never completed from the upstream.
 func (s *DefaultProviderService) ensureUpstreamVersion(a *authority.Authority, name, version string) (*provider.Version, error) {
 	current, err := s.ProviderRepository.Find(a.Name, name)
 	if err != nil {
@@ -125,6 +126,10 @@ func (s *DefaultProviderService) ensureUpstreamVersion(a *authority.Authority, n
 	}
 
 	if v := current.GetVersion(version); v != nil {
+		if v.Origin != provider.OriginUpstream {
+			return nil, fmt.Errorf("version %s of %s/%s was uploaded: %w", version, a.Name, name, repositories.ErrNotFound)
+		}
+
 		return v, nil
 	}
 
