@@ -3420,7 +3420,7 @@
 </tbody>
 </table>
 <h3 id="upstream-secret"><code>upstream-secret</code><a class="headerlink" href="#upstream-secret" title="Permanent link">¶</a></h3>
-<p>The secret used to seal the tokens of upstream registries at rest, when an authority <a href="../user-guide/network-mirror/">pulls providers through</a> from a private upstream. Required only to store an upstream token.</p>
+<p>The secret used to seal the tokens of upstream registries at rest, when an authority <a href="../user-guide/network-mirror/">pulls providers through</a> from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream.</p>
 <table>
 <thead>
 <tr>
@@ -3452,7 +3452,7 @@
 </tbody>
 </table>
 <h3 id="upstream-cache-ttl"><code>upstream-cache-ttl</code><a class="headerlink" href="#upstream-cache-ttl" title="Permanent link">¶</a></h3>
-<p>How long the metadata read from upstream registries, version lists and SHA256SUMS documents, stays fresh before Terralist refreshes it. See <a href="../user-guide/network-mirror/#pulling-providers-through-from-an-upstream">pulling providers through</a>.</p>
+<p>How long the metadata read from upstream registries, provider and module version lists and provider SHA256SUMS documents, stays fresh before Terralist refreshes it. See <a href="../user-guide/network-mirror/#pulling-providers-through-from-an-upstream">pulling providers through</a>.</p>
 <table>
 <thead>
 <tr>
@@ -5248,7 +5248,7 @@
 </tbody>
 </table>
 <h3 id="providers-anonymous-read"><code>providers-anonymous-read</code><a class="headerlink" href="#providers-anonymous-read" title="Permanent link">¶</a></h3>
-<p>Allows anonymous read and download of providers.</p>
+<p>Allows anonymous read and download of providers, through both the provider registry and the <a href="../user-guide/network-mirror/">network mirror</a> protocols.</p>
 <table>
 <thead>
 <tr>

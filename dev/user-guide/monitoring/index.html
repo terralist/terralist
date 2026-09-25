@@ -2164,7 +2164,7 @@
 </span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">terralist_cache_operations_total</span><span class="p">{</span><span class="nl">operation</span><span class="o">=</span><span class="p">"</span><span class="s">get</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </span></code></pre></div></p>
 <h4 id="upstream-registries">Upstream Registries<a class="headerlink" href="#upstream-registries" title="Permanent link">¶</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>terralist_upstream_requests_total{hostname="registry.terraform.io", operation="versions|version|package", result="success|stale|error"}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>terralist_upstream_requests_total{hostname="registry.terraform.io", operation="versions|version|package|module_versions|module_location", result="success|stale|error"}
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>terralist_upstream_fetch_duration_seconds{hostname="registry.terraform.io"}
 </span></code></pre></div>
 <p>Requests to upstream registries by hostname, operation and result, where <code>stale</code> counts the answers served from the cache because the upstream failed, and the time taken to fetch a package from an upstream into storage.</p>
