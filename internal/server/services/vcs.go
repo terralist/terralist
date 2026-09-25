@@ -84,19 +84,22 @@ func (s *DefaultVcsService) BuildProviderCreateDTO(authorityID uuid.UUID, namesp
 	var shasumsURL, shasumsSigURL string
 	zips := make(map[string]vcs.ReleaseAsset)
 
+	// Assets are matched regardless of the case of the provider name, as
+	// providers are looked up.
+	lowerPrefix := strings.ToLower(prefix)
 	for _, a := range ev.Assets {
-		n := a.Name
+		n := strings.ToLower(a.Name)
 		switch {
-		case strings.HasPrefix(n, prefix) && strings.HasSuffix(n, ".zip"):
+		case strings.HasPrefix(n, lowerPrefix) && strings.HasSuffix(n, ".zip"):
 			base := strings.TrimSuffix(n, ".zip")
-			rest := strings.TrimPrefix(base, prefix+"_")
+			rest := strings.TrimPrefix(base, lowerPrefix+"_")
 			if rest == "" {
 				continue
 			}
 			zips[rest] = a
-		case n == prefix+"_SHA256SUMS":
+		case n == lowerPrefix+"_sha256sums":
 			shasumsURL = a.URL
-		case n == prefix+"_SHA256SUMS.sig":
+		case n == lowerPrefix+"_sha256sums.sig":
 			shasumsSigURL = a.URL
 		}
 	}
