@@ -233,7 +233,6 @@ func TestDownloadModule(t *testing.T) {
 				// request stored the version meanwhile.
 				f.repo.On("FindVersionLocation", "hashicorp", "dir", "template", "1.0.2").Return(nil, repositories.ErrNotFound).Once()
 				f.repo.On("Find", "hashicorp", "dir", "template").Return(f.localModule(), nil)
-				f.fetcher.On("CheckUpstreamSource", "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2").Return(nil)
 				f.fetcher.
 					On("Fetch", "1.0.2", mock.MatchedBy(func(src file.File) bool {
 						remote, ok := src.(*file.RemoteFile)
@@ -275,7 +274,6 @@ func TestDownloadModule(t *testing.T) {
 					return nil, repositories.ErrNotFound
 				})
 				f.repo.On("Find", "hashicorp", "dir", "template").Return(f.localModule(), nil)
-				f.fetcher.On("CheckUpstreamSource", "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2").Return(nil)
 				f.fetcher.On("Fetch", "1.0.2", mock.Anything).Return(file.NewInMemoryFile("1.0.2.zip", []byte("archive")), func() {}, nil)
 				f.resolver.
 					On("Store", mock.AnythingOfType("*storage.StoreInput")).
@@ -302,7 +300,6 @@ func TestDownloadModule(t *testing.T) {
 				withVersion := f.localModule()
 				withVersion.Versions = append(withVersion.Versions, module.Version{Version: "1.0.2", Location: concurrent})
 				f.repo.On("Find", "hashicorp", "dir", "template").Return(withVersion, nil)
-				f.fetcher.On("CheckUpstreamSource", "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2").Return(nil)
 				f.resolver.On("Find", concurrent).Return("https://storage/concurrent.zip", nil)
 
 				url, err := f.service.Download("hashicorp", "dir", "template", "1.0.2", true)
@@ -317,14 +314,14 @@ func TestDownloadModule(t *testing.T) {
 			Convey("When the upstream source may not be fetched", func() {
 				f.upstream.On("ModuleLocation", f.auth, "dir", "template", "1.0.2").Return("s3::https://s3.amazonaws.com/bucket/dir.zip", nil)
 				f.repo.On("FindVersionLocation", "hashicorp", "dir", "template", "1.0.2").Return(nil, repositories.ErrNotFound).Once()
-				f.fetcher.On("CheckUpstreamSource", "s3::https://s3.amazonaws.com/bucket/dir.zip").Return(errors.New("refusing to fetch"))
+				f.repo.On("Find", "hashicorp", "dir", "template").Return(f.localModule(), nil)
+				f.fetcher.On("Fetch", "1.0.2", mock.Anything).Return(nil, nil, errors.New("refusing to fetch"))
 
 				_, err := f.service.Download("hashicorp", "dir", "template", "1.0.2", true)
 
-				Convey("Then the refusal is reported and nothing fetched", func() {
+				Convey("Then the refusal is reported and nothing stored", func() {
 					So(err, ShouldNotBeNil)
 					So(err.Error(), ShouldContainSubstring, "refusing to fetch")
-					f.fetcher.AssertNotCalled(t, "Fetch", mock.Anything, mock.Anything)
 					f.resolver.AssertNotCalled(t, "Store", mock.Anything)
 				})
 			})

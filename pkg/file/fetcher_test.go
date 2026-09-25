@@ -2,9 +2,7 @@ package file
 
 import "testing"
 
-func TestCheckUpstreamSource(t *testing.T) {
-	permissive := NewFetcher(true)
-	guarded := NewFetcher(false)
+func TestCheckSource(t *testing.T) {
 
 	for _, src := range []string{
 		"https://example.com/module.zip",
@@ -15,7 +13,7 @@ func TestCheckUpstreamSource(t *testing.T) {
 		"github.com/hashicorp/terraform-template-dir",
 	} {
 		t.Run("accepts "+src, func(t *testing.T) {
-			if err := permissive.CheckUpstreamSource(src); err != nil {
+			if err := checkSource(src, true); err != nil {
 				t.Fatalf("expected %q to be accepted, got %v", src, err)
 			}
 		})
@@ -30,7 +28,7 @@ func TestCheckUpstreamSource(t *testing.T) {
 		"file:///etc/terralist",
 	} {
 		t.Run("refuses "+src, func(t *testing.T) {
-			if err := permissive.CheckUpstreamSource(src); err == nil {
+			if err := checkSource(src, true); err == nil {
 				t.Fatalf("expected %q to be refused", src)
 			}
 		})
@@ -42,13 +40,13 @@ func TestCheckUpstreamSource(t *testing.T) {
 		"git::https://localhost/repo.git",
 	} {
 		t.Run("refuses the private "+src, func(t *testing.T) {
-			if err := guarded.CheckUpstreamSource(src); err == nil {
+			if err := checkSource(src, false); err == nil {
 				t.Fatalf("expected %q to be refused", src)
 			}
 		})
 
 		t.Run("accepts the private "+src+" when private addresses are allowed", func(t *testing.T) {
-			if err := permissive.CheckUpstreamSource(src); err != nil {
+			if err := checkSource(src, true); err != nil {
 				t.Fatalf("expected %q to be accepted, got %v", src, err)
 			}
 		})

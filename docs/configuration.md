@@ -844,7 +844,7 @@ Allows anonymous read and download of providers, through both the provider regis
 
 ### `fetch-allow-private-addresses`
 
-Allows fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. By default Terralist refuses to connect to these addresses. The check runs against the resolved IP at connection time, so it also applies to redirect targets. Enable this only if your artifacts are served from a host on a private network. See [Security](user-guide/security.md) for details.
+Allows fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. By default Terralist refuses to connect to these addresses. The check runs against the resolved IP at connection time, so it also applies to redirect targets; git repositories are checked by resolving their host before they are cloned. Enable this only if your artifacts are served from a host on a private network. See [Security](user-guide/security.md) for details.
 
 | Name | Value |
 | --- | --- |

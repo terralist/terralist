@@ -222,7 +222,7 @@ curl -L \
 POST /v1/api/providers/:namespace/:name/:version/upload
 ```
 
-Upload a new provider version. When a storage backend holds the files, the `SHA256SUMS` signature must verify with one of the authority keys.
+Upload a new provider version. When a storage backend holds the files, the `SHA256SUMS` signature must verify with one of the authority keys. The files are downloaded from `http` or `https` URLs; other sources are refused.
 
 If the URLs from which the provider files should be downloaded are of types `http` or `https`, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.
 
@@ -645,6 +645,8 @@ POST /v1/api/modules/:namespace/:name/:provider/:version/upload
 ```
 
 Upload a new module version.
+
+The module is downloaded from an `http` or `https` URL, or from a git repository (`git::https://...` or `git::ssh://...`, as in a Terraform module source); other sources are refused. A git host resolving to a private address is refused unless [`fetch-allow-private-addresses`](../configuration.md#fetch-allow-private-addresses) is set.
 
 If the URL from which the module files should be downloaded is of types `http` or `https`, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.
 
