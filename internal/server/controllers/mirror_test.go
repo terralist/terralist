@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -581,6 +582,33 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 			Convey("Then it should be forbidden and the service not called", func() {
 				So(w.Code, ShouldEqual, http.StatusForbidden)
 				mockService.AssertNotCalled(t, "Download", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+			})
+		})
+	})
+}
+
+func TestMirrorController_UpstreamUnavailable(t *testing.T) {
+	Convey("Subject: Network mirror requests while the upstream is unavailable", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		router, mockService, _ := setupMirrorRouter(t, user, false, false)
+		base := "/providers/" + mirrorTestHostname + "/hashicorp/null/"
+		unavailable := fmt.Errorf("%w: upstream down", services.ErrUpstreamUnavailable)
+
+		Convey("When the versions are listed", func() {
+			mockService.On("ListMirrorVersions", "hashicorp", "null", false).Return(nil, unavailable)
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"index.json", nil))
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+
+		Convey("When the packages of a version are listed", func() {
+			mockService.On("ListMirrorArchives", "hashicorp", "null", "3.2.4", false).Return(nil, unavailable)
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"3.2.4.json", nil))
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
 			})
 		})
 	})

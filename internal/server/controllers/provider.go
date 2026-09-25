@@ -94,7 +94,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 			d, err := c.ProviderService.Get(namespace, name, c.mayFetch(ctx, namespace, name))
 			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
+				ctx.JSON(lookupStatus(err), gin.H{
 					"errors": err.Error(),
 				})
 				return
@@ -118,7 +118,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 
 			dto, err := c.ProviderService.GetVersion(namespace, name, version, os, arch, fetch)
 			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
+				ctx.JSON(lookupStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return

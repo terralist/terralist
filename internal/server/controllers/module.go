@@ -110,7 +110,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			d, err := c.ModuleService.Get(namespace, name, provider, c.mayFetch(ctx, namespace, name, provider))
 			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
+				ctx.JSON(lookupStatus(err), gin.H{
 					"errors": err.Error(),
 				})
 				return
@@ -133,7 +133,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 
 			location, err := c.ModuleService.GetVersionURL(namespace, name, provider, version, fetch)
 			if err != nil {
-				ctx.JSON(http.StatusNotFound, gin.H{
+				ctx.JSON(lookupStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
