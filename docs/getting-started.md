@@ -180,10 +180,10 @@ To upload a new module, use Terralist's API:
 ```console
 curl -X POST http://localhost:5758/v1/api/modules/my-authority/my-module/provider/1.0.0/upload \
      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-     -d '{ "download_url": "/home/bob/terraform-modules/example-module" }'
+     -d '{ "download_url": "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2" }'
 ```
 
-!!! note "Terralist uses the same library Terraform uses to make downloads [go-getter](https://github.com/hashicorp/go-getter), so the above example takes advantage of the fact that Terralist runs on your local computer and uses the local getter to "download" the module. If your Terralist server is deployed remotely, the above command should not work (since that particular path cannot resolve on the remote server)."
+!!! note "Terralist downloads the module the way Terraform does, with [go-getter](https://github.com/hashicorp/go-getter), from an `http` or `https` URL or from a git repository. To upload a module from files on your machine, use the [upload with local files](dev-guide/api-reference.md#upload-a-module-version-with-local-files) instead."
 
 ### Use the module
 

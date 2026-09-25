@@ -185,6 +185,34 @@ func TestFetch_FileIsNeverDecompressed(t *testing.T) {
 	}
 }
 
+func TestFetch_RefusesSourcesOtherThanHTTPAndGit(t *testing.T) {
+	for _, src := range []string{
+		"s3::https://s3.amazonaws.com/bucket/module.zip",
+		"gcs::https://www.googleapis.com/storage/v1/bucket/module.zip",
+		"hg::https://example.com/repo",
+	} {
+		_, cleanup, err := fetch("module", src, "", dir, nil, true)
+		if cleanup != nil {
+			cleanup()
+		}
+
+		if err == nil || !strings.Contains(err.Error(), "only HTTP(S) and git sources") {
+			t.Errorf("expected %q to be refused as a source, got %v", src, err)
+		}
+	}
+}
+
+func TestFetch_RefusesPrivateGitHosts(t *testing.T) {
+	_, cleanup, err := fetch("module", "git::https://127.0.0.1:1/repo.git", "", dir, nil, false)
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if err == nil || !strings.Contains(err.Error(), "non-public address") {
+		t.Fatalf("expected the private git host to be refused before cloning, got %v", err)
+	}
+}
+
 func TestFetch_CleanupRemovesTempDir(t *testing.T) {
 	// Serve a file over HTTP to fetch
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
