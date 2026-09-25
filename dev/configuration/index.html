@@ -3484,7 +3484,7 @@
 </tbody>
 </table>
 <h3 id="upstream-cache-retention"><code>upstream-cache-retention</code><a class="headerlink" href="#upstream-cache-retention" title="Permanent link">¶</a></h3>
-<p>How long the metadata read from upstream registries is kept once stale, to be served when the upstream is unavailable. Must be at least the TTL.</p>
+<p>How long the metadata read from upstream registries is kept once stale, to be served when the upstream is unavailable. Must be at least the TTL. The metadata is held in memory, up to 10,000 entries; beyond that, the least recently used entries are dropped first.</p>
 <table>
 <thead>
 <tr>
