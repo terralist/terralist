@@ -1173,7 +1173,7 @@
 <p>Tests bootstrap their own data at startup. No database snapshots or fixture files are needed. The Go <code>TestMain</code> function:</p>
 <ol>
 <li>Creates an S3 bucket via the AWS SDK</li>
-<li>Creates a <code>hashicorp</code> authority standing for <code>registry.terraform.io/hashicorp</code> via the master API key, with the upstream enabled under the <code>deny</code> policy and rules allowing the <code>random</code> provider except one version</li>
+<li>Creates a <code>hashicorp</code> authority standing for <code>registry.terraform.io/hashicorp</code> via the master API key, with the upstream enabled under the <code>deny</code> policy and rules allowing the <code>random</code> provider except one version and the <code>dir/template</code> module</li>
 <li>Fetches the null provider (v3.2.4) metadata from the Terraform registry and uploads it</li>
 <li>Downloads the null provider packages v3.2.1 and v3.2.0 for the current platform and uploads them as package files, the first without and the second with its <code>SHA256SUMS</code> file and signature</li>
 <li>Uploads the <code>hashicorp/subnets/cidr</code> module (v1.0.0) from GitHub</li>
