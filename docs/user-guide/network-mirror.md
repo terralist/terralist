@@ -86,7 +86,7 @@ curl -X POST \
   https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID/rules
 ```
 
-`name` and `version` are globs; `kind` is `provider` or `module`. A version is served when the upstream is enabled, no deny rule matches, and either the default policy is `allow` or an allow rule matches. Deny always wins. Rules filter the version list itself, so Terraform never selects a version it cannot download. They apply to upstream versions only; versions uploaded to Terralist are always served. Rules are removed with `DELETE /v1/api/authorities/<id>/rules/<rule id>`.
+`name` and `version` are globs, the name matched regardless of case; `kind` is `provider` or `module`. A version is served when the upstream is enabled, no deny rule matches, and either the default policy is `allow` or an allow rule matches. Deny always wins. Rules filter the version list itself, so Terraform never selects a version it cannot download. They apply to upstream versions only; versions uploaded to Terralist are always served. Rules are removed with `DELETE /v1/api/authorities/<id>/rules/<rule id>`.
 
 A deny rule is the way to stop serving a version that was pulled through: deleting the stored version alone would only make the next request fetch it again.
 

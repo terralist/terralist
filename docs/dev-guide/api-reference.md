@@ -400,7 +400,7 @@ POST   /v1/api/authorities/:id/rules
 DELETE /v1/api/authorities/:id/rules/:ruleId
 ```
 
-Add or remove a rule deciding which versions an authority serves from its upstream registry. `kind` is `provider` or `module`, `name` and `version` are globs, `effect` is `allow` or `deny`. Both require the `update` action on the authority. The rules of an authority are returned with the authority itself.
+Add or remove a rule deciding which versions an authority serves from its upstream registry. `kind` is `provider` or `module`, `name` and `version` are globs, the name matched regardless of case, `effect` is `allow` or `deny`. Both require the `update` action on the authority. The rules of an authority are returned with the authority itself.
 
 ### Example Request
 
