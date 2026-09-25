@@ -199,10 +199,14 @@ func (s *DefaultProviderService) ListMirrorVersions(namespace, name string, with
 func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version string, withUpstream bool) (*provider.MirrorArchivesDTO, error) {
 	dto := provider.MirrorArchivesDTO{Archives: map[string]provider.MirrorArchiveDTO{}}
 
+	// A version uploaded by an operator is never completed from the upstream.
+	uploaded := false
+
 	p, err := s.ProviderRepository.Find(namespace, name)
 	if err == nil {
 		if v := p.GetVersion(version); v != nil {
 			dto = v.ToMirrorArchivesDTO()
+			uploaded = v.Origin != provider.OriginUpstream
 		}
 	}
 
@@ -218,7 +222,7 @@ func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version str
 		}
 	}
 
-	if a := s.upstreamAuthority(namespace, withUpstream); a != nil {
+	if a := s.upstreamAuthority(namespace, withUpstream && !uploaded); a != nil {
 		upstream := s.upstreamVersions(a, name)
 		if lo.ContainsBy(upstream, func(v UpstreamVersion) bool { return v.Version == version }) {
 			metadata, err := s.Upstream.ProviderVersion(a, name, version)
@@ -242,15 +246,7 @@ func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version str
 
 // upstreamVersionDownload answers a registry download request for a platform
 // Terralist does not hold yet, creating the version from the upstream first.
-// A version uploaded by an operator is never completed from the upstream
-// through the registry protocol.
 func (s *DefaultProviderService) upstreamVersionDownload(a *authority.Authority, name, version, system, architecture string) (*provider.DownloadPlatformDTO, error) {
-	if current, err := s.ProviderRepository.Find(a.Name, name); err == nil {
-		if v := current.GetVersion(version); v != nil && v.Origin != provider.OriginUpstream {
-			return nil, fmt.Errorf("platform %s_%s of %s/%s %s: %w", system, architecture, a.Name, name, version, repositories.ErrNotFound)
-		}
-	}
-
 	v, err := s.ensureUpstreamVersion(a, name, version)
 	if err != nil {
 		return nil, err
