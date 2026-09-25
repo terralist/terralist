@@ -222,7 +222,7 @@ curl -L \
 POST /v1/api/providers/:namespace/:name/:version/upload
 ```
 
-Upload a new provider version.
+Upload a new provider version. When a storage backend holds the files, the `SHA256SUMS` signature must verify with one of the authority keys.
 
 If the URLs from which the provider files should be downloaded are of types `http` or `https`, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.
 
@@ -293,7 +293,7 @@ Upload a new provider version from its package files, as produced by `terraform 
 
 - `metadata`: the `<version>.json` document listing the packages and their `h1` hashes;
 - `archives`: one or more package archives listed in the document;
-- `shasums` and `shasums_signature` (optional): the provider's `SHA256SUMS` file and its signature, always together;
+- `shasums` and `shasums_signature` (optional): the provider's `SHA256SUMS` file and its signature, always together; the signature must verify with one of the authority keys;
 - `protocols` (required with `shasums`): comma separated provider protocol versions.
 
 Every archive must be listed in the document under its file name. When a `SHA256SUMS` file is given, every archive must match its entry. A version uploaded without `shasums` is served through the [network mirror](../user-guide/network-mirror.md) only and does not appear in the registry protocol version list. A providers storage resolver must be configured.

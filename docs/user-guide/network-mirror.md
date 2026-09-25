@@ -162,7 +162,7 @@ Terraform verifies the signatures of the packages it downloads, so the `h1` hash
 
 ### 2. Optionally, download the signature material
 
-The registry protocol requires the provider's `SHA256SUMS` file, its signature and the signing key. `terraform providers mirror` does not download them, so a version uploaded without them is served through the network mirror only. To serve it through both protocols, fetch them from the upstream registry's download endpoint and add the signing key to the authority:
+The registry protocol requires the provider's `SHA256SUMS` file, its signature and the signing key. `terraform providers mirror` does not download them, so a version uploaded without them is served through the network mirror only. To serve it through both protocols, fetch them from the upstream registry's download endpoint and add the signing key to the authority. The upload is refused unless the signature verifies with one of the authority keys:
 
 ```shell
 version=3.2.4
