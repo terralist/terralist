@@ -154,7 +154,7 @@ How long the metadata read from upstream registries, provider and module version
 
 ### `upstream-cache-retention`
 
-How long the metadata read from upstream registries is kept once stale, to be served when the upstream is unavailable. Must be at least the TTL.
+How long the metadata read from upstream registries is kept once stale, to be served when the upstream is unavailable. Must be at least the TTL. The metadata is held in memory, up to 10,000 entries; beyond that, the least recently used entries are dropped first.
 
 | Name | Value |
 | --- | --- |

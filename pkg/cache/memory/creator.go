@@ -15,10 +15,7 @@ func (t *Creator) New(config cache.Configurator) (cache.Cache, error) {
 		return nil, fmt.Errorf("unsupported configurator")
 	}
 
-	c := &Cache{
-		entries: map[string]entry{},
-		now:     time.Now,
-	}
+	c := newCache(maxEntries, time.Now)
 
 	go c.run(cfg.SweepInterval)
 

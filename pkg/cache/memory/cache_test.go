@@ -9,10 +9,7 @@ import (
 )
 
 func newTestCache(now *time.Time) *Cache {
-	return &Cache{
-		entries: map[string]entry{},
-		now:     func() time.Time { return *now },
-	}
+	return newCache(maxEntries, func() time.Time { return *now })
 }
 
 func TestMemoryCache(t *testing.T) {
@@ -110,10 +107,47 @@ func TestMemoryCache(t *testing.T) {
 				cache.sweep()
 
 				Convey("Then only the expired entries should be gone", func() {
-					So(len(cache.entries), ShouldEqual, 1)
+					So(cache.entries.Len(), ShouldEqual, 1)
 					_, ok, _ := cache.Get(ctx, "fresh")
 					So(ok, ShouldBeTrue)
 				})
+			})
+		})
+	})
+}
+
+func TestMemoryCacheEviction(t *testing.T) {
+	Convey("Subject: An in-memory cache holding as many entries as it may", t, func() {
+		ctx := context.Background()
+		now := time.Date(2026, 9, 24, 12, 0, 0, 0, time.UTC)
+		cache := newCache(2, func() time.Time { return now })
+
+		So(cache.Set(ctx, "first", []byte("1"), time.Hour), ShouldBeNil)
+		So(cache.Set(ctx, "second", []byte("2"), time.Hour), ShouldBeNil)
+
+		Convey("When a new entry is stored", func() {
+			So(cache.Set(ctx, "third", []byte("3"), time.Hour), ShouldBeNil)
+
+			Convey("Then the least recently used entry should be evicted", func() {
+				_, ok, _ := cache.Get(ctx, "first")
+				So(ok, ShouldBeFalse)
+				_, ok, _ = cache.Get(ctx, "second")
+				So(ok, ShouldBeTrue)
+				_, ok, _ = cache.Get(ctx, "third")
+				So(ok, ShouldBeTrue)
+			})
+		})
+
+		Convey("When an entry is read before a new one is stored", func() {
+			_, ok, _ := cache.Get(ctx, "first")
+			So(ok, ShouldBeTrue)
+			So(cache.Set(ctx, "third", []byte("3"), time.Hour), ShouldBeNil)
+
+			Convey("Then the entry read should be kept and the other evicted", func() {
+				_, ok, _ := cache.Get(ctx, "first")
+				So(ok, ShouldBeTrue)
+				_, ok, _ = cache.Get(ctx, "second")
+				So(ok, ShouldBeFalse)
 			})
 		})
 	})
