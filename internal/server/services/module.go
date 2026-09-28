@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/docs"
@@ -30,6 +31,9 @@ type ModuleService interface {
 
 	// GetVersion returns a module version.
 	GetVersion(namespace, name, provider, version string) (*module.VersionDTO, error)
+
+	// ListVersions returns every version of a module Terralist holds.
+	ListVersions(namespace, name, provider string) ([]artifact.VersionDetails, error)
 
 	// GetSubmoduleDocumentation returns documentation for a specific submodule within a module version.
 	GetSubmoduleDocumentation(namespace, name, provider, version, submodulePath string) (string, error)
@@ -110,6 +114,20 @@ func (s *DefaultModuleService) Get(namespace, name, provider string, withUpstrea
 	metrics.RecordRequest(namespace, "list")
 
 	return &dto, nil
+}
+
+func (s *DefaultModuleService) ListVersions(namespace, name, provider string) ([]artifact.VersionDetails, error) {
+	m, err := s.ModuleRepository.Find(namespace, name, provider)
+	if err != nil {
+		return nil, fmt.Errorf("requested module was not found: %v", err)
+	}
+
+	versions := make([]artifact.VersionDetails, 0, len(m.Versions))
+	for _, v := range m.Versions {
+		versions = append(versions, artifact.VersionDetails{Version: v.Version, Origin: v.Origin})
+	}
+
+	return versions, nil
 }
 
 func (s *DefaultModuleService) GetVersion(namespace, name, provider, version string) (*module.VersionDTO, error) {

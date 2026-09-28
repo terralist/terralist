@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
@@ -38,7 +39,7 @@ type ProviderService interface {
 
 	// ListVersions returns every version of a provider, including the ones
 	// served through the network mirror only.
-	ListVersions(namespace, name string) ([]string, error)
+	ListVersions(namespace, name string) ([]artifact.VersionDetails, error)
 
 	// GetVersion returns a specific installation for a provider. With
 	// withUpstream, a platform the authority's upstream registry offers but
@@ -125,15 +126,19 @@ func (s *DefaultProviderService) Get(namespace, name string, withUpstream bool) 
 	return &dto, nil
 }
 
-func (s *DefaultProviderService) ListVersions(namespace, name string) ([]string, error) {
+func (s *DefaultProviderService) ListVersions(namespace, name string) ([]artifact.VersionDetails, error) {
 	p, err := s.ProviderRepository.Find(namespace, name)
 	if err != nil {
 		return nil, fmt.Errorf("requested provider was not found: %v", err)
 	}
 
-	versions := make([]string, 0, len(p.Versions))
+	versions := make([]artifact.VersionDetails, 0, len(p.Versions))
 	for _, v := range p.Versions {
-		versions = append(versions, v.Version)
+		versions = append(versions, artifact.VersionDetails{
+			Version:    v.Version,
+			Origin:     v.Origin,
+			MirrorOnly: v.MirrorOnly(),
+		})
 	}
 
 	return versions, nil
