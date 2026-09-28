@@ -114,6 +114,40 @@ func TestArtifactController_ProviderVersions(t *testing.T) {
 			})
 		})
 
+		Convey("Given a user who may delete the provider and update its authority pulling through", func() {
+			router, mockProviderService, _ := setupArtifactRouter(t, "p, test-user, providers, delete, hashicorp/*, allow\np, test-user, authorities, update, hashicorp, allow", true)
+			mockProviderService.On("ListVersions", "hashicorp", "null").Return(versions, nil)
+
+			body := decodeVersions(serve(router, httptest.NewRequest(http.MethodGet, url, nil)))
+
+			Convey("Then blocking pulled versions should be offered", func() {
+				So(body.CanBlock, ShouldBeTrue)
+			})
+		})
+
+		Convey("Given a user who may delete the provider but not update its authority", func() {
+			router, mockProviderService, _ := setupArtifactRouter(t, "p, test-user, providers, delete, hashicorp/*, allow", true)
+			mockProviderService.On("ListVersions", "hashicorp", "null").Return(versions, nil)
+
+			body := decodeVersions(serve(router, httptest.NewRequest(http.MethodGet, url, nil)))
+
+			Convey("Then blocking should not be offered", func() {
+				So(body.CanDelete, ShouldBeTrue)
+				So(body.CanBlock, ShouldBeFalse)
+			})
+		})
+
+		Convey("Given a user who may delete and update an authority not pulling through", func() {
+			router, mockProviderService, _ := setupArtifactRouter(t, "p, test-user, providers, delete, hashicorp/*, allow\np, test-user, authorities, update, hashicorp, allow", false)
+			mockProviderService.On("ListVersions", "hashicorp", "null").Return(versions, nil)
+
+			body := decodeVersions(serve(router, httptest.NewRequest(http.MethodGet, url, nil)))
+
+			Convey("Then blocking should not be offered", func() {
+				So(body.CanBlock, ShouldBeFalse)
+			})
+		})
+
 		Convey("Given a user who may create the provider of an authority not pulling through", func() {
 			router, mockProviderService, _ := setupArtifactRouter(t, "p, test-user, providers, create, hashicorp/*, allow", false)
 			mockProviderService.On("ListVersions", "hashicorp", "null").Return(versions, nil)

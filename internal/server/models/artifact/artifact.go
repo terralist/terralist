@@ -20,12 +20,14 @@ type VersionDetails struct {
 }
 
 // Versions lists the versions of an artifact, with what the caller may do
-// with the artifact: delete its versions, and fetch versions from the upstream
-// registry of its authority.
+// with the artifact: delete its versions, fetch versions from the upstream
+// registry of its authority, and block a pulled version, which denies it by a
+// rule of the authority and deletes it.
 type Versions struct {
 	Versions  []VersionDetails `json:"versions"`
 	CanDelete bool             `json:"can_delete"`
 	CanFetch  bool             `json:"can_fetch"`
+	CanBlock  bool             `json:"can_block"`
 }
 
 type Artifact struct {

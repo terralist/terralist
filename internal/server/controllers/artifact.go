@@ -244,19 +244,24 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 }
 
 // versions pairs the versions of an artifact with what the caller may do with
-// it: delete its versions, and fetch versions from the upstream registry, which
-// needs the create permission and an authority pulling through.
+// it: delete its versions; fetch versions from the upstream registry, which
+// needs the create permission and an authority pulling through; and block a
+// pulled version, which needs to delete it and to add a rule to the authority.
 func (c *DefaultArtifactController) versions(ctx *gin.Context, resource, namespace, object string, versions []artifact.VersionDetails) artifact.Versions {
 	user := handlers.MustGetFromContext[auth.User](ctx, "user")
 
-	canFetch := false
+	canDelete := c.Authorization.CanPerform(*user, resource, rbac.ActionDelete, object)
+
+	canFetch, canBlock := false, false
 	if a, err := c.AuthorityService.GetByName(namespace); err == nil && a.UpstreamEnabled {
 		canFetch = c.Authorization.CanPerform(*user, resource, rbac.ActionCreate, object)
+		canBlock = canDelete && c.Authorization.CanPerform(*user, rbac.ResourceAuthorities, rbac.ActionUpdate, a.Name)
 	}
 
 	return artifact.Versions{
 		Versions:  versions,
-		CanDelete: c.Authorization.CanPerform(*user, resource, rbac.ActionDelete, object),
+		CanDelete: canDelete,
 		CanFetch:  canFetch,
+		CanBlock:  canBlock,
 	}
 }
