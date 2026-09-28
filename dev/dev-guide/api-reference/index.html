@@ -2826,7 +2826,7 @@
 <h2 id="upload-a-provider-version">Upload a provider version<a class="headerlink" href="#upload-a-provider-version" title="Permanent link">¶</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>POST /v1/api/providers/:namespace/:name/:version/upload
 </span></code></pre></div>
-<p>Upload a new provider version. When a storage backend holds the files, the <code>SHA256SUMS</code> signature must verify with one of the authority keys.</p>
+<p>Upload a new provider version. When a storage backend holds the files, the <code>SHA256SUMS</code> signature must verify with one of the authority keys. The files are downloaded from <code>http</code> or <code>https</code> URLs; other sources are refused.</p>
 <p>If the URLs from which the provider files should be downloaded are of types <code>http</code> or <code>https</code>, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.</p>
 <h3 id="example-request_5">Example Request<a class="headerlink" href="#example-request_5" title="Permanent link">¶</a></h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
@@ -2974,7 +2974,7 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>POST   /v1/api/authorities/:id/rules
 </span><span id="__span-34-2"><a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>DELETE /v1/api/authorities/:id/rules/:ruleId
 </span></code></pre></div>
-<p>Add or remove a rule deciding which versions an authority serves from its upstream registry. <code>kind</code> is <code>provider</code> or <code>module</code>, <code>name</code> and <code>version</code> are globs, <code>effect</code> is <code>allow</code> or <code>deny</code>. Both require the <code>update</code> action on the authority. The rules of an authority are returned with the authority itself.</p>
+<p>Add or remove a rule deciding which versions an authority serves from its upstream registry. <code>kind</code> is <code>provider</code> or <code>module</code>, <code>name</code> and <code>version</code> are globs, the name matched regardless of case, <code>effect</code> is <code>allow</code> or <code>deny</code>. Both require the <code>update</code> action on the authority. The rules of an authority are returned with the authority itself.</p>
 <h3 id="example-request_8">Example Request<a class="headerlink" href="#example-request_8" title="Permanent link">¶</a></h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-35-2"><a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
@@ -3172,6 +3172,7 @@
 <div class="language-text highlight"><pre><span></span><code><span id="__span-58-1"><a id="__codelineno-58-1" name="__codelineno-58-1" href="#__codelineno-58-1"></a>POST /v1/api/modules/:namespace/:name/:provider/:version/upload
 </span></code></pre></div>
 <p>Upload a new module version.</p>
+<p>The module is downloaded from an <code>http</code> or <code>https</code> URL, or from a git repository (<code>git::https://...</code> or <code>git::ssh://...</code>, as in a Terraform module source); other sources are refused. A git host resolving to a private address is refused unless <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a> is set.</p>
 <p>If the URL from which the module files should be downloaded is of types <code>http</code> or <code>https</code>, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.</p>
 <h3 id="example-request_13">Example Request<a class="headerlink" href="#example-request_13" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="14:2"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">GitHub API</label><label for="__tabbed_14_2">GitHub HTTP</label></div>

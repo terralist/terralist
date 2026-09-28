@@ -1218,13 +1218,15 @@ While Terralist can be highly configured, the following settings are required an
 <li><code>oauth-provider</code>: the OAuth provider you wish to use for your instance (e.g. <code>github</code>).</li>
 <li>the OAuth provider configuration: it depends on what provider you selected (e.g. for GitHub, <code>gh-client-id</code> and <code>gh-client-secret</code>);</li>
 <li><code>token-signing-secret</code>: a random string to protect the tokens;</li>
+<li><code>oauth-state-secret</code>: a random string to protect the OAuth login flow;</li>
 <li><code>cookie-secret</code>: a random string to protect the cookies;</li>
 </ul>
 <div class="language-yaml highlight"><span class="filename">config.yaml</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">github</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">gh-client-id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${GITHUB_OAUTH_CLIENT_ID:default}</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">gh-client-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${GITHUB_OAUTH_CLIENT_SECRET:default}</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">cookie-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">oauth-state-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">cookie-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">The command above will create a configuration file that is instructing Terralist to read the GitHub OAuth credentials from the <code>GITHUB_OAUTH_CLIENT_ID</code> and <code>GITHUB_OAUTH_CLIENT_SECRET</code> environment variables. If those variables are not set in your environment, Terralist will start, but it will be unusable (as you cannot login).</p>
@@ -1235,7 +1237,8 @@ While Terralist can be highly configured, the following settings are required an
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">oi-client-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${OIDC_CLIENT_SECRET}</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">oi-host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://login.example.com/realms/platform</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">cookie-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">oauth-state-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nt">cookie-secret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secret</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">When <code>oi-host</code> is set, Terralist reads the OIDC discovery document from <code>/.well-known/openid-configuration</code> and derives the authorize/token/userinfo endpoints automatically. If discovery fails, or a required endpoint is missing from the discovery document, Terralist falls back to the corresponding manual OIDC endpoint flag when provided.</p>
@@ -1341,10 +1344,10 @@ While Terralist can be highly configured, the following settings are required an
 <p>To upload a new module, use Terralist's API:</p>
 <div class="language-console highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="go">curl -X POST http://localhost:5758/v1/api/modules/my-authority/my-module/provider/1.0.0/upload \</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="go">     -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="go">     -d '{ "download_url": "/home/bob/terraform-modules/example-module" }'</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="go">     -d '{ "download_url": "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2" }'</span>
 </span></code></pre></div>
 <div class="admonition note">
-<p class="admonition-title">Terralist uses the same library Terraform uses to make downloads <a href="https://github.com/hashicorp/go-getter">go-getter</a>, so the above example takes advantage of the fact that Terralist runs on your local computer and uses the local getter to "download" the module. If your Terralist server is deployed remotely, the above command should not work (since that particular path cannot resolve on the remote server).</p>
+<p class="admonition-title">Terralist downloads the module the way Terraform does, with <a href="https://github.com/hashicorp/go-getter">go-getter</a>, from an <code>http</code> or <code>https</code> URL or from a git repository. To upload a module from files on your machine, use the <a href="../dev-guide/api-reference/#upload-a-module-version-with-local-files">upload with local files</a> instead.</p>
 </div>
 <h3 id="use-the-module">Use the module<a class="headerlink" href="#use-the-module" title="Permanent link">¶</a></h3>
 <div class="language-hcl highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kr">module</span><span class="w"> </span><span class="nv">"example-module"</span><span class="w"> </span><span class="p">{</span>

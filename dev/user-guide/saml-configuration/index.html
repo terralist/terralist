@@ -2074,6 +2074,7 @@
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">saml-name-attribute</span><span class="p">:</span><span class="w"> </span><span class="s">"displayName"</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">saml-email-attribute</span><span class="p">:</span><span class="w"> </span><span class="s">"email"</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"your-signing-secret"</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">oauth-state-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"your-state-secret"</span>
 </span></code></pre></div>
 <p>For direct IdP configuration:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">oauth-provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">saml</span>
@@ -2085,6 +2086,7 @@
 </span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="no">...</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">  </span><span class="no">-----END CERTIFICATE-----</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nt">token-signing-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"your-signing-secret"</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nt">oauth-state-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"your-state-secret"</span>
 </span></code></pre></div>
 <h2 id="service-provider-metadata">Service Provider Metadata<a class="headerlink" href="#service-provider-metadata" title="Permanent link">¶</a></h2>
 <p>Terralist automatically generates Service Provider (SP) metadata and serves it at:</p>
@@ -2312,9 +2314,9 @@
 <h2 id="rbac-integration">RBAC Integration<a class="headerlink" href="#rbac-integration" title="Permanent link">¶</a></h2>
 <p>SAML integrates with Terralist's RBAC system. Configure user roles based on SAML groups:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># In your RBAC policy file</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>g,<span class="w"> </span>engineering@company.com,<span class="w"> </span>role:admin
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>g,<span class="w"> </span>developers@company.com,<span class="w"> </span>role:contributor
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>g,<span class="w"> </span>viewers@company.com,<span class="w"> </span>role:readonly
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>g,<span class="w"> </span>group:engineering@company.com,<span class="w"> </span>role:admin
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>g,<span class="w"> </span>group:developers@company.com,<span class="w"> </span>role:contributor
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>g,<span class="w"> </span>group:viewers@company.com,<span class="w"> </span>role:readonly
 </span></code></pre></div>
 <p>The <code>saml-groups-attribute</code> configuration determines which SAML attribute contains the group information.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">¶</a></h2>
