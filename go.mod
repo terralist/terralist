@@ -36,7 +36,7 @@ require (
 	golang.org/x/sync v0.23.0
 	google.golang.org/api v0.294.0
 	gorm.io/driver/mysql v1.6.0
-	gorm.io/driver/postgres v1.6.2
+	gorm.io/driver/postgres v1.6.3
 	gorm.io/gorm v1.31.2
 	modernc.org/sqlite v1.26.0
 )
