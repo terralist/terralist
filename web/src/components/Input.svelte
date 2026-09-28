@@ -3,7 +3,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  import type { InputType } from '@/lib/form';
+  import type { InputType, SelectOption } from '@/lib/form';
   import Icon from './Icon.svelte';
 
   export let id: string = Math.random().toString();
@@ -12,6 +12,7 @@
   export let value: string | string[] = '';
   export let disabled: boolean = false;
   export let slotPosition: 'start' | 'end' = 'start';
+  export let options: SelectOption[] = [];
 
   export let onClick: () => void = () => {};
   export let onInput: () => void = () => {};
@@ -40,7 +41,7 @@
       : 'px-2'
   ];
 
-  let ref: HTMLInputElement | HTMLTextAreaElement;
+  let ref: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
   let highlightClassList: string[];
 
   export function highlight(type: 'none' | 'success' | 'error' = 'none') {
@@ -90,7 +91,7 @@
   };
 
   onMount(() => {
-    if (ref && !['textarea'].includes(type)) {
+    if (ref && !['textarea', 'select'].includes(type)) {
       (ref as HTMLInputElement).type = type;
     }
   });
@@ -102,7 +103,19 @@
   {#if slotPosition === 'start' && $$slots?.default}
     <slot></slot>
   {/if}
-  {#if type === 'textarea'}
+  {#if type === 'select'}
+    <select
+      {id}
+      class="{classList.join(' ')} h-10"
+      {disabled}
+      {value}
+      on:change={handleChange}
+      bind:this={ref}>
+      {#each options as option (option.value)}
+        <option value={option.value}>{option.label}</option>
+      {/each}
+    </select>
+  {:else if type === 'textarea'}
     <textarea
       {id}
       class="{classList.join(' ')} py-3 h-20"
@@ -123,6 +136,7 @@
       hidden={type == 'checkbox'} />
     {#if type == 'checkbox'}
       <div
+        data-testid={`checkbox-${id}`}
         class={`${classList.filter(c => !c.includes('w-')).join(' ')} cursor-pointer w-6 h-6 border border-slate-400 rounded-lg relative ${value == 'true' && 'bg-teal-500 border-teal-500'}`}
         on:click={handleChecked}>
         {#if value == 'true'}

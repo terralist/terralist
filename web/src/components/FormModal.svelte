@@ -142,6 +142,8 @@
             id={entry.id}
             type={entry.type}
             value={entry.value}
+            placeholder={entry.placeholder ?? ''}
+            options={entry.options ?? []}
             disabled={entry.disabled}
             bind:this={entriesRefs[index]} />
           {#if entriesErrors[index]}
