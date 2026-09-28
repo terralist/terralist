@@ -152,3 +152,35 @@ func TestAuthorityRepository_UpsertCreatesWithGivenID(t *testing.T) {
 		t.Fatalf("expected the stored authority, got %+v", found)
 	}
 }
+
+func TestAuthorityRepository_UpsertKeepsCreationTime(t *testing.T) {
+	repo := newTestAuthorityRepository(t)
+
+	created, err := repo.Upsert(upstreamAuthority("hashicorp", "hashicorp"))
+	if err != nil {
+		t.Fatalf("failed to create authority: %v", err)
+	}
+
+	stored, err := repo.FindByID(created.ID)
+	if err != nil {
+		t.Fatalf("failed to find authority: %v", err)
+	}
+
+	// An update carries what the API exposes, which is not the creation time.
+	update := upstreamAuthority("hashicorp", "hashicorp")
+	update.ID = created.ID
+	update.Public = true
+
+	if _, err := repo.Upsert(update); err != nil {
+		t.Fatalf("failed to update authority: %v", err)
+	}
+
+	found, err := repo.FindByID(created.ID)
+	if err != nil {
+		t.Fatalf("failed to find authority: %v", err)
+	}
+
+	if !found.CreatedAt.Equal(stored.CreatedAt) {
+		t.Fatalf("expected the creation time %v to be kept, got %v", stored.CreatedAt, found.CreatedAt)
+	}
+}
