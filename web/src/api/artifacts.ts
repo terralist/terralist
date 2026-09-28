@@ -9,6 +9,22 @@ import cmp from 'semver-compare';
 
 type ArtifactVersion = string;
 
+type VersionOrigin = 'manual' | 'upstream';
+
+type VersionDetails = {
+  version: ArtifactVersion;
+  origin: VersionOrigin;
+  // mirrorOnly marks a provider version served by the network mirror only,
+  // for lack of a signed SHA256SUMS file.
+  mirrorOnly?: boolean;
+};
+
+type ArtifactVersions = {
+  versions: VersionDetails[];
+  canDelete: boolean;
+  canFetch: boolean;
+};
+
 type Submodule = {
   path: string;
 };
@@ -93,16 +109,19 @@ const sortArtifactsVersions = (r: Result<Artifact[]>): Result<Artifact[]> => {
 };
 
 const sortVersions = (
-  r: Result<ArtifactVersion[]>
-): Result<ArtifactVersion[]> => {
+  r: Result<ArtifactVersions>
+): Result<ArtifactVersions> => {
   if (r.status == 'ERROR') {
     return r;
   }
 
-  const { data: versions, ...rest } = r;
+  const { data, ...rest } = r;
 
   return {
-    data: versions.sort(cmp).reverse(),
+    data: {
+      ...data,
+      versions: data.versions.sort((a, b) => cmp(b.version, a.version))
+    },
     ...rest
   };
 };
@@ -133,10 +152,10 @@ const actions = {
     provider: string | undefined
   ) =>
     client
-      .get<ArtifactVersion[]>(
+      .get<ArtifactVersions>(
         `/${[namespace, name, provider].filter(e => e).join('/')}/version`
       )
-      .then(handleResponse<ArtifactVersion[]>)
+      .then(handleResponse<ArtifactVersions>)
       .then(sortVersions)
       .catch(handleError),
 
@@ -227,6 +246,9 @@ const Artifacts = {
 export {
   type Artifact,
   type ArtifactVersion,
+  type ArtifactVersions,
+  type VersionDetails,
+  type VersionOrigin,
   type ArtifactVersionWithDocumentation,
   type Submodule,
   Artifacts

@@ -22,9 +22,10 @@
 
   import {
     Artifacts,
-    type ArtifactVersion,
+    type ArtifactVersions,
     type ArtifactVersionWithDocumentation,
-    type Submodule
+    type Submodule,
+    type VersionDetails
   } from '@/api/artifacts';
   import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
 
@@ -75,7 +76,7 @@
 
   let label: string = version;
 
-  const result = useQuery<ArtifactVersion[]>(
+  const result = useQuery<ArtifactVersions>(
     Artifacts.getAllVersionsForOne,
     namespace,
     name,
@@ -83,13 +84,38 @@
   );
 
   let versions: string[] = [];
+  let details: VersionDetails[] = [];
+
+  // badgesOf names what sets a version apart from one uploaded with its
+  // signature material.
+  const badgesOf = (v: VersionDetails | undefined): string[] =>
+    [
+      v?.origin === 'upstream' ? 'pulled from upstream' : '',
+      v?.mirrorOnly ? 'network mirror only' : ''
+    ].filter(b => b);
+
+  $: badges = badgesOf(details.find(d => d.version === version));
+  // The version selector is narrow, so it tags versions in short.
+  $: versionLabels = Object.fromEntries(
+    details.map(d => [
+      d.version,
+      [
+        d.version,
+        d.origin === 'upstream' ? 'upstream' : '',
+        d.mirrorOnly ? 'mirror only' : ''
+      ]
+        .filter(p => p)
+        .join(' · ')
+    ])
+  );
 
   const unsubscribe = result.subscribe(res => {
     if (res.error || res.isLoading) {
       return;
     }
 
-    versions = res.data ?? [];
+    details = res.data?.versions ?? [];
+    versions = details.map(d => d.version);
 
     if (versions.length == 0) {
       return;
@@ -230,10 +256,24 @@
             <h3 class="text-zinc-800 dark:text-zinc-100">
               @{namespace}
             </h3>
+            {#if badges.length > 0}
+              <div data-testid="version-badges" class="mt-2 flex gap-2">
+                {#each badges as badge (badge)}
+                  <span
+                    class="px-2 rounded-lg text-xs uppercase bg-teal-200 dark:bg-teal-900 text-zinc-800 dark:text-zinc-100">
+                    {badge}
+                  </span>
+                {/each}
+              </div>
+            {/if}
           </div>
         </div>
         <div class="w-full lg:w-auto">
-          <Dropdown {label} options={versions} onSelect={onOptionSelect} />
+          <Dropdown
+            {label}
+            options={versions}
+            optionLabels={versionLabels}
+            onSelect={onOptionSelect} />
         </div>
       </div>
       {#if type === 'module' && submodules && submodules.length > 0}

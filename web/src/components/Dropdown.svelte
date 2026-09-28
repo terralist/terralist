@@ -5,6 +5,8 @@
 
   export let label: string;
   export let options: string[] = [];
+  // optionLabels shows an option under another text than its value.
+  export let optionLabels: Record<string, string> = {};
   export let onSelect: (option: string) => void = () => {};
 
   const [open, toggle] = useToggle(false);
@@ -81,7 +83,7 @@
               items-center
             "
             on:click={() => select(option)}>
-            {option}
+            {optionLabels[option] ?? option}
           </button>
         </li>
       {/each}
