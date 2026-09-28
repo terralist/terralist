@@ -6,7 +6,13 @@ type InputType =
   | 'textarea'
   | 'password'
   | 'number'
-  | 'checkbox';
+  | 'checkbox'
+  | 'select';
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
 
 type FormEntry = {
   id: string;
@@ -15,6 +21,8 @@ type FormEntry = {
   type: InputType;
   required?: boolean;
   disabled?: boolean;
+  placeholder?: string;
+  options?: SelectOption[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validations?: Validation<any>[];
 };
@@ -53,4 +61,4 @@ const validateEntry = (entry: FormEntry): ValidationResult => {
   } satisfies ValidationResult;
 };
 
-export { type InputType, type FormEntry, validateEntry };
+export { type InputType, type SelectOption, type FormEntry, validateEntry };

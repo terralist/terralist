@@ -1,6 +1,7 @@
 <script lang="ts">
   export let onClick: () => void = () => {};
   export let disabled: boolean = false;
+  export let label: string | undefined = undefined;
 </script>
 
 <button
@@ -26,6 +27,8 @@
     disabled:hover:dark:bg-transparent
     {$$props.class}
   "
-  {disabled}>
+  {disabled}
+  aria-label={label}
+  title={label}>
   <slot></slot>
 </button>
