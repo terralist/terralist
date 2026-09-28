@@ -46,6 +46,7 @@ nav:
     - Monitoring and Observability: user-guide/monitoring.md
     - Provider Network Mirror: user-guide/network-mirror.md
     - Security: user-guide/security.md
+    - Upgrading to v0.11: user-guide/upgrading-to-v0.11.md
   - Developer Guide: 
     - dev-guide/index.md
     - API Reference: dev-guide/api-reference.md

@@ -10,3 +10,4 @@ The Terralist User Guide provides documentation for users of Terralist. Various 
 - [Monitoring and Observability](monitoring.md) - Prometheus metrics and monitoring setup
 - [Provider Network Mirror](network-mirror.md) - Install Terralist providers through a network mirror
 - [VCS release webhooks](webhook-vcs-releases.md) - Publish module and provider versions from GitHub releases
+- [Upgrading to v0.11](upgrading-to-v0.11.md) - Steps to upgrade a v0.10 installation to v0.11
