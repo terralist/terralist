@@ -12,13 +12,13 @@
         <meta name="author" content="Valentin Deaconu">
       
       
-        <link rel="canonical" href="https://www.terralist.io/dev/user-guide/security/">
+        <link rel="canonical" href="https://www.terralist.io/dev/user-guide/upgrading-to-v0.11/">
       
       
-        <link rel="prev" href="../network-mirror/">
+        <link rel="prev" href="../security/">
       
       
-        <link rel="next" href="../upgrading-to-v0.11/">
+        <link rel="next" href="../../dev-guide/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>Security - Terralist</title>
+        <title>Upgrading to v0.11 - Terralist</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#security" class="md-skip">
+        <a href="#upgrading-to-v011" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Security
+              Upgrading to v0.11
             
           </span>
         </div>
@@ -614,6 +614,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -633,7 +661,7 @@
   <span class="md-ellipsis">
     
   
-    Security
+    Upgrading to v0.11
   
 
     
@@ -651,7 +679,7 @@
   <span class="md-ellipsis">
     
   
-    Security
+    Upgrading to v0.11
   
 
     
@@ -677,34 +705,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#threats-and-mitigations" class="md-nav__link">
+  <a href="#before-upgrading" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Threats and mitigations
+        Before upgrading
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Threats and mitigations">
+    <nav class="md-nav" aria-label="Before upgrading">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#server-side-request-forgery-through-artifact-fetching" class="md-nav__link">
+  <a href="#back-up-the-database" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Server-side request forgery through artifact fetching
+        Back up the database
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Server-side request forgery through artifact fetching">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#serving-artifacts-from-a-private-network" class="md-nav__link">
+  <a href="#remove-names-that-differ-only-in-case" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serving artifacts from a private network
+        Remove names that differ only in case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#replace-authority-linked-api-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replace authority-linked API keys
       
     </span>
   </a>
@@ -715,9 +753,93 @@
     </nav>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-oauth-state-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set oauth-state-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#move-fetch-sources-to-https-or-git" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Move fetch sources to HTTP(S) or git
+      
+    </span>
+  </a>
+  
+</li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac-policy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RBAC policy changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RBAC policy changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reference-groups-with-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference groups with group:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-policies-that-depend-on-case" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check policies that depend on case
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#after-upgrading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After upgrading
+      
+    </span>
+  </a>
   
 </li>
       
@@ -725,34 +847,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../upgrading-to-v0.11/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Upgrading to v0.11
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -951,34 +1045,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#threats-and-mitigations" class="md-nav__link">
+  <a href="#before-upgrading" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Threats and mitigations
+        Before upgrading
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Threats and mitigations">
+    <nav class="md-nav" aria-label="Before upgrading">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#server-side-request-forgery-through-artifact-fetching" class="md-nav__link">
+  <a href="#back-up-the-database" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Server-side request forgery through artifact fetching
+        Back up the database
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Server-side request forgery through artifact fetching">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#serving-artifacts-from-a-private-network" class="md-nav__link">
+  <a href="#remove-names-that-differ-only-in-case" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serving artifacts from a private network
+        Remove names that differ only in case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#replace-authority-linked-api-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replace authority-linked API keys
       
     </span>
   </a>
@@ -989,9 +1093,93 @@
     </nav>
   
 </li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#set-oauth-state-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set oauth-state-secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#move-fetch-sources-to-https-or-git" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Move fetch sources to HTTP(S) or git
+      
+    </span>
+  </a>
+  
+</li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac-policy-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RBAC policy changes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RBAC policy changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reference-groups-with-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference groups with group:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-policies-that-depend-on-case" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check policies that depend on case
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#after-upgrading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After upgrading
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1015,17 +1203,75 @@
   
 
 
-<h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">¶</a></h1>
-<p>Terralist is designed to run as a private registry for trusted users. It is <strong>not</strong> hardened to be exposed directly to the public internet, and we strongly recommend against deploying it that way.</p>
-<p>Run Terralist behind your own network boundary (VPN, private network, or an authenticating reverse proxy) and treat every authenticated tenant as a party that can reach the server, not just the registry API. Several capabilities, such as publishing a module from a remote URL, cause the server to act on tenant-supplied input.</p>
-<h2 id="threats-and-mitigations">Threats and mitigations<a class="headerlink" href="#threats-and-mitigations" title="Permanent link">¶</a></h2>
-<h3 id="server-side-request-forgery-through-artifact-fetching">Server-side request forgery through artifact fetching<a class="headerlink" href="#server-side-request-forgery-through-artifact-fetching" title="Permanent link">¶</a></h3>
-<p>When a module or provider is published, the tenant supplies a download URL that Terralist fetches server-side and stores as a retrievable artifact. Without restrictions, a tenant with write access to a single authority can point that URL at an internal service or a cloud metadata endpoint (for example <code>http://169.254.169.254/</code>), and the response is exfiltrated back through the normal download endpoint.</p>
-<p>Terralist refuses to fetch from private, loopback, link-local and unspecified addresses by default. The check runs against the resolved IP at connection time, so it also covers redirect targets and is not bypassable through DNS rebinding.</p>
-<p>This behavior is controlled by <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a>, which defaults to <code>false</code>.</p>
-<h4 id="serving-artifacts-from-a-private-network">Serving artifacts from a private network<a class="headerlink" href="#serving-artifacts-from-a-private-network" title="Permanent link">¶</a></h4>
-<p>If you host your module or provider artifacts on a host that only has a private address (for example an internal artifact server inside your cluster), the default behavior will block those fetches. In that case, set <code>fetch-allow-private-addresses</code> to <code>true</code>.</p>
-<p>Enabling this removes the protection above for every fetch, so only do this when the network the registry can reach is itself trusted.</p>
+<h1 id="upgrading-to-v011">Upgrading to v0.11<a class="headerlink" href="#upgrading-to-v011" title="Permanent link">¶</a></h1>
+<p>v0.11 removes the features deprecated in v0.10 and changes how names, groups and fetch sources are handled. Most deployments need one configuration change (<code>oauth-state-secret</code>) and a look at their RBAC policy. This guide walks through everything to check, in the order to do it.</p>
+<p>Upgrade from v0.10.10. Earlier v0.10 releases should be upgraded to v0.10.10 first.</p>
+<h2 id="before-upgrading">Before upgrading<a class="headerlink" href="#before-upgrading" title="Permanent link">¶</a></h2>
+<p>Do these steps while v0.10 is still running. Some of them cannot be done once v0.11 refuses to start.</p>
+<h3 id="back-up-the-database">Back up the database<a class="headerlink" href="#back-up-the-database" title="Permanent link">¶</a></h3>
+<p>v0.11 changes the schema on startup: it drops the <code>authority_api_keys</code> table and replaces the unique indexes of authorities, providers and modules. On MySQL, schema changes are not transactional, so a migration that fails halfway cannot be rolled back. Take a backup you can restore.</p>
+<h3 id="remove-names-that-differ-only-in-case">Remove names that differ only in case<a class="headerlink" href="#remove-names-that-differ-only-in-case" title="Permanent link">¶</a></h3>
+<p>v0.11 holds authorities, providers and modules unique regardless of case, and refuses to start on a database holding rows that differ only in case. It names them in the error and changes nothing.</p>
+<p>These queries list such rows:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">-- Authorities</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">name</span><span class="p">),</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">authorities</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1">-- Authorities standing for the same upstream namespace</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">SELECT</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">upstream_hostname</span><span class="p">),</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">upstream_namespace</span><span class="p">),</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">authorities</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">upstream_hostname</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">upstream_namespace</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">upstream_hostname</span><span class="p">),</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">upstream_namespace</span><span class="p">)</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1">-- Providers of one authority</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">authority_id</span><span class="p">,</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">name</span><span class="p">),</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">providers</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">authority_id</span><span class="p">,</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1">-- Modules of one authority</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">authority_id</span><span class="p">,</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">name</span><span class="p">),</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">provider</span><span class="p">),</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">modules</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">authority_id</span><span class="p">,</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">name</span><span class="p">),</span><span class="w"> </span><span class="k">LOWER</span><span class="p">(</span><span class="n">provider</span><span class="p">)</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</span></code></pre></div>
+<p>Delete the extra ones from the web UI or the API. Deleting an authority also deletes every artifact uploaded to it, so move the artifacts you want to keep to the remaining authority first.</p>
+<p>Since v0.10 already looked providers and modules up regardless of case, such duplicates were answering requests ambiguously. Terraform lowercases provider source addresses, so an authority created as <code>HashiCorp</code> never matched the requests made for it.</p>
+<h3 id="replace-authority-linked-api-keys">Replace authority-linked API keys<a class="headerlink" href="#replace-authority-linked-api-keys" title="Permanent link">¶</a></h3>
+<p>Authority-linked API keys stop authenticating in v0.11, and their table is dropped on startup. v0.10 logged this warning on every use of one:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Authority-linked API keys are deprecated and will be removed in the next release. Please migrate to standalone API keys with RBAC policies.
+</span></code></pre></div>
+<p>Search your logs for it to find the clients still using one. For each of them, create an API key from the Settings page with the policies it needs (see <a href="../rbac-configuration/#api-key-policies">API Key Policies</a>), and switch the client to it.</p>
+<p>Clients calling <code>POST /v1/api/authorities/:id/api-keys</code> or <code>DELETE /v1/api/authorities/:id/api-keys/:apiKey</code> must stop, as both routes are gone. Authority responses no longer include <code>api_keys</code>.</p>
+<p>API keys created from the Settings page keep working unchanged.</p>
+<h2 id="configuration-changes">Configuration changes<a class="headerlink" href="#configuration-changes" title="Permanent link">¶</a></h2>
+<h3 id="set-oauth-state-secret">Set <code>oauth-state-secret</code><a class="headerlink" href="#set-oauth-state-secret" title="Permanent link">¶</a></h3>
+<p><a href="../../configuration/#oauth-state-secret"><code>oauth-state-secret</code></a> is required. v0.10 derived it from <code>token-signing-secret</code> when it was not set, and logged a warning about it. v0.11 refuses to start without it.</p>
+<p>Any random string works:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">TERRALIST_OAUTH_STATE_SECRET</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>openssl<span class="w"> </span>rand<span class="w"> </span>-hex<span class="w"> </span><span class="m">16</span><span class="k">)</span><span class="s2">"</span>
+</span></code></pre></div>
+<p>The Docker entrypoint also reads it from the file named by <code>TERRALIST_OAUTH_STATE_SECRET_FILE</code>. Logins in progress during the upgrade fail and must be started again. Existing sessions are not affected.</p>
+<h3 id="move-fetch-sources-to-https-or-git">Move fetch sources to HTTP(S) or git<a class="headerlink" href="#move-fetch-sources-to-https-or-git" title="Permanent link">¶</a></h3>
+<p>Terralist now fetches artifacts only from HTTP(S) URLs and git repositories. This applies to upload URLs, webhook release assets and upstream registries. Uploads from <code>s3::</code>, <code>gcs::</code> or <code>hg::</code> sources are refused.</p>
+<p>If you upload from such sources, download the artifacts first, then upload them over HTTP(S), from a git repository, or with the local files upload.</p>
+<p>Git hosts are resolved before cloning and refused when they resolve to a private address, as HTTP(S) hosts already were. To upload from a git server in your own network, set <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a>.</p>
+<h2 id="rbac-policy-changes">RBAC policy changes<a class="headerlink" href="#rbac-policy-changes" title="Permanent link">¶</a></h2>
+<h3 id="reference-groups-with-group">Reference groups with <code>group:</code><a class="headerlink" href="#reference-groups-with-group" title="Permanent link">¶</a></h3>
+<p>SAML and OAuth groups are referenced with the <code>group:</code> prefix instead of <code>role:</code>, so a group can no longer collide with a username or a role. Update every <code>g</code> and <code>p</code> line of the server-side policy that names a group:</p>
+<div class="language-diff highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="gd">- g, role:ENGINEERING_ADMINS, role:admin</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="gi">+ g, group:ENGINEERING_ADMINS, role:admin</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="gd">- p, role:platform-team, providers, create, platform/*, allow</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="gi">+ p, group:platform-team, providers, create, platform/*, allow</span>
+</span></code></pre></div>
+<p>Lines naming roles, usernames or emails do not change. A group left with the <code>role:</code> prefix silently matches nobody, so its members lose the access it granted. After upgrading, log in as a member of each group and check what they can see.</p>
+<h3 id="check-policies-that-depend-on-case">Check policies that depend on case<a class="headerlink" href="#check-policies-that-depend-on-case" title="Permanent link">¶</a></h3>
+<p>Policy objects and upstream rule names now match regardless of case, as artifacts are looked up. A deny policy on <code>Internal/*</code> also applies to <code>internal/...</code>, an allow policy on <code>team/*</code> also grants <code>Team/...</code>, and an upstream rule on <code>AWS</code> applies to <code>aws</code>. Rule versions are still matched exactly.</p>
+<p>This only changes access for policies that used case to tell names apart. Since names are looked up regardless of case, those names were already the same artifacts.</p>
+<h2 id="after-upgrading">After upgrading<a class="headerlink" href="#after-upgrading" title="Permanent link">¶</a></h2>
+<p>Start v0.11 and check its log. On success, the migration finishes before the server listens. On failure, the error names what blocked it, usually rows that differ only in case, or a missing <code>oauth-state-secret</code>.</p>
+<p>Then check that:</p>
+<ul>
+<li>Terraform can still install providers and modules through Terralist (<code>terraform init -upgrade</code> on a configuration that uses it);</li>
+<li>each identity provider group still has the access its policy lines grant;</li>
+<li>CI jobs and other clients authenticate with their API keys.</li>
+</ul>
+<p>Authorities created with uppercase letters now serve the requests addressed to them in lowercase. If such an authority stands for an upstream namespace, pull-through starts working for it, which may fetch versions that v0.10 never pulled.</p>
 
 
 
