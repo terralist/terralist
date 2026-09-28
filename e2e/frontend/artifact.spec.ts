@@ -70,3 +70,116 @@ test.describe('Artifact versions', () => {
     await expect(page.getByTestId('version-badges')).toHaveCount(0);
   });
 });
+
+const headers = { Authorization: `Bearer x-api-key:${masterKey}` };
+
+type RegistryVersion = {
+  version: string;
+  platforms: { os: string; arch: string }[];
+};
+
+// notHeld returns an upstream version of hashicorp/random that Terralist does
+// not hold, with its platforms.
+const notHeld = async (
+  request: APIRequestContext,
+  skip: string[] = []
+): Promise<RegistryVersion> => {
+  const held = (await versionsOf(request, 'hashicorp/random')).map(
+    v => v.version
+  );
+  const resp = await request.get('/v1/providers/hashicorp/random/versions', {
+    headers
+  });
+  expect(resp.ok()).toBeTruthy();
+
+  const offered: RegistryVersion[] = (await resp.json()).versions;
+  const candidate = offered.find(
+    v =>
+      !held.includes(v.version) &&
+      !skip.includes(v.version) &&
+      v.platforms.length > 0
+  );
+  expect(candidate).toBeDefined();
+
+  return candidate!;
+};
+
+const hashicorpAuthority = async (request: APIRequestContext) => {
+  const resp = await request.get('/v1/api/authorities/', { headers });
+  expect(resp.ok()).toBeTruthy();
+
+  const all: { id: string; name: string }[] = await resp.json();
+  return all.find(a => a.name === 'hashicorp')!;
+};
+
+test.describe('Artifact version actions', () => {
+  test('fetches a version from the upstream, then blocks it', async ({
+    page,
+    request
+  }) => {
+    const candidate = await notHeld(request);
+    const platform = `${candidate.platforms[0].os}_${candidate.platforms[0].arch}`;
+    const held = (await versionsOf(request, 'hashicorp/random'))[0].version;
+
+    await page.goto(`/#/providers/hashicorp/random/${held}`);
+    await page.getByRole('button', { name: 'Fetch from upstream' }).click();
+    await page.locator('#fetchVersion').selectOption(candidate.version);
+    await page.locator('#fetchPlatforms').fill(platform);
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await expect(page).toHaveURL(
+      new RegExp(`/providers/hashicorp/random/${candidate.version}$`),
+      { timeout: 60_000 }
+    );
+    await expect(page.getByTestId('version-badges')).toContainText(
+      'pulled from upstream'
+    );
+
+    await page.getByRole('button', { name: 'Block version' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await expect(page).not.toHaveURL(
+      new RegExp(`/providers/hashicorp/random/${candidate.version}$`)
+    );
+    expect(
+      (await versionsOf(request, 'hashicorp/random')).map(v => v.version)
+    ).not.toContain(candidate.version);
+
+    const authority = await hashicorpAuthority(request);
+    const stored = await (
+      await request.get(`/v1/api/authorities/${authority.id}`, { headers })
+    ).json();
+    const rule = stored.rules.find(
+      (r: { name: string; version: string }) =>
+        r.name === 'random' && r.version === candidate.version
+    );
+    expect(rule).toMatchObject({ kind: 'provider', effect: 'deny' });
+
+    // Let later runs pull the version again.
+    await request.delete(
+      `/v1/api/authorities/${authority.id}/rules/${rule.id}`,
+      { headers }
+    );
+  });
+
+  test('deletes a version', async ({ page, request }) => {
+    const candidate = await notHeld(request);
+    const platform = `${candidate.platforms[0].os}_${candidate.platforms[0].arch}`;
+    const fetched = await request.post(
+      `/v1/api/providers/hashicorp/random/${candidate.version}/fetch`,
+      { headers, data: { platforms: [platform] }, timeout: 60_000 }
+    );
+    expect(fetched.ok()).toBeTruthy();
+
+    await page.goto(`/#/providers/hashicorp/random/${candidate.version}`);
+    await page.getByRole('button', { name: 'Delete version' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await expect(page).not.toHaveURL(
+      new RegExp(`/providers/hashicorp/random/${candidate.version}$`)
+    );
+    expect(
+      (await versionsOf(request, 'hashicorp/random')).map(v => v.version)
+    ).not.toContain(candidate.version);
+  });
+});
