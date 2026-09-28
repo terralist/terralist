@@ -46,17 +46,25 @@ Every provider of that authority is then served by the mirror under both address
 
 ## Pulling providers through from an upstream
 
-An authority standing for an upstream namespace can also fetch the providers it does not hold from that upstream registry, on first request, and keep them. Enable the upstream on the authority. An update replaces the whole authority, its signing keys included, so send it back as read with the upstream enabled:
+An authority standing for an upstream namespace can also fetch the providers it does not hold from that upstream registry, on first request, and keep them. Enable the upstream on the authority:
 
-```shell
-curl -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID \
-  | jq '.upstream_enabled = true' \
-  | curl -X PATCH \
-      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-      -d @- \
-      https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID
-```
+=== "Web UI"
+
+    On the settings page, edit the authority and fill its upstream: the hostname, the namespace when it differs from the authority name, and optionally a URL and a token. Check **Pull through** and choose the default policy. The authority list then shows the upstream the authority stands for, marked **pulls through**.
+
+=== "API"
+
+    An update replaces the whole authority, its signing keys included, so send it back as read with the upstream enabled:
+
+    ```shell
+    curl -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+      https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID \
+      | jq '.upstream_enabled = true' \
+      | curl -X PATCH \
+          -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+          -d @- \
+          https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID
+    ```
 
 Pulling through needs a storage backend for providers, since fetched packages are stored and then served from there like uploaded ones. With the `proxy` [`providers-storage-resolver`](../configuration.md#providers-storage-resolver) the upstream is never consulted. Terralist never streams a package to a client: a stored package is answered with a redirect to storage, and a package not stored yet is downloaded from the upstream, verified and stored first, then answered with the same redirect.
 
@@ -64,7 +72,7 @@ The upstream is reached at `https://<upstream_hostname>` unless `upstream_url` n
 
 ### What happens on a request
 
-- The version list, in both protocols, merges the versions the upstream offers with the versions Terralist holds. A version uploaded to Terralist always wins over the upstream one and is served exactly as uploaded: the platforms it lacks are not completed from the upstream. An upload never replaces a version already pulled from the upstream: delete the pulled version first, then upload your own.
+- The version list, in both protocols, merges the versions the upstream offers with the versions Terralist holds. A version uploaded to Terralist always wins over the upstream one and is served exactly as uploaded: the platforms it lacks are not completed from the upstream. An upload never replaces a version already pulled from the upstream: delete the pulled version first, with the **Delete version** action of its page or through the API, then upload your own.
 - The network mirror version document lists the packages Terralist holds with their storage location, and the packages it does not hold yet with their `zh:` hash from the upstream `SHA256SUMS` file and a link back to the mirror. The registry protocol download metadata does the same for a single platform.
 - Following such a link downloads the package from the upstream with its digest enforced, stores it next to the `SHA256SUMS` file and its signature, records the platform with the `upstream` origin, and redirects to storage. Concurrent requests for the same package wait for one download. The next request is served from storage without touching the upstream.
 - Upstream metadata is cached for [`upstream-cache-ttl`](../configuration.md#upstream-cache-ttl) and kept for [`upstream-cache-retention`](../configuration.md#upstream-cache-retention). When the upstream is unreachable, the last known answer is served, and everything already stored stays available regardless. Without a last known answer, the versions and packages Terralist holds are served alone, and a request nothing Terralist holds can answer fails with `502 Bad Gateway`.
@@ -79,29 +87,51 @@ Reading a version list or a document only needs the `get` action on the provider
 
 The authority's `upstream_default_policy`, `allow` or `deny`, decides which upstream versions may be served when no rule says otherwise. Rules refine it per artifact:
 
-```shell
-curl -X POST \
-  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-  -d '{"kind": "provider", "name": "aws", "version": "5.*", "effect": "deny"}' \
-  https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID/rules
-```
+=== "Web UI"
+
+    On the settings page, an authority standing for an upstream shows its rule count next to the upstream. The plus button adds a rule, with its kind, name, version and effect; the arrow button lists the rules, each with a button removing it.
+
+=== "API"
+
+    ```shell
+    curl -X POST \
+      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+      -d '{"kind": "provider", "name": "aws", "version": "5.*", "effect": "deny"}' \
+      https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID/rules
+    ```
 
 `name` and `version` are globs; `kind` is `provider` or `module`. A version is served when the upstream is enabled, no deny rule matches, and either the default policy is `allow` or an allow rule matches. Deny always wins. Rules filter the version list itself, so Terraform never selects a version it cannot download. They apply to upstream versions only; versions uploaded to Terralist are always served. Rules are removed with `DELETE /v1/api/authorities/<id>/rules/<rule id>`.
 
-A deny rule is the way to stop serving a version that was pulled through: deleting the stored version alone would only make the next request fetch it again.
+A deny rule is the way to stop serving a version that was pulled through: deleting the stored version alone would only make the next request fetch it again. The **Block version** action of the artifact page does both, as described in [managing pulled versions](#managing-pulled-versions).
 
 ### Pre-warming
 
 A cold fetch of a large provider happens inside Terraform's download request. Terraform itself puts no timeout on it, but a reverse proxy or load balancer in front of Terralist may. Packages can be fetched ahead of time instead:
 
-```shell
-curl -X POST \
-  -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
-  -d '{"platforms": ["linux_amd64", "darwin_arm64"]}' \
-  https://terralist.example.com/v1/api/providers/hashicorp/aws/5.0.0/fetch
-```
+=== "Web UI"
 
-The response reports the outcome per platform.
+    On the page of a provider Terralist holds, **Fetch from upstream** lists the versions the upstream offers that Terralist does not hold yet. Choose a version and, optionally, the platforms to fetch, such as `linux_amd64,darwin_arm64`; all of the version's platforms are fetched otherwise.
+
+=== "API"
+
+    ```shell
+    curl -X POST \
+      -H "Authorization: Bearer x-api-key:$TERRALIST_API_KEY" \
+      -d '{"platforms": ["linux_amd64", "darwin_arm64"]}' \
+      https://terralist.example.com/v1/api/providers/hashicorp/aws/5.0.0/fetch
+    ```
+
+    The response reports the outcome per platform.
+
+### Managing pulled versions
+
+The page of a module or provider version shows where the version comes from: a version pulled from the upstream is marked **pulled from upstream**, and a provider version the network mirror only serves, uploaded without its signature material, is marked **network mirror only**. The version selector tags such versions as well.
+
+The page also offers the actions the caller is allowed to take:
+
+- **Delete version** removes any version, uploaded or pulled. A pulled version is pulled again on the next request for it.
+- **Block version** stops serving a pulled version: it adds a rule of the authority denying that exact version, then deletes the pulled copy. It needs the `delete` action on the artifact and the `update` action on the authority.
+- **Fetch from upstream** pre-warms a version, as described in [pre-warming](#pre-warming). It needs the `create` action on the artifact and an authority that pulls through.
 
 ### Trust
 
@@ -124,7 +154,7 @@ curl -X POST \
   https://terralist.example.com/v1/api/authorities/$AUTHORITY_ID/rules
 ```
 
-A module version can be pre-warmed as well:
+A module version can be pre-warmed as well, from the module page with **Fetch from upstream** or through the API:
 
 ```shell
 curl -X POST \
