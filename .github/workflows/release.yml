@@ -93,7 +93,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v7
         if: (!contains(github.ref, '-pre.'))
         with:
-          version: v2.4.8
+          version: v2.18.2
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,7 +116,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v7
         if: contains(github.ref, '-pre.')
         with:
-          version: v2.4.8
+          version: v2.18.2
           args: release --clean --release-notes=tmp-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
