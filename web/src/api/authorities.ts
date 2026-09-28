@@ -2,6 +2,7 @@ import { AxiosError } from 'axios';
 import { createClient, handleResponse, handleError } from '@/api/api.utils';
 import type { Key } from '@/api/keys';
 import type { ApiKey } from '@/api/apiKeys';
+import type { Rule } from '@/api/rules';
 
 type UpstreamPolicy = 'allow' | 'deny';
 
@@ -21,6 +22,7 @@ type Authority = {
   upstreamHasToken: boolean;
   upstreamEnabled: boolean;
   upstreamDefaultPolicy: UpstreamPolicy;
+  rules: Rule[];
 };
 
 type UpdateAuthority = Partial<Authority> & {
