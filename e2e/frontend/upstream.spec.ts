@@ -7,10 +7,10 @@ const masterKey =
 const api = (request: APIRequestContext) => ({
   headers: { Authorization: `Bearer x-api-key:${masterKey}` },
 
-  async createAuthority(name: string) {
+  async createAuthority(name: string, upstream = {}) {
     const resp = await request.post('/v1/api/authorities', {
       headers: this.headers,
-      data: { name, policy_url: '' }
+      data: { name, policy_url: '', ...upstream }
     });
     expect(resp.ok()).toBeTruthy();
 
@@ -78,5 +78,64 @@ test.describe('Authority upstream', () => {
     await expect
       .poll(async () => (await api(request).getAuthority(id)).upstream_has_token)
       .toBe(true);
+  });
+});
+
+test.describe('Upstream rules', () => {
+  test('are added and removed from the settings page', async ({
+    page,
+    request
+  }) => {
+    const name = `ui-rules-${Date.now()}`;
+    const { id } = await api(request).createAuthority(name, {
+      upstream_hostname: 'registry.terraform.io',
+      upstream_enabled: true
+    });
+
+    await page.goto('/#/settings');
+    const row = page.getByTestId(`authority-${name}`);
+    await row.getByRole('button', { name: 'Add upstream rule' }).click();
+
+    await page.locator('#ruleKind').selectOption('provider');
+    await page.locator('#ruleName').fill('aws');
+    await page.locator('#ruleVersion').fill('5.*');
+    await page.locator('#ruleEffect').selectOption('deny');
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await row.getByRole('button', { name: 'Show upstream rules' }).click();
+    const rule = row.getByTestId('rule-provider-aws-5.*');
+    await expect(rule).toContainText('deny');
+
+    const stored = await api(request).getAuthority(id);
+    expect(stored.rules).toMatchObject([
+      { kind: 'provider', name: 'aws', version: '5.*', effect: 'deny' }
+    ]);
+
+    await rule.getByRole('button', { name: 'Remove rule' }).click();
+    await page.getByRole('button', { name: 'Continue' }).click();
+
+    await expect(rule).toHaveCount(0);
+    await expect
+      .poll(async () => (await api(request).getAuthority(id)).rules)
+      .toEqual([]);
+  });
+});
+
+test.describe('Upstream rules on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('can be added from the authority row', async ({ page, request }) => {
+    const name = `ui-rules-phone-${Date.now()}`;
+    await api(request).createAuthority(name, {
+      upstream_hostname: 'registry.terraform.io',
+      upstream_enabled: true
+    });
+
+    await page.goto('/#/settings');
+    const row = page.getByTestId(`authority-${name}`);
+
+    await expect(
+      row.getByRole('button', { name: 'Add upstream rule' })
+    ).toBeVisible();
   });
 });

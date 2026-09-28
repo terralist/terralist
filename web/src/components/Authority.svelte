@@ -9,16 +9,19 @@
 
   import Key from './Key.svelte';
   import ApiKey from './ApiKey.svelte';
+  import Rule from './Rule.svelte';
+  import UpstreamSummary from './UpstreamSummary.svelte';
 
   import type { Authority as AuthorityT } from '@/api/authorities';
   import { Keys, type Key as KeyT } from '@/api/keys';
   import { ApiKeys, type ApiKey as ApiKeyT } from '@/api/apiKeys';
+  import { Rules, type Rule as RuleT } from '@/api/rules';
 
   import {
     StringMinimumLengthValidation,
     URLValidation
   } from '@/lib/validation';
-  import { useFlag, useToggle } from '@/lib/hooks';
+  import { useFlag } from '@/lib/hooks';
 
   export let authority: AuthorityT;
   export let onUpdate: (id: string, authority: AuthorityT) => void = () => {};
@@ -33,24 +36,19 @@
     showCreateApiKeyModal,
     hideCreateApiKeyModal
   ] = useFlag(false);
+  const [createRuleModalEnabled, showCreateRuleModal, hideCreateRuleModal] =
+    useFlag(false);
   const [updateModalEnabled, showUpdateModal, hideUpdateModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 
-  // To avoid a circular dependency, we will create a wrapper fn for toggleShowKeys
-  const [showKeys, _toggleShowKeys] = useToggle(false);
-  const [showApiKeys, toggleShowApiKeys] = useToggle(false, () => {
-    if ($showKeys) {
-      _toggleShowKeys();
-    }
-  });
-
-  const toggleShowKeys = () => {
-    if ($showApiKeys) {
-      toggleShowApiKeys();
-    }
-
-    _toggleShowKeys();
+  // At most one of the lists below the authority is shown at a time.
+  let shown: 'keys' | 'apiKeys' | 'rules' | null = null;
+  const toggle = (list: 'keys' | 'apiKeys' | 'rules') => {
+    shown = shown === list ? null : list;
   };
+  const toggleShowKeys = () => toggle('keys');
+  const toggleShowApiKeys = () => toggle('apiKeys');
+  const toggleShowRules = () => toggle('rules');
 
   const update = (entries: Map<string, string | string[] | undefined>) => {
     const value = (id: string) => {
@@ -156,7 +154,43 @@
     }
 
     if (authority.apiKeys.length === 0) {
-      toggleShowApiKeys();
+      shown = null;
+    }
+  };
+
+  const createRuleSubmit = async (
+    entries: Map<string, string | string[] | undefined>
+  ) => {
+    const value = (id: string) => {
+      const entry = entries.get(id);
+      return (Array.isArray(entry) ? entry.at(0) : entry) ?? '';
+    };
+
+    let result = await Rules.create(authority.id, {
+      kind: value('ruleKind') == 'module' ? 'module' : 'provider',
+      name: value('ruleName'),
+      version: value('ruleVersion'),
+      effect: value('ruleEffect') == 'allow' ? 'allow' : 'deny'
+    });
+
+    if (result.status === 'OK') {
+      authority.rules = [...(authority.rules ?? []), result.data];
+    } else {
+      errorMessage = result.message;
+    }
+  };
+
+  const onRuleDelete = async (id: string) => {
+    let result = await Rules.delete(authority.id, id);
+
+    if (result.status === 'OK') {
+      authority.rules = authority.rules.filter((r: RuleT) => r.id !== id);
+    } else {
+      errorMessage = result.message;
+    }
+
+    if (authority.rules.length === 0) {
+      shown = null;
     }
   };
 </script>
@@ -164,17 +198,22 @@
 <div class="mb-4" data-testid={`authority-${authority.name}`}>
   <div
     class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-7 lg:grid-cols-11 place-items-start">
-    <span class="col-span-2 lg:col-span-4">{authority.name}</span>
-    <span class="hidden lg:flex lg:col-span-2 items-center gap-2 text-sm">
-      {#if authority.upstreamHostname}
-        <span>{authority.upstreamHostname}/{authority.upstreamNamespace}</span>
-        {#if authority.upstreamEnabled}
-          <span
-            class="px-2 rounded-lg text-xs uppercase bg-teal-200 dark:bg-teal-900">
-            pulls through
-          </span>
-        {/if}
-      {/if}
+    <span class="col-span-2 lg:col-span-4">
+      <span>{authority.name}</span>
+      <span class="lg:hidden">
+        <UpstreamSummary
+          {authority}
+          rulesShown={shown === 'rules'}
+          onAddRule={showCreateRuleModal}
+          onToggleRules={toggleShowRules} />
+      </span>
+    </span>
+    <span class="hidden lg:flex lg:col-span-2">
+      <UpstreamSummary
+        {authority}
+        rulesShown={shown === 'rules'}
+        onAddRule={showCreateRuleModal}
+        onToggleRules={toggleShowRules} />
     </span>
     <span>
       {#if authority.policyUrl}
@@ -208,7 +247,7 @@
         <CaretButton
           class="ml-0 md:ml-2"
           onClick={toggleShowKeys}
-          enabled={$showKeys} />
+          enabled={shown === 'keys'} />
       {/if}
     </span>
     <span class="flex flex-col md:flex-row justify-center items-center">
@@ -222,7 +261,7 @@
         <CaretButton
           class="ml-0 md:ml-2"
           onClick={toggleShowApiKeys}
-          enabled={$showApiKeys} />
+          enabled={shown === 'apiKeys'} />
       {/if}
     </span>
     <span class="place-self-end flex justify-center items-center">
@@ -234,7 +273,7 @@
       </TransparentButton>
     </span>
   </div>
-  {#if $showKeys}
+  {#if shown === 'keys'}
     <div
       class="w-full p-2 px-6 grid grid-cols-4 lg:grid-cols-8 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
       <span class="lg:col-span-5"> Key ID </span>
@@ -250,7 +289,20 @@
         onDelete={onKeyDelete} />
     {/each}
   {/if}
-  {#if $showApiKeys}
+  {#if shown === 'rules'}
+    <div
+      class="w-full p-2 px-6 grid grid-cols-5 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
+      <span> Kind </span>
+      <span> Name </span>
+      <span> Version </span>
+      <span> Effect </span>
+      <span class="place-self-end"> Actions </span>
+    </div>
+    {#each authority.rules as rule (rule.id)}
+      <Rule {rule} authorityName={authority.name} onDelete={onRuleDelete} />
+    {/each}
+  {/if}
+  {#if shown === 'apiKeys'}
     <div
       class="w-full p-2 px-6 grid grid-cols-2 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
       <span> Api Key </span>
@@ -392,6 +444,49 @@
       }
     ]}>
   </FormModal>
+
+  <FormModal
+    title={`Add an upstream rule to ${authority.name}`}
+    enabled={$createRuleModalEnabled}
+    onClose={hideCreateRuleModal}
+    onSubmit={createRuleSubmit}
+    entries={[
+      {
+        id: 'ruleKind',
+        name: 'Kind',
+        type: 'select',
+        value: 'provider',
+        options: [
+          { value: 'provider', label: 'Provider' },
+          { value: 'module', label: 'Module (name/system)' }
+        ]
+      },
+      {
+        id: 'ruleName',
+        name: 'Name',
+        required: true,
+        type: 'text',
+        placeholder: 'aws, or vpc/aws for a module; globs such as *'
+      },
+      {
+        id: 'ruleVersion',
+        name: 'Version',
+        required: true,
+        type: 'text',
+        value: '*',
+        placeholder: '5.*'
+      },
+      {
+        id: 'ruleEffect',
+        name: 'Effect',
+        type: 'select',
+        value: 'deny',
+        options: [
+          { value: 'deny', label: 'Deny' },
+          { value: 'allow', label: 'Allow' }
+        ]
+      }
+    ]} />
 
   {#if errorMessage}
     <ErrorModal bind:message={errorMessage} />
