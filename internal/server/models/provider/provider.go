@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"terralist/internal/server/models/artifact"
+	"terralist/pkg/database"
 	"terralist/pkg/database/entity"
 	"terralist/pkg/version"
 
@@ -13,13 +14,19 @@ import (
 
 type Provider struct {
 	entity.Entity
-	AuthorityID uuid.UUID `gorm:"uniqueIndex:idx_providers_authority_name"`
-	Name        string    `gorm:"not null;index;uniqueIndex:idx_providers_authority_name"`
+	AuthorityID uuid.UUID `gorm:"index"`
+	Name        string    `gorm:"not null;index"`
 	Versions    []Version `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Provider) TableName() string {
 	return "providers"
+}
+
+// UniqueIndexes hold the name of a provider unique within its authority,
+// regardless of case, as it is looked up.
+var UniqueIndexes = []database.CaseInsensitiveUniqueIndex{
+	{Table: "providers", Name: "idx_providers_lower_authority_name", Columns: []string{"authority_id", "name"}},
 }
 
 // ToVersionListProviderDTO builds the provider registry protocol version list,

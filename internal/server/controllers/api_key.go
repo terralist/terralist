@@ -18,14 +18,14 @@ const (
 	apiKeyApiBase = "/api/api-keys"
 )
 
-// ApiKeyController registers the endpoints to manage standalone API keys.
+// ApiKeyController registers the endpoints to manage API keys.
 type ApiKeyController interface {
 	api.RestController
 }
 
 // DefaultApiKeyController is a concrete implementation of ApiKeyController.
 type DefaultApiKeyController struct {
-	Service services.StandaloneApiKeyService
+	Service services.ApiKeyService
 
 	Authentication *handlers.Authentication
 	Authorization  *handlers.Authorization

@@ -153,6 +153,10 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
+		// Registries answer namespaces and names regardless of case.
+		if strings.HasPrefix(r.URL.Path, "/v1/") {
+			r.URL.Path = strings.ToLower(r.URL.Path)
+		}
 		mux.ServeHTTP(w, r)
 	}))
 	t.Cleanup(u.server.Close)
@@ -224,6 +228,18 @@ func TestUpstreamProviderVersions(t *testing.T) {
 				So(versions[1].Version, ShouldEqual, "1.1.0")
 				So(versions[1].Protocols, ShouldResemble, []string{"5.0", "6.0"})
 				So(versions[1].Platforms, ShouldContain, registry.Platform{OS: "darwin", Arch: "arm64"})
+			})
+		})
+
+		Convey("When the versions are requested in another case", func() {
+			_, err := service.ProviderVersions(a, "null")
+			So(err, ShouldBeNil)
+			versions, err := service.ProviderVersions(a, "NULL")
+
+			Convey("Then the answer should come from the same cache entry", func() {
+				So(err, ShouldBeNil)
+				So(len(versions), ShouldEqual, 2)
+				So(upstream.listings.Load(), ShouldEqual, 1)
 			})
 		})
 
@@ -430,6 +446,15 @@ func TestUpstreamProviderPackage(t *testing.T) {
 				So(pkg.FileName, ShouldEqual, "terraform-provider-null_1.0.0_linux_amd64.zip")
 				digest := sha256.Sum256(upstream.packages[pkg.FileName])
 				So(pkg.ShaSum, ShouldEqual, hex.EncodeToString(digest[:]))
+			})
+		})
+
+		Convey("When the package is located with the provider named in another case", func() {
+			pkg, err := service.ProviderPackage(a, "NULL", "1.0.0", "linux", "amd64")
+
+			Convey("Then the package advertised by the upstream should be returned", func() {
+				So(err, ShouldBeNil)
+				So(pkg.FileName, ShouldEqual, "terraform-provider-null_1.0.0_linux_amd64.zip")
 			})
 		})
 

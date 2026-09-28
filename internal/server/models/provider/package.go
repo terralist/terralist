@@ -19,9 +19,10 @@ type Package struct {
 	Architecture string
 }
 
-// Subject names the package within an authority, for download tokens.
+// Subject names the package within an authority, for download tokens. The
+// authority and provider names do not depend on case, as they are looked up.
 func (p Package) Subject(namespace string) string {
-	return fmt.Sprintf("providers/%s/%s/%s/%s_%s", namespace, p.Name, p.Version, p.System, p.Architecture)
+	return fmt.Sprintf("providers/%s/%s/%s/%s_%s", strings.ToLower(namespace), strings.ToLower(p.Name), p.Version, p.System, p.Architecture)
 }
 
 // ParsePackageFileName reads the coordinates out of a package file name of the

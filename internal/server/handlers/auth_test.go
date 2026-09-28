@@ -185,7 +185,7 @@ func TestCanPerform_AuthorityIsolation(t *testing.T) {
 }
 
 func TestCanPerform_InlinePolicies(t *testing.T) {
-	Convey("Subject: CanPerform with standalone API key (inline policies)", t, func() {
+	Convey("Subject: CanPerform with API key (inline policies)", t, func() {
 		mockAuthorityService := services.NewMockAuthorityService(t)
 
 		enforcer, err := rbac.NewEnforcer("", "readonly")
@@ -196,7 +196,7 @@ func TestCanPerform_InlinePolicies(t *testing.T) {
 			AuthorityService: mockAuthorityService,
 		}
 
-		Convey("Given a standalone API key user with module read access", func() {
+		Convey("Given an API key user with module read access", func() {
 			user := auth.User{
 				Name:  "apikey:some-uuid",
 				Email: "creator@example.com",
@@ -244,7 +244,7 @@ func TestCanPerform_InlinePolicies(t *testing.T) {
 			})
 		})
 
-		Convey("Given a standalone API key user accessing a public authority", func() {
+		Convey("Given an API key user accessing a public authority", func() {
 			user := auth.User{
 				Name:  "apikey:some-uuid",
 				Email: "creator@example.com",

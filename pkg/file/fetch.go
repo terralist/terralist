@@ -7,10 +7,12 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"os"
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -22,6 +24,10 @@ import (
 const (
 	tempDirPattern = "tl-fetch"
 )
+
+// forcedGetterRegexp finds the getter forced by a go-getter source, as in
+// git::https://example.com/repo.
+var forcedGetterRegexp = regexp.MustCompile(`^([A-Za-z0-9]+)::(.+)$`)
 
 // sharedAddressSpace is the carrier-grade NAT range (RFC 6598), which also
 // holds cloud metadata endpoints such as Alibaba Cloud's 100.100.100.200.
@@ -81,9 +87,6 @@ func generateGetters(header http.Header, allowPrivateAddresses bool) map[string]
 
 	return map[string]getter.Getter{
 		"git":   new(getter.GitGetter),
-		"gcs":   new(getter.GCSGetter),
-		"hg":    new(getter.HgGetter),
-		"s3":    new(getter.S3Getter),
 		"http":  httpGetter,
 		"https": httpGetter,
 	}
@@ -94,6 +97,10 @@ func generateGetters(header http.Header, allowPrivateAddresses bool) map[string]
 // directory used during the download. The caller must invoke the cleanup function
 // when the file is no longer needed.
 func fetch(name string, url string, checksum string, kind int, header http.Header, allowPrivateAddresses bool) (File, func(), error) {
+	if err := checkSource(url, allowPrivateAddresses); err != nil {
+		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+	}
+
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: could not create temp dir: %v", ErrSystemFailure, err)
@@ -375,4 +382,56 @@ func archiveDir(name, src string) (File, error) {
 	}
 
 	return archive, nil
+}
+
+// checkSource reports whether a source may be fetched: only over HTTP(S) or
+// git, and, unless private addresses are allowed, from a git host resolving to
+// public addresses only. The HTTP getter refuses private addresses itself,
+// when dialing.
+func checkSource(src string, allowPrivateAddresses bool) error {
+	detected, err := getter.Detect(src, "", getter.Detectors)
+	if err != nil {
+		return fmt.Errorf("invalid source %q: %w", src, err)
+	}
+
+	forced := ""
+	if ms := forcedGetterRegexp.FindStringSubmatch(detected); ms != nil {
+		forced, detected = ms[1], ms[2]
+	}
+
+	detected, _ = getter.SourceDirSubdir(detected)
+
+	u, err := url.Parse(detected)
+	if err != nil {
+		return fmt.Errorf("invalid source %q: %w", src, err)
+	}
+
+	switch {
+	case forced == "" && (u.Scheme == "http" || u.Scheme == "https"):
+		return nil
+	case forced == "git" && (u.Scheme == "http" || u.Scheme == "https" || u.Scheme == "ssh"):
+		if allowPrivateAddresses {
+			return nil
+		}
+
+		return checkPublicHost(u.Hostname())
+	default:
+		return fmt.Errorf("refusing to fetch %q: only HTTP(S) and git sources are fetched", src)
+	}
+}
+
+// checkPublicHost refuses a host resolving to a private address.
+func checkPublicHost(host string) error {
+	addresses, err := net.DefaultResolver.LookupNetIP(context.Background(), "ip", host)
+	if err != nil {
+		return fmt.Errorf("could not resolve %s: %w", host, err)
+	}
+
+	for _, address := range addresses {
+		if isPrivateAddress(address.Unmap()) {
+			return fmt.Errorf("refusing to fetch from non-public address %s of %s", address, host)
+		}
+	}
+
+	return nil
 }

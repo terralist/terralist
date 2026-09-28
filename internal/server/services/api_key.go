@@ -3,128 +3,195 @@ package services
 import (
 	"errors"
 	"fmt"
-	"terralist/internal/server/models/authority"
+	"slices"
+	"time"
+
+	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/auth"
 	"terralist/pkg/metrics"
-	"time"
+	"terralist/pkg/rbac"
 
 	"github.com/google/uuid"
+	"github.com/samber/lo"
 )
 
 var (
 	ErrCannotParseID = errors.New("cannot parse")
 	ErrInvalidKey    = errors.New("invalid key")
+	ErrInvalidPolicy = errors.New("invalid policy")
 )
 
-// ApiKeyService describes a service that can interact with the API keys database.
+// ApiKeyService describes a service that manages API keys with RBAC policies.
 type ApiKeyService interface {
-	// GetUserDetails checks if a given key is granted and returns the owner of
-	// the key; if the key is invalid, it will return an error.
-	GetUserDetails(key string) (*auth.User, error)
+	// Authenticate validates an API key and returns the associated user with inline policies.
+	Authenticate(key string) (*auth.User, error)
 
-	// Grant allocates a new key; It takes an input argument which can control the
-	// duration of the key. If you don't want your key to expire, set the argument
-	// to 0.
-	Grant(authorityID uuid.UUID, name string, expireIn int) (string, error)
+	// Create creates a new API key with the given policies and returns its
+	// secret, which is never retrievable afterwards.
+	Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (*apikey.CreatedApiKeyDTO, error)
 
-	// Revoke removes a key from the database.
-	Revoke(key string) error
+	// GetScope returns the scope of an API key.
+	GetScope(key string) (string, error)
+
+	// Delete removes an API key.
+	Delete(key string) error
+
+	// List returns all API keys with their policies.
+	List() ([]apikey.ApiKeyDTO, error)
 }
 
 // DefaultApiKeyService is a concrete implementation of ApiKeyService.
 type DefaultApiKeyService struct {
-	AuthorityService AuthorityService
-	ApiKeyRepository repositories.ApiKeyRepository
+	Repository repositories.ApiKeyRepository
 }
 
-func (s *DefaultApiKeyService) GetUserDetails(key string) (*auth.User, error) {
-	id, err := uuid.Parse(key)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCannotParseID, err)
-	}
-
-	apiKey, err := s.ApiKeyRepository.Find(id)
+func (s *DefaultApiKeyService) Authenticate(key string) (*auth.User, error) {
+	k, err := s.Repository.FindByHash(apikey.HashSecret(key))
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
 	}
 
-	authority, err := s.AuthorityService.GetByID(apiKey.AuthorityID)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrInvalidKey, err)
+	user := &auth.User{
+		Name:  fmt.Sprintf("apikey:%s", k.ID.String()),
+		Email: k.CreatedBy,
+		InlinePolicies: lo.Map(k.Policies, func(p apikey.Policy, _ int) auth.Policy {
+			return auth.Policy{
+				Resource: p.Resource,
+				Action:   p.Action,
+				Object:   p.Object,
+				Effect:   p.Effect,
+			}
+		}),
 	}
 
-	return &auth.User{
-		Email:       authority.Owner,
-		Authority:   authority.Name,
-		AuthorityID: apiKey.AuthorityID.String(),
-	}, nil
+	return user, nil
 }
 
-func (s *DefaultApiKeyService) Grant(authorityID uuid.UUID, name string, expireIn int) (string, error) {
-	apiKey := &authority.ApiKey{
-		AuthorityID: authorityID,
-		Name:        name,
+func (s *DefaultApiKeyService) Create(name, scope, createdBy string, expireIn int, policies []apikey.Policy) (*apikey.CreatedApiKeyDTO, error) {
+	if err := validatePolicies(policies); err != nil {
+		return nil, err
+	}
+
+	secret, err := apikey.NewSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	key := &apikey.ApiKey{
+		Hash:      apikey.HashSecret(secret),
+		Name:      name,
+		Scope:     scope,
+		CreatedBy: createdBy,
+		Policies:  policies,
 	}
 
 	if expireIn > 0 {
 		exp := time.Now().Add(time.Duration(expireIn) * time.Hour)
-		apiKey.Expiration = &exp
+		key.Expiration = &exp
 	}
 
-	apiKey, err := s.ApiKeyRepository.Create(apiKey)
+	key, err = s.Repository.Create(key)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Update metrics after creating API key
-	s.updateApiKeysMetrics(authorityID)
+	s.updateMetrics()
 
-	return apiKey.ID.String(), nil
+	return &apikey.CreatedApiKeyDTO{
+		ID:   key.ID.String(),
+		Name: name,
+		Key:  secret,
+	}, nil
 }
 
-func (s *DefaultApiKeyService) Revoke(key string) error {
+func (s *DefaultApiKeyService) GetScope(key string) (string, error) {
+	id, err := uuid.Parse(key)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrCannotParseID, err)
+	}
+
+	k, err := s.Repository.Find(id)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrInvalidKey, err)
+	}
+
+	return k.Scope, nil
+}
+
+func (s *DefaultApiKeyService) Delete(key string) error {
 	id, err := uuid.Parse(key)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrCannotParseID, err)
 	}
 
-	// Get the API key before deleting to update metrics
-	apiKey, err := s.ApiKeyRepository.Find(id)
-	if err != nil {
+	if err := s.Repository.Delete(id); err != nil {
 		return err
 	}
 
-	err = s.ApiKeyRepository.Delete(id)
-	if err != nil {
-		return err
-	}
-
-	// Update metrics after revoking API key
-	s.updateApiKeysMetrics(apiKey.AuthorityID)
+	s.updateMetrics()
 
 	return nil
 }
 
-// updateApiKeysMetrics updates the API keys metrics for a specific authority.
-func (s *DefaultApiKeyService) updateApiKeysMetrics(authorityID uuid.UUID) {
-	authority, err := s.AuthorityService.GetByID(authorityID)
+func (s *DefaultApiKeyService) List() ([]apikey.ApiKeyDTO, error) {
+	keys, err := s.Repository.List()
+	if err != nil {
+		return nil, err
+	}
+
+	return lo.Map(keys, func(k apikey.ApiKey, _ int) apikey.ApiKeyDTO {
+		return k.ToDTO()
+	}), nil
+}
+
+func (s *DefaultApiKeyService) updateMetrics() {
+	keys, err := s.Repository.List()
 	if err != nil {
 		return
 	}
 
 	now := time.Now()
-	activeCount := 0
-	expiredCount := 0
+	active := make(map[string]float64)
+	expired := make(map[string]float64)
 
-	for _, apiKey := range authority.ApiKeys {
-		if apiKey.Expiration == nil || apiKey.Expiration.After(now) {
-			activeCount++
+	for _, k := range keys {
+		if k.Expiration == nil || k.Expiration.After(now) {
+			active[k.Scope]++
 		} else {
-			expiredCount++
+			expired[k.Scope]++
 		}
 	}
 
-	metrics.SetApiKeysCount(authority.Name, "active", float64(activeCount))
-	metrics.SetApiKeysCount(authority.Name, "expired", float64(expiredCount))
+	// Reset to avoid stale scope labels from deleted keys.
+	metrics.ApiKeysTotal.Reset()
+
+	for scope, count := range active {
+		metrics.SetApiKeysCount(scope, "active", count)
+	}
+	for scope, count := range expired {
+		metrics.SetApiKeysCount(scope, "expired", count)
+	}
+}
+
+func validatePolicies(policies []apikey.Policy) error {
+	for i, p := range policies {
+		if !slices.Contains(rbac.Resources, p.Resource) && p.Resource != "*" {
+			return fmt.Errorf("%w: policy %d has invalid resource %q", ErrInvalidPolicy, i, p.Resource)
+		}
+
+		if !slices.Contains(rbac.Actions, p.Action) && p.Action != "*" {
+			return fmt.Errorf("%w: policy %d has invalid action %q", ErrInvalidPolicy, i, p.Action)
+		}
+
+		if !slices.Contains(rbac.Effects, p.Effect) {
+			return fmt.Errorf("%w: policy %d has invalid effect %q", ErrInvalidPolicy, i, p.Effect)
+		}
+
+		if p.Object == "" {
+			return fmt.Errorf("%w: policy %d has empty object", ErrInvalidPolicy, i)
+		}
+	}
+
+	return nil
 }

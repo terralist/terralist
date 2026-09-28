@@ -11,42 +11,35 @@
   import { useFlag } from '@/lib/hooks';
 
   export let apiKey: ApiKey;
-  export let authorityName: string;
   export let onDelete: (id: string) => void = () => {};
 
-  const [clipboardUpdated, setClipboardUpdated, resetClipboardUpdated] =
-    useFlag(false);
-
-  const [apiKeyModalEnabled, showApiKeyModal, hideApiKeyModal] = useFlag(false);
+  const [viewModalEnabled, showViewModal, hideViewModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 
   let errorMessage: string = '';
 
-  const censor = (value: string) => {
-    return `****${value.slice(-4)}`;
-  };
-
-  const updateClipboard = () => {
-    navigator.clipboard.writeText(apiKey.id);
-    setClipboardUpdated();
-    setTimeout(resetClipboardUpdated, 1000);
-  };
-
   const remove = () => {
     onDelete(apiKey.id);
   };
+
+  const formatEffect = (effect: string) => {
+    return effect === 'allow' ? '✓' : '✗';
+  };
 </script>
 
-<div class="mt-2 mx-4">
+<div class="mt-2">
   <div
-    class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-2 place-items-start">
-    <span>
-      <TransparentButton onClick={showApiKeyModal}>
+    class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-4 place-items-start items-center">
+    <span class="truncate">{apiKey.name}</span>
+    <span class="text-xs truncate">{apiKey.scope}</span>
+    <span class="text-xs">
+      {apiKey.policies.length}
+      {apiKey.policies.length === 1 ? 'policy' : 'policies'}
+    </span>
+    <span class="place-self-end flex gap-1">
+      <TransparentButton onClick={showViewModal}>
         <Icon name="eye" />
       </TransparentButton>
-      {apiKey.name}
-    </span>
-    <span class="place-self-end">
       <TransparentButton onClick={showDeleteModal}>
         <Icon name="trash" />
       </TransparentButton>
@@ -55,29 +48,59 @@
 </div>
 
 <Modal
-  title="View API Key"
-  enabled={$apiKeyModalEnabled}
-  onClose={hideApiKeyModal}>
+  title="API Key: {apiKey.name}"
+  enabled={$viewModalEnabled}
+  onClose={hideViewModal}>
   <span slot="body">
-    <div class="flex justify-between items-center">
-      <pre class="text-xs">{apiKey.id}</pre>
-      {#key $clipboardUpdated}
-        <TransparentButton
-          onClick={updateClipboard}
-          disabled={$clipboardUpdated}>
-          <Icon name={$clipboardUpdated ? 'check' : 'clipboard'} />
-        </TransparentButton>
-      {/key}
+    <div class="space-y-4">
+      <div>
+        <p class="text-xs uppercase text-zinc-400 mb-1">Scope</p>
+        <p class="text-sm">{apiKey.scope}</p>
+      </div>
+
+      <div>
+        <p class="text-xs uppercase text-zinc-400 mb-1">Created by</p>
+        <p class="text-sm">{apiKey.createdBy}</p>
+      </div>
+
+      {#if apiKey.expiration}
+        <div>
+          <p class="text-xs uppercase text-zinc-400 mb-1">Expires</p>
+          <p class="text-sm">{apiKey.expiration}</p>
+        </div>
+      {/if}
+
+      <div>
+        <p class="text-xs uppercase text-zinc-400 mb-1">Policies</p>
+        <div class="text-xs">
+          <div
+            class="grid grid-cols-5 gap-2 font-semibold uppercase text-zinc-400 mb-1">
+            <span>Resource</span>
+            <span>Action</span>
+            <span class="col-span-2">Object</span>
+            <span>Effect</span>
+          </div>
+          {#each apiKey.policies as policy (policy.id)}
+            <div
+              class="grid grid-cols-5 gap-2 py-1 border-t border-slate-200 dark:border-slate-600">
+              <span>{policy.resource}</span>
+              <span>{policy.action}</span>
+              <span class="col-span-2 truncate">{policy.object}</span>
+              <span>{formatEffect(policy.effect)}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
     </div>
   </span>
 </Modal>
 
 <ConfirmationModal
-  title={`Remove API Key ${censor(apiKey.id)} of ${authorityName}`}
+  title={`Remove API Key ${apiKey.name}`}
   enabled={$deleteModalEnabled}
   onClose={hideDeleteModal}
   onSubmit={remove}>
-  Are you sure?
+  Are you sure you want to delete the API key <strong>{apiKey.name}</strong>?
 </ConfirmationModal>
 
 {#if errorMessage}

@@ -189,6 +189,7 @@ jobs:
       TERRALIST_OI_CLIENT_SECRET: e2e-test-secret
       TERRALIST_OI_HOST: "http://mock-oauth2:8080/default"
       TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
+      TERRALIST_OAUTH_STATE_SECRET: "yetanotherrandomvalue"
 
       TERRALIST_SESSION_STORE: "database"
       TERRALIST_COOKIE_SECRET: "someotherrandomvalue"

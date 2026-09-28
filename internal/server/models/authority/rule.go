@@ -2,6 +2,7 @@ package authority
 
 import (
 	"fmt"
+	"strings"
 
 	"terralist/pkg/database/entity"
 
@@ -59,9 +60,11 @@ func (r Rule) Validate() error {
 	return nil
 }
 
-// Matches reports whether the rule applies to the given artifact version.
+// Matches reports whether the rule applies to the given artifact version. The
+// name matches regardless of case, as artifacts are looked up; the version
+// matches exactly.
 func (r Rule) Matches(kind, name, version string) bool {
-	return r.Kind == kind && matchGlob(r.Name, name) && matchGlob(r.Version, version)
+	return r.Kind == kind && matchGlob(strings.ToLower(r.Name), strings.ToLower(name)) && matchGlob(r.Version, version)
 }
 
 func matchGlob(pattern, value string) bool {

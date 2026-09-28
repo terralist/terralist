@@ -38,3 +38,17 @@ func TestParsePackageFileName(t *testing.T) {
 		})
 	})
 }
+
+func TestPackageSubject(t *testing.T) {
+	Convey("Subject: Naming a package for download tokens", t, func() {
+		pkg := Package{Name: "AWS", Version: "5.0.0-RC1", System: "linux", Architecture: "amd64"}
+
+		Convey("Then the authority and provider names should not depend on case", func() {
+			So(pkg.Subject("HashiCorp"), ShouldEqual, Package{Name: "aws", Version: "5.0.0-RC1", System: "linux", Architecture: "amd64"}.Subject("hashicorp"))
+		})
+
+		Convey("Then the version should stay exact", func() {
+			So(pkg.Subject("hashicorp"), ShouldNotEqual, Package{Name: "aws", Version: "5.0.0-rc1", System: "linux", Architecture: "amd64"}.Subject("hashicorp"))
+		})
+	})
+}

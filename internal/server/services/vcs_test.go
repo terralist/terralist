@@ -53,3 +53,35 @@ func TestBuildProviderCreateDTO(t *testing.T) {
 	}
 
 }
+
+func TestBuildProviderCreateDTOIgnoresCase(t *testing.T) {
+	mockFetcher := file.NewMockFetcher(t)
+	mockProvider := vcs.NewMockProvider(t)
+	mockProvider.On("GetHeaders").Return(map[string]string{})
+
+	hashLine := strings.Repeat("a", 64) + "  terraform-provider-acme_1.0.0_linux_amd64.zip"
+	mockFetcher.
+		On("FetchFile", mock.Anything, "https://ex/sums", mock.Anything).
+		Return(file.NewInMemoryFile("SHA256SUMS", []byte(hashLine+"\n")), func() {}, nil)
+
+	svc := &DefaultVcsService{Provider: mockProvider, Fetcher: mockFetcher}
+
+	// The webhook names the provider in another case than its release assets.
+	dto, err := svc.BuildProviderCreateDTO(uuid.New(), "ns", "Acme", &vcs.ReleaseEvent{
+		SemVer: "1.0.0",
+		Assets: []vcs.ReleaseAsset{
+			{Name: "terraform-provider-acme_1.0.0_SHA256SUMS", URL: "https://ex/sums"},
+			{Name: "terraform-provider-acme_1.0.0_SHA256SUMS.sig", URL: "https://ex/sig"},
+			{Name: "terraform-provider-acme_1.0.0_linux_amd64.zip", URL: "https://ex/linux.zip"},
+		},
+		Source:  vcs.ReleaseSourceGitHub,
+		RepoURL: "https://github.com/acme/acme",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(dto.Platforms) != 1 || dto.ShaSums.URL != "https://ex/sums" || dto.ShaSums.SignatureURL != "https://ex/sig" {
+		t.Fatalf("expected the release assets to be found, got %+v", dto)
+	}
+}

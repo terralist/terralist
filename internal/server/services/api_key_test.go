@@ -1,11 +1,11 @@
 package services
 
 import (
-	"fmt"
 	"testing"
 
-	"terralist/internal/server/models/authority"
+	"terralist/internal/server/models/apikey"
 	"terralist/internal/server/repositories"
+	"terralist/pkg/auth"
 	"terralist/pkg/database/entity"
 
 	"github.com/google/uuid"
@@ -13,196 +13,245 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestGetUserDetails(t *testing.T) {
-	Convey("Subject: Finding user details for a given API key", t, func() {
-		mockAuthorityService := NewMockAuthorityService(t)
-		mockApiKeyRepository := repositories.NewMockApiKeyRepository(t)
+func TestAuthenticate(t *testing.T) {
+	Convey("Subject: Authenticating with an API key", t, func() {
+		mockRepo := repositories.NewMockApiKeyRepository(t)
 
-		apiKeyService := &DefaultApiKeyService{
-			AuthorityService: mockAuthorityService,
-			ApiKeyRepository: mockApiKeyRepository,
+		service := &DefaultApiKeyService{
+			Repository: mockRepo,
 		}
 
-		Convey("Given an invalid API key", func() {
-			apiKey := "100%-not-valid-uuid"
+		Convey("Given an unknown API key", func() {
+			mockRepo.On("FindByHash", apikey.HashSecret("tlk_unknown")).Return(nil, repositories.ErrDatabaseFailure)
 
 			Convey("When the service is queried", func() {
-				user, err := apiKeyService.GetUserDetails(apiKey)
+				user, err := service.Authenticate("tlk_unknown")
 
 				Convey("Then an invalid key error should be returned", func() {
 					So(err, ShouldNotBeNil)
 					So(user, ShouldBeNil)
-					So(err.Error(), ShouldContainSubstring, "invalid UUID")
+					So(err.Error(), ShouldContainSubstring, "invalid key")
 				})
 			})
 		})
 
-		Convey("Given a valid but expired API key", func() {
-			apiKey := uuid.Must(uuid.NewRandom())
-			apiKeyStr := apiKey.String()
-
-			mockApiKeyRepository.On("Find", apiKey).Return(nil, repositories.ErrApiKeyExpired)
+		Convey("Given an expired API key", func() {
+			mockRepo.On("FindByHash", apikey.HashSecret("tlk_expired")).Return(nil, repositories.ErrApiKeyExpired)
 
 			Convey("When the service is queried", func() {
-				user, err := apiKeyService.GetUserDetails(apiKeyStr)
+				user, err := service.Authenticate("tlk_expired")
 
-				Convey("Then a expire error should be returned", func() {
+				Convey("Then an invalid key error should be returned", func() {
 					So(err, ShouldNotBeNil)
 					So(user, ShouldBeNil)
-					So(err.Error(), ShouldContainSubstring, repositories.ErrApiKeyExpired.Error())
+					So(err.Error(), ShouldContainSubstring, "invalid key")
 				})
 			})
 		})
 
-		Convey("Given a valid API key", func() {
-			apiKey, _ := uuid.NewRandom()
-			apiKeyStr := apiKey.String()
-			authorityID, _ := uuid.NewRandom()
-			userEmail := "test@example.com"
+		Convey("Given a valid API key with policies", func() {
+			keyID := uuid.Must(uuid.NewRandom())
+			createdBy := "test@example.com"
 
-			mockApiKeyRepository.On("Find", apiKey).Return(&authority.ApiKey{AuthorityID: authorityID}, nil)
-
-			Convey("If the API key is associated to an invalid authority", func() {
-				mockAuthorityService.On("GetByID", authorityID).Return(nil, repositories.ErrNotFound)
-
-				Convey("When the service is queried", func() {
-					user, err := apiKeyService.GetUserDetails(apiKeyStr)
-
-					Convey("Then a not found error should be returned", func() {
-						So(err, ShouldNotBeNil)
-						So(user, ShouldBeNil)
-						So(err.Error(), ShouldContainSubstring, repositories.ErrNotFound.Error())
-					})
-				})
-			})
-
-			Convey("If the API key is associated to a valid authority", func() {
-				mockAuthorityService.On("GetByID", authorityID).Return(&authority.Authority{Owner: userEmail}, nil)
-
-				Convey("When the service is queried", func() {
-					user, err := apiKeyService.GetUserDetails(apiKeyStr)
-
-					Convey("Then the user e-mail and the authority ID should be returned successfully", func() {
-						So(err, ShouldBeNil)
-						So(user.Email, ShouldEqual, userEmail)
-						So(user.AuthorityID, ShouldEqual, authorityID.String())
-					})
-				})
-			})
-		})
-	})
-}
-
-func TestGrant(t *testing.T) {
-	Convey("Subject: Generating a new API key", t, func() {
-		mockAuthorityService := NewMockAuthorityService(t)
-		mockApiKeyRepository := repositories.NewMockApiKeyRepository(t)
-
-		apiKeyService := &DefaultApiKeyService{
-			AuthorityService: mockAuthorityService,
-			ApiKeyRepository: mockApiKeyRepository,
-		}
-
-		Convey("Given a valid authority ID", func() {
-			authorityID, _ := uuid.NewRandom()
-			apiKeyID, _ := uuid.NewRandom()
-			name := "key11"
-
-			Convey("If no expiration is given", func() {
-				expireIn := 0
-
-				Convey("When the service is queried", func() {
-					mockApiKeyRepository.
-						On("Create", &authority.ApiKey{AuthorityID: authorityID, Name: name}).
-						Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
-					mockAuthorityService.
-						On("GetByID", authorityID).
-						Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}, ApiKeys: []authority.ApiKey{}}, nil)
-
-					apiKey, err := apiKeyService.Grant(authorityID, name, expireIn)
-
-					Convey("Then a valid API key should be returned", func() {
-						So(err, ShouldBeNil)
-						So(apiKey, ShouldNotBeNil)
-						So(apiKey, ShouldEqual, apiKeyID.String())
-						So(func() { uuid.MustParse(apiKey) }, ShouldNotPanic)
-					})
-				})
-			})
-
-			testData := []int{1, 2, 4, 8, 12, 18, 24, 48, 72}
-			multipliers := []int{1, -1}
-
-			for _, expireIn := range testData {
-				for _, multiplier := range multipliers {
-					expireIn *= multiplier
-
-					Convey(fmt.Sprintf("If expiration is set to %d hours", expireIn), func() {
-
-						Convey("When the service is queried", func() {
-							mockApiKeyRepository.
-								On("Create", mock.AnythingOfType("*authority.ApiKey")).
-								Return(&authority.ApiKey{Entity: entity.Entity{ID: apiKeyID}}, nil)
-							mockAuthorityService.
-								On("GetByID", authorityID).
-								Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}, ApiKeys: []authority.ApiKey{}}, nil)
-
-							apiKey, err := apiKeyService.Grant(authorityID, "key1", expireIn)
-
-							Convey("Then a valid API key should be returned", func() {
-								So(err, ShouldBeNil)
-								So(apiKey, ShouldNotBeNil)
-								So(apiKey, ShouldEqual, apiKeyID.String())
-								So(func() { uuid.MustParse(apiKey) }, ShouldNotPanic)
-							})
-						})
-					})
-				}
+			expectedPolicies := []apikey.Policy{
+				{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
 			}
+
+			mockRepo.On("FindByHash", apikey.HashSecret("tlk_valid")).Return(&apikey.ApiKey{
+				Entity:    entity.Entity{ID: keyID},
+				Hash:      apikey.HashSecret("tlk_valid"),
+				Name:      "test-key",
+				Scope:     "team-a",
+				CreatedBy: createdBy,
+				Policies:  expectedPolicies,
+			}, nil)
+
+			Convey("When the service is queried", func() {
+				user, err := service.Authenticate("tlk_valid")
+
+				Convey("Then the user with inline policies should be returned", func() {
+					So(err, ShouldBeNil)
+					So(user, ShouldNotBeNil)
+					So(user.Name, ShouldEqual, "apikey:"+keyID.String())
+					So(user.Email, ShouldEqual, createdBy)
+					So(user.Authority, ShouldBeEmpty)
+					So(user.AuthorityID, ShouldBeEmpty)
+					So(user.InlinePolicies, ShouldResemble, []auth.Policy{
+						{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
+					})
+				})
+			})
 		})
 	})
 }
 
-func TestRevoke(t *testing.T) {
-	Convey("Subject: Revoking access from an existing API key", t, func() {
-		mockAuthorityService := NewMockAuthorityService(t)
-		mockApiKeyRepository := repositories.NewMockApiKeyRepository(t)
+func TestApiKeyCreate(t *testing.T) {
+	Convey("Subject: Creating an API key", t, func() {
+		mockRepo := repositories.NewMockApiKeyRepository(t)
 
-		apiKeyService := &DefaultApiKeyService{
-			AuthorityService: mockAuthorityService,
-			ApiKeyRepository: mockApiKeyRepository,
+		service := &DefaultApiKeyService{
+			Repository: mockRepo,
 		}
 
-		Convey("Given an invalid API key", func() {
-			apiKey := "100%-not-valid-uuid"
+		Convey("Given valid policies", func() {
+			keyID := uuid.Must(uuid.NewRandom())
+			policies := []apikey.Policy{
+				{Resource: "modules", Action: "get", Object: "my-authority/*", Effect: "allow"},
+				{Resource: "providers", Action: "*", Object: "*", Effect: "allow"},
+			}
 
-			Convey("When the service is queried", func() {
-				err := apiKeyService.Revoke(apiKey)
+			var stored *apikey.ApiKey
+			mockRepo.
+				On("Create", mock.AnythingOfType("*apikey.ApiKey")).
+				Run(func(args mock.Arguments) {
+					stored = args.Get(0).(*apikey.ApiKey) //nolint:forcetypeassert
+				}).
+				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
+			mockRepo.
+				On("List").
+				Return([]apikey.ApiKey{{Entity: entity.Entity{ID: keyID}, Scope: "team-a"}}, nil)
 
-				Convey("Then an invalid key error should be returned", func() {
-					So(err, ShouldNotBeNil)
-					So(err.Error(), ShouldContainSubstring, "invalid UUID")
+			Convey("When the service is queried with no expiration", func() {
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+
+				Convey("Then a prefixed secret is returned and only its hash is stored", func() {
+					So(err, ShouldBeNil)
+					So(created.ID, ShouldEqual, keyID.String())
+					So(created.Name, ShouldEqual, "ci-key")
+					So(created.Key, ShouldStartWith, apikey.SecretPrefix)
+					So(stored.Hash, ShouldEqual, apikey.HashSecret(created.Key))
+					So(stored.Expiration, ShouldBeNil)
 				})
 			})
 
+			Convey("When the service is queried with expiration", func() {
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 24, policies)
+
+				Convey("Then a prefixed secret is returned and the key expires", func() {
+					So(err, ShouldBeNil)
+					So(created.Key, ShouldStartWith, apikey.SecretPrefix)
+					So(stored.Hash, ShouldEqual, apikey.HashSecret(created.Key))
+					So(stored.Expiration, ShouldNotBeNil)
+				})
+			})
+		})
+
+		Convey("Given an invalid resource in policy", func() {
+			policies := []apikey.Policy{
+				{Resource: "invalid-resource", Action: "get", Object: "*", Effect: "allow"},
+			}
+
+			Convey("When the service is queried", func() {
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+
+				Convey("Then a validation error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(created, ShouldBeNil)
+					So(err.Error(), ShouldContainSubstring, "invalid resource")
+				})
+			})
+		})
+
+		Convey("Given an invalid action in policy", func() {
+			policies := []apikey.Policy{
+				{Resource: "modules", Action: "invalid-action", Object: "*", Effect: "allow"},
+			}
+
+			Convey("When the service is queried", func() {
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+
+				Convey("Then a validation error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(created, ShouldBeNil)
+					So(err.Error(), ShouldContainSubstring, "invalid action")
+				})
+			})
+		})
+
+		Convey("Given an invalid effect in policy", func() {
+			policies := []apikey.Policy{
+				{Resource: "modules", Action: "get", Object: "*", Effect: "maybe"},
+			}
+
+			Convey("When the service is queried", func() {
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+
+				Convey("Then a validation error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(created, ShouldBeNil)
+					So(err.Error(), ShouldContainSubstring, "invalid effect")
+				})
+			})
+		})
+
+		Convey("Given an empty object in policy", func() {
+			policies := []apikey.Policy{
+				{Resource: "modules", Action: "get", Object: "", Effect: "allow"},
+			}
+
+			Convey("When the service is queried", func() {
+				created, err := service.Create("ci-key", "team-a", "test@example.com", 0, policies)
+
+				Convey("Then a validation error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(created, ShouldBeNil)
+					So(err.Error(), ShouldContainSubstring, "empty object")
+				})
+			})
+		})
+
+		Convey("Given wildcard resource and action", func() {
+			keyID := uuid.Must(uuid.NewRandom())
+			policies := []apikey.Policy{
+				{Resource: "*", Action: "*", Object: "*", Effect: "allow"},
+			}
+
+			mockRepo.
+				On("Create", mock.AnythingOfType("*apikey.ApiKey")).
+				Return(&apikey.ApiKey{Entity: entity.Entity{ID: keyID}}, nil)
+			mockRepo.
+				On("List").
+				Return([]apikey.ApiKey{{Entity: entity.Entity{ID: keyID}, Scope: "global"}}, nil)
+
+			Convey("When the service is queried", func() {
+				created, err := service.Create("admin-key", "global", "admin@example.com", 0, policies)
+
+				Convey("Then a valid API key should be returned", func() {
+					So(err, ShouldBeNil)
+					So(created.Key, ShouldStartWith, apikey.SecretPrefix)
+				})
+			})
+		})
+	})
+}
+
+func TestApiKeyDelete(t *testing.T) {
+	Convey("Subject: Deleting an API key", t, func() {
+		mockRepo := repositories.NewMockApiKeyRepository(t)
+
+		service := &DefaultApiKeyService{
+			Repository: mockRepo,
+		}
+
+		Convey("Given an invalid API key", func() {
+			Convey("When the service is queried", func() {
+				err := service.Delete("not-a-uuid")
+
+				Convey("Then a parse error should be returned", func() {
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "cannot parse")
+				})
+			})
 		})
 
 		Convey("Given a valid API key", func() {
-			apiKey, _ := uuid.NewRandom()
-			apiKeyStr := apiKey.String()
-			authorityID, _ := uuid.NewRandom()
+			keyID := uuid.Must(uuid.NewRandom())
 
-			mockApiKeyRepository.On("Find", apiKey).Return(&authority.ApiKey{
-				Entity:      entity.Entity{ID: apiKey},
-				AuthorityID: authorityID,
-			}, nil)
-			mockApiKeyRepository.On("Delete", apiKey).Return(nil)
-			mockAuthorityService.
-				On("GetByID", authorityID).
-				Return(&authority.Authority{Entity: entity.Entity{ID: authorityID}, ApiKeys: []authority.ApiKey{}}, nil)
+			mockRepo.On("Delete", keyID).Return(nil)
+			mockRepo.On("List").Return([]apikey.ApiKey{}, nil)
 
 			Convey("When the service is queried", func() {
-				err := apiKeyService.Revoke(apiKeyStr)
+				err := service.Delete(keyID.String())
 
 				Convey("Then no error should be returned", func() {
 					So(err, ShouldBeNil)

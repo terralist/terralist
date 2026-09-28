@@ -26,6 +26,12 @@ func newTestProviderRepository(t *testing.T) (*DefaultProviderRepository, *autho
 		t.Fatalf("failed to migrate test database: %v", err)
 	}
 
+	for _, index := range provider.UniqueIndexes {
+		if err := index.Create(engine.Handler()); err != nil {
+			t.Fatalf("failed to create index %s: %v", index.Name, err)
+		}
+	}
+
 	a := &authority.Authority{Name: "hashicorp", PolicyURL: "https://example.com", Owner: "owner@example.com"}
 	if err := engine.Handler().Create(a).Error; err != nil {
 		t.Fatalf("failed to create authority: %v", err)
@@ -101,10 +107,17 @@ func TestProviderRepository_UpsertRejectsDuplicatePlatform(t *testing.T) {
 func TestProviderRepository_UpsertRejectsDuplicateProvider(t *testing.T) {
 	repo, a := newTestProviderRepository(t)
 
-	for i, want := range []error{nil, ErrAlreadyExists} {
-		_, err := repo.Upsert(provider.Provider{AuthorityID: a.ID, Name: "random"})
-		if !errors.Is(err, want) {
-			t.Fatalf("upsert %d: expected %v, got %v", i, want, err)
+	for i, tc := range []struct {
+		name string
+		want error
+	}{
+		{"random", nil},
+		{"random", ErrAlreadyExists},
+		{"Random", ErrAlreadyExists},
+	} {
+		_, err := repo.Upsert(provider.Provider{AuthorityID: a.ID, Name: tc.name})
+		if !errors.Is(err, tc.want) {
+			t.Fatalf("upsert %d of %q: expected %v, got %v", i, tc.name, tc.want, err)
 		}
 	}
 }

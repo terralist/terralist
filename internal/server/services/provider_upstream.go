@@ -105,7 +105,7 @@ func mergeUpstreamArchives(dto *provider.MirrorArchivesDTO, name, version string
 		}
 
 		fileName := provider.PackageFileName(name, version, p.OS, p.Arch)
-		digest, ok := metadata.ShaSums[fileName]
+		digest, ok := shaSumOf(metadata.ShaSums, fileName)
 		if !ok {
 			continue
 		}
@@ -211,7 +211,7 @@ func (s *DefaultProviderService) upstreamDownloadDTO(a *authority.Authority, v *
 	}
 
 	fileName := provider.PackageFileName(name, v.Version, system, architecture)
-	digest, ok := metadata.ShaSums[fileName]
+	digest, ok := shaSumOf(metadata.ShaSums, fileName)
 	if !ok {
 		return nil, fmt.Errorf("platform %s_%s of %s/%s %s: %w", system, architecture, a.Name, name, v.Version, repositories.ErrNotFound)
 	}
@@ -280,8 +280,7 @@ func (s *DefaultProviderService) Download(namespace, name, version, system, arch
 		return "", ErrFetchRequiresCreate
 	}
 
-	key := fmt.Sprintf("%s/%s/%s/%s_%s", namespace, name, version, system, architecture)
-	location, err, _ := s.fetches.Do(key, func() (any, error) {
+	location, err, _ := s.fetches.Do(packageFetchKey(namespace, name, version, system, architecture), func() (any, error) {
 		return s.fetchPackage(a, name, version, system, architecture)
 	})
 	if err != nil {
@@ -392,4 +391,26 @@ func (s *DefaultProviderService) locationURL(location string) (string, error) {
 	}
 
 	return url, nil
+}
+
+// packageFetchKey names a provider package for coalescing concurrent fetches,
+// regardless of the case of its names.
+func packageFetchKey(namespace, name, version, system, architecture string) string {
+	return fmt.Sprintf("%s/%s/%s/%s_%s", strings.ToLower(namespace), strings.ToLower(name), version, system, architecture)
+}
+
+// shaSumOf returns the digest a SHA256SUMS document lists for a package file,
+// matching the file name regardless of case, as the provider is looked up.
+func shaSumOf(sums map[string]string, fileName string) (string, bool) {
+	if digest, ok := sums[fileName]; ok {
+		return digest, true
+	}
+
+	for listed, digest := range sums {
+		if strings.EqualFold(listed, fileName) {
+			return digest, true
+		}
+	}
+
+	return "", false
 }

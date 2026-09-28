@@ -26,12 +26,12 @@ func setupApiKeyRouter(
 	t *testing.T,
 	user *auth.User,
 	policyCSV string,
-) (*gin.Engine, *services.MockStandaloneApiKeyService) {
+) (*gin.Engine, *services.MockApiKeyService) {
 	t.Helper()
 
 	gin.SetMode(gin.TestMode)
 
-	mockService := services.NewMockStandaloneApiKeyService(t)
+	mockService := services.NewMockApiKeyService(t)
 	mockAuthorityService := services.NewMockAuthorityService(t)
 
 	enforcer, err := rbac.NewEnforcer("", "readonly")

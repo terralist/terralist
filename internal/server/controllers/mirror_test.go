@@ -561,6 +561,30 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 			})
 		})
 
+		Convey("Given no credentials but a token signed for the authority and provider in another case", func() {
+			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
+			token, _ := testPackageTokens(t).Sign(provider.Package{Name: "Null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}.Subject("HashiCorp"), true)
+			mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip?token="+token, nil))
+
+			Convey("Then the package should be served", func() {
+				So(w.Code, ShouldEqual, http.StatusFound)
+			})
+		})
+
+		Convey("Given no credentials, a valid token and a package file named in another case than the provider", func() {
+			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
+			token, _ := testPackageTokens(t).Sign(pkg.Subject("hashicorp"), true)
+			mockService.On("Download", "hashicorp", "Null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-Null_3.2.4_darwin_arm64.zip?token="+token, nil))
+
+			Convey("Then the package should be served", func() {
+				So(w.Code, ShouldEqual, http.StatusFound)
+			})
+		})
+
 		Convey("Given no credentials but a read-only token", func() {
 			router, mockService, _ := setupMirrorRouter(t, nil, false, false)
 			token, _ := testPackageTokens(t).Sign(pkg.Subject("hashicorp"), false)

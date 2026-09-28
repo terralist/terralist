@@ -184,6 +184,18 @@ func TestModuleController_Archive(t *testing.T) {
 			})
 		})
 
+		Convey("Given no credentials but a token signed for the names in another case", func() {
+			router, mockService := setupModuleRouter(t, nil, "")
+			token, _ := moduleTokens(t).Sign(module.ArchiveSubject("HashiCorp", "Dir", "Template", "1.0.2"), true)
+			mockService.On("Download", "hashicorp", "dir", "template", "1.0.2", true).Return("https://storage.example.com/1.0.2.zip", nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, url+"?token="+token, nil))
+
+			Convey("Then the archive should be served", func() {
+				So(w.Code, ShouldEqual, http.StatusNoContent)
+			})
+		})
+
 		Convey("Given no credentials and a token for another version", func() {
 			router, mockService := setupModuleRouter(t, nil, "")
 			token, _ := moduleTokens(t).Sign(module.ArchiveSubject("hashicorp", "dir", "template", "1.0.1"), true)

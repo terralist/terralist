@@ -116,14 +116,12 @@ The secret to use when signing authorization tokens.
 
 ### `oauth-state-secret`
 
-The secret to use when signing the OAuth state passed to the identity provider. If unset, it is derived from the `token-signing-secret`.
-
-!!! warning "Deriving the state secret from `token-signing-secret` is deprecated. This flag will become required in the next version."
+The secret to use when signing the OAuth state passed to the identity provider.
 
 | Name | Value |
 | --- | --- |
 | type | string |
-| required | no |
+| required | yes |
 | default | `n/a` |
 | cli | `--oauth-state-secret` |
 | env | `TERRALIST_OAUTH_STATE_SECRET` |
@@ -846,7 +844,7 @@ Allows anonymous read and download of providers, through both the provider regis
 
 ### `fetch-allow-private-addresses`
 
-Allows fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. By default Terralist refuses to connect to these addresses. The check runs against the resolved IP at connection time, so it also applies to redirect targets. Enable this only if your artifacts are served from a host on a private network. See [Security](user-guide/security.md) for details.
+Allows fetching module/provider artifacts from private, loopback, link-local or unspecified addresses. By default Terralist refuses to connect to these addresses. The check runs against the resolved IP at connection time, so it also applies to redirect targets; git repositories are checked by resolving their host before they are cloned. Enable this only if your artifacts are served from a host on a private network. See [Security](user-guide/security.md) for details.
 
 | Name | Value |
 | --- | --- |
@@ -1240,6 +1238,7 @@ gh-organization: "my-org"
 # you must use the slug version of the team
 gh-teams: "team-a,team-b"
 token-signing-secret: "supersecretstring"
+oauth-state-secret: "anothersecretstring"
 
 database-backend: "sqlite"
 sqlite-path: "terralist.db"

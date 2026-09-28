@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"terralist/internal/server/models/apikey"
@@ -21,10 +22,13 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		return err
 	}
 
+	if err := refuseDuplicatesIgnoringCase(db, uniqueIndexes()); err != nil {
+		return err
+	}
+
 	if err := db.AutoMigrate(
 		&authority.Authority{},
 		&authority.Key{},
-		&authority.ApiKey{},
 		&authority.Rule{},
 		&apikey.ApiKey{},
 		&apikey.Policy{},
@@ -45,8 +49,31 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		return err
 	}
 
+	// Authorities, providers and modules were held unique by case-sensitive
+	// indexes, which the case-insensitive ones replace.
+	for _, legacy := range []struct{ table, name string }{
+		{"authorities", "idx_authorities_name"},
+		{"authorities", "idx_authorities_upstream"},
+		{"providers", "idx_providers_authority_name"},
+		{"modules", "idx_modules_authority_name_provider"},
+	} {
+		if err := database.DropIndex(db, legacy.table, legacy.name); err != nil {
+			return err
+		}
+	}
+
+	for _, index := range uniqueIndexes() {
+		if err := index.Create(db); err != nil {
+			return err
+		}
+	}
+
 	// Remove default empty string column in Version.Documentation
 	if err := db.Migrator().AlterColumn(&module.Version{}, "Documentation"); err != nil {
+		return err
+	}
+
+	if err := db.Migrator().DropTable("authority_api_keys"); err != nil {
 		return err
 	}
 
@@ -59,10 +86,13 @@ var uniqueArtifacts = []struct {
 	table   string
 	columns []string
 }{
-	{"providers", []string{"authority_id", "name"}},
 	{"provider_versions", []string{"provider_id", "version"}},
-	{"modules", []string{"authority_id", "name", "provider"}},
 	{"module_versions", []string{"module_id", "version"}},
+}
+
+// uniqueIndexes lists the indexes holding artifacts unique regardless of case.
+func uniqueIndexes() []database.CaseInsensitiveUniqueIndex {
+	return slices.Concat(authority.UniqueIndexes, provider.UniqueIndexes, module.UniqueIndexes)
 }
 
 // refuseDuplicateArtifacts fails when an artifact table holds rows the unique
@@ -88,6 +118,24 @@ func refuseDuplicateArtifacts(db *database.DB) error {
 
 		if len(duplicates) > 0 {
 			return fmt.Errorf("table %s holds duplicate rows for (%s): %v; remove the duplicates before starting Terralist", unique.table, columns, duplicates)
+		}
+	}
+
+	return nil
+}
+
+// refuseDuplicatesIgnoringCase fails when a table holds rows that differ only
+// in case where a case-insensitive unique index is to be created, naming them
+// so they can be removed before Terralist starts; no data is changed.
+func refuseDuplicatesIgnoringCase(db *database.DB, indexes []database.CaseInsensitiveUniqueIndex) error {
+	for _, index := range indexes {
+		duplicates, err := index.Duplicates(db)
+		if err != nil {
+			return err
+		}
+
+		if len(duplicates) > 0 {
+			return fmt.Errorf("table %s holds rows differing only in case for (%s): %v; remove the duplicates before starting Terralist", index.Table, strings.Join(index.Columns, ", "), duplicates)
 		}
 	}
 

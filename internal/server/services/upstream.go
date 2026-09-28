@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -183,7 +184,7 @@ func (s *DefaultUpstreamService) ProviderPackage(a *authority.Authority, name, v
 		return nil, err
 	}
 
-	if want := provider.PackageFileName(name, version, os, arch); download.Filename != want {
+	if want := provider.PackageFileName(name, version, os, arch); !strings.EqualFold(download.Filename, want) {
 		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
 		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s as %q", want, a.Name, name, version, download.Filename)
 	}
@@ -426,12 +427,14 @@ func (s *DefaultUpstreamService) fetch(ctx context.Context, url string) ([]byte,
 	return registry.ReadLimited(resp.Body, 1<<20)
 }
 
+// key and moduleKey name cache entries regardless of the case of the names,
+// as providers and modules are looked up.
 func (s *DefaultUpstreamService) key(a *authority.Authority, name, suffix string) string {
-	return fmt.Sprintf("upstream/%s/providers/%s/%s", a.ID, name, suffix)
+	return fmt.Sprintf("upstream/%s/providers/%s/%s", a.ID, strings.ToLower(name), suffix)
 }
 
 func (s *DefaultUpstreamService) moduleKey(a *authority.Authority, name, system, suffix string) string {
-	return fmt.Sprintf("upstream/%s/modules/%s/%s/%s", a.ID, name, system, suffix)
+	return fmt.Sprintf("upstream/%s/modules/%s/%s/%s", a.ID, strings.ToLower(name), strings.ToLower(system), suffix)
 }
 
 // clock returns the current time, overridable in tests.

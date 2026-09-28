@@ -1,7 +1,6 @@
 import { AxiosError } from 'axios';
 import { createClient, handleResponse, handleError } from '@/api/api.utils';
 import type { Key } from '@/api/keys';
-import type { ApiKey } from '@/api/apiKeys';
 import type { Rule } from '@/api/rules';
 
 type UpstreamPolicy = 'allow' | 'deny';
@@ -12,7 +11,6 @@ type Authority = {
   policyUrl: string;
   public: boolean;
   keys: Key[];
-  apiKeys: ApiKey[];
   upstreamHostname: string;
   upstreamNamespace: string;
   upstreamUrl: string;
@@ -94,6 +92,5 @@ export {
   type UpstreamPolicy,
   type UpdateAuthority,
   type Key,
-  type ApiKey,
   Authorities
 };

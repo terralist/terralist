@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Policy represents an inline authorization policy attached to a user (e.g. from a standalone API key).
+// Policy represents an inline authorization policy attached to a user (e.g. from an API key).
 type Policy struct {
 	Resource string `json:"resource"`
 	Action   string `json:"action"`
@@ -24,7 +24,7 @@ type User struct {
 	Groups      []string `json:"groups"`
 
 	// InlinePolicies are per-user policies evaluated directly, bypassing the global policy file.
-	// Used by standalone API keys whose permissions are self-contained.
+	// Used by API keys whose permissions are self-contained.
 	InlinePolicies []Policy `json:"inline_policies,omitempty"`
 }
 

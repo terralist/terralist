@@ -3,6 +3,7 @@ package authority
 import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/models/provider"
+	"terralist/pkg/database"
 	"terralist/pkg/database/entity"
 
 	"github.com/samber/lo"
@@ -11,17 +12,17 @@ import (
 type Authority struct {
 	entity.Entity
 
-	Name      string `gorm:"not null;uniqueIndex"`
+	Name      string `gorm:"not null"`
 	PolicyURL string `gorm:"not null"`
 	Public    bool   `gorm:"not null;default:false"`
 	Owner     string `gorm:"not null;index"`
 
 	// UpstreamHostname is the upstream registry this authority stands for.
-	UpstreamHostname *string `gorm:"uniqueIndex:idx_authorities_upstream"`
+	UpstreamHostname *string
 	// UpstreamNamespace is the namespace of that registry whose artifacts the
 	// authority serves; its providers are addressed through the network mirror
 	// with the upstream address.
-	UpstreamNamespace *string `gorm:"uniqueIndex:idx_authorities_upstream"`
+	UpstreamNamespace *string
 	// UpstreamURL is where the upstream registry is reached; empty means
 	// https://<UpstreamHostname>.
 	UpstreamURL *string
@@ -38,13 +39,19 @@ type Authority struct {
 	Rules []Rule `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 
 	Keys      []Key               `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	ApiKeys   []ApiKey            `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Modules   []module.Module     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Providers []provider.Provider `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (Authority) TableName() string {
 	return "authorities"
+}
+
+// UniqueIndexes hold the name of an authority and the upstream namespace it
+// stands for unique, regardless of case, as they are looked up.
+var UniqueIndexes = []database.CaseInsensitiveUniqueIndex{
+	{Table: "authorities", Name: "idx_authorities_lower_name", Columns: []string{"name"}},
+	{Table: "authorities", Name: "idx_authorities_lower_upstream", Columns: []string{"upstream_hostname", "upstream_namespace"}},
 }
 
 // AllowsUpstream reports whether a version of an upstream artifact may be
@@ -81,20 +88,19 @@ func (a Authority) UpstreamBaseURL() string {
 }
 
 type AuthorityDTO struct {
-	ID                string      `json:"id"`
-	Name              string      `json:"name"`
-	PolicyURL         string      `json:"policy_url"`
-	Public            bool        `json:"public"`
-	UpstreamHostname  string      `json:"upstream_hostname"`
-	UpstreamNamespace string      `json:"upstream_namespace"`
-	UpstreamURL       string      `json:"upstream_url"`
-	UpstreamToken     string      `json:"upstream_token,omitempty"`
-	UpstreamHasToken  bool        `json:"upstream_has_token"`
-	UpstreamEnabled   bool        `json:"upstream_enabled"`
-	UpstreamPolicy    string      `json:"upstream_default_policy"`
-	Rules             []RuleDTO   `json:"rules"`
-	Keys              []KeyDTO    `json:"keys"`
-	ApiKeys           []ApiKeyDTO `json:"api_keys"`
+	ID                string    `json:"id"`
+	Name              string    `json:"name"`
+	PolicyURL         string    `json:"policy_url"`
+	Public            bool      `json:"public"`
+	UpstreamHostname  string    `json:"upstream_hostname"`
+	UpstreamNamespace string    `json:"upstream_namespace"`
+	UpstreamURL       string    `json:"upstream_url"`
+	UpstreamToken     string    `json:"upstream_token,omitempty"`
+	UpstreamHasToken  bool      `json:"upstream_has_token"`
+	UpstreamEnabled   bool      `json:"upstream_enabled"`
+	UpstreamPolicy    string    `json:"upstream_default_policy"`
+	Rules             []RuleDTO `json:"rules"`
+	Keys              []KeyDTO  `json:"keys"`
 }
 
 func (a Authority) ToDTO() AuthorityDTO {
@@ -117,10 +123,6 @@ func (a Authority) ToDTO() AuthorityDTO {
 		Keys: lo.Map(a.Keys, func(k Key, _ int) KeyDTO {
 			return k.ToKeyDTO()
 		}),
-
-		ApiKeys: lo.Map(a.ApiKeys, func(a ApiKey, _ int) ApiKeyDTO {
-			return a.ToDTO()
-		}),
 	}
 }
 
@@ -138,10 +140,6 @@ func (d AuthorityDTO) ToAuthority() Authority {
 
 		Keys: lo.Map(d.Keys, func(k KeyDTO, _ int) Key {
 			return k.ToKey()
-		}),
-
-		ApiKeys: lo.Map(d.ApiKeys, func(a ApiKeyDTO, _ int) ApiKey {
-			return a.ToApiKey()
 		}),
 	}
 }

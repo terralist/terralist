@@ -3,10 +3,7 @@
   import TransparentButton from './TransparentButton.svelte';
   import Modal from './Modal.svelte';
 
-  import type {
-    CreatePolicyDTO,
-    CreateStandaloneApiKeyDTO
-  } from '@/api/standaloneApiKeys';
+  import type { CreatePolicyDTO, CreateApiKeyDTO } from '@/api/apiKeys';
   import {
     buildPolicyObject,
     emptyPolicyRow,
@@ -16,7 +13,7 @@
 
   export let enabled: boolean = false;
   export let onClose: () => void = () => {};
-  export let onSubmit: (dto: CreateStandaloneApiKeyDTO) => void = () => {};
+  export let onSubmit: (dto: CreateApiKeyDTO) => void = () => {};
   export let authorities: string[] = [];
 
   const actions = ['get', 'create', 'update', 'delete', '*'];
@@ -68,7 +65,7 @@
       return;
     }
 
-    const dto: CreateStandaloneApiKeyDTO = {
+    const dto: CreateApiKeyDTO = {
       name,
       scope,
       expireIn,

@@ -31,9 +31,9 @@ The model syntax is based on [Casbin](https://casbin.org/docs/overview) and high
 
 **Group**: Used to assign users or groups to internal roles.
 
-Syntax: `g, <username>/<useremail>/role:<group>, <role>`
+Syntax: `g, <username>/<useremail>/group:<group>, <role>`
 
-- `<username>/<useremail>/role:<group>`: The entity to whom the role will be assigned. Depending on the OAuth provider implementation those values can represent different things; Usually, the `username` refers to the `sub` claim, while the `useremail` and `group` refers to a custom claims, which might not even be supported by the provider you are using. Check the OAuth provider documentation for more details.
+- `<username>/<useremail>/group:<group>`: The entity to whom the role will be assigned. Depending on the OAuth provider implementation those values can represent different things; Usually, the `username` refers to the `sub` claim, while the `useremail` and `group` refers to a custom claims, which might not even be supported by the provider you are using. Check the OAuth provider documentation for more details.
 - `<role>`: The internal role to which the entity will be assigned.
 
 <!-- TODO: Add proper oauth provider docs -->
@@ -49,15 +49,15 @@ Below is a table that defines claims meaning for each OAuth provider.
 
 **Policy**: Allows to assign permissions to an entity.
 
-Syntax: `p, role:<role>/<username>/<useremail>/role:<group>, <resource>, <action>, <object>, <effect>`
+Syntax: `p, role:<role>/<username>/<useremail>/group:<group>, <resource>, <action>, <object>, <effect>`
 
-- `role:<role>/<username>/<useremail>/role:<group>`: The entity to whom the policy will be assigned
+- `role:<role>/<username>/<useremail>/group:<group>`: The entity to whom the policy will be assigned
 - `<resource>`<sup>*</sup>: The type of resource on which the action is performed. Can be one of: `modules`, `providers`, `authorities`, `api-keys`, `settings`. Supports glob matching.
 - `<action>`<sup>*</sup>: The operation that is being performed on the resource. Can be one of: `get`, `create`, `update`, `delete`. Supports glob matching.
 - `<object>`<sup>*</sup>: The object identifier representing the resource on which the action is performed. Supports glob matching. Depending on the resource, the object's format will vary.
 - `<effect>`: Whether this policy should grant or restrict the operation on the target object. One of `allow` or `deny`.
 
-<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`.
+<sup>*</sup> This attribute supports glob matching. For example, for resources `*` will match all resources, `mod*` will match only `modules`, while for objects `my-authority/my-module/aws` will match only one module, while `my-authority/*/*` will match all modules within the authority `my-authority`. Matching ignores case, as authorities, modules and providers are looked up regardless of case: `my-authority/*` also matches `My-Authority/aws`.
 
 Below is a table that defines the correct object syntax for each resource group.
 
@@ -131,8 +131,8 @@ p, role:authority-admin, authorities, *, *, allow
 Then map identity claims (user/group/email) to those roles:
 
 ```csv
-g, role:SSOAWS_PLATFORM, role:authority-admin
-g, role:SSOAWS_ENGINEERING, role:authority-reader
+g, group:SSOAWS_PLATFORM, role:authority-admin
+g, group:SSOAWS_ENGINEERING, role:authority-reader
 ```
 
 ## Settings Page Access With RBAC

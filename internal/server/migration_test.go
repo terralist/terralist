@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type legacyModuleVersion struct {
@@ -196,14 +198,16 @@ func TestInitialMigrationRefusesDuplicateArtifacts(t *testing.T) {
 	for _, tc := range []struct {
 		table   string
 		columns string
-		values  string
+		rows    []string
 	}{
-		{"providers", "authority_id TEXT, name TEXT", "'a1', 'null'"},
-		{"provider_versions", "provider_id TEXT, version TEXT", "'p1', '3.2.4'"},
-		{"modules", "authority_id TEXT, name TEXT, provider TEXT", "'a1', 'vpc', 'aws'"},
-		{"module_versions", "module_id TEXT, version TEXT", "'m1', '1.0.0'"},
+		{"providers", "authority_id TEXT, name TEXT", []string{"'a1', 'null'", "'a1', 'null'"}},
+		{"providers", "authority_id TEXT, name TEXT", []string{"'a1', 'null'", "'a1', 'Null'"}},
+		{"provider_versions", "provider_id TEXT, version TEXT", []string{"'p1', '3.2.4'", "'p1', '3.2.4'"}},
+		{"modules", "authority_id TEXT, name TEXT, provider TEXT", []string{"'a1', 'vpc', 'aws'", "'a1', 'vpc', 'aws'"}},
+		{"modules", "authority_id TEXT, name TEXT, provider TEXT", []string{"'a1', 'vpc', 'aws'", "'a1', 'VPC', 'AWS'"}},
+		{"module_versions", "module_id TEXT, version TEXT", []string{"'m1', '1.0.0'", "'m1', '1.0.0'"}},
 	} {
-		t.Run(tc.table, func(t *testing.T) {
+		t.Run(tc.table+" "+tc.rows[1], func(t *testing.T) {
 			db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 			if err != nil {
 				t.Fatalf("failed to open sqlite database: %v", err)
@@ -213,8 +217,8 @@ func TestInitialMigrationRefusesDuplicateArtifacts(t *testing.T) {
 				t.Fatalf("failed to create table: %v", err)
 			}
 
-			for _, id := range []string{"1", "2"} {
-				if err := db.Exec("INSERT INTO " + tc.table + " VALUES ('" + id + "', " + tc.values + ")").Error; err != nil {
+			for n, row := range tc.rows {
+				if err := db.Exec(fmt.Sprintf("INSERT INTO %s VALUES ('%d', %s)", tc.table, n, row)).Error; err != nil {
 					t.Fatalf("failed to insert row: %v", err)
 				}
 			}
@@ -228,5 +232,109 @@ func TestInitialMigrationRefusesDuplicateArtifacts(t *testing.T) {
 				t.Errorf("expected the error to name the %s table, got %v", tc.table, err)
 			}
 		})
+	}
+}
+
+type legacyAuthorityApiKey struct {
+	ID          uuid.UUID `gorm:"primary_key;"`
+	AuthorityID uuid.UUID
+	Name        string
+}
+
+func (legacyAuthorityApiKey) TableName() string {
+	return "authority_api_keys"
+}
+
+func TestInitialMigrationDropsAuthorityApiKeys(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("failed to open sqlite database: %v", err)
+	}
+
+	if err := db.AutoMigrate(&legacyAuthorityApiKey{}); err != nil {
+		t.Fatalf("failed to create legacy table: %v", err)
+	}
+
+	if err := (&InitialMigration{}).Migrate(db); err != nil {
+		t.Fatalf("failed to run initial migration: %v", err)
+	}
+
+	if db.Migrator().HasTable("authority_api_keys") {
+		t.Errorf("expected authority_api_keys table to be dropped")
+	}
+}
+
+func TestInitialMigrationRefusesAuthoritiesDifferingInCase(t *testing.T) {
+	for _, tc := range []struct {
+		desc string
+		rows []string
+	}{
+		{"names", []string{
+			"('1', 'hashicorp', NULL, NULL)",
+			"('2', 'HashiCorp', NULL, NULL)",
+		}},
+		{"upstream namespaces", []string{
+			"('1', 'hashicorp', 'registry.terraform.io', 'hashicorp')",
+			"('2', 'mirror', 'registry.terraform.io', 'HashiCorp')",
+		}},
+	} {
+		t.Run(tc.desc, func(t *testing.T) {
+			db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+			if err != nil {
+				t.Fatalf("failed to open sqlite database: %v", err)
+			}
+
+			if err := db.Exec("CREATE TABLE authorities (id TEXT PRIMARY KEY, name TEXT, upstream_hostname TEXT, upstream_namespace TEXT)").Error; err != nil {
+				t.Fatalf("failed to create table: %v", err)
+			}
+
+			for _, row := range tc.rows {
+				if err := db.Exec("INSERT INTO authorities VALUES " + row).Error; err != nil {
+					t.Fatalf("failed to insert row: %v", err)
+				}
+			}
+
+			err = (&InitialMigration{}).Migrate(db)
+			if err == nil {
+				t.Fatal("expected the migration to refuse authorities differing only in case")
+			}
+
+			if !strings.Contains(err.Error(), "authorities") {
+				t.Errorf("expected the error to name the authorities table, got %v", err)
+			}
+		})
+	}
+}
+
+func TestInitialMigrationHoldsAuthorityNamesUniqueRegardlessOfCase(t *testing.T) {
+	// The rejected insert is expected, so the query logger stays silent.
+	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatalf("failed to open sqlite database: %v", err)
+	}
+
+	// A database created before the case-insensitive index holds the
+	// case-sensitive one.
+	if err := db.Exec("CREATE TABLE authorities (id TEXT PRIMARY KEY, name TEXT NOT NULL)").Error; err != nil {
+		t.Fatalf("failed to create table: %v", err)
+	}
+	if err := db.Exec("CREATE UNIQUE INDEX idx_authorities_name ON authorities (name)").Error; err != nil {
+		t.Fatalf("failed to create legacy index: %v", err)
+	}
+
+	if err := (&InitialMigration{}).Migrate(db); err != nil {
+		t.Fatalf("failed to run initial migration: %v", err)
+	}
+
+	if db.Migrator().HasIndex("authorities", "idx_authorities_name") {
+		t.Error("expected the case-sensitive index to be dropped")
+	}
+
+	if err := db.Exec("INSERT INTO authorities (id, name, policy_url, owner) VALUES ('1', 'hashicorp', '', '')").Error; err != nil {
+		t.Fatalf("failed to insert authority: %v", err)
+	}
+
+	if err := db.Exec("INSERT INTO authorities (id, name, policy_url, owner) VALUES ('2', 'HashiCorp', '', '')").Error; err == nil {
+		t.Fatal("expected a name differing only in case to be rejected")
 	}
 }
