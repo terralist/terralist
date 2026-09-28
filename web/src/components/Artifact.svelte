@@ -11,9 +11,13 @@
 
   import config from '@/config';
   import { indent } from '@/lib/utils';
-  import { useQuery } from '@/lib/hooks';
+  import { useFlag, useQuery } from '@/lib/hooks';
 
   import Icon from './Icon.svelte';
+  import Button from './Button.svelte';
+  import ConfirmationModal from './ConfirmationModal.svelte';
+  import ErrorModal from './ErrorModal.svelte';
+  import FormModal from './FormModal.svelte';
   import Dropdown from './Dropdown.svelte';
   import FullPageError from './FullPageError.svelte';
   import LoadingScreen from './LoadingScreen.svelte';
@@ -22,10 +26,16 @@
 
   import {
     Artifacts,
-    type ArtifactVersion,
+    type ArtifactVersions,
     type ArtifactVersionWithDocumentation,
-    type Submodule
+    type Submodule,
+    type VersionDetails
   } from '@/api/artifacts';
+  import { Authorities } from '@/api/authorities';
+  import { Registry, type OfferedVersion } from '@/api/registry';
+  import { Rules } from '@/api/rules';
+  import type { FormEntry } from '@/lib/form';
+  import cmp from 'semver-compare';
   import { computeArtifactUrl, type LocatableArtifact } from '@/lib/artifact';
 
   export let type: 'module' | 'provider';
@@ -75,7 +85,7 @@
 
   let label: string = version;
 
-  const result = useQuery<ArtifactVersion[]>(
+  const result = useQuery<ArtifactVersions>(
     Artifacts.getAllVersionsForOne,
     namespace,
     name,
@@ -83,13 +93,56 @@
   );
 
   let versions: string[] = [];
+  let details: VersionDetails[] = [];
+
+  let canDelete = false;
+  let canFetch = false;
+  let canBlock = false;
+  // offered lists the upstream versions Terralist does not hold yet.
+  let offered: OfferedVersion[] = [];
+  let actionError = '';
+
+  const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
+  const [blockModalEnabled, showBlockModal, hideBlockModal] = useFlag(false);
+  const [fetchModalEnabled, showFetchModal, hideFetchModal] = useFlag(false);
+
+  // badgesOf names what sets a version apart from one uploaded with its
+  // signature material.
+  const badgesOf = (v: VersionDetails | undefined): string[] =>
+    [
+      v?.origin === 'upstream' ? 'pulled from upstream' : '',
+      v?.mirrorOnly ? 'network mirror only' : ''
+    ].filter(b => b);
+
+  $: badges = badgesOf(details.find(d => d.version === version));
+  // The version selector is narrow, so it tags versions in short.
+  $: versionLabels = Object.fromEntries(
+    details.map(d => [
+      d.version,
+      [
+        d.version,
+        d.origin === 'upstream' ? 'upstream' : '',
+        d.mirrorOnly ? 'mirror only' : ''
+      ]
+        .filter(p => p)
+        .join(' · ')
+    ])
+  );
 
   const unsubscribe = result.subscribe(res => {
     if (res.error || res.isLoading) {
       return;
     }
 
-    versions = res.data ?? [];
+    details = res.data?.versions ?? [];
+    versions = details.map(d => d.version);
+    canDelete = res.data?.canDelete ?? false;
+    canFetch = res.data?.canFetch ?? false;
+    canBlock = res.data?.canBlock ?? false;
+
+    if (canFetch) {
+      loadOffered();
+    }
 
     if (versions.length == 0) {
       return;
@@ -105,6 +158,131 @@
       label = `${version} (latest)`;
     }
   });
+
+  const loadOffered = async () => {
+    const res = await Registry.offeredVersions(namespace, name, provider);
+    if (res.status !== 'OK') {
+      return;
+    }
+
+    offered = res.data
+      .filter(o => !versions.includes(o.version))
+      .sort((a, b) => cmp(b.version, a.version));
+  };
+
+  // leave moves away from a version that no longer exists: to the latest
+  // remaining one, or to the dashboard when none is left.
+  const leave = () => {
+    const remaining = versions.filter(v => v !== version);
+    if (remaining.length > 0) {
+      onOptionSelect(remaining[0]);
+    } else {
+      push('/');
+    }
+  };
+
+  const deleteVersion = async () => {
+    const res = await Artifacts.delete(namespace, name, provider, version);
+    if (res.status !== 'OK') {
+      actionError = res.message;
+      return;
+    }
+
+    leave();
+  };
+
+  // blockVersion denies the version by a rule of the authority, so it is not
+  // pulled again, then deletes the pulled copy.
+  const blockVersion = async () => {
+    const authorities = await Authorities.getAll();
+    const authority =
+      authorities.status === 'OK'
+        ? authorities.data.find(
+            a => a.name.toLowerCase() === namespace.toLowerCase()
+          )
+        : undefined;
+    if (!authority) {
+      actionError = `Could not find the authority ${namespace}.`;
+      return;
+    }
+
+    const rule = await Rules.create(authority.id, {
+      kind: type,
+      name: type === 'module' ? `${name}/${provider}` : name,
+      version,
+      effect: 'deny'
+    });
+    if (rule.status !== 'OK') {
+      actionError = rule.message;
+      return;
+    }
+
+    await deleteVersion();
+  };
+
+  const fetchVersion = async (
+    entries: Map<string, string | string[] | undefined>
+  ) => {
+    const value = (id: string) => {
+      const entry = entries.get(id);
+      return (Array.isArray(entry) ? entry.at(0) : entry) ?? '';
+    };
+
+    const target = value('fetchVersion');
+    const requested = value('fetchPlatforms')
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p);
+    const platforms =
+      requested.length > 0
+        ? requested
+        : (offered.find(o => o.version === target)?.platforms ?? []).map(
+            p => `${p.os}_${p.arch}`
+          );
+
+    const res = await Artifacts.fetchFromUpstream(
+      namespace,
+      name,
+      provider,
+      target,
+      platforms
+    );
+    if (res.status !== 'OK') {
+      actionError = res.message;
+      return;
+    }
+
+    const failed = (res.data.results ?? []).filter(r => r.error);
+    if (failed.length > 0) {
+      actionError = failed.map(r => `${r.platform}: ${r.error}`).join('\n');
+      return;
+    }
+
+    onOptionSelect(target);
+  };
+
+  $: selected = details.find(d => d.version === version);
+
+  let fetchEntries: FormEntry[] = [];
+  $: fetchEntries = [
+    {
+      id: 'fetchVersion',
+      name: 'Version',
+      type: 'select',
+      value: offered[0]?.version,
+      options: offered.map(o => ({ value: o.version, label: o.version }))
+    },
+    ...(type === 'provider'
+      ? [
+          {
+            id: 'fetchPlatforms',
+            name: 'Platforms',
+            type: 'text',
+            placeholder: 'All platforms, or linux_amd64,darwin_arm64'
+          } satisfies FormEntry
+        ]
+      : [])
+  ];
 
   let documentation: string | undefined;
   let submodules: Submodule[] = [];
@@ -230,12 +408,45 @@
             <h3 class="text-zinc-800 dark:text-zinc-100">
               @{namespace}
             </h3>
+            {#if badges.length > 0}
+              <div data-testid="version-badges" class="mt-2 flex gap-2">
+                {#each badges as badge (badge)}
+                  <span
+                    class="px-2 rounded-lg text-xs uppercase bg-teal-200 dark:bg-teal-900 text-zinc-800 dark:text-zinc-100">
+                    {badge}
+                  </span>
+                {/each}
+              </div>
+            {/if}
           </div>
         </div>
         <div class="w-full lg:w-auto">
-          <Dropdown {label} options={versions} onSelect={onOptionSelect} />
+          <Dropdown
+            {label}
+            options={versions}
+            optionLabels={versionLabels}
+            onSelect={onOptionSelect} />
         </div>
       </div>
+      {#if (canFetch && offered.length > 0) || canDelete}
+        <div class="flex flex-wrap justify-end gap-2">
+          {#if canFetch && offered.length > 0}
+            <Button class="!w-auto" onClick={showFetchModal}>
+              Fetch from upstream
+            </Button>
+          {/if}
+          {#if canBlock && selected?.origin === 'upstream'}
+            <Button class="!w-auto" onClick={showBlockModal}>
+              Block version
+            </Button>
+          {/if}
+          {#if canDelete}
+            <Button class="!w-auto" onClick={showDeleteModal}>
+              Delete version
+            </Button>
+          {/if}
+        </div>
+      {/if}
       {#if type === 'module' && submodules && submodules.length > 0}
         <div
           class="mt-6 flex flex-col lg:flex-row items-start lg:items-center gap-4">
@@ -283,3 +494,41 @@
     </section>
   {/if}
 </main>
+
+<ConfirmationModal
+  title={`Delete version ${version}`}
+  enabled={$deleteModalEnabled}
+  onClose={hideDeleteModal}
+  onSubmit={deleteVersion}>
+  Version <b>{version}</b> of <b>{namespace}/{name}</b> will be deleted from
+  Terralist.
+  {#if selected?.origin === 'upstream'}
+    It was pulled from the upstream, so it is pulled again on the next request
+    for it, unless it is blocked.
+  {/if}
+  <br /><br />
+  Are you sure?
+</ConfirmationModal>
+
+<ConfirmationModal
+  title={`Block version ${version}`}
+  enabled={$blockModalEnabled}
+  onClose={hideBlockModal}
+  onSubmit={blockVersion}>
+  A rule of <b>{namespace}</b> will deny version <b>{version}</b> of
+  <b>{name}</b>, so it is no longer pulled from the upstream, and the pulled
+  copy will be deleted.
+  <br /><br />
+  Are you sure?
+</ConfirmationModal>
+
+<FormModal
+  title={`Fetch a version of ${namespace}/${name} from the upstream`}
+  enabled={$fetchModalEnabled}
+  onClose={hideFetchModal}
+  onSubmit={fetchVersion}
+  entries={fetchEntries} />
+
+{#if actionError}
+  <ErrorModal bind:message={actionError} />
+{/if}

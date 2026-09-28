@@ -169,6 +169,7 @@ func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.A
 		if current, err := r.FindByID(a.ID); err == nil {
 			a.Name = current.Name
 			a.Owner = current.Owner
+			a.CreatedAt = current.CreatedAt
 
 			for _, key := range current.Keys {
 				if !slices.Contains(a.Keys, key) {

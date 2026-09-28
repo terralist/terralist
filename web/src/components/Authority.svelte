@@ -8,12 +8,15 @@
   import ErrorModal from './ErrorModal.svelte';
 
   import Key from './Key.svelte';
+  import Rule from './Rule.svelte';
+  import UpstreamSummary from './UpstreamSummary.svelte';
 
   import type { Authority as AuthorityT } from '@/api/authorities';
   import { Keys, type Key as KeyT } from '@/api/keys';
+  import { Rules, type Rule as RuleT } from '@/api/rules';
 
   import { URLValidation } from '@/lib/validation';
-  import { useFlag, useToggle } from '@/lib/hooks';
+  import { useFlag } from '@/lib/hooks';
 
   export let authority: AuthorityT;
   export let onUpdate: (id: string, authority: AuthorityT) => void = () => {};
@@ -23,26 +26,37 @@
 
   const [createKeyModalEnabled, showCreateKeyModal, hideCreateKeyModal] =
     useFlag(false);
+  const [createRuleModalEnabled, showCreateRuleModal, hideCreateRuleModal] =
+    useFlag(false);
   const [updateModalEnabled, showUpdateModal, hideUpdateModal] = useFlag(false);
   const [deleteModalEnabled, showDeleteModal, hideDeleteModal] = useFlag(false);
 
-  const [showKeys, toggleShowKeys] = useToggle(false);
+  // At most one of the lists below the authority is shown at a time.
+  let shown: 'keys' | 'rules' | null = null;
+  const toggle = (list: 'keys' | 'rules') => {
+    shown = shown === list ? null : list;
+  };
+  const toggleShowKeys = () => toggle('keys');
+  const toggleShowRules = () => toggle('rules');
 
   const update = (entries: Map<string, string | string[] | undefined>) => {
-    const policyUrlValue = entries.get('policyUrl');
-    const policyUrl = Array.isArray(policyUrlValue)
-      ? policyUrlValue.at(0)
-      : policyUrlValue;
-
-    const publicValue = entries.get('public');
-    const isPublic = Array.isArray(publicValue)
-      ? publicValue.at(0)
-      : publicValue;
+    const value = (id: string) => {
+      const entry = entries.get(id);
+      return (Array.isArray(entry) ? entry.at(0) : entry) ?? '';
+    };
 
     onUpdate(authority.id, {
       ...authority,
-      policyUrl: policyUrl ?? '',
-      public: (isPublic ?? 'false') == 'true'
+      policyUrl: value('policyUrl'),
+      public: value('public') == 'true',
+      upstreamHostname: value('upstreamHostname'),
+      upstreamNamespace: value('upstreamNamespace'),
+      upstreamUrl: value('upstreamUrl'),
+      // An empty token keeps the stored one.
+      upstreamToken: value('upstreamToken') || undefined,
+      upstreamEnabled: value('upstreamEnabled') == 'true',
+      upstreamDefaultPolicy:
+        value('upstreamPolicy') == 'deny' ? 'deny' : 'allow'
     });
   };
 
@@ -95,12 +109,64 @@
       errorMessage = result.message;
     }
   };
+
+  const createRuleSubmit = async (
+    entries: Map<string, string | string[] | undefined>
+  ) => {
+    const value = (id: string) => {
+      const entry = entries.get(id);
+      return (Array.isArray(entry) ? entry.at(0) : entry) ?? '';
+    };
+
+    let result = await Rules.create(authority.id, {
+      kind: value('ruleKind') == 'module' ? 'module' : 'provider',
+      name: value('ruleName'),
+      version: value('ruleVersion'),
+      effect: value('ruleEffect') == 'allow' ? 'allow' : 'deny'
+    });
+
+    if (result.status === 'OK') {
+      authority.rules = [...(authority.rules ?? []), result.data];
+    } else {
+      errorMessage = result.message;
+    }
+  };
+
+  const onRuleDelete = async (id: string) => {
+    let result = await Rules.delete(authority.id, id);
+
+    if (result.status === 'OK') {
+      authority.rules = authority.rules.filter((r: RuleT) => r.id !== id);
+    } else {
+      errorMessage = result.message;
+    }
+
+    if (authority.rules.length === 0) {
+      shown = null;
+    }
+  };
 </script>
 
-<div class="mb-4">
+<div class="mb-4" data-testid={`authority-${authority.name}`}>
   <div
     class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-6 lg:grid-cols-10 place-items-start">
-    <span class="col-span-2 lg:col-span-6">{authority.name}</span>
+    <span class="col-span-2 lg:col-span-4">
+      <span>{authority.name}</span>
+      <span class="lg:hidden">
+        <UpstreamSummary
+          {authority}
+          rulesShown={shown === 'rules'}
+          onAddRule={showCreateRuleModal}
+          onToggleRules={toggleShowRules} />
+      </span>
+    </span>
+    <span class="hidden lg:flex lg:col-span-2">
+      <UpstreamSummary
+        {authority}
+        rulesShown={shown === 'rules'}
+        onAddRule={showCreateRuleModal}
+        onToggleRules={toggleShowRules} />
+    </span>
     <span>
       {#if authority.policyUrl}
         <a href={authority.policyUrl} target="_blank" rel="noreferrer">
@@ -133,19 +199,19 @@
         <CaretButton
           class="ml-0 md:ml-2"
           onClick={toggleShowKeys}
-          enabled={$showKeys} />
+          enabled={shown === 'keys'} />
       {/if}
     </span>
     <span class="place-self-end flex justify-center items-center">
-      <TransparentButton onClick={showUpdateModal}>
+      <TransparentButton onClick={showUpdateModal} label="Edit authority">
         <Icon name="edit-box" />
       </TransparentButton>
-      <TransparentButton onClick={showDeleteModal}>
+      <TransparentButton onClick={showDeleteModal} label="Delete authority">
         <Icon name="trash" />
       </TransparentButton>
     </span>
   </div>
-  {#if $showKeys}
+  {#if shown === 'keys'}
     <div
       class="w-full p-2 px-6 grid grid-cols-4 lg:grid-cols-8 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
       <span class="lg:col-span-5"> Key ID </span>
@@ -159,6 +225,19 @@
         authorityName={authority.name}
         isAlone={authority.keys.length === 1}
         onDelete={onKeyDelete} />
+    {/each}
+  {/if}
+  {#if shown === 'rules'}
+    <div
+      class="w-full p-2 px-6 grid grid-cols-5 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
+      <span> Kind </span>
+      <span> Name </span>
+      <span> Version </span>
+      <span> Effect </span>
+      <span class="place-self-end"> Actions </span>
+    </div>
+    {#each authority.rules as rule (rule.id)}
+      <Rule {rule} authorityName={authority.name} onDelete={onRuleDelete} />
     {/each}
   {/if}
 
@@ -187,6 +266,53 @@
         name: 'Public',
         type: 'checkbox',
         value: authority.public ? 'true' : 'false'
+      },
+      {
+        id: 'upstreamHostname',
+        name: 'Upstream hostname',
+        type: 'text',
+        placeholder: 'registry.terraform.io',
+        value: authority.upstreamHostname
+      },
+      {
+        id: 'upstreamNamespace',
+        name: 'Upstream namespace',
+        type: 'text',
+        placeholder: authority.name,
+        value: authority.upstreamNamespace
+      },
+      {
+        id: 'upstreamUrl',
+        name: 'Upstream URL',
+        type: 'text',
+        placeholder: 'https://<upstream hostname>',
+        value: authority.upstreamUrl,
+        validations: [URLValidation()]
+      },
+      {
+        id: 'upstreamToken',
+        name: 'Upstream token',
+        type: 'password',
+        placeholder: authority.upstreamHasToken
+          ? 'A token is stored; leave empty to keep it'
+          : '',
+        value: ''
+      },
+      {
+        id: 'upstreamEnabled',
+        name: 'Pull through',
+        type: 'checkbox',
+        value: authority.upstreamEnabled ? 'true' : 'false'
+      },
+      {
+        id: 'upstreamPolicy',
+        name: 'Default policy',
+        type: 'select',
+        value: authority.upstreamDefaultPolicy || 'allow',
+        options: [
+          { value: 'allow', label: 'Allow versions no rule denies' },
+          { value: 'deny', label: 'Deny versions no rule allows' }
+        ]
       }
     ]} />
 
@@ -225,6 +351,49 @@
         name: 'Trust Signature',
         type: 'textarea',
         validations: []
+      }
+    ]} />
+
+  <FormModal
+    title={`Add an upstream rule to ${authority.name}`}
+    enabled={$createRuleModalEnabled}
+    onClose={hideCreateRuleModal}
+    onSubmit={createRuleSubmit}
+    entries={[
+      {
+        id: 'ruleKind',
+        name: 'Kind',
+        type: 'select',
+        value: 'provider',
+        options: [
+          { value: 'provider', label: 'Provider' },
+          { value: 'module', label: 'Module (name/system)' }
+        ]
+      },
+      {
+        id: 'ruleName',
+        name: 'Name',
+        required: true,
+        type: 'text',
+        placeholder: 'aws, or vpc/aws for a module; globs such as *'
+      },
+      {
+        id: 'ruleVersion',
+        name: 'Version',
+        required: true,
+        type: 'text',
+        value: '*',
+        placeholder: '5.*'
+      },
+      {
+        id: 'ruleEffect',
+        name: 'Effect',
+        type: 'select',
+        value: 'deny',
+        options: [
+          { value: 'deny', label: 'Deny' },
+          { value: 'allow', label: 'Allow' }
+        ]
       }
     ]} />
 

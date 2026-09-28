@@ -1135,7 +1135,7 @@ A small NIT branding of Terralist. The name of the company set by this variable 
 
 ### `vcs-provider`
 
-VCS integration used for [release webhooks](../user-guide/webhook-vcs-releases.md). When empty, no VCS provider is initialized (webhook routes must not be used). Today only GitHub is implemented.
+VCS integration used for [release webhooks](user-guide/webhook-vcs-releases.md). When empty, no VCS provider is initialized (webhook routes must not be used). Today only GitHub is implemented.
 
 | Name | Value |
 | --- | --- |
@@ -1148,7 +1148,7 @@ VCS integration used for [release webhooks](../user-guide/webhook-vcs-releases.m
 
 ### `gh-webhook-secret`
 
-Optional shared secret to verify GitHub release webhooks (`X-Hub-Signature-256`, HMAC-SHA256 of the raw body). If empty, signatures are not verified. See the [VCS release webhooks](../user-guide/webhook-vcs-releases.md) guide.
+Optional shared secret to verify GitHub release webhooks (`X-Hub-Signature-256`, HMAC-SHA256 of the raw body). If empty, signatures are not verified. See the [VCS release webhooks](user-guide/webhook-vcs-releases.md) guide.
 
 | Name | Value |
 | --- | --- |

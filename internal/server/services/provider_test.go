@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
@@ -935,17 +936,22 @@ func TestListProviderVersions(t *testing.T) {
 				Return(&provider.Provider{
 					Name: name,
 					Versions: []provider.Version{
-						{Version: "1.0.0", ShaSumsUrl: "providers/SHA256SUMS", ShaSumsSignatureUrl: "providers/SHA256SUMS.sig"},
-						{Version: "1.1.0"},
+						{Version: "1.0.0", ShaSumsUrl: "providers/SHA256SUMS", ShaSumsSignatureUrl: "providers/SHA256SUMS.sig", Origin: provider.OriginManual},
+						{Version: "1.1.0", Origin: provider.OriginManual},
+						{Version: "1.2.0", ShaSumsUrl: "providers/SHA256SUMS", ShaSumsSignatureUrl: "providers/SHA256SUMS.sig", Origin: provider.OriginUpstream},
 					},
 				}, nil)
 
 			Convey("When the service is queried", func() {
 				versions, err := providerService.ListVersions(namespace, name)
 
-				Convey("Every version should be listed", func() {
+				Convey("Every version should be listed with its origin and whether it is served by the mirror only", func() {
 					So(err, ShouldBeNil)
-					So(versions, ShouldResemble, []string{"1.0.0", "1.1.0"})
+					So(versions, ShouldResemble, []artifact.VersionDetails{
+						{Version: "1.0.0", Origin: provider.OriginManual, MirrorOnly: false},
+						{Version: "1.1.0", Origin: provider.OriginManual, MirrorOnly: true},
+						{Version: "1.2.0", Origin: provider.OriginUpstream, MirrorOnly: false},
+					})
 				})
 			})
 		})

@@ -9,6 +9,30 @@ import cmp from 'semver-compare';
 
 type ArtifactVersion = string;
 
+type VersionOrigin = 'manual' | 'upstream';
+
+type VersionDetails = {
+  version: ArtifactVersion;
+  origin: VersionOrigin;
+  // mirrorOnly marks a provider version served by the network mirror only,
+  // for lack of a signed SHA256SUMS file.
+  mirrorOnly?: boolean;
+};
+
+// FetchResults reports, per platform of a provider, the outcome of fetching a
+// version from the upstream; a module fetch reports nothing.
+type FetchResults = {
+  results?: { platform: string; error?: string }[];
+};
+
+type ArtifactVersions = {
+  versions: VersionDetails[];
+  canDelete: boolean;
+  canFetch: boolean;
+  // canBlock allows denying a pulled version by a rule, and deleting it.
+  canBlock: boolean;
+};
+
 type Submodule = {
   path: string;
 };
@@ -93,16 +117,19 @@ const sortArtifactsVersions = (r: Result<Artifact[]>): Result<Artifact[]> => {
 };
 
 const sortVersions = (
-  r: Result<ArtifactVersion[]>
-): Result<ArtifactVersion[]> => {
+  r: Result<ArtifactVersions>
+): Result<ArtifactVersions> => {
   if (r.status == 'ERROR') {
     return r;
   }
 
-  const { data: versions, ...rest } = r;
+  const { data, ...rest } = r;
 
   return {
-    data: versions.sort(cmp).reverse(),
+    data: {
+      ...data,
+      versions: data.versions.sort((a, b) => cmp(b.version, a.version))
+    },
     ...rest
   };
 };
@@ -133,10 +160,10 @@ const actions = {
     provider: string | undefined
   ) =>
     client
-      .get<ArtifactVersion[]>(
+      .get<ArtifactVersions>(
         `/${[namespace, name, provider].filter(e => e).join('/')}/version`
       )
-      .then(handleResponse<ArtifactVersion[]>)
+      .then(handleResponse<ArtifactVersions>)
       .then(sortVersions)
       .catch(handleError),
 
@@ -151,6 +178,23 @@ const actions = {
         `/${[namespace, name, provider].filter(e => e).join('/')}/version/${version}`
       )
       .then(handleResponse<ArtifactVersionWithDocumentation>)
+      .catch(handleError),
+
+  fetchFromUpstream: async (
+    namespace: string,
+    name: string,
+    provider: string | undefined,
+    version: string,
+    platforms: string[]
+  ) =>
+    createClient({ baseURL: '/v1/api', timeout: 600000 })
+      .post<FetchResults>(
+        provider
+          ? `/modules/${namespace}/${name}/${provider}/${version}/fetch`
+          : `/providers/${namespace}/${name}/${version}/fetch`,
+        provider ? {} : { platforms }
+      )
+      .then(handleResponse<FetchResults>)
       .catch(handleError),
 
   delete: async (
@@ -221,12 +265,29 @@ const Artifacts = {
     name: string,
     provider: string | undefined,
     version: string
-  ) => await actions.delete(namespace, name, provider, version)
+  ) => await actions.delete(namespace, name, provider, version),
+  fetchFromUpstream: async (
+    namespace: string,
+    name: string,
+    provider: string | undefined,
+    version: string,
+    platforms: string[] = []
+  ) =>
+    await actions.fetchFromUpstream(
+      namespace,
+      name,
+      provider,
+      version,
+      platforms
+    )
 };
 
 export {
   type Artifact,
   type ArtifactVersion,
+  type ArtifactVersions,
+  type VersionDetails,
+  type VersionOrigin,
   type ArtifactVersionWithDocumentation,
   type Submodule,
   Artifacts

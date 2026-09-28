@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/authority"
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
@@ -820,6 +821,52 @@ func TestUploadModuleDocumentation_MultibytePreserved(t *testing.T) {
 			err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 			Convey("Should succeed and preserve content", func() {
 				So(err, ShouldBeNil)
+			})
+		})
+	})
+}
+
+func TestListModuleVersions(t *testing.T) {
+	Convey("Subject: List the versions of a module", t, func() {
+		mockModuleRepository := repositories.NewMockModuleRepository(t)
+
+		moduleService := &DefaultModuleService{
+			ModuleRepository: mockModuleRepository,
+		}
+
+		Convey("If the module holds uploaded and pulled versions", func() {
+			mockModuleRepository.
+				On("Find", "hashicorp", "dir", "template").
+				Return(&module.Module{
+					Name:     "dir",
+					Provider: "template",
+					Versions: []module.Version{
+						{Version: "1.0.0", Origin: module.OriginManual},
+						{Version: "1.0.2", Origin: module.OriginUpstream},
+					},
+				}, nil)
+
+			versions, err := moduleService.ListVersions("hashicorp", "dir", "template")
+
+			Convey("Every version should be listed with its origin", func() {
+				So(err, ShouldBeNil)
+				So(versions, ShouldResemble, []artifact.VersionDetails{
+					{Version: "1.0.0", Origin: module.OriginManual},
+					{Version: "1.0.2", Origin: module.OriginUpstream},
+				})
+			})
+		})
+
+		Convey("If the module does not exist", func() {
+			mockModuleRepository.
+				On("Find", "hashicorp", "dir", "template").
+				Return(nil, errors.New("not found"))
+
+			versions, err := moduleService.ListVersions("hashicorp", "dir", "template")
+
+			Convey("An error should be returned", func() {
+				So(err, ShouldNotBeNil)
+				So(versions, ShouldBeNil)
 			})
 		})
 	})

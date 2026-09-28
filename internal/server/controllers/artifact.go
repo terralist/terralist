@@ -7,7 +7,6 @@ import (
 	"terralist/internal/server/handlers"
 	"terralist/internal/server/models/artifact"
 	"terralist/internal/server/models/authority"
-	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
@@ -119,7 +118,6 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 		},
 	)
 
-	// TODO: I'm pretty sure this is unused
 	api.GET(
 		"/:namespace/:name/:provider/version",
 		c.Authorization.RequireAuthorization(rbac.ResourceModules)(rbac.ActionGet, moduleComposer),
@@ -128,7 +126,7 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 			name := ctx.Param("name")
 			provider := ctx.Param("provider")
 
-			dto, err := c.ModuleService.Get(namespace, name, provider, false)
+			versions, err := c.ModuleService.ListVersions(namespace, name, provider)
 			if err != nil {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"errors": []string{err.Error()},
@@ -136,14 +134,7 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			versions := lo.Map(
-				dto.Modules[0].Versions,
-				func(v module.VersionListDTO, _ int) string {
-					return v.Version
-				},
-			)
-
-			ctx.JSON(http.StatusOK, versions)
+			ctx.JSON(http.StatusOK, c.versions(ctx, rbac.ResourceModules, namespace, moduleComposer(ctx), versions))
 		},
 	)
 
@@ -183,7 +174,7 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 
-			ctx.JSON(http.StatusOK, versions)
+			ctx.JSON(http.StatusOK, c.versions(ctx, rbac.ResourceProviders, namespace, providerComposer(ctx), versions))
 		},
 	)
 
@@ -250,4 +241,27 @@ func (c *DefaultArtifactController) Subscribe(apis ...*gin.RouterGroup) {
 			ctx.JSON(http.StatusOK, true)
 		},
 	)
+}
+
+// versions pairs the versions of an artifact with what the caller may do with
+// it: delete its versions; fetch versions from the upstream registry, which
+// needs the create permission and an authority pulling through; and block a
+// pulled version, which needs to delete it and to add a rule to the authority.
+func (c *DefaultArtifactController) versions(ctx *gin.Context, resource, namespace, object string, versions []artifact.VersionDetails) artifact.Versions {
+	user := handlers.MustGetFromContext[auth.User](ctx, "user")
+
+	canDelete := c.Authorization.CanPerform(*user, resource, rbac.ActionDelete, object)
+
+	canFetch, canBlock := false, false
+	if a, err := c.AuthorityService.GetByName(namespace); err == nil && a.UpstreamEnabled {
+		canFetch = c.Authorization.CanPerform(*user, resource, rbac.ActionCreate, object)
+		canBlock = canDelete && c.Authorization.CanPerform(*user, rbac.ResourceAuthorities, rbac.ActionUpdate, a.Name)
+	}
+
+	return artifact.Versions{
+		Versions:  versions,
+		CanDelete: canDelete,
+		CanFetch:  canFetch,
+		CanBlock:  canBlock,
+	}
 }

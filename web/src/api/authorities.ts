@@ -1,6 +1,9 @@
 import { AxiosError } from 'axios';
 import { createClient, handleResponse, handleError } from '@/api/api.utils';
 import type { Key } from '@/api/keys';
+import type { Rule } from '@/api/rules';
+
+type UpstreamPolicy = 'allow' | 'deny';
 
 type Authority = {
   id: string;
@@ -8,14 +11,20 @@ type Authority = {
   policyUrl: string;
   public: boolean;
   keys: Key[];
+  upstreamHostname: string;
+  upstreamNamespace: string;
+  upstreamUrl: string;
+  // upstreamToken is only sent, to replace the stored token; the API never
+  // returns it and keeps the stored one when it is empty.
+  upstreamToken?: string;
+  upstreamHasToken: boolean;
+  upstreamEnabled: boolean;
+  upstreamDefaultPolicy: UpstreamPolicy;
+  rules: Rule[];
 };
 
-type UpdateAuthority = {
+type UpdateAuthority = Partial<Authority> & {
   id: string;
-  name?: string;
-  policyUrl?: string;
-  public?: boolean;
-  keys?: Key[];
 };
 
 const client = createClient({
@@ -78,4 +87,10 @@ const Authorities = {
   delete: async (id: string) => await actions.delete(id)
 };
 
-export { type Authority, type UpdateAuthority, type Key, Authorities };
+export {
+  type Authority,
+  type UpstreamPolicy,
+  type UpdateAuthority,
+  type Key,
+  Authorities
+};
