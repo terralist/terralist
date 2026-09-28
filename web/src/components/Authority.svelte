@@ -53,20 +53,23 @@
   };
 
   const update = (entries: Map<string, string | string[] | undefined>) => {
-    const policyUrlValue = entries.get('policyUrl');
-    const policyUrl = Array.isArray(policyUrlValue)
-      ? policyUrlValue.at(0)
-      : policyUrlValue;
-
-    const publicValue = entries.get('public');
-    const isPublic = Array.isArray(publicValue)
-      ? publicValue.at(0)
-      : publicValue;
+    const value = (id: string) => {
+      const entry = entries.get(id);
+      return (Array.isArray(entry) ? entry.at(0) : entry) ?? '';
+    };
 
     onUpdate(authority.id, {
       ...authority,
-      policyUrl: policyUrl ?? '',
-      public: (isPublic ?? 'false') == 'true'
+      policyUrl: value('policyUrl'),
+      public: value('public') == 'true',
+      upstreamHostname: value('upstreamHostname'),
+      upstreamNamespace: value('upstreamNamespace'),
+      upstreamUrl: value('upstreamUrl'),
+      // An empty token keeps the stored one.
+      upstreamToken: value('upstreamToken') || undefined,
+      upstreamEnabled: value('upstreamEnabled') == 'true',
+      upstreamDefaultPolicy:
+        value('upstreamPolicy') == 'deny' ? 'deny' : 'allow'
     });
   };
 
@@ -158,10 +161,21 @@
   };
 </script>
 
-<div class="mb-4">
+<div class="mb-4" data-testid={`authority-${authority.name}`}>
   <div
     class="w-full rounded-lg p-2 px-6 bg-teal-400 dark:bg-teal-700 grid grid-cols-7 lg:grid-cols-11 place-items-start">
-    <span class="col-span-2 lg:col-span-6">{authority.name}</span>
+    <span class="col-span-2 lg:col-span-4">{authority.name}</span>
+    <span class="hidden lg:flex lg:col-span-2 items-center gap-2 text-sm">
+      {#if authority.upstreamHostname}
+        <span>{authority.upstreamHostname}/{authority.upstreamNamespace}</span>
+        {#if authority.upstreamEnabled}
+          <span
+            class="px-2 rounded-lg text-xs uppercase bg-teal-200 dark:bg-teal-900">
+            pulls through
+          </span>
+        {/if}
+      {/if}
+    </span>
     <span>
       {#if authority.policyUrl}
         <a href={authority.policyUrl} target="_blank" rel="noreferrer">
@@ -212,10 +226,10 @@
       {/if}
     </span>
     <span class="place-self-end flex justify-center items-center">
-      <TransparentButton onClick={showUpdateModal}>
+      <TransparentButton onClick={showUpdateModal} label="Edit authority">
         <Icon name="edit-box" />
       </TransparentButton>
-      <TransparentButton onClick={showDeleteModal}>
+      <TransparentButton onClick={showDeleteModal} label="Delete authority">
         <Icon name="trash" />
       </TransparentButton>
     </span>
@@ -275,6 +289,53 @@
         name: 'Public',
         type: 'checkbox',
         value: authority.public ? 'true' : 'false'
+      },
+      {
+        id: 'upstreamHostname',
+        name: 'Upstream hostname',
+        type: 'text',
+        placeholder: 'registry.terraform.io',
+        value: authority.upstreamHostname
+      },
+      {
+        id: 'upstreamNamespace',
+        name: 'Upstream namespace',
+        type: 'text',
+        placeholder: authority.name,
+        value: authority.upstreamNamespace
+      },
+      {
+        id: 'upstreamUrl',
+        name: 'Upstream URL',
+        type: 'text',
+        placeholder: 'https://<upstream hostname>',
+        value: authority.upstreamUrl,
+        validations: [URLValidation()]
+      },
+      {
+        id: 'upstreamToken',
+        name: 'Upstream token',
+        type: 'password',
+        placeholder: authority.upstreamHasToken
+          ? 'A token is stored; leave empty to keep it'
+          : '',
+        value: ''
+      },
+      {
+        id: 'upstreamEnabled',
+        name: 'Pull through',
+        type: 'checkbox',
+        value: authority.upstreamEnabled ? 'true' : 'false'
+      },
+      {
+        id: 'upstreamPolicy',
+        name: 'Default policy',
+        type: 'select',
+        value: authority.upstreamDefaultPolicy || 'allow',
+        options: [
+          { value: 'allow', label: 'Allow versions no rule denies' },
+          { value: 'deny', label: 'Deny versions no rule allows' }
+        ]
       }
     ]} />
 

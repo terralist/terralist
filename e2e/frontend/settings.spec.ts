@@ -12,6 +12,6 @@ test.describe('Settings', () => {
     await page.goto('/#/settings');
 
     // The bootstrapped authority should be listed.
-    await expect(page.getByText('hashicorp')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('hashicorp', { exact: true })).toBeVisible({ timeout: 10_000 });
   });
 });

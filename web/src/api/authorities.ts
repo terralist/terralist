@@ -3,6 +3,8 @@ import { createClient, handleResponse, handleError } from '@/api/api.utils';
 import type { Key } from '@/api/keys';
 import type { ApiKey } from '@/api/apiKeys';
 
+type UpstreamPolicy = 'allow' | 'deny';
+
 type Authority = {
   id: string;
   name: string;
@@ -10,15 +12,19 @@ type Authority = {
   public: boolean;
   keys: Key[];
   apiKeys: ApiKey[];
+  upstreamHostname: string;
+  upstreamNamespace: string;
+  upstreamUrl: string;
+  // upstreamToken is only sent, to replace the stored token; the API never
+  // returns it and keeps the stored one when it is empty.
+  upstreamToken?: string;
+  upstreamHasToken: boolean;
+  upstreamEnabled: boolean;
+  upstreamDefaultPolicy: UpstreamPolicy;
 };
 
-type UpdateAuthority = {
+type UpdateAuthority = Partial<Authority> & {
   id: string;
-  name?: string;
-  policyUrl?: string;
-  public?: boolean;
-  keys?: Key[];
-  apiKeys?: ApiKey[];
 };
 
 const client = createClient({
@@ -83,6 +89,7 @@ const Authorities = {
 
 export {
   type Authority,
+  type UpstreamPolicy,
   type UpdateAuthority,
   type Key,
   type ApiKey,

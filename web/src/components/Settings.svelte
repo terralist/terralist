@@ -121,9 +121,9 @@
     let result = await Authorities.update(authority);
 
     if (result.status === 'OK') {
+      const updated = result.data;
       authorities.set([
-        ...($authorities?.map(a => (a.id == authority.id ? authority : a)) ??
-          [])
+        ...($authorities?.map(a => (a.id == authority.id ? updated : a)) ?? [])
       ]);
     } else {
       errorMessage.set(result.message);
@@ -240,7 +240,8 @@
     {:else if ($authorities ?? []).length > 0}
       <div
         class="w-full p-2 px-6 grid grid-cols-7 lg:grid-cols-11 place-items-start text-xs lg:text-sm text-light uppercase text-zinc-500 dark:text-zinc-200">
-        <span class="col-span-2 lg:col-span-6"> Name </span>
+        <span class="col-span-2 lg:col-span-4"> Name </span>
+        <span class="hidden lg:block lg:col-span-2"> Upstream </span>
         <span> Policy </span>
         <span> Public </span>
         <span> Signing Keys </span>
