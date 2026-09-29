@@ -6116,7 +6116,7 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
 </tbody>
 </table>
 <h3 id="gh-webhook-secret"><code>gh-webhook-secret</code><a class="headerlink" href="#gh-webhook-secret" title="Permanent link">¶</a></h3>
-<p>Optional shared secret to verify GitHub release webhooks (<code>X-Hub-Signature-256</code>, HMAC-SHA256 of the raw body). If empty, signatures are not verified. See the <a href="../user-guide/webhook-vcs-releases/">VCS release webhooks</a> guide.</p>
+<p>Shared secret to verify GitHub release webhooks (<code>X-Hub-Signature-256</code>, HMAC-SHA256 of the raw body). Required when <a href="#vcs-provider"><code>vcs-provider</code></a> is <code>github</code>; Terralist refuses to start without it and rejects webhooks that are not signed with it. See the <a href="../user-guide/webhook-vcs-releases/">VCS release webhooks</a> guide.</p>
 <table>
 <thead>
 <tr>
@@ -6131,7 +6131,7 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
 </tr>
 <tr>
 <td>required</td>
-<td>no</td>
+<td>when <code>vcs-provider</code> is <code>github</code></td>
 </tr>
 <tr>
 <td>default</td>
@@ -6148,7 +6148,7 @@ By default, the S3 client will use virtual hosted bucket addressing when possibl
 </tbody>
 </table>
 <h3 id="gh-access-token"><code>gh-access-token</code><a class="headerlink" href="#gh-access-token" title="Permanent link">¶</a></h3>
-<p>Optional bearer token for outbound GitHub downloads (for example a personal access token). Sent as <code>Authorization: Bearer</code> on fetches. Startup validation requires <strong>either</strong> this token <strong>or</strong> all of <code>gh-app-id</code>, <code>gh-app-installation-id</code>, and <code>gh-app-private-key-path</code> (GitHub App installation token flow).</p>
+<p>Optional bearer token for outbound GitHub downloads (for example a personal access token). Sent as <code>Authorization: Bearer</code> on fetches from GitHub hosts only (see <a href="../user-guide/webhook-vcs-releases/#outbound-credentials-private-repositories">Outbound credentials</a>). Startup validation requires <strong>either</strong> this token <strong>or</strong> all of <code>gh-app-id</code>, <code>gh-app-installation-id</code>, and <code>gh-app-private-key-path</code> (GitHub App installation token flow).</p>
 <table>
 <thead>
 <tr>

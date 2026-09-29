@@ -980,9 +980,9 @@
 <h1 id="vcs-release-webhooks">VCS release webhooks<a class="headerlink" href="#vcs-release-webhooks" title="Permanent link">¶</a></h1>
 <p>Terralist can create a new <strong>module</strong> or <strong>provider</strong> version when GitHub sends a <strong>release</strong> webhook. Only <strong>GitHub</strong> is supported today; the URL includes a <code>:vcs</code> segment for future providers, but the server must be configured with <a href="../../configuration/#vcs-provider"><code>vcs-provider: github</code></a>.</p>
 <p>The registry target (authority namespace and module or provider identity) is taken from the URL path; the release payload supplies the tag, assets, and archive URLs.</p>
-<p>Webhook routes are <strong>not</strong> protected by normal API authentication. Optionally verify inbound requests with <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a> (<code>X-Hub-Signature-256</code>). Outbound downloads from private repositories use <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a> or a <a href="#github-app-outbound-auth">GitHub App</a>.</p>
+<p>Webhook routes are <strong>not</strong> protected by normal API authentication. Instead, every request must be signed with <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a> (<code>X-Hub-Signature-256</code>). Outbound downloads from private repositories use <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a> or a <a href="#github-app-outbound-auth">GitHub App</a>.</p>
 <h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">¶</a></h2>
-<p>Set <a href="../../configuration/#vcs-provider"><code>vcs-provider</code></a> to <code>github</code> and configure outbound credentials as below. If <code>vcs-provider</code> is left empty, no VCS provider is initialized and webhook handlers are not usable.</p>
+<p>Set <a href="../../configuration/#vcs-provider"><code>vcs-provider</code></a> to <code>github</code>, set <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a>, and configure outbound credentials as below. Terralist refuses to start with <code>vcs-provider: github</code> and no webhook secret. If <code>vcs-provider</code> is left empty, no VCS provider is initialized and webhook handlers are not usable.</p>
 <h2 id="endpoints">Endpoints<a class="headerlink" href="#endpoints" title="Permanent link">¶</a></h2>
 <p>Base URL: <code>{terralist-url}/v1</code> (same host as <code>url</code> in <a href="../../configuration/#url">configuration</a>).</p>
 <table>
@@ -1021,6 +1021,7 @@
 <p>If the module or provider does not exist yet, it is created on first successful upload, same as the authenticated upload API.</p>
 <h2 id="outbound-credentials-private-repositories">Outbound credentials (private repositories)<a class="headerlink" href="#outbound-credentials-private-repositories" title="Permanent link">¶</a></h2>
 <p>Terralist uses these settings when <strong>fetching</strong> archives, assets, or checksum files from GitHub—not for verifying the inbound webhook.</p>
+<p>Credentials are sent only to <code>https</code> URLs on GitHub hosts: <code>github.com</code>, <code>api.github.com</code> and <code>codeload.github.com</code>, or exactly the <a href="../../configuration/#gh-base-url"><code>gh-base-url</code></a> host for GitHub Enterprise. A module archive on any other host is fetched without credentials. A provider release is fetched with credentials only when its checksums, signature and every platform zip are on those hosts.</p>
 <p>Startup validation requires <strong>either</strong> <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a> <strong>or</strong> all three: <a href="../../configuration/#gh-app-id"><code>gh-app-id</code></a>, <a href="../../configuration/#gh-app-installation-id"><code>gh-app-installation-id</code></a>, and <a href="../../configuration/#gh-app-private-key-path"><code>gh-app-private-key-path</code></a>.</p>
 <h3 id="personal-access-token">Personal access token<a class="headerlink" href="#personal-access-token" title="Permanent link">¶</a></h3>
 <p>Set <a href="../../configuration/#gh-access-token"><code>gh-access-token</code></a>. Terralist sends <code>Authorization: Bearer &lt;token&gt;</code> on outbound fetches.</p>
@@ -1043,13 +1044,13 @@
 <li>In the repository, open <strong>Settings → Webhooks → Add webhook</strong> (or configure an organization webhook scoped to the repositories that should publish).</li>
 <li><strong>Payload URL</strong>: one of the <a href="#endpoints">endpoints</a> above, with <code>github</code> as <code>:vcs</code> and path segments set to your authority name, module or provider name, and module provider suffix as needed.</li>
 <li><strong>Content type</strong>: <code>application/json</code>.</li>
-<li><strong>Secret</strong>: optional; if set, it must match <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a>. GitHub sends <code>X-Hub-Signature-256</code>.</li>
+<li><strong>Secret</strong>: the value of <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a>. GitHub signs each delivery with it in <code>X-Hub-Signature-256</code>, and Terralist rejects deliveries without a valid signature.</li>
 <li><strong>Which events</strong>: choose <strong>Let me select individual events</strong> and enable <strong>Releases</strong> (Terralist only acts on <strong>published</strong> releases).</li>
 </ol>
 <p>Save the webhook. Creating or publishing a release whose tag is a valid semver should trigger a module or provider version upload.</p>
 <h2 id="security-notes">Security notes<a class="headerlink" href="#security-notes" title="Permanent link">¶</a></h2>
 <ul>
-<li>Leaving <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a> empty accepts any caller who can reach the endpoint; use a secret in production when the URL is exposed.</li>
+<li>Anyone who knows <a href="../../configuration/#gh-webhook-secret"><code>gh-webhook-secret</code></a> can publish versions into any authority through these routes. Use a long random value and rotate it if it leaks.</li>
 </ul>
 
 
