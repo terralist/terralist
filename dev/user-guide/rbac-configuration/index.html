@@ -598,6 +598,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#policy-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Evaluation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-key-scopes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1016,6 +1027,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#policy-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Evaluation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-key-scopes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1187,16 +1209,30 @@
 </tbody>
 </table>
 <p>The <code>providers</code> resource covers both the Provider Registry Protocol and the <a href="../network-mirror/">Provider Network Mirror</a>.</p>
+<h2 id="policy-evaluation">Policy Evaluation<a class="headerlink" href="#policy-evaluation" title="Permanent link">¶</a></h2>
+<p>A request is evaluated against every subject the user is known by: their username, their e-mail, each of their <code>group:&lt;group&gt;</code> entries, and every role assigned to any of those (or the default role, if none is assigned). The request is then decided as follows:</p>
+<ol>
+<li>If any policy matching the request has the <code>deny</code> effect, for any of those subjects, the request is denied.</li>
+<li>Otherwise, if any policy matching the request has the <code>allow</code> effect, the request is allowed.</li>
+<li>Otherwise, the request is denied.</li>
+</ol>
+<p>A <code>deny</code> therefore always wins, no matter which subject it is attached to: a <code>deny</code> on <code>group:contractors</code> restricts every member of that group, even if they are also granted access through another group, their e-mail, or a role such as <code>role:admin</code>.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>g, group:engineering, role:developer
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>p, role:developer, modules, *, *, allow
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a># Contractors cannot access acme modules, even if they are also in the engineering group
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>p, group:contractors, modules, *, acme/*, deny
+</span></code></pre></div>
 <h2 id="api-key-scopes">API Key Scopes<a class="headerlink" href="#api-key-scopes" title="Permanent link">¶</a></h2>
 <p>Every API key has a <strong>scope</strong> — a required label that determines who can manage the key via RBAC policies.</p>
 <p>Unlike modules or providers, API keys have no natural organizational hierarchy. The API key's UUID cannot be used in policies because it is the authentication secret itself. The scope solves this by providing a human-readable, non-sensitive identifier that can be referenced in the server-side RBAC policy.</p>
 <p>When evaluating RBAC permissions on the <code>api-keys</code> resource, the scope is used as the policy object. This means you can write policies such as:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>p, team-a-manager@example.com, api-keys, *, team-a, allow
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>p, team-b-manager@example.com, api-keys, *, team-b, allow
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>p, team-a-manager@example.com, api-keys, *, team-a, allow
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>p, team-b-manager@example.com, api-keys, *, team-b, allow
 </span></code></pre></div>
 <p>In this example, Team A's manager can create, view, and delete API keys scoped to <code>team-a</code>, but cannot touch keys scoped to <code>team-b</code>, and vice versa.</p>
 <p>Scopes support glob matching, which enables hierarchical delegation. For example, a lead who oversees multiple sub-teams can be granted access to all their keys with a single policy:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>p, lead@example.com, api-keys, *, team-a*, allow
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>p, lead@example.com, api-keys, *, team-a*, allow
 </span></code></pre></div>
 <p>This matches <code>team-a</code>, <code>team-a-frontend</code>, <code>team-a-backend</code>, etc.</p>
 <p>The scope is purely organizational -- it does not affect what the API key can access. A key scoped to <code>team-a</code> can still have policies that grant access to resources across multiple authorities. The scope only controls who can manage the key itself.</p>
@@ -1216,18 +1252,18 @@
 <h2 id="authorities-access-policies">Authorities Access Policies<a class="headerlink" href="#authorities-access-policies" title="Permanent link">¶</a></h2>
 <p>Use explicit deny/allow policies for <code>authorities</code> to avoid relying on defaults.</p>
 <p>Example:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a># Deny broad authorities access by default for developer role
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>p, role:developer, authorities, *, *, deny
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a># Grant read-only access to a specific authority for authority-reader role
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>p, role:authority-reader, authorities, get, example-authority, allow
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a># Grant full authorities management to authority-admin role
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>p, role:authority-admin, authorities, *, *, allow
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># Deny all authorities access for developer role, even if another role allows it
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>p, role:developer, authorities, *, *, deny
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a># Grant read-only access to a specific authority for authority-reader role
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>p, role:authority-reader, authorities, get, example-authority, allow
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a># Grant full authorities management to authority-admin role
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>p, role:authority-admin, authorities, *, *, allow
 </span></code></pre></div>
 <p>Then map identity claims (user/group/email) to those roles:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>g, group:SSOAWS_PLATFORM, role:authority-admin
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>g, group:SSOAWS_ENGINEERING, role:authority-reader
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>g, group:SSOAWS_PLATFORM, role:authority-admin
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>g, group:SSOAWS_ENGINEERING, role:authority-reader
 </span></code></pre></div>
 <h2 id="settings-page-access-with-rbac">Settings Page Access With RBAC<a class="headerlink" href="#settings-page-access-with-rbac" title="Permanent link">¶</a></h2>
 <p>The Settings page capability endpoint checks RBAC permission:</p>
@@ -1239,11 +1275,11 @@
 <p>Settings page access and visibility are controlled only by RBAC policy.</p>
 <p>Migration note: if you previously used <code>--authorized-users</code>, convert that access list to RBAC <code>settings/get/page</code> policies and role mappings.</p>
 <p>Example policies:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a># Explicitly deny settings page access for developer role
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>p, role:developer, settings, get, page, deny
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a># Allow settings page access for authority-admin role
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>p, role:authority-admin, settings, get, page, allow
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a># Explicitly deny settings page access for developer role
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>p, role:developer, settings, get, page, deny
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a># Allow settings page access for authority-admin role
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>p, role:authority-admin, settings, get, page, allow
 </span></code></pre></div>
 
 
