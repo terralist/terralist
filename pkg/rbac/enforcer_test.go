@@ -270,3 +270,99 @@ func TestProtect_RejectsMirrorResource(t *testing.T) {
 		t.Fatalf("expected the mirror resource to be unsupported, got: %v", err)
 	}
 }
+
+func TestProtect_DenyOverridesAllowFromAnotherSubject(t *testing.T) {
+	t.Parallel()
+
+	policy := `
+g, group:engineering, role:developer
+g, group:platform, role:admin
+g, bob@example.com, role:developer
+p, role:developer, modules, *, *, allow
+p, group:contractors, modules, get, acme/*, deny
+p, group:contractors, providers, get, acme/*, deny
+p, group:contractors, settings, get, page, deny
+p, bob@example.com, modules, delete, *, deny
+`
+
+	enforcer, err := NewEnforcerFromString(policy, "readonly")
+	if err != nil {
+		t.Fatalf("failed to create enforcer: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		user     auth.User
+		resource string
+		action   string
+		object   string
+		allowed  bool
+	}{
+		{
+			name:     "group deny overrides allow from another group's role",
+			user:     auth.User{Name: "alice", Email: "alice@example.com", Groups: []string{"engineering", "contractors"}},
+			resource: ResourceModules,
+			action:   ActionGet,
+			object:   "acme/vpc/aws",
+		},
+		{
+			name:     "allow from another group's role applies outside the denied objects",
+			user:     auth.User{Name: "alice", Email: "alice@example.com", Groups: []string{"engineering", "contractors"}},
+			resource: ResourceModules,
+			action:   ActionGet,
+			object:   "other/vpc/aws",
+			allowed:  true,
+		},
+		{
+			name:     "group deny overrides the default role",
+			user:     auth.User{Name: "carol", Email: "carol@example.com", Groups: []string{"contractors"}},
+			resource: ResourceProviders,
+			action:   ActionGet,
+			object:   "acme/aws",
+		},
+		{
+			name:     "default role applies outside the denied objects",
+			user:     auth.User{Name: "carol", Email: "carol@example.com", Groups: []string{"contractors"}},
+			resource: ResourceProviders,
+			action:   ActionGet,
+			object:   "other/aws",
+			allowed:  true,
+		},
+		{
+			name:     "group deny overrides admin role from another group",
+			user:     auth.User{Name: "dave", Email: "dave@example.com", Groups: []string{"platform", "contractors"}},
+			resource: ResourceSettings,
+			action:   ActionGet,
+			object:   "page",
+		},
+		{
+			name:     "email deny overrides allow from the same user's role",
+			user:     auth.User{Name: "bob", Email: "bob@example.com"},
+			resource: ResourceModules,
+			action:   ActionDelete,
+			object:   "other/vpc/aws",
+		},
+		{
+			name:     "role allow applies to actions the email does not deny",
+			user:     auth.User{Name: "bob", Email: "bob@example.com"},
+			resource: ResourceModules,
+			action:   ActionCreate,
+			object:   "other/vpc/aws",
+			allowed:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := enforcer.Protect(tt.user, tt.resource, tt.action, tt.object)
+			if tt.allowed && err != nil {
+				t.Fatalf("expected access to be allowed, got: %v", err)
+			}
+			if !tt.allowed && !errors.Is(err, ErrUnauthorizedSubject) {
+				t.Fatalf("expected access to be denied, got: %v", err)
+			}
+		})
+	}
+}

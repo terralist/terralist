@@ -71,6 +71,24 @@ Below is a table that defines the correct object syntax for each resource group.
 
 The `providers` resource covers both the Provider Registry Protocol and the [Provider Network Mirror](network-mirror.md).
 
+## Policy Evaluation
+
+A request is evaluated against every subject the user is known by: their username, their e-mail, each of their `group:<group>` entries, and every role assigned to any of those (or the default role, if none is assigned). The request is then decided as follows:
+
+1. If any policy matching the request has the `deny` effect, for any of those subjects, the request is denied.
+2. Otherwise, if any policy matching the request has the `allow` effect, the request is allowed.
+3. Otherwise, the request is denied.
+
+A `deny` therefore always wins, no matter which subject it is attached to: a `deny` on `group:contractors` restricts every member of that group, even if they are also granted access through another group, their e-mail, or a role such as `role:admin`.
+
+```csv
+g, group:engineering, role:developer
+p, role:developer, modules, *, *, allow
+
+# Contractors cannot access acme modules, even if they are also in the engineering group
+p, group:contractors, modules, *, acme/*, deny
+```
+
 ## API Key Scopes
 
 Every API key has a **scope** — a required label that determines who can manage the key via RBAC policies.
@@ -118,7 +136,7 @@ Use explicit deny/allow policies for `authorities` to avoid relying on defaults.
 Example:
 
 ```csv
-# Deny broad authorities access by default for developer role
+# Deny all authorities access for developer role, even if another role allows it
 p, role:developer, authorities, *, *, deny
 
 # Grant read-only access to a specific authority for authority-reader role
