@@ -50,6 +50,9 @@ jobs:
       - name: Build frontend
         run: task --verbose build:frontend
 
+      - name: Run frontend unit tests
+        run: task --verbose test:unit:frontend
+
       - name: Run unit tests
         run: task --verbose test:unit -- --cover
 
