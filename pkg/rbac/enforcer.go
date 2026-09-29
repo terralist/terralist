@@ -84,7 +84,7 @@ type CasbinEnforcer interface {
 	AddFunction(name string, function govaluate.ExpressionFunction)
 	AddPolicy(params ...any) (bool, error)
 	GetRolesForUser(name string, domain ...string) ([]string, error)
-	BatchEnforce(rvals [][]any) ([]bool, error)
+	EnforceEx(rvals ...any) (bool, []string, error)
 }
 
 // Enforcer is a wrapper around casbin.Enforcer that supports default roles and glob matching.
@@ -170,18 +170,32 @@ func (e *Enforcer) enforce(subjects []string, resource, object, action string) b
 		roles = []string{e.defaultRole}
 	}
 
-	// Evaluate all subjects and their roles against the policy.
-	allSubjects := lo.Uniq(append(subjects, roles...))
-	requests := lo.Map(allSubjects, func(subject string, _ int) []any {
-		return []any{subject, resource, action, object}
-	})
+	// Evaluate all subjects and their roles against the policy. The model's
+	// effect only applies within a single request, so deny precedence is
+	// enforced here across all of them: a deny reached through any subject
+	// overrides an allow reached through another.
+	allowed := false
+	for _, subject := range lo.Uniq(append(subjects, roles...)) {
+		ok, explain, err := e.enforcer.EnforceEx(subject, resource, action, object)
+		if err != nil {
+			logger.Warn().Str("subject", subject).Err(err).Msg("Failed to enforce policy")
+			return false
+		}
 
-	results, err := e.enforcer.BatchEnforce(requests)
-	if err != nil {
-		return false
+		if ok {
+			allowed = true
+			continue
+		}
+
+		// A denied request explains itself with the matched deny policy,
+		// while a request with no matching policy has no explanation.
+		if len(explain) > 0 && explain[len(explain)-1] == EffectDeny {
+			logger.Debug().Str("subject", subject).Strs("policy", explain).Msg("Denied by policy")
+			return false
+		}
 	}
 
-	return lo.SomeBy(results, func(r bool) bool { return r })
+	return allowed
 }
 
 // EvaluateInline evaluates a set of inline policies against a request.
