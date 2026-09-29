@@ -1,0 +1,1681 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Terraform/OpenTofu Private Registry for modules and providers manageable from a REST API">
+      
+      
+        <meta name="author" content="Valentin Deaconu">
+      
+      
+        <link rel="canonical" href="https://www.terralist.io/v0.11.0/user-guide/network-mirror/">
+      
+      
+        <link rel="prev" href="../monitoring/">
+      
+      
+        <link rel="next" href="../security/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/terralist.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Provider Network Mirror - Terralist</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#provider-network-mirror" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Terralist" class="md-header__button md-logo" aria-label="Terralist" data-md-component="logo">
+      
+  <img src="../../assets/terralist.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Terralist
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Provider Network Mirror
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/terralist/terralist/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Terralist" class="md-nav__button md-logo" aria-label="Terralist" data-md-component="logo">
+      
+  <img src="../../assets/terralist.svg" alt="logo">
+
+    </a>
+    Terralist
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/terralist/terralist/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../artifacts-documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Artifacts Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-s3-bucket-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AWS S3 Bucket Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rbac-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RBAC Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../saml-configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SAML Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring and Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Network Mirror
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider Network Mirror
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#standing-for-an-upstream-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standing for an upstream namespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pulling-providers-through-from-an-upstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pulling providers through from an upstream
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pulling providers through from an upstream">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-happens-on-a-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happens on a request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#who-may-pull-through" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who may pull through
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-warming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-warming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managing-pulled-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managing pulled versions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pulling-modules-through-from-an-upstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pulling modules through from an upstream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-authorities-on-demand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating authorities on demand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uploading-provider-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uploading provider packages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Uploading provider packages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-download-the-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Download the providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-optionally-download-the-signature-material" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Optionally, download the signature material
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-the-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create the authority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-upload-each-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Upload each version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-terraform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Terraform
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upgrading-to-v0.11/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Upgrading to v0.11
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../dev-guide/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Developer Guide
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Developer Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/local-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/e2e-testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    E2E Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#standing-for-an-upstream-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Standing for an upstream namespace
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pulling-providers-through-from-an-upstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pulling providers through from an upstream
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pulling providers through from an upstream">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-happens-on-a-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What happens on a request
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#who-may-pull-through" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who may pull through
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-warming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-warming
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managing-pulled-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Managing pulled versions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trust
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pulling-modules-through-from-an-upstream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pulling modules through from an upstream
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-authorities-on-demand" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating authorities on demand
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#uploading-provider-packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Uploading provider packages
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Uploading provider packages">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-download-the-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Download the providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-optionally-download-the-signature-material" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Optionally, download the signature material
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-create-the-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Create the authority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-upload-each-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Upload each version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-terraform" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuring Terraform
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access control
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="provider-network-mirror">Provider Network Mirror<a class="headerlink" href="#provider-network-mirror" title="Permanent link">¶</a></h1>
+<p>Terralist serves its providers through the <a href="https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol">Provider Network Mirror Protocol</a> in addition to the Provider Registry Protocol. Both protocols expose the same providers: everything uploaded to a Terralist authority is available through both.</p>
+<p>The mirror protocol lets a Terraform CLI configuration route provider installation through Terralist with a single <code>network_mirror</code> block, without service discovery and without changing anything in the Terraform configurations themselves.</p>
+<div class="admonition note">
+<p class="admonition-title">Providers only</p>
+<p>The network mirror protocol is defined by Terraform for providers only. Modules keep using the <a href="../../getting-started/#upload-a-new-module">Module Registry Protocol</a>, through which they can also be <a href="#pulling-modules-through-from-an-upstream">pulled through from an upstream</a>.</p>
+</div>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">¶</a></h2>
+<p>The protocol does not use service discovery, so its endpoints live at a fixed base URL:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>https://terralist.example.com/providers/
+</span></code></pre></div>
+<p>Terraform queries two documents under that base URL:</p>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Available versions</td>
+<td><code>GET /providers/&lt;hostname&gt;/&lt;namespace&gt;/&lt;type&gt;/index.json</code></td>
+</tr>
+<tr>
+<td>Installation packages of a version</td>
+<td><code>GET /providers/&lt;hostname&gt;/&lt;namespace&gt;/&lt;type&gt;/&lt;version&gt;.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>&lt;hostname&gt;</code> and <code>&lt;namespace&gt;</code> come from the provider's source address and are mapped to an authority:</p>
+<ul>
+<li>Under Terralist's own hostname, the one configured with the <a href="../../configuration/#url"><code>url</code></a> option, the namespace is the authority name, exactly as in the registry protocol.</li>
+<li>Under any other hostname, the request is served by the authority that <a href="#standing-for-an-upstream-namespace">stands for that upstream namespace</a>. Without such an authority the provider is not found.</li>
+</ul>
+<p>Both documents are generated from the Terralist database. Package download URLs point to the configured providers storage, or to the location given at upload time when the <a href="../../configuration/#providers-storage-resolver"><code>providers-storage-resolver</code></a> is <code>proxy</code>. Each package is listed with its <code>zh:</code> hash, the sha256 of the package, and with its <code>h1:</code> hash when the uploader provided one. Terraform verifies the package against these hashes before installing it.</p>
+<h2 id="standing-for-an-upstream-namespace">Standing for an upstream namespace<a class="headerlink" href="#standing-for-an-upstream-namespace" title="Permanent link">¶</a></h2>
+<p>Terraform identifies a provider by its full source address, <code>registry.terraform.io/hashicorp/aws</code> for the public <code>hashicorp/aws</code>. A module that requires <code>hashicorp/aws</code> and a root configuration that requires <code>terralist.example.com/hashicorp/aws</code> ask for two different providers, so a mirror that only answered under Terralist's own hostname could not serve public providers to configurations that were not written for it.</p>
+<p>An authority can therefore stand for a namespace of an upstream registry. Set its upstream hostname, and optionally the upstream namespace when it differs from the authority name:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"name": "hashicorp", "upstream_hostname": "registry.terraform.io"}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities
+</span></code></pre></div>
+<p>Every provider of that authority is then served by the mirror under both addresses, <code>terralist.example.com/hashicorp/&lt;type&gt;</code> and <code>registry.terraform.io/hashicorp/&lt;type&gt;</code>. Access control does not change: the policy object stays <code>&lt;authority&gt;/&lt;type&gt;</code>. An upstream hostname and namespace pair can be claimed by one authority only.</p>
+<h2 id="pulling-providers-through-from-an-upstream">Pulling providers through from an upstream<a class="headerlink" href="#pulling-providers-through-from-an-upstream" title="Permanent link">¶</a></h2>
+<p>An authority standing for an upstream namespace can also fetch the providers it does not hold from that upstream registry, on first request, and keep them. Enable the upstream on the authority:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Web UI</label><label for="__tabbed_1_2">API</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>On the settings page, edit the authority and fill its upstream: the hostname, the namespace when it differs from the authority name, and optionally a URL and a token. Check <strong>Pull through</strong> and choose the default policy. The authority list then shows the upstream the authority stands for, marked <strong>pulls through</strong>.</p>
+</div>
+<div class="tabbed-block">
+<p>An update replaces the whole authority, its signing keys included, so send it back as read with the upstream enabled:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities/<span class="nv">$AUTHORITY_ID</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.upstream_enabled = true'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="p">|</span><span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>PATCH<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">      </span>-d<span class="w"> </span>@-<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">      </span>https://terralist.example.com/v1/api/authorities/<span class="nv">$AUTHORITY_ID</span>
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<p>Pulling through needs a storage backend for providers, since fetched packages are stored and then served from there like uploaded ones. With the <code>proxy</code> <a href="../../configuration/#providers-storage-resolver"><code>providers-storage-resolver</code></a> the upstream is never consulted. Terralist never streams a package to a client: a stored package is answered with a redirect to storage, and a package not stored yet is downloaded from the upstream, verified and stored first, then answered with the same redirect.</p>
+<p>The upstream is reached at <code>https://&lt;upstream_hostname&gt;</code> unless <code>upstream_url</code> names another location, such as a private mirror of the public registry. A private upstream can be given an <code>upstream_token</code>, which Terralist sends as a bearer token and stores sealed with the <a href="../../configuration/#upstream-secret"><code>upstream-secret</code></a>. The token is never returned by the API; <code>upstream_has_token</code> tells whether one is stored, and an update without a token keeps the stored one. Private upstreams on internal networks also need <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a>.</p>
+<h3 id="what-happens-on-a-request">What happens on a request<a class="headerlink" href="#what-happens-on-a-request" title="Permanent link">¶</a></h3>
+<ul>
+<li>The version list, in both protocols, merges the versions the upstream offers with the versions Terralist holds. A version uploaded to Terralist always wins over the upstream one and is served exactly as uploaded: the platforms it lacks are not completed from the upstream. An upload never replaces a version already pulled from the upstream: delete the pulled version first, with the <strong>Delete version</strong> action of its page or through the API, then upload your own.</li>
+<li>The network mirror version document lists the packages Terralist holds with their storage location, and the packages it does not hold yet with their <code>zh:</code> hash from the upstream <code>SHA256SUMS</code> file and a link back to the mirror. The registry protocol download metadata does the same for a single platform.</li>
+<li>Following such a link downloads the package from the upstream with its digest enforced, stores it next to the <code>SHA256SUMS</code> file and its signature, records the platform with the <code>upstream</code> origin, and redirects to storage. Concurrent requests for the same package wait for one download. The next request is served from storage without touching the upstream.</li>
+<li>Upstream metadata is cached for <a href="../../configuration/#upstream-cache-ttl"><code>upstream-cache-ttl</code></a> and kept for <a href="../../configuration/#upstream-cache-retention"><code>upstream-cache-retention</code></a>. When the upstream is unreachable, the last known answer is served, and everything already stored stays available regardless. Without a last known answer, the versions and packages Terralist holds are served alone, and a request nothing Terralist holds can answer fails with <code>502 Bad Gateway</code>.</li>
+</ul>
+<p>Terraform downloads packages without credentials, so the links Terralist lists carry a short-lived token that proves the document was served to a caller allowed to read the package, and whether that caller may fetch it. The links expire after fifteen minutes.</p>
+<h3 id="who-may-pull-through">Who may pull through<a class="headerlink" href="#who-may-pull-through" title="Permanent link">¶</a></h3>
+<p>Reading a version list or a document only needs the <code>get</code> action on the provider. Merging upstream versions and fetching packages writes to storage and to the database, so it needs the <code>create</code> action on the <code>&lt;authority&gt;/&lt;type&gt;</code> object of the <code>providers</code> resource. A caller with <code>get</code> only sees and downloads what Terralist already holds. The API key Terraform uses must therefore be allowed to <code>create</code> the providers it should pull through.</p>
+<h3 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">¶</a></h3>
+<p>The authority's <code>upstream_default_policy</code>, <code>allow</code> or <code>deny</code>, decides which upstream versions may be served when no rule says otherwise. Rules refine it per artifact:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Web UI</label><label for="__tabbed_2_2">API</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>On the settings page, an authority standing for an upstream shows its rule count next to the upstream. The plus button adds a rule, with its kind, name, version and effect; the arrow button lists the rules, each with a button removing it.</p>
+</div>
+<div class="tabbed-block">
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"kind": "provider", "name": "aws", "version": "5.*", "effect": "deny"}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities/<span class="nv">$AUTHORITY_ID</span>/rules
+</span></code></pre></div>
+</div>
+</div>
+</div>
+<p><code>name</code> and <code>version</code> are globs, the name matched regardless of case; <code>kind</code> is <code>provider</code> or <code>module</code>. A version is served when the upstream is enabled, no deny rule matches, and either the default policy is <code>allow</code> or an allow rule matches. Deny always wins. Rules filter the version list itself, so Terraform never selects a version it cannot download. They apply to upstream versions only; versions uploaded to Terralist are always served. Rules are removed with <code>DELETE /v1/api/authorities/&lt;id&gt;/rules/&lt;rule id&gt;</code>.</p>
+<p>A deny rule is the way to stop serving a version that was pulled through: deleting the stored version alone would only make the next request fetch it again. The <strong>Block version</strong> action of the artifact page does both, as described in <a href="#managing-pulled-versions">managing pulled versions</a>.</p>
+<h3 id="pre-warming">Pre-warming<a class="headerlink" href="#pre-warming" title="Permanent link">¶</a></h3>
+<p>A cold fetch of a large provider happens inside Terraform's download request. Terraform itself puts no timeout on it, but a reverse proxy or load balancer in front of Terralist may. Packages can be fetched ahead of time instead:</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Web UI</label><label for="__tabbed_3_2">API</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>On the page of a provider Terralist holds, <strong>Fetch from upstream</strong> lists the versions the upstream offers that Terralist does not hold yet. Choose a version and, optionally, the platforms to fetch, such as <code>linux_amd64,darwin_arm64</code>; all of the version's platforms are fetched otherwise.</p>
+</div>
+<div class="tabbed-block">
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"platforms": ["linux_amd64", "darwin_arm64"]}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/providers/hashicorp/aws/5.0.0/fetch
+</span></code></pre></div>
+<p>The response reports the outcome per platform.</p>
+</div>
+</div>
+</div>
+<h3 id="managing-pulled-versions">Managing pulled versions<a class="headerlink" href="#managing-pulled-versions" title="Permanent link">¶</a></h3>
+<p>The page of a module or provider version shows where the version comes from: a version pulled from the upstream is marked <strong>pulled from upstream</strong>, and a provider version the network mirror only serves, uploaded without its signature material, is marked <strong>network mirror only</strong>. The version selector tags such versions as well.</p>
+<p>The page also offers the actions the caller is allowed to take:</p>
+<ul>
+<li><strong>Delete version</strong> removes any version, uploaded or pulled. A pulled version is pulled again on the next request for it.</li>
+<li><strong>Block version</strong> stops serving a pulled version: it adds a rule of the authority denying that exact version, then deletes the pulled copy. It needs the <code>delete</code> action on the artifact and the <code>update</code> action on the authority.</li>
+<li><strong>Fetch from upstream</strong> pre-warms a version, as described in <a href="#pre-warming">pre-warming</a>. It needs the <code>create</code> action on the artifact and an authority that pulls through.</li>
+</ul>
+<h3 id="trust">Trust<a class="headerlink" href="#trust" title="Permanent link">¶</a></h3>
+<p>Before anything from an upstream is trusted, Terralist fetches the version's <code>SHA256SUMS</code> file and its signature and verifies the signature against the keys the upstream advertises for that version, the way Terraform does. Only digests from a verified file are listed, every package download enforces its digest, and the signing keys are stored with the version so that Terraform installing through the registry protocol verifies the same chain.</p>
+<p>Registries keep advertising the key that signed a release after that key expired and do not re-sign old releases. Terralist accepts such signatures once every other check passed, as Terraform does, and logs a warning naming the key. Set <a href="../../configuration/#upstream-reject-expired-signing-keys"><code>upstream-reject-expired-signing-keys</code></a> to refuse them instead.</p>
+<h3 id="pulling-modules-through-from-an-upstream">Pulling modules through from an upstream<a class="headerlink" href="#pulling-modules-through-from-an-upstream" title="Permanent link">¶</a></h3>
+<p>Modules have no network mirror protocol and no identity problem: a module is fetched from whatever registry its source names, so consumers point the source at Terralist, <code>terralist.example.com/hashicorp/dir/template</code>, and Terralist fills the gaps from the upstream namespace the authority stands for, under the same rules and the same <code>create</code> requirement.</p>
+<p>The version list of the module registry protocol merges the upstream versions the rules allow. The download endpoint of a version Terralist does not hold answers with an <code>X-Terraform-Get</code> location pointing at Terralist's own archive route, carrying the same kind of short-lived token as provider packages, because Terraform hands module locations to go-getter, which downloads without credentials. Following that location fetches the module from its upstream source, a git repository or an archive over HTTP(S), stores it exactly as an uploaded module is stored, documentation included, and hands go-getter the storage location. The next download of that version goes to storage directly. Other upstream sources, such as <code>s3::</code> or <code>gcs::</code>, are refused, and git hosts resolving to private addresses are refused unless <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a> is set.</p>
+<p>Module rules use <code>kind</code> <code>module</code> and name the module as <code>&lt;name&gt;/&lt;system&gt;</code>:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"kind": "module", "name": "dir/template", "version": "*", "effect": "allow"}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities/<span class="nv">$AUTHORITY_ID</span>/rules
+</span></code></pre></div>
+<p>A module version can be pre-warmed as well, from the module page with <strong>Fetch from upstream</strong> or through the API:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>https://terralist.example.com/v1/api/modules/hashicorp/dir/template/1.0.2/fetch
+</span></code></pre></div>
+<h3 id="creating-authorities-on-demand">Creating authorities on demand<a class="headerlink" href="#creating-authorities-on-demand" title="Permanent link">¶</a></h3>
+<p>With <a href="../../configuration/#upstream-auto-create"><code>upstream-auto-create</code></a> listing an upstream hostname, the first network mirror request for an unknown namespace of that hostname, from a caller allowed to <code>create</code> that authority, creates it: named after the namespace, standing for it, enabled, with the <code>allow</code> policy, owned by the caller. Other callers, anonymous ones included, never create authorities.</p>
+<h2 id="uploading-provider-packages">Uploading provider packages<a class="headerlink" href="#uploading-provider-packages" title="Permanent link">¶</a></h2>
+<p>Besides the <a href="../../dev-guide/api-reference/#upload-a-provider-version">registry upload</a>, which fetches the provider files from URLs, a provider version can be uploaded from its package files directly. This is how providers reach an air-gapped Terralist: an operator downloads them on a machine with internet access, moves them into the isolated network and uploads them.</p>
+<h3 id="1-download-the-providers">1. Download the providers<a class="headerlink" href="#1-download-the-providers" title="Permanent link">¶</a></h3>
+<p>On a connected machine, let Terraform download the providers required by a configuration, together with their metadata:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>terraform<span class="w"> </span>providers<span class="w"> </span>mirror<span class="w"> </span>-platform<span class="o">=</span>linux_amd64<span class="w"> </span>-platform<span class="o">=</span>darwin_arm64<span class="w"> </span>./mirror
+</span></code></pre></div>
+<p>The command writes one directory per provider, containing a <code>&lt;version&gt;.json</code> document and one package archive per platform:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>mirror/registry.terraform.io/hashicorp/null/
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>├── 3.2.4.json
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>├── index.json
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>├── terraform-provider-null_3.2.4_darwin_arm64.zip
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>└── terraform-provider-null_3.2.4_linux_amd64.zip
+</span></code></pre></div>
+<p>Terraform verifies the signatures of the packages it downloads, so the <code>h1</code> hashes listed in <code>&lt;version&gt;.json</code> can be trusted as long as the files are not altered afterwards.</p>
+<h3 id="2-optionally-download-the-signature-material">2. Optionally, download the signature material<a class="headerlink" href="#2-optionally-download-the-signature-material" title="Permanent link">¶</a></h3>
+<p>The registry protocol requires the provider's <code>SHA256SUMS</code> file, its signature and the signing key. <code>terraform providers mirror</code> does not download them, so a version uploaded without them is served through the network mirror only. To serve it through both protocols, fetch them from the upstream registry's download endpoint and add the signing key to the authority. The upload is refused unless the signature verifies with one of the authority keys:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">version</span><span class="o">=</span><span class="m">3</span>.2.4
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nv">platform</span><span class="o">=</span>linux_amd64
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nv">meta</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span><span class="s2">"https://registry.terraform.io/v1/providers/hashicorp/null/</span><span class="nv">$version</span><span class="s2">/download/</span><span class="si">${</span><span class="nv">platform</span><span class="p">%_*</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">platform</span><span class="p">#*_</span><span class="si">}</span><span class="s2">"</span><span class="k">)</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>SHA256SUMS<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$meta</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.shasums_url<span class="k">)</span><span class="s2">"</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>SHA256SUMS.sig<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$meta</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.shasums_signature_url<span class="k">)</span><span class="s2">"</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$meta</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.signing_keys.gpg_public_keys[0] | {key_id, ascii_armor}'</span><span class="w"> </span>&gt;<span class="w"> </span>key.json
+</span></code></pre></div>
+<h3 id="3-create-the-authority">3. Create the authority<a class="headerlink" href="#3-create-the-authority" title="Permanent link">¶</a></h3>
+<p>Create the authority once, standing for the upstream namespace so that Terraform can install the providers under their original address:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"name": "hashicorp", "upstream_hostname": "registry.terraform.io"}'</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>https://terralist.example.com/v1/api/authorities
+</span></code></pre></div>
+<p>When serving through the registry protocol as well, add the signing key from step 2 to the authority through its keys endpoint or the web UI.</p>
+<h3 id="4-upload-each-version">4. Upload each version<a class="headerlink" href="#4-upload-each-version" title="Permanent link">¶</a></h3>
+<p>The upload is a multipart request with the version document in the <code>metadata</code> field and the packages in the <code>archives</code> field. The <code>shasums</code> and <code>shasums_signature</code> files and the <code>protocols</code> value are given together when the version should be served through the registry protocol too:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">metadata</span><span class="o">=</span>@3.2.4.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">archives</span><span class="o">=</span>@terraform-provider-null_3.2.4_linux_amd64.zip<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">archives</span><span class="o">=</span>@terraform-provider-null_3.2.4_darwin_arm64.zip<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">shasums</span><span class="o">=</span>@SHA256SUMS<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">shasums_signature</span><span class="o">=</span>@SHA256SUMS.sig<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span>-F<span class="w"> </span><span class="nv">protocols</span><span class="o">=</span><span class="m">5</span>.0,6.0<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span>https://terralist.example.com/v1/api/providers/hashicorp/null/3.2.4/upload-files
+</span></code></pre></div>
+<p>Terralist matches every archive with the entry of the same file name in the version document, records its sha256 and its <code>h1</code> hash, and, when a <code>SHA256SUMS</code> file is given, rejects the upload if any archive does not match it. The <code>index.json</code> file is not uploaded; the version list is computed by Terralist.</p>
+<p>A whole mirror directory can be uploaded as mirror-only versions with a small loop:</p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nb">cd</span><span class="w"> </span>mirror
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>find<span class="w"> </span>.<span class="w"> </span>-name<span class="w"> </span><span class="s1">'*.json'</span><span class="w"> </span>!<span class="w"> </span>-name<span class="w"> </span><span class="s1">'index.json'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="nb">read</span><span class="w"> </span>-r<span class="w"> </span>metadata<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nv">dir</span><span class="o">=</span><span class="k">$(</span>dirname<span class="w"> </span><span class="s2">"</span><span class="nv">$metadata</span><span class="s2">"</span><span class="k">)</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="nv">version</span><span class="o">=</span><span class="k">$(</span>basename<span class="w"> </span><span class="s2">"</span><span class="nv">$metadata</span><span class="s2">"</span><span class="w"> </span>.json<span class="k">)</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nv">path</span><span class="o">=</span><span class="si">${</span><span class="nv">dir</span><span class="p">#./*/</span><span class="si">}</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">  </span><span class="nv">args</span><span class="o">=()</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>archive<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="s2">"</span><span class="nv">$dir</span><span class="s2">"</span>/*_<span class="s2">"</span><span class="nv">$version</span><span class="s2">"</span>_*.zip<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="w">    </span><span class="nv">args</span><span class="o">+=(</span>-F<span class="w"> </span><span class="s2">"archives=@</span><span class="nv">$archive</span><span class="s2">"</span><span class="o">)</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="w">  </span><span class="k">done</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="w">  </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="w">    </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:</span><span class="nv">$TERRALIST_API_KEY</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">    </span>-F<span class="w"> </span><span class="s2">"metadata=@</span><span class="nv">$metadata</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="si">${</span><span class="nv">args</span><span class="p">[@]</span><span class="si">}</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="w">    </span><span class="s2">"https://terralist.example.com/v1/api/providers/</span><span class="nv">$path</span><span class="s2">/</span><span class="nv">$version</span><span class="s2">/upload-files"</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="k">done</span>
+</span></code></pre></div>
+<p>The loop strips the hostname from the mirror directory, so <code>registry.terraform.io/hashicorp/null</code> uploads to the <code>hashicorp</code> authority, which must exist beforehand.</p>
+<p>Mirror-only versions are omitted from the registry protocol version list, since Terraform refuses unsigned packages from a registry. They are removed like any other version, through the <a href="../../dev-guide/api-reference/#remove-a-provider-version">provider deletion endpoints</a>.</p>
+<h2 id="configuring-terraform">Configuring Terraform<a class="headerlink" href="#configuring-terraform" title="Permanent link">¶</a></h2>
+<p>Point Terraform at the mirror in the <a href="https://developer.hashicorp.com/terraform/cli/config/config-file#provider-installation">CLI configuration file</a>. The trailing slash in the URL is required.</p>
+<div class="language-hcl highlight"><span class="filename">.terraformrc</span><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">provider_installation</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nb">network_mirror</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="na">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://terralist.example.com/providers/"</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="p">}</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="err">credentials</span><span class="w"> </span><span class="s2">"terralist.example.com"</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="w">  </span><span class="na">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"x-api-key:YOUR_API_KEY"</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>With this configuration, Terraform installs every provider from the mirror. Provider addresses in the configuration stay unchanged, and providers of authorities standing for an upstream namespace keep their upstream address:</p>
+<div class="language-hcl highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nb">terraform</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nb">required_providers</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">    </span><span class="nb">null</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">      </span><span class="na">source</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="s2">"hashicorp/null"</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">      </span><span class="na">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"3.2.4"</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="p">}</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>To mirror only some providers and install the rest directly, combine the <code>network_mirror</code> and <code>direct</code> methods with <code>include</code> and <code>exclude</code>:</p>
+<div class="language-hcl highlight"><span class="filename">.terraformrc</span><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">provider_installation</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nb">network_mirror</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="na">url</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="s2">"https://terralist.example.com/providers/"</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">    </span><span class="na">include</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"terralist.example.com/*/*", "registry.terraform.io/hashicorp/*"</span><span class="p">]</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">  </span><span class="nb">direct</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="na">exclude</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"terralist.example.com/*/*", "registry.terraform.io/hashicorp/*"</span><span class="p">]</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>Terraform verifies each package against the <code>zh:</code> hash listed by the mirror and reports it as <code>verified checksum</code>. The dependency lock file then records only the <code>h1:</code> hash Terraform computes for the installed platform, and <code>terraform init</code> warns about incomplete lock file information. Run <a href="https://developer.hashicorp.com/terraform/cli/commands/providers/lock"><code>terraform providers lock</code></a> to record the hashes of every platform your team uses.</p>
+<p>Terraform requires HTTPS for network mirrors. The <code>credentials</code> block is not needed when <a href="../../configuration/#providers-anonymous-read"><code>providers-anonymous-read</code></a> is enabled or the authority is public.</p>
+<div class="admonition warning">
+<p class="admonition-title">Hostnames with a port</p>
+<p>Terraform builds the mirror request URL from the provider hostname and mistakes a hostname that carries a port, such as <code>terralist.example.com:8443</code>, for a URL scheme. Providers addressed with such a hostname cannot be installed through the mirror. Serve Terralist on the default HTTPS port, or address the providers with the upstream hostname their authority stands for.</p>
+</div>
+<h2 id="access-control">Access control<a class="headerlink" href="#access-control" title="Permanent link">¶</a></h2>
+<p>The mirror serves the same providers as the registry protocol and is governed by the same <code>providers</code> <a href="../rbac-configuration/">RBAC resource</a>, with the <code>&lt;authority&gt;/&lt;provider-name&gt;</code> object syntax. A policy that grants <code>get</code> on a provider grants it through both protocols.</p>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">¶</a></h2>
+<ul>
+<li><a href="https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol">Terraform Provider Network Mirror Protocol</a></li>
+<li><a href="https://developer.hashicorp.com/terraform/cli/commands/providers/mirror"><code>terraform providers mirror</code></a></li>
+<li><a href="../../dev-guide/api-reference/#list-provider-versions-network-mirror">API reference</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Made with ❤️ by Terralist contributors.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
