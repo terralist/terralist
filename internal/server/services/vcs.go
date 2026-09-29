@@ -16,7 +16,7 @@ const (
 )
 
 type VcsService interface {
-	GetHeaders() map[string]string
+	GetHeaders(urls []string) map[string]string
 	ParseModuleReleaseWebhook(ctx *gin.Context, vcsName string, namespace string, name string, provider string) (*vcs.ReleaseEvent, error)
 	ParseProviderReleaseWebhook(ctx *gin.Context, vcsName string, namespace string, name string) (*vcs.ReleaseEvent, error)
 
@@ -28,8 +28,8 @@ type DefaultVcsService struct {
 	Fetcher  file.Fetcher
 }
 
-func (s *DefaultVcsService) GetHeaders() map[string]string {
-	return s.Provider.GetHeaders()
+func (s *DefaultVcsService) GetHeaders(urls []string) map[string]string {
+	return s.Provider.GetHeaders(urls)
 }
 
 func (s *DefaultVcsService) ParseModuleReleaseWebhook(ctx *gin.Context, vcsName string, namespace string, name string, provider string) (*vcs.ReleaseEvent, error) {
@@ -142,6 +142,14 @@ func (s *DefaultVcsService) BuildProviderCreateDTO(authorityID uuid.UUID, namesp
 		return nil, fmt.Errorf("no recognized provider platforms in release assets")
 	}
 
+	urls := []string{shasumsURL}
+	if shasumsSigURL != "" {
+		urls = append(urls, shasumsSigURL)
+	}
+	for _, p := range platforms {
+		urls = append(urls, p.Location)
+	}
+
 	shaDTO := provider.CreateProviderShaSumsDTO{
 		URL:          shasumsURL,
 		SignatureURL: shasumsSigURL,
@@ -154,7 +162,7 @@ func (s *DefaultVcsService) BuildProviderCreateDTO(authorityID uuid.UUID, namesp
 		Protocols:   []string{DefaultProviderProtocols},
 		ShaSums:     shaDTO,
 		Platforms:   platforms,
-		Headers:     s.Provider.GetHeaders(),
+		Headers:     s.Provider.GetHeaders(urls),
 	}
 	return dto, nil
 }

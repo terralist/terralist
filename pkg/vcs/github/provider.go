@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"terralist/pkg/vcs"
 	"terralist/pkg/version"
@@ -26,10 +27,13 @@ type Provider struct {
 
 var _ vcs.Provider = &Provider{}
 
-func (p *Provider) GetHeaders() map[string]string {
+func (p *Provider) GetHeaders(urls []string) map[string]string {
 	headers := map[string]string{
 		"Accept":               "application/vnd.github.v3+json",
 		"X-GitHub-Api-Version": "2022-11-28",
+	}
+	if !p.trustedURLs(urls) {
+		return headers
 	}
 	if p.AppID != 0 && p.AppInstallationID != 0 && p.AppPrivateKeyPath != "" {
 		headers["Authorization"] = "Bearer " + p.AccessToken
@@ -40,9 +44,37 @@ func (p *Provider) GetHeaders() map[string]string {
 	return headers
 }
 
+// trustedURLs reports whether every url is served over https by the
+// configured GitHub host, so credentials are never sent to other hosts.
+func (p *Provider) trustedURLs(urls []string) bool {
+	if len(urls) == 0 {
+		return false
+	}
+
+	base, err := url.Parse(p.BaseURL)
+	if err != nil || base.Host == "" {
+		return false
+	}
+	baseHost := strings.ToLower(base.Host)
+
+	trusted := map[string]bool{baseHost: true}
+	if baseHost == "github.com" {
+		trusted["api.github.com"] = true
+		trusted["codeload.github.com"] = true
+	}
+
+	for _, raw := range urls {
+		u, err := url.Parse(raw)
+		if err != nil || u.Scheme != "https" || u.User != nil || !trusted[strings.ToLower(u.Host)] {
+			return false
+		}
+	}
+	return true
+}
+
 func (p *Provider) Authenticate(ctx *gin.Context, body []byte) error {
 	if p.WebhookSecret == "" {
-		return nil
+		return fmt.Errorf("webhook secret is not configured")
 	}
 	signatureHeader := ctx.GetHeader("X-Hub-Signature-256")
 	if signatureHeader == "" {

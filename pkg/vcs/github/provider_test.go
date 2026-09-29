@@ -95,3 +95,68 @@ func TestVerifyGitHubSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAuthenticateWithoutSecret(t *testing.T) {
+	provider := &Provider{}
+	if err := provider.Authenticate(&gin.Context{
+		Request: &http.Request{Header: map[string][]string{}},
+	}, []byte(`{}`)); err == nil {
+		t.Fatal("expected unsigned webhook to be rejected when no secret is configured")
+	}
+}
+
+func TestAuthenticateMissingSignature(t *testing.T) {
+	provider := &Provider{WebhookSecret: "s"}
+	if err := provider.Authenticate(&gin.Context{
+		Request: &http.Request{Header: map[string][]string{}},
+	}, []byte(`{}`)); err == nil {
+		t.Fatal("expected unsigned webhook to be rejected")
+	}
+}
+
+func TestConfigRequiresWebhookSecret(t *testing.T) {
+	cfg := &Config{BaseURL: "github.com"}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected missing webhook secret to fail validation")
+	}
+	cfg.WebhookSecret = "s"
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetHeadersSendsCredentialsOnlyToGitHub(t *testing.T) {
+	tests := []struct {
+		name     string
+		baseURL  string
+		urls     []string
+		wantAuth bool
+	}{
+		{"api", "https://github.com", []string{"https://api.github.com/repos/o/r/zipball/v1"}, true},
+		{"codeload", "https://github.com", []string{"https://codeload.github.com/o/r/zip/v1"}, true},
+		{"github", "https://github.com", []string{"https://github.com/o/r/releases/download/v1/a.zip"}, true},
+		{"host case", "https://github.com", []string{"https://API.GitHub.com/repos/o/r/zipball/v1"}, true},
+		{"all trusted", "https://github.com", []string{"https://api.github.com/a", "https://github.com/b"}, true},
+		{"no urls", "https://github.com", nil, false},
+		{"other host", "https://github.com", []string{"https://attacker.example/archive.zip"}, false},
+		{"lookalike host", "https://github.com", []string{"https://github.com.attacker.example/a.zip"}, false},
+		{"other subdomain", "https://github.com", []string{"https://pages.github.com/a.zip"}, false},
+		{"plain http", "https://github.com", []string{"http://api.github.com/repos/o/r/zipball/v1"}, false},
+		{"userinfo", "https://github.com", []string{"https://user@api.github.com/a"}, false},
+		{"other port", "https://github.com", []string{"https://api.github.com:8443/a"}, false},
+		{"one untrusted", "https://github.com", []string{"https://api.github.com/a", "https://attacker.example/b"}, false},
+		{"empty url", "https://github.com", []string{""}, false},
+		{"enterprise", "https://ghe.example.com", []string{"https://ghe.example.com/api/v3/repos/o/r/zipball/v1"}, true},
+		{"enterprise to github.com", "https://ghe.example.com", []string{"https://api.github.com/repos/o/r/zipball/v1"}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := &Provider{AccessToken: "token", BaseURL: tt.baseURL}
+			_, gotAuth := provider.GetHeaders(tt.urls)["Authorization"]
+			if gotAuth != tt.wantAuth {
+				t.Fatalf("Authorization sent = %v, want %v", gotAuth, tt.wantAuth)
+			}
+		})
+	}
+}
