@@ -126,7 +126,7 @@ jobs:
 
     services:
       postgres:
-        image: public.ecr.aws/docker/library/postgres:18.6
+        image: ${{ matrix.database-backend == 'postgresql' && 'public.ecr.aws/docker/library/postgres:18.6' || '' }}
         ports:
           - 5432:5432
         env:
@@ -134,7 +134,7 @@ jobs:
           POSTGRES_PASSWORD: "terralist"
           POSTGRES_DB: "terralist"
       mysql:
-        image: public.ecr.aws/docker/library/mysql:9.7
+        image: ${{ matrix.database-backend == 'mysql' && 'public.ecr.aws/docker/library/mysql:9.7' || '' }}
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
         ports:
           - 3306:3306

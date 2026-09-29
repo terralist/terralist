@@ -126,6 +126,16 @@
       depNameTemplate: 'node',
       datasourceTemplate: 'node-version',
     },
+    {
+      customType: 'regex',
+      managerFilePatterns: [
+        '/^\\.github\\/workflows\\/test\\.yml$/',
+      ],
+      matchStrings: [
+        "'(?<depName>public\\.ecr\\.aws/docker/library/[a-z0-9._-]+):(?<currentValue>[^'\\s]+)'",
+      ],
+      datasourceTemplate: 'docker',
+    },
   ],
   vulnerabilityAlerts: {
     labels: [
