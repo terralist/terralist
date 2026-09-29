@@ -4,6 +4,8 @@ Terralist is designed to run as a private registry for trusted users. It is **no
 
 Run Terralist behind your own network boundary (VPN, private network, or an authenticating reverse proxy) and treat every authenticated tenant as a party that can reach the server, not just the registry API. Several capabilities, such as publishing a module from a remote URL, cause the server to act on tenant-supplied input.
 
+To report a vulnerability in Terralist, follow the [security policy](https://github.com/terralist/terralist/security/policy). Do not open a public issue.
+
 ## Threats and mitigations
 
 ### Server-side request forgery through artifact fetching

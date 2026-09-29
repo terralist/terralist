@@ -92,6 +92,8 @@ Contributions are welcome. All input is appreciated, whether it's a bug report, 
 - **Issues**: [github.com/terralist/terralist/issues](https://github.com/terralist/terralist/issues)
 - **Discussions**: [github.com/terralist/terralist/discussions](https://github.com/terralist/terralist/discussions)
 
+To report a security vulnerability, do not open a public issue. Follow the [security policy](./SECURITY.md) instead.
+
 ## License
 
 Terralist is licensed under the [Mozilla Public License 2.0](./LICENSE).
