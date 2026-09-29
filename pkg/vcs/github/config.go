@@ -19,6 +19,10 @@ type Config struct {
 func (c *Config) SetDefaults() {}
 
 func (c *Config) Validate() error {
+	if c.WebhookSecret == "" {
+		return fmt.Errorf("missing required webhook secret")
+	}
+
 	if c.BaseURL == "" {
 		return fmt.Errorf("missing required base URL")
 	}

@@ -1148,19 +1148,19 @@ VCS integration used for [release webhooks](user-guide/webhook-vcs-releases.md).
 
 ### `gh-webhook-secret`
 
-Optional shared secret to verify GitHub release webhooks (`X-Hub-Signature-256`, HMAC-SHA256 of the raw body). If empty, signatures are not verified. See the [VCS release webhooks](user-guide/webhook-vcs-releases.md) guide.
+Shared secret to verify GitHub release webhooks (`X-Hub-Signature-256`, HMAC-SHA256 of the raw body). Required when [`vcs-provider`](#vcs-provider) is `github`; Terralist refuses to start without it and rejects webhooks that are not signed with it. See the [VCS release webhooks](user-guide/webhook-vcs-releases.md) guide.
 
 | Name | Value |
 | --- | --- |
 | type | string |
-| required | no |
+| required | when `vcs-provider` is `github` |
 | default | `n/a` |
 | cli | `--gh-webhook-secret` |
 | env | `TERRALIST_GH_WEBHOOK_SECRET` |
 
 ### `gh-access-token`
 
-Optional bearer token for outbound GitHub downloads (for example a personal access token). Sent as `Authorization: Bearer` on fetches. Startup validation requires **either** this token **or** all of `gh-app-id`, `gh-app-installation-id`, and `gh-app-private-key-path` (GitHub App installation token flow).
+Optional bearer token for outbound GitHub downloads (for example a personal access token). Sent as `Authorization: Bearer` on fetches from GitHub hosts only (see [Outbound credentials](user-guide/webhook-vcs-releases.md#outbound-credentials-private-repositories)). Startup validation requires **either** this token **or** all of `gh-app-id`, `gh-app-installation-id`, and `gh-app-private-key-path` (GitHub App installation token flow).
 
 | Name | Value |
 | --- | --- |

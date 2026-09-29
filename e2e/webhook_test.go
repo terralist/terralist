@@ -129,11 +129,11 @@ func fetchNullProviderReleaseMetadata(t *testing.T, version string) (shasumsURL,
 	return shasumsURL, shasumsSigURL, downloadURL
 }
 
-func providerReleasePayload(t *testing.T, version string, includeChecksums bool) map[string]any {
+func providerReleasePayload(t *testing.T, includeChecksums bool) map[string]any {
 	t.Helper()
 
-	shasumsURL, shasumsSigURL, downloadURL := fetchNullProviderReleaseMetadata(t, version)
-	prefix := fmt.Sprintf("terraform-provider-null_%s", version)
+	shasumsURL, shasumsSigURL, downloadURL := fetchNullProviderReleaseMetadata(t, providerWebhookVersion)
+	prefix := fmt.Sprintf("terraform-provider-null_%s", providerWebhookVersion)
 
 	assets := []map[string]any{
 		{
@@ -157,9 +157,9 @@ func providerReleasePayload(t *testing.T, version string, includeChecksums bool)
 	return map[string]any{
 		"action": "published",
 		"release": map[string]any{
-			"tag_name":    fmt.Sprintf("v%s", version),
+			"tag_name":    fmt.Sprintf("v%s", providerWebhookVersion),
 			"draft":       false,
-			"zipball_url": fmt.Sprintf("https://github.com/hashicorp/terraform-provider-null/archive/refs/tags/v%s.zip", version),
+			"zipball_url": fmt.Sprintf("https://github.com/hashicorp/terraform-provider-null/archive/refs/tags/v%s.zip", providerWebhookVersion),
 			"assets":      assets,
 		},
 		"repository": map[string]any{
@@ -179,6 +179,18 @@ func TestModuleWebhook(t *testing.T) {
 		errors, ok := result["errors"].([]any)
 		require.True(t, ok)
 		require.NotEmpty(t, errors)
+	})
+
+	t.Run("missing signature", func(t *testing.T) {
+		body := marshalWebhookPayload(t, moduleReleasePayload("published", "v"+moduleWebhookVersion))
+		resp := doWebhookRequestWithSignature(t, apiURL(moduleWebhookURL), body, "")
+		result := readJSON(t, resp)
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		errors, ok := result["errors"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, errors)
+		assert.False(t, moduleVersionExists(t, moduleWebhookVersion))
 	})
 
 	t.Run("ignored non-published action", func(t *testing.T) {
@@ -245,7 +257,7 @@ func TestModuleWebhook(t *testing.T) {
 
 func TestProviderWebhook(t *testing.T) {
 	t.Run("invalid signature", func(t *testing.T) {
-		body := marshalWebhookPayload(t, providerReleasePayload(t, providerWebhookVersion, true))
+		body := marshalWebhookPayload(t, providerReleasePayload(t, true))
 		resp := doWebhookRequestWithSignature(t, apiURL(providerWebhookURL), body, "sha256=deadbeef")
 		result := readJSON(t, resp)
 
@@ -255,8 +267,20 @@ func TestProviderWebhook(t *testing.T) {
 		require.NotEmpty(t, errors)
 	})
 
+	t.Run("missing signature", func(t *testing.T) {
+		body := marshalWebhookPayload(t, providerReleasePayload(t, true))
+		resp := doWebhookRequestWithSignature(t, apiURL(providerWebhookURL), body, "")
+		result := readJSON(t, resp)
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		errors, ok := result["errors"].([]any)
+		require.True(t, ok)
+		require.NotEmpty(t, errors)
+		assert.False(t, providerVersionExists(t, providerWebhookVersion))
+	})
+
 	t.Run("missing checksum asset", func(t *testing.T) {
-		body := marshalWebhookPayload(t, providerReleasePayload(t, providerWebhookVersion, false))
+		body := marshalWebhookPayload(t, providerReleasePayload(t, false))
 		resp := doWebhookRequest(t, apiURL(providerWebhookURL), body)
 		result := readJSON(t, resp)
 
@@ -269,7 +293,7 @@ func TestProviderWebhook(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		require.False(t, providerVersionExists(t, providerWebhookVersion))
 
-		body := marshalWebhookPayload(t, providerReleasePayload(t, providerWebhookVersion, true))
+		body := marshalWebhookPayload(t, providerReleasePayload(t, true))
 		resp := doWebhookRequest(t, apiURL(providerWebhookURL), body)
 		result := readJSON(t, resp)
 

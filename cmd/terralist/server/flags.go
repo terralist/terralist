@@ -523,7 +523,7 @@ var flags = map[string]cli.Flag{
 	},
 
 	GitHubWebhookSecretFlag: &cli.StringFlag{
-		Description: "Optional shared secret to verify GitHub release webhooks (X-Hub-Signature-256). If empty, signatures are not verified.",
+		Description: "Shared secret to verify GitHub release webhooks (X-Hub-Signature-256). Required when vcs-provider is github.",
 	},
 	GitHubAccessTokenFlag: &cli.StringFlag{
 		Description: "Optional bearer token for outbound GitHub downloads (e.g. PAT). Not required when gh-app-id, gh-app-installation-id, and gh-app-private-key-path are all set.",

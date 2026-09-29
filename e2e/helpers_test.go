@@ -173,7 +173,7 @@ func githubWebhookSignature(body []byte, secret string) string {
 	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }
 
-// doWebhookRequest executes an unsigned GitHub webhook POST.
+// doWebhookRequest executes a GitHub webhook POST signed with the configured secret.
 func doWebhookRequest(t *testing.T, url string, body []byte) *http.Response {
 	t.Helper()
 	return doWebhookRequestWithSignature(t, url, body, githubWebhookSignature(body, config.WebhookSecret))

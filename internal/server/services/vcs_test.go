@@ -21,7 +21,7 @@ func TestBuildProviderCreateDTO(t *testing.T) {
 
 	mockFetcher := file.NewMockFetcher(t)
 	mockProvider := vcs.NewMockProvider(t)
-	mockProvider.On("GetHeaders").Return(vcsHeaders)
+	mockProvider.On("GetHeaders", []string{"https://ex/sums", "https://ex/sig", "https://ex/linux.zip"}).Return(vcsHeaders)
 
 	hashLine := strings.Repeat("a", 64) + "  terraform-provider-acme_1.0.0_linux_amd64.zip"
 	mockFetcher.
@@ -57,7 +57,7 @@ func TestBuildProviderCreateDTO(t *testing.T) {
 func TestBuildProviderCreateDTOIgnoresCase(t *testing.T) {
 	mockFetcher := file.NewMockFetcher(t)
 	mockProvider := vcs.NewMockProvider(t)
-	mockProvider.On("GetHeaders").Return(map[string]string{})
+	mockProvider.On("GetHeaders", mock.Anything).Return(map[string]string{})
 
 	hashLine := strings.Repeat("a", 64) + "  terraform-provider-acme_1.0.0_linux_amd64.zip"
 	mockFetcher.

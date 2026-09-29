@@ -4,11 +4,11 @@ Terralist can create a new **module** or **provider** version when GitHub sends 
 
 The registry target (authority namespace and module or provider identity) is taken from the URL path; the release payload supplies the tag, assets, and archive URLs.
 
-Webhook routes are **not** protected by normal API authentication. Optionally verify inbound requests with [`gh-webhook-secret`](../configuration.md#gh-webhook-secret) (`X-Hub-Signature-256`). Outbound downloads from private repositories use [`gh-access-token`](../configuration.md#gh-access-token) or a [GitHub App](#github-app-outbound-auth).
+Webhook routes are **not** protected by normal API authentication. Instead, every request must be signed with [`gh-webhook-secret`](../configuration.md#gh-webhook-secret) (`X-Hub-Signature-256`). Outbound downloads from private repositories use [`gh-access-token`](../configuration.md#gh-access-token) or a [GitHub App](#github-app-outbound-auth).
 
 ## Prerequisites
 
-Set [`vcs-provider`](../configuration.md#vcs-provider) to `github` and configure outbound credentials as below. If `vcs-provider` is left empty, no VCS provider is initialized and webhook handlers are not usable.
+Set [`vcs-provider`](../configuration.md#vcs-provider) to `github`, set [`gh-webhook-secret`](../configuration.md#gh-webhook-secret), and configure outbound credentials as below. Terralist refuses to start with `vcs-provider: github` and no webhook secret. If `vcs-provider` is left empty, no VCS provider is initialized and webhook handlers are not usable.
 
 ## Endpoints
 
@@ -41,6 +41,8 @@ If the module or provider does not exist yet, it is created on first successful 
 ## Outbound credentials (private repositories)
 
 Terralist uses these settings when **fetching** archives, assets, or checksum files from GitHub—not for verifying the inbound webhook.
+
+Credentials are sent only to `https` URLs on GitHub hosts: `github.com`, `api.github.com` and `codeload.github.com`, or exactly the [`gh-base-url`](../configuration.md#gh-base-url) host for GitHub Enterprise. A module archive on any other host is fetched without credentials. A provider release is fetched with credentials only when its checksums, signature and every platform zip are on those hosts.
 
 Startup validation requires **either** [`gh-access-token`](../configuration.md#gh-access-token) **or** all three: [`gh-app-id`](../configuration.md#gh-app-id), [`gh-app-installation-id`](../configuration.md#gh-app-installation-id), and [`gh-app-private-key-path`](../configuration.md#gh-app-private-key-path).
 
@@ -75,11 +77,11 @@ Unknown `os` / `arch` tokens in filenames are skipped.
 1. In the repository, open **Settings → Webhooks → Add webhook** (or configure an organization webhook scoped to the repositories that should publish).
 2. **Payload URL**: one of the [endpoints](#endpoints) above, with `github` as `:vcs` and path segments set to your authority name, module or provider name, and module provider suffix as needed.
 3. **Content type**: `application/json`.
-4. **Secret**: optional; if set, it must match [`gh-webhook-secret`](../configuration.md#gh-webhook-secret). GitHub sends `X-Hub-Signature-256`.
+4. **Secret**: the value of [`gh-webhook-secret`](../configuration.md#gh-webhook-secret). GitHub signs each delivery with it in `X-Hub-Signature-256`, and Terralist rejects deliveries without a valid signature.
 5. **Which events**: choose **Let me select individual events** and enable **Releases** (Terralist only acts on **published** releases).
 
 Save the webhook. Creating or publishing a release whose tag is a valid semver should trigger a module or provider version upload.
 
 ## Security notes
 
-- Leaving [`gh-webhook-secret`](../configuration.md#gh-webhook-secret) empty accepts any caller who can reach the endpoint; use a secret in production when the URL is exposed.
+- Anyone who knows [`gh-webhook-secret`](../configuration.md#gh-webhook-secret) can publish versions into any authority through these routes. Use a long random value and rotate it if it leaks.
