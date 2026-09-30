@@ -54,7 +54,6 @@ type AuthorityService interface {
 	AddKey(uuid.UUID, authority.KeyDTO) (*authority.KeyDTO, error)
 
 	// RemoveKey removes an existing key from an existing authority.
-	// If no keys are left, the entire authority is removed.
 	RemoveKey(uuid.UUID, uuid.UUID) error
 
 	AddRule(uuid.UUID, authority.RuleDTO) (*authority.RuleDTO, error)
@@ -140,24 +139,16 @@ func (s *DefaultAuthorityService) Update(id uuid.UUID, in authority.AuthorityDTO
 }
 
 func (s *DefaultAuthorityService) AddKey(authorityID uuid.UUID, in authority.KeyDTO) (*authority.KeyDTO, error) {
-	a, err := s.AuthorityRepository.FindByID(authorityID)
+	if _, err := s.AuthorityRepository.FindByID(authorityID); err != nil {
+		return nil, err
+	}
+
+	created, err := s.AuthorityRepository.CreateKey(authorityID, in.ToKey())
 	if err != nil {
 		return nil, err
 	}
 
-	a.Keys = append(a.Keys, in.ToKey())
-
-	updated, err := s.AuthorityRepository.Upsert(*a)
-	if err != nil {
-		return nil, err
-	}
-
-	// The find operation cannot fail if the upsert method passes
-	updatedKey, _ := lo.Find(updated.Keys, func(key authority.Key) bool {
-		return key.KeyId == in.ToKey().KeyId
-	})
-
-	dto := updatedKey.ToKeyDTO()
+	dto := created.ToKeyDTO()
 	return &dto, nil
 }
 
@@ -167,26 +158,11 @@ func (s *DefaultAuthorityService) RemoveKey(authorityID uuid.UUID, keyID uuid.UU
 		return err
 	}
 
-	l := len(a.Keys)
-	for i, key := range a.Keys {
-		if key.ID == keyID {
-			a.Keys = append(a.Keys[:i], a.Keys[i+1:]...)
-			break
-		}
-	}
-
-	// If no key was deleted
-	if l == len(a.Keys) {
+	if !lo.ContainsBy(a.Keys, func(k authority.Key) bool { return k.ID == keyID }) {
 		return ErrKeyNotFound
 	}
 
-	// If there was only 1 key
-	if l == 1 {
-		return s.AuthorityRepository.Delete(authorityID)
-	}
-
-	_, err = s.AuthorityRepository.Upsert(*a)
-	return err
+	return s.AuthorityRepository.DeleteKey(keyID)
 }
 
 func (s *DefaultAuthorityService) AddRule(authorityID uuid.UUID, in authority.RuleDTO) (*authority.RuleDTO, error) {

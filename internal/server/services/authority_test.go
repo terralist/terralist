@@ -194,8 +194,12 @@ func TestAddKey(t *testing.T) {
 					Return(&authority.Authority{}, nil)
 
 				mockAuthorityRepository.
-					On("Upsert", mock.AnythingOfType("authority.Authority")).
-					Return(&authority.Authority{}, nil)
+					On("CreateKey", authorityID, dto.ToKey()).
+					Return(&authority.Key{
+						KeyId:          dto.KeyId,
+						AsciiArmor:     dto.AsciiArmor,
+						TrustSignature: dto.TrustSignature,
+					}, nil)
 
 				Convey("When the service is queried", func() {
 					result, err := authorityService.AddKey(authorityID, dto)
@@ -276,7 +280,7 @@ func TestRemoveKey(t *testing.T) {
 					}, nil)
 
 				mockAuthorityRepository.
-					On("Delete", authorityID).
+					On("DeleteKey", keyID).
 					Return(nil)
 
 				Convey("When the service is queried", func() {
@@ -309,8 +313,8 @@ func TestRemoveKey(t *testing.T) {
 					}, nil)
 
 				mockAuthorityRepository.
-					On("Upsert", mock.AnythingOfType("authority.Authority")).
-					Return(&authority.Authority{}, nil)
+					On("DeleteKey", keyID).
+					Return(nil)
 
 				Convey("When the service is queried", func() {
 					err := authorityService.RemoveKey(authorityID, keyID)

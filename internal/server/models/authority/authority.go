@@ -137,10 +137,6 @@ func (d AuthorityDTO) ToAuthority() Authority {
 		UpstreamToken:         lo.EmptyableToPtr(d.UpstreamToken),
 		UpstreamEnabled:       d.UpstreamEnabled,
 		UpstreamDefaultPolicy: d.UpstreamPolicy,
-
-		Keys: lo.Map(d.Keys, func(k KeyDTO, _ int) Key {
-			return k.ToKey()
-		}),
 	}
 }
 
