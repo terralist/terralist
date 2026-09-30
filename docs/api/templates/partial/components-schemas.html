@@ -1,0 +1,10 @@
+## {{texts.schemas}}
+{% for name, definition in handler.get_schemas() %}
+
+### {{name}} { #schema-{{name.lower() | link}} }
+{% if definition.description %}
+{{definition.description}}
+{% endif %}
+{% include "partial/type.html" %}
+
+{% endfor %}

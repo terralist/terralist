@@ -1,0 +1,45 @@
+<p class="responses-title"><strong>{{texts.responses}}</strong></p>
+
+{% for code, reference in operation.responses.items() %}
+{%- set definition = handler._resolve_opt_ref(reference) %}
+=== "{% if code == "default" %}{{texts.other_responses}}{% else %}{{code}}{% with phrase = get_http_status_phrase(code) %}{% if phrase %} {{ phrase }}{% endif %}{% endwith %}{% endif %}"
+    {%- if definition.description %}
+
+    {{definition.description | indent(4)}}
+    {%- endif %}
+    {%- if definition.content %}
+    {%- with content = handler.simplify_content(definition.content) %}
+    {% for content_type, definition in content.items() %}
+    {%- if "json" in content_type %}
+    === "{{content_type}}"
+        {% for example in handler.get_content_examples(definition) %}
+        {% if example.value is not none %}
+        ```json
+        {{handler.write_content_example(example, content_type) | indent(8) | safe}}
+        ```
+        {% endif %}
+        {% endfor %}
+
+        ??? hint "{{texts.schema_of_the_response_body}}"
+            ```json
+            {{handler.write_content_schema(definition) | indent(12) | safe}}
+            ```
+    {%- else %}
+
+    Content type: `{{content_type}}`
+    {%- endif %}
+    {% endfor %}
+    {% endwith -%}
+    {% endif -%}
+    {%- if definition.headers %}
+
+    **{{texts.response_headers}}**
+
+    | {{texts.name}} | {{texts.description}} | {{texts.schema}} |
+    | --- | --- | --- |
+    {%- for header_name, header_definition in handler.get_response_headers(definition).items() %}
+    | `{{header_name}}` | {{header_definition.description or ""}} | {%- with schema = header_definition.schema %}{%- include "partial/schema-repr.html" -%}{%- endwith %} |
+    {%- endfor %}
+
+    {% endif -%}
+{%- endfor -%}
