@@ -10,7 +10,6 @@
 
   export let authorityKey: Key;
   export let authorityName: string;
-  export let isAlone: boolean = false;
   export let onDelete: (id: string) => void = () => {};
 
   const [asciiArmorModalEnabled, showAsciiArmorModal, hideAsciiArmorModal] =
@@ -74,12 +73,5 @@
   enabled={$deleteModalEnabled}
   onClose={hideDeleteModal}
   onSubmit={remove}>
-  {#if isAlone}
-    This is the last key of <b>{authorityName}</b> authority. Removing it will
-    also remove the authority and all artifacts uploaded to the
-    <b>{authorityName}</b>
-    namespace.
-    <br /><br />
-  {/if}
   Are you sure?
 </ConfirmationModal>

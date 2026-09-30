@@ -3,7 +3,6 @@ package repositories
 import (
 	"errors"
 	"fmt"
-	"slices"
 
 	"terralist/internal/server/models/authority"
 	"terralist/pkg/database"
@@ -37,6 +36,12 @@ type AuthorityRepository interface {
 	Delete(uuid.UUID) error
 
 	DeleteRule(uuid.UUID) error
+
+	// CreateKey stores a new key for an authority.
+	CreateKey(uuid.UUID, authority.Key) (*authority.Key, error)
+
+	// DeleteKey removes a key.
+	DeleteKey(uuid.UUID) error
 }
 
 // DefaultAuthorityRepository is a concrete implementation of AuthorityRepository.
@@ -163,34 +168,20 @@ func (r *DefaultAuthorityRepository) FindAllByOwner(owner string) ([]*authority.
 }
 
 func (r *DefaultAuthorityRepository) Upsert(a authority.Authority) (*authority.Authority, error) {
-	toDeleteKeys := make([]authority.Key, 0, len(a.Keys))
-
 	if !a.Empty() {
 		if current, err := r.FindByID(a.ID); err == nil {
 			a.Name = current.Name
 			a.Owner = current.Owner
 			a.CreatedAt = current.CreatedAt
-
-			for _, key := range current.Keys {
-				if !slices.Contains(a.Keys, key) {
-					toDeleteKeys = append(toDeleteKeys, key)
-				}
-			}
 		}
 	}
 
 	if err := r.Database.Handler().Transaction(func(tx *gorm.DB) error {
-		if len(toDeleteKeys) > 0 {
-			if err := tx.Delete(&toDeleteKeys).Error; err != nil {
-				return err
-			}
-		}
-
-		if err := tx.Save(&a).Error; err != nil {
+		if err := tx.Omit("Keys").Save(&a).Error; err != nil {
 			return err
 		}
 
-		return nil
+		return tx.Where("authority_id = ?", a.ID).Find(&a.Keys).Error
 	}); err != nil {
 		return nil, err
 	}
@@ -213,4 +204,18 @@ func (r *DefaultAuthorityRepository) Delete(id uuid.UUID) error {
 
 func (r *DefaultAuthorityRepository) DeleteRule(id uuid.UUID) error {
 	return r.Database.Handler().Where("id = ?", id).Delete(&authority.Rule{}).Error
+}
+
+func (r *DefaultAuthorityRepository) CreateKey(authorityID uuid.UUID, key authority.Key) (*authority.Key, error) {
+	key.AuthorityID = authorityID
+
+	if err := r.Database.Handler().Create(&key).Error; err != nil {
+		return nil, err
+	}
+
+	return &key, nil
+}
+
+func (r *DefaultAuthorityRepository) DeleteKey(id uuid.UUID) error {
+	return r.Database.Handler().Where("id = ?", id).Delete(&authority.Key{}).Error
 }

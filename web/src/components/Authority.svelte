@@ -223,7 +223,6 @@
       <Key
         authorityKey={key}
         authorityName={authority.name}
-        isAlone={authority.keys.length === 1}
         onDelete={onKeyDelete} />
     {/each}
   {/if}

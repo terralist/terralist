@@ -494,6 +494,10 @@ func (s *DefaultProviderService) verifyPackages(d *provider.PackagesUploadDTO) (
 // accepted, as they sign releases that cannot be signed again, such as the
 // HashiCorp providers.
 func verifySignature(a *authority.Authority, shaSums, signature file.File) error {
+	if len(a.Keys) == 0 {
+		return fmt.Errorf("authority %s has no signing keys, add one before uploading signed providers", a.Name)
+	}
+
 	document, err := readAndRewind(shaSums)
 	if err != nil {
 		return fmt.Errorf("could not read the SHA256SUMS file: %v", err)
