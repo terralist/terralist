@@ -1,0 +1,52 @@
+{%- set schemes = components.securitySchemes if components and components.securitySchemes else {} -%}
+{% for tag, operations in handler.get_operations().items() %}
+## <span class="api-tag">{{tag or "Endpoints"}}</span>
+
+{% for path, definition in operations %}
+{%- for http_method, operation in definition.items() %}
+<hr class="operation-separator" />
+
+### {{operation.summary or http_method.upper() ~ " " ~ path}}
+
+<p class="oad-route"><span class="http-{{http_method.lower()}}">{{http_method.upper()}}</span> {{path | route | safe}}</p>
+
+{% if operation.description and operation.summary != operation.description -%}
+{{operation.description}}
+{%- endif %}
+
+{%- with security = handler.get_operation_security(operation) %}
+{%- if security is not none %}
+{%- set auth = namespace(optional=false, labels=[]) %}
+{%- for option in security %}
+{%- if not option %}{% set auth.optional = true %}{% endif %}
+{%- for key in option.keys() %}
+{%- set label = schemes[key]["x-label"] if key in schemes and "x-label" in schemes[key] else key %}
+{%- if label not in auth.labels %}{% set auth.labels = auth.labels + [label] %}{% endif %}
+{%- endfor %}
+{%- endfor %}
+
+**Authentication:** {% if auth.labels %}{{ auth.labels | join(", ") }}{% if auth.optional %} (optional){% endif %}{% else %}none{% endif %}
+{%- endif %}
+{%- endwith %}
+
+{%- with parameters = handler.get_parameters(operation) | rejectattr("name", "in", schemes.keys() | list) | list %}
+{%- if parameters %}
+
+{% include "partial/request-parameters.html" %}
+
+{% endif %}
+{%- endwith %}
+
+{%- if operation.requestBody %}
+
+{% include "partial/request-body.html" %}
+
+{% endif %}
+
+{%- if operation.responses %}
+
+{% include "partial/request-responses.html" %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endfor %}

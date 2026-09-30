@@ -1,0 +1,8 @@
+
+**{{texts.parameters}}**
+
+| {{texts.parameter}} | {{texts.parameter_location}} | {{texts.type}} | {{texts.description}} |
+| --- | --- | --- | --- |
+{%- for param in parameters %}
+| `{{param.name}}` | {{param.in}} | {{get_type_display(read_dict(param, "schema", "type"))}} | {{read_dict(param, "description", default="") | replace("\n", " ") | replace("|", "\\|")}} |
+{%- endfor %}
