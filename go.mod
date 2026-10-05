@@ -32,7 +32,7 @@ require (
 	github.com/smartystreets/goconvey v1.8.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	golang.org/x/mod v0.39.0
+	golang.org/x/mod v0.41.0
 	golang.org/x/sync v0.23.0
 	google.golang.org/api v0.294.0
 	gorm.io/driver/mysql v1.6.0
@@ -200,9 +200,9 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
-	golang.org/x/crypto v0.56.0
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/text v0.41.0
+	golang.org/x/crypto v0.57.0
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0
 	google.golang.org/protobuf v1.36.12 // indirect
 )
 
