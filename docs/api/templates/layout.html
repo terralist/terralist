@@ -1,0 +1,11 @@
+{#- Overrides the essentials-openapi mkdocs layout: the page carries its own
+title, and the servers, reusable parameters, responses and tags are already
+shown with each operation. -#}
+{% include "partial/info.html" %}
+
+{% include "partial/path-items.html" %}
+
+---
+{%- if components and components.schemas %}
+{% include "partial/components-schemas.html" %}
+{% endif -%}
