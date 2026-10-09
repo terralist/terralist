@@ -76,7 +76,7 @@ func forgedState(t *testing.T, r oauth.Request) string {
 
 	fakeSignature := bytes.Repeat([]byte{0}, sha256.Size)
 
-	return base64.StdEncoding.EncodeToString(append(fakeSignature, data...))
+	return base64.RawURLEncoding.EncodeToString(append(fakeSignature, data...))
 }
 
 func TestLoginController_Authorize(t *testing.T) {
