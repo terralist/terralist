@@ -44,7 +44,7 @@ func TestRequest_PayloadRoundTrip(t *testing.T) {
 			})
 
 			Convey("When its content is altered", func() {
-				raw, err := base64.StdEncoding.DecodeString(payload.String())
+				raw, err := base64.RawURLEncoding.DecodeString(payload.String())
 				So(err, ShouldBeNil)
 
 				var tampered Request
@@ -54,7 +54,7 @@ func TestRequest_PayloadRoundTrip(t *testing.T) {
 				data, err := json.Marshal(tampered)
 				So(err, ShouldBeNil)
 
-				forged := Payload(base64.StdEncoding.EncodeToString(append(raw[:sha256.Size], data...)))
+				forged := Payload(base64.RawURLEncoding.EncodeToString(append(raw[:sha256.Size], data...)))
 				_, err = forged.ToRequest(key)
 
 				Convey("Then it is rejected", func() {
@@ -67,7 +67,7 @@ func TestRequest_PayloadRoundTrip(t *testing.T) {
 			data, err := json.Marshal(request)
 			So(err, ShouldBeNil)
 
-			unsigned := Payload(base64.StdEncoding.EncodeToString(data))
+			unsigned := Payload(base64.RawURLEncoding.EncodeToString(data))
 			_, err = unsigned.ToRequest(key)
 
 			Convey("Then it is rejected", func() {
@@ -76,7 +76,7 @@ func TestRequest_PayloadRoundTrip(t *testing.T) {
 		})
 
 		Convey("Given a payload shorter than a signature", func() {
-			_, err := Payload("QUFBQQ==").ToRequest(key)
+			_, err := Payload("QUFBQQ").ToRequest(key)
 
 			Convey("Then it is rejected without panicking", func() {
 				So(errors.Is(err, ErrInvalidPayload), ShouldBeTrue)
