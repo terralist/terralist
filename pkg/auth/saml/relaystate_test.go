@@ -17,7 +17,7 @@ func TestValidateRelayState(t *testing.T) {
 	}{
 		{
 			name:       "valid RelayState (within size limit)",
-			relayState: base64.StdEncoding.EncodeToString([]byte("test-payload")),
+			relayState: base64.RawURLEncoding.EncodeToString([]byte("test-payload")),
 			wantErr:    false,
 		},
 		{
@@ -28,7 +28,7 @@ func TestValidateRelayState(t *testing.T) {
 		},
 		{
 			name:       "RelayState exceeds max size",
-			relayState: base64.StdEncoding.EncodeToString(make([]byte, 600)), // 600 bytes encoded will be > 512 bytes
+			relayState: base64.RawURLEncoding.EncodeToString(make([]byte, 600)), // 600 bytes encoded will be > 512 bytes
 			wantErr:    true,
 			errMsg:     "relayState exceeds maximum size",
 		},
@@ -40,12 +40,12 @@ func TestValidateRelayState(t *testing.T) {
 		},
 		{
 			name:       "RelayState at max size boundary",
-			relayState: base64.StdEncoding.EncodeToString(make([]byte, 384)), // 512 bytes when base64 encoded
+			relayState: base64.RawURLEncoding.EncodeToString(make([]byte, 384)), // 512 bytes when base64 encoded
 			wantErr:    false,
 		},
 		{
 			name:       "RelayState just over max size",
-			relayState: base64.StdEncoding.EncodeToString(make([]byte, 385)), // ~514 bytes when base64 encoded
+			relayState: base64.RawURLEncoding.EncodeToString(make([]byte, 385)), // ~514 bytes when base64 encoded
 			wantErr:    true,
 			errMsg:     "relayState exceeds maximum size",
 		},
@@ -53,6 +53,17 @@ func TestValidateRelayState(t *testing.T) {
 			name:       "valid base64 string within limit",
 			relayState: "dGVzdC1wYXlsb2Fk", // base64 for "test-payload"
 			wantErr:    false,
+		},
+		{
+			name:       "valid URL-safe base64 with - and _",
+			relayState: base64.RawURLEncoding.EncodeToString([]byte{0xfb, 0xff, 0xbf}), // "-_-_"
+			wantErr:    false,
+		},
+		{
+			name:       "standard base64 with + and / is rejected",
+			relayState: base64.StdEncoding.EncodeToString([]byte{0xfb, 0xff, 0xbf}), // "+/+/"
+			wantErr:    true,
+			errMsg:     "relayState contains invalid characters",
 		},
 	}
 
@@ -74,14 +85,14 @@ func TestValidateRelayState(t *testing.T) {
 // TestValidateRelayState_SizeBoundary tests the exact size boundary.
 func TestValidateRelayState_SizeBoundary(t *testing.T) {
 	// Create a RelayState that is exactly 512 bytes
-	relayState512 := base64.StdEncoding.EncodeToString(make([]byte, 384)) // 384 bytes -> 512 bytes base64
+	relayState512 := base64.RawURLEncoding.EncodeToString(make([]byte, 384)) // 384 bytes -> 512 bytes base64
 	if len(relayState512) <= 512 {
 		err := ValidateRelayState(relayState512)
 		assert.NoError(t, err, "RelayState at or below 512 bytes should be valid")
 	}
 
 	// Create a RelayState that exceeds 512 bytes
-	relayState513 := base64.StdEncoding.EncodeToString(make([]byte, 385)) // 385 bytes -> ~514 bytes base64
+	relayState513 := base64.RawURLEncoding.EncodeToString(make([]byte, 385)) // 385 bytes -> ~514 bytes base64
 	if len(relayState513) > 512 {
 		err := ValidateRelayState(relayState513)
 		assert.Error(t, err, "RelayState over 512 bytes should be rejected")
@@ -96,8 +107,8 @@ func TestValidateRelayState_Base64Format(t *testing.T) {
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		"abcdefghijklmnopqrstuvwxyz",
 		"0123456789",
-		"+/=",
-		"dGVzdA==", // valid base64
+		"-_",
+		"dGVzdA", // valid base64
 	}
 
 	for _, valid := range validChars {
@@ -115,6 +126,10 @@ func TestValidateRelayState_Base64Format(t *testing.T) {
 		"test#invalid",
 		"test$invalid",
 		"test%invalid",
+		// Standard base64 characters that get corrupted in unescaped query strings
+		"test+invalid",
+		"test/invalid",
+		"dGVzdA==",
 	}
 
 	for _, invalid := range invalidChars {
