@@ -39,6 +39,13 @@ func Logger() gin.HandlerFunc {
 			Int("status", statusCode).
 			Str("client_ip", c.ClientIP())
 
+		if name := c.GetString("userName"); name != "" {
+			e = e.Str("user", name)
+		}
+		if email := c.GetString("userEmail"); email != "" {
+			e = e.Str("user_email", email)
+		}
+
 		msg := c.Errors.String()
 		if msg != "" {
 			e.Msg(msg)
