@@ -1004,7 +1004,7 @@ func ValidateRelayState(relayState string) error {
 
 	// Basic format validation: base64 strings should only contain valid characters
 	// This is a lightweight check - full validation happens during OAuth payload parsing
-	base64Chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+	base64Chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
 	for _, char := range relayState {
 		if !strings.ContainsRune(base64Chars, char) {
 			return fmt.Errorf("relayState contains invalid characters (expected base64)")
