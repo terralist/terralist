@@ -20,7 +20,7 @@ func (p Payload) String() string {
 }
 
 func (p Payload) ToRequest(key []byte) (Request, error) {
-	signed, err := base64.StdEncoding.DecodeString(p.String())
+	signed, err := base64.RawURLEncoding.DecodeString(p.String())
 	if err != nil {
 		return Request{}, fmt.Errorf("%w: %v", ErrInvalidPayload, err)
 	}
@@ -60,7 +60,7 @@ func (r Request) ToPayload(key []byte) (Payload, error) {
 
 	signed := append(sign(key, data), data...)
 
-	return Payload(base64.StdEncoding.EncodeToString(signed)), nil
+	return Payload(base64.RawURLEncoding.EncodeToString(signed)), nil
 }
 
 func sign(key []byte, data []byte) []byte {
