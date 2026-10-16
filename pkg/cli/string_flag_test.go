@@ -135,6 +135,17 @@ func TestStringFlag_Set_EnvironmentDefault(t *testing.T) {
 	}
 }
 
+func TestStringFlag_Set_EnvironmentNameWithDigits(t *testing.T) {
+	t.Setenv("TL_S3_STRING_FLAG", "from-env")
+	flag := StringFlag{}
+	if err := flag.Set("${TL_S3_STRING_FLAG}"); err != nil {
+		t.Fatal(err)
+	}
+	if flag.Value != "from-env" {
+		t.Errorf("Value = %q", flag.Value)
+	}
+}
+
 func TestStringFlag_Format_Description(t *testing.T) {
 	flag := StringFlag{Description: "mode"}
 	if !strings.Contains(flag.Format(), "mode") {
