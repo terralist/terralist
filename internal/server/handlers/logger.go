@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"net/url"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
+
+var redactedQueryParams = []string{"token", "code"}
 
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -18,7 +23,7 @@ func Logger() gin.HandlerFunc {
 		c.Next()
 
 		if raw != "" {
-			path = path + "?" + raw
+			path = path + "?" + redactQuery(raw)
 		}
 
 		statusCode := c.Writer.Status()
@@ -39,6 +44,13 @@ func Logger() gin.HandlerFunc {
 			Int("status", statusCode).
 			Str("client_ip", c.ClientIP())
 
+		if name := c.GetString("userName"); name != "" {
+			e = e.Str("user", name)
+		}
+		if email := c.GetString("userEmail"); email != "" {
+			e = e.Str("user_email", email)
+		}
+
 		msg := c.Errors.String()
 		if msg != "" {
 			e.Msg(msg)
@@ -46,4 +58,16 @@ func Logger() gin.HandlerFunc {
 			e.Send()
 		}
 	}
+}
+
+func redactQuery(raw string) string {
+	params := strings.Split(raw, "&")
+	for i, param := range params {
+		key, _, _ := strings.Cut(param, "=")
+		if name, err := url.QueryUnescape(key); err == nil && slices.Contains(redactedQueryParams, name) {
+			params[i] = key + "=REDACTED"
+		}
+	}
+
+	return strings.Join(params, "&")
 }
