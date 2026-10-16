@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"terralist/internal/server/models/authority"
+	"terralist/internal/server/models/provider"
 	"terralist/pkg/cache/memory"
 	"terralist/pkg/registry"
 
@@ -29,21 +30,29 @@ import (
 // with versions 1.0.0 and 1.1.0 for linux_amd64 and darwin_arm64, signed with
 // a key generated for the test.
 type fakeUpstream struct {
-	server    *httptest.Server
-	key       registry.GPGPublicKey
-	shaSums   map[string][]byte // version → SHA256SUMS document
-	signature map[string][]byte // version → detached signature
-	packages  map[string][]byte // file name → archive bytes
-	names     map[string]string // file name → file name advertised in the download document
-	entity    *openpgp.Entity
-	requests  atomic.Int32
-	failing   atomic.Bool
-	listings  atomic.Int32  // version list requests
-	held      chan struct{} // when set, version lists wait for it to close
-	tokens    []string
+	server       *httptest.Server
+	key          registry.GPGPublicKey
+	shaSums      map[string][]byte // version → SHA256SUMS document
+	signature    map[string][]byte // version → detached signature
+	packages     map[string][]byte // file name → archive bytes
+	names        map[string]string // file name → file name advertised in the download document
+	entity       *openpgp.Entity
+	requests     atomic.Int32
+	failing      atomic.Bool
+	listings     atomic.Int32  // version list requests
+	held         chan struct{} // when set, version lists wait for it to close
+	tokens       []string
+	providerName string
 }
 
 func newFakeUpstream(t *testing.T) *fakeUpstream {
+	return newFakeUpstreamProvider(t, "null", nil)
+}
+
+// newFakeUpstreamProvider serves one provider from a test registry. packageNames
+// maps the canonical package file name to the file name the upstream advertises
+// in its download metadata and SHA256SUMS document.
+func newFakeUpstreamProvider(t *testing.T, providerName string, packageNames map[string]string) *fakeUpstream {
 	t.Helper()
 
 	entity, err := openpgp.NewEntity("Upstream", "", "upstream@example.com", nil)
@@ -57,22 +66,30 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 	_ = encoder.Close()
 
 	u := &fakeUpstream{
-		key:       registry.GPGPublicKey{KeyID: entity.PrimaryKey.KeyIdString(), ASCIIArmor: armored.String()},
-		shaSums:   map[string][]byte{},
-		signature: map[string][]byte{},
-		packages:  map[string][]byte{},
-		names:     map[string]string{},
-		entity:    entity,
+		key:          registry.GPGPublicKey{KeyID: entity.PrimaryKey.KeyIdString(), ASCIIArmor: armored.String()},
+		shaSums:      map[string][]byte{},
+		signature:    map[string][]byte{},
+		packages:     map[string][]byte{},
+		names:        map[string]string{},
+		entity:       entity,
+		providerName: providerName,
+	}
+	for canonical, advertised := range packageNames {
+		u.names[canonical] = advertised
 	}
 
 	for _, version := range []string{"1.0.0", "1.1.0"} {
 		var sums strings.Builder
-		for _, platform := range []string{"linux_amd64", "darwin_arm64"} {
-			name := fmt.Sprintf("terraform-provider-null_%s_%s.zip", version, platform)
+		for _, platform := range []struct{ OS, Arch string }{{"linux", "amd64"}, {"darwin", "arm64"}} {
+			name := provider.PackageFileName(providerName, version, platform.OS, platform.Arch)
 			content := []byte("package " + name)
 			u.packages[name] = content
 			digest := sha256.Sum256(content)
-			fmt.Fprintf(&sums, "%s  %s\n", hex.EncodeToString(digest[:]), name)
+			advertised := name
+			if n, ok := u.names[name]; ok {
+				advertised = n
+			}
+			fmt.Fprintf(&sums, "%s  %s\n", hex.EncodeToString(digest[:]), advertised)
 		}
 
 		u.publishShaSums(t, version, sums.String())
@@ -89,7 +106,9 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 		w.Header().Set("X-Terraform-Get", "git::https://github.com/hashicorp/terraform-template-dir?ref=v1.0.2")
 		w.WriteHeader(http.StatusNoContent)
 	})
-	mux.HandleFunc("/v1/providers/hashicorp/null/versions", func(w http.ResponseWriter, _ *http.Request) {
+	versionsPath := fmt.Sprintf("/v1/providers/hashicorp/%s/versions", providerName)
+	downloadPrefix := fmt.Sprintf("/v1/providers/hashicorp/%s/", providerName)
+	mux.HandleFunc(versionsPath, func(w http.ResponseWriter, _ *http.Request) {
 		u.listings.Add(1)
 		if u.held != nil {
 			<-u.held
@@ -101,15 +120,15 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 			},
 		})
 	})
-	mux.HandleFunc("/v1/providers/hashicorp/null/", func(w http.ResponseWriter, r *http.Request) {
-		// /v1/providers/hashicorp/null/<version>/download/<os>/<arch>
-		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/v1/providers/hashicorp/null/"), "/")
+	mux.HandleFunc(downloadPrefix, func(w http.ResponseWriter, r *http.Request) {
+		// /v1/providers/hashicorp/<provider>/<version>/download/<os>/<arch>
+		parts := strings.Split(strings.TrimPrefix(r.URL.Path, downloadPrefix), "/")
 		if len(parts) != 4 || parts[1] != "download" {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		version, os, arch := parts[0], parts[2], parts[3]
-		name := fmt.Sprintf("terraform-provider-null_%s_%s_%s.zip", version, os, arch)
+		name := provider.PackageFileName(providerName, version, os, arch)
 		content, ok := u.packages[name]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
@@ -429,6 +448,64 @@ func TestUpstreamProviderVersion(t *testing.T) {
 	})
 }
 
+func TestUpstreamProviderVersionMatchesAdvertisedPlatforms(t *testing.T) {
+	Convey("Subject: Reading upstream metadata for every platform a version advertises", t, func() {
+		providerName := "my-thing"
+		packageNames := map[string]string{}
+		for _, platform := range []struct{ OS, Arch string }{{"linux", "amd64"}, {"darwin", "arm64"}} {
+			canonical := provider.PackageFileName(providerName, "1.0.0", platform.OS, platform.Arch)
+			packageNames[canonical] = strings.Replace(canonical, "terraform-provider-my-thing_", "terraform-provider-My-Thing_", 1)
+		}
+
+		upstream := newFakeUpstreamProvider(t, providerName, packageNames)
+		now := time.Now()
+		service := newUpstreamService(t, &now)
+		a := upstream.authority()
+		a.ID = uuid.New()
+
+		versions, err := service.ProviderVersions(a, providerName)
+		So(err, ShouldBeNil)
+
+		var listed UpstreamVersion
+		for _, v := range versions {
+			if v.Version == "1.0.0" {
+				listed = v
+				break
+			}
+		}
+
+		metadata, err := service.ProviderVersion(a, providerName, "1.0.0")
+
+		Convey("Then every advertised platform should have matching download metadata and digests", func() {
+			So(err, ShouldBeNil)
+			So(len(listed.Platforms), ShouldEqual, len(metadata.Downloads))
+
+			for _, platform := range listed.Platforms {
+				key := provider.PackageFileName(providerName, "1.0.0", platform.OS, platform.Arch)
+				download, ok := metadata.Downloads[key]
+				So(ok, ShouldBeTrue)
+				So(download.OS, ShouldEqual, platform.OS)
+				So(download.Arch, ShouldEqual, platform.Arch)
+				So(download.Filename, ShouldEqual, packageNames[key])
+
+				digest, ok := metadata.ShaSums[download.Filename]
+				So(ok, ShouldBeTrue)
+				So(digest, ShouldNotBeEmpty)
+
+				digest, ok = shaSumOf(metadata, key)
+				So(ok, ShouldBeTrue)
+				So(digest, ShouldNotBeEmpty)
+			}
+		})
+
+		Convey("Then packages can still be located through the mirror", func() {
+			pkg, err := service.ProviderPackage(a, providerName, "1.0.0", "linux", "amd64")
+			So(err, ShouldBeNil)
+			So(pkg.FileName, ShouldEqual, packageNames[provider.PackageFileName(providerName, "1.0.0", "linux", "amd64")])
+		})
+	})
+}
+
 func TestUpstreamProviderPackage(t *testing.T) {
 	Convey("Subject: Locating an upstream package", t, func() {
 		upstream := newFakeUpstream(t)
@@ -469,7 +546,7 @@ func TestUpstreamProviderPackage(t *testing.T) {
 
 		Convey("When the upstream advertises a file name other than the package name", func() {
 			name := "terraform-provider-null_1.0.0_linux_amd64.zip"
-			upstream.names[name] = "../../evil.zip"
+			upstream.names[name] = "../../terraform-provider-null_v1.0.0_linux_amd64.zip"
 			digest := sha256.Sum256(upstream.packages[name])
 			upstream.publishShaSums(t, "1.0.0", fmt.Sprintf("%s  ../../evil.zip\n", hex.EncodeToString(digest[:])))
 
@@ -477,7 +554,22 @@ func TestUpstreamProviderPackage(t *testing.T) {
 
 			Convey("Then it should be rejected", func() {
 				So(err, ShouldNotBeNil)
-				So(err.Error(), ShouldContainSubstring, "../../evil.zip")
+				So(err.Error(), ShouldContainSubstring, "not listed in the verified SHA256SUMS")
+			})
+		})
+
+		Convey("When the upstream advertises a file name other than the canonical package name", func() {
+			name := "terraform-provider-null_1.0.0_linux_amd64.zip"
+			advertised := "terraform-provider-null_v1.0.0_linux_amd64.zip"
+			upstream.names[name] = advertised
+			digest := sha256.Sum256(upstream.packages[name])
+			upstream.publishShaSums(t, "1.0.0", fmt.Sprintf("%s  %s\n", hex.EncodeToString(digest[:]), advertised))
+
+			pkg, err := service.ProviderPackage(a, "null", "1.0.0", "linux", "amd64")
+
+			Convey("Then the package advertised by the upstream should be returned", func() {
+				So(err, ShouldBeNil)
+				So(pkg.FileName, ShouldEqual, advertised)
 			})
 		})
 

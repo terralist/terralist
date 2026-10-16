@@ -21,6 +21,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -66,11 +67,12 @@ type UpstreamVersion struct {
 // provider version: the SHA256SUMS document with its verified signature and
 // the digests it lists.
 type UpstreamVersionMetadata struct {
-	Protocols       []string                `json:"protocols"`
-	ShaSums         map[string]string       `json:"shasums"`
-	ShaSumsDocument []byte                  `json:"shasums_document"`
-	Signature       []byte                  `json:"signature"`
-	SigningKeys     []registry.GPGPublicKey `json:"signing_keys"`
+	Protocols       []string                      `json:"protocols"`
+	Downloads       map[string]*registry.Download `json:"downloads"`
+	ShaSums         map[string]string             `json:"shasums"`
+	ShaSumsDocument []byte                        `json:"shasums_document"`
+	Signature       []byte                        `json:"signature"`
+	SigningKeys     []registry.GPGPublicKey       `json:"signing_keys"`
 }
 
 // UpstreamPackage locates one provider package on the upstream registry.
@@ -184,9 +186,10 @@ func (s *DefaultUpstreamService) ProviderPackage(a *authority.Authority, name, v
 		return nil, err
 	}
 
-	if want := provider.PackageFileName(name, version, os, arch); !strings.EqualFold(download.Filename, want) {
+	packageName := provider.PackageFileName(name, version, os, arch)
+	if want, ok := metadata.Downloads[packageName]; !ok || !strings.EqualFold(download.Filename, want.Filename) {
 		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
-		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s as %q", want, a.Name, name, version, download.Filename)
+		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s as %q", packageName, a.Name, name, version, download.Filename)
 	}
 
 	expected, ok := metadata.ShaSums[download.Filename]
@@ -271,14 +274,25 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 		return nil, fmt.Errorf("version %s of %s/%s: %w", version, *a.UpstreamNamespace, name, registry.ErrNotFound)
 	}
 
-	// Every platform shares the SHA256SUMS document, so any platform's download
-	// metadata leads to it.
-	platform := upstream.Platforms[0]
-	download, err := client.ProviderDownload(ctx, *a.UpstreamNamespace, name, version, platform.OS, platform.Arch)
-	if err != nil {
+	downloads := make(map[string]*registry.Download, len(upstream.Platforms))
+	g := errgroup.Group{}
+	for _, platform := range upstream.Platforms {
+		g.Go(func() error {
+			var err error
+			filename := provider.PackageFileName(name, version, platform.OS, platform.Arch)
+			downloads[filename], err = client.ProviderDownload(ctx, *a.UpstreamNamespace, name, version, platform.OS, platform.Arch)
+			return err
+		})
+	}
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
+	// Every platform shares the SHA256SUMS document, so any platform's download
+	// metadata leads to it.
+	platform := upstream.Platforms[0]
+	filename := provider.PackageFileName(name, version, platform.OS, platform.Arch)
+	download := downloads[filename]
 	document, err := s.fetch(ctx, download.ShaSumsURL)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch SHA256SUMS: %w", err)
@@ -300,6 +314,7 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 
 	return &UpstreamVersionMetadata{
 		Protocols:       upstream.Protocols,
+		Downloads:       downloads,
 		ShaSums:         sums,
 		ShaSumsDocument: document,
 		Signature:       signature,

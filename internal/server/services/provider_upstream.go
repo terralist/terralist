@@ -105,7 +105,7 @@ func mergeUpstreamArchives(dto *provider.MirrorArchivesDTO, name, version string
 		}
 
 		fileName := provider.PackageFileName(name, version, p.OS, p.Arch)
-		digest, ok := shaSumOf(metadata.ShaSums, fileName)
+		digest, ok := shaSumOf(metadata, fileName)
 		if !ok {
 			continue
 		}
@@ -211,7 +211,7 @@ func (s *DefaultProviderService) upstreamDownloadDTO(a *authority.Authority, v *
 	}
 
 	fileName := provider.PackageFileName(name, v.Version, system, architecture)
-	digest, ok := shaSumOf(metadata.ShaSums, fileName)
+	digest, ok := shaSumOf(metadata, fileName)
 	if !ok {
 		return nil, fmt.Errorf("platform %s_%s of %s/%s %s: %w", system, architecture, a.Name, name, v.Version, repositories.ErrNotFound)
 	}
@@ -401,14 +401,34 @@ func packageFetchKey(namespace, name, version, system, architecture string) stri
 
 // shaSumOf returns the digest a SHA256SUMS document lists for a package file,
 // matching the file name regardless of case, as the provider is looked up.
-func shaSumOf(sums map[string]string, fileName string) (string, bool) {
+func shaSumOf(metadata *UpstreamVersionMetadata, fileName string) (string, bool) {
+	sums := metadata.ShaSums
 	if digest, ok := sums[fileName]; ok {
 		return digest, true
 	}
 
 	for listed, digest := range sums {
-		if strings.EqualFold(listed, fileName) {
-			return digest, true
+		for packageFilename := range metadata.Downloads {
+			if strings.EqualFold(listed, packageFilename) {
+				return digest, true
+			}
+		}
+	}
+
+	download, ok := metadata.Downloads[fileName]
+	if !ok {
+		return "", false
+	}
+
+	if digest, ok := sums[download.Filename]; ok {
+		return digest, true
+	}
+
+	for listed, digest := range sums {
+		for packageFilename := range metadata.Downloads {
+			if strings.EqualFold(listed, packageFilename) {
+				return digest, true
+			}
 		}
 	}
 
