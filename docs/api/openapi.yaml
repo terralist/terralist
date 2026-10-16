@@ -1,0 +1,2183 @@
+openapi: 3.1.0
+
+info:
+  title: Terralist API
+  version: v1
+  summary: Terraform/OpenTofu private registry for modules and providers.
+  description: |
+    Every route served by Terralist: the Terraform/OpenTofu registry, login and
+    network mirror protocols, the management API used by the web UI and by
+    automation, and the operational endpoints.
+
+    ## Authentication
+
+    Most routes accept any of the following credentials:
+
+    - the token issued by `terraform login`: `Authorization: Bearer <TOKEN>`;
+    - an API key, or the [`master-api-key`](../configuration.md#master-api-key):
+      `Authorization: Bearer x-api-key:<KEY>`, or `X-API-Key: <KEY>`;
+    - the web UI session cookie, `_session` with the `cookie`
+      [session store](../configuration.md#session-store) and `_session_id`
+      with the `database` one.
+
+    The registry and network mirror protocol routes can also be read
+    anonymously when [`modules-anonymous-read`](../configuration.md#modules-anonymous-read)
+    or [`providers-anonymous-read`](../configuration.md#providers-anonymous-read)
+    is set, or when the authority is public. The download links they issue
+    carry a short-lived `token`, since Terraform downloads without credentials.
+    Webhooks are authenticated by their `X-Hub-Signature-256` signature,
+    computed with [`gh-webhook-secret`](../configuration.md#gh-webhook-secret).
+
+    Once authenticated, each route checks the caller's
+    [RBAC policies](../user-guide/rbac-configuration.md) for the action it
+    lists.
+
+    ## Errors
+
+    Errors are returned as a list of messages, unless noted otherwise:
+
+    ```json
+    {
+      "errors": ["authority \"my-corp\" not found"]
+    }
+    ```
+
+    When the caller may not perform an action, the response is a `403` with
+    an empty body.
+
+    ## Example
+
+    ```shell
+    curl -L -X POST \
+      -H "Authorization: Bearer x-api-key:<KEY>" \
+      -F module=@module.zip \
+      http://localhost:5758/v1/api/modules/NAMESPACE/NAME/PROVIDER/VERSION/upload-files
+    ```
+  license:
+    name: Mozilla Public License 2.0
+    url: https://github.com/terralist/terralist/blob/master/LICENSE
+
+servers:
+  - url: http://localhost:5758
+    description: Local development instance
+
+tags:
+  - name: Probes
+    description: Liveness and readiness probes.
+  - name: Metrics
+    description: Prometheus metrics.
+  - name: Service Discovery
+    description: >-
+      The [remote service discovery](https://developer.hashicorp.com/terraform/internals/remote-service-discovery)
+      document Terraform/OpenTofu read before talking to the registry.
+  - name: Login Protocol
+    description: >-
+      The [login protocol](https://developer.hashicorp.com/terraform/internals/login-protocol)
+      behind `terraform login`: an OAuth 2.0 authorization code grant with PKCE.
+  - name: Module Registry Protocol
+    description: >-
+      The [module registry protocol](https://developer.hashicorp.com/terraform/internals/module-registry-protocol).
+      Readable anonymously when [`modules-anonymous-read`](../configuration.md#modules-anonymous-read)
+      is set or the authority is public.
+  - name: Provider Registry Protocol
+    description: >-
+      The [provider registry protocol](https://developer.hashicorp.com/terraform/internals/provider-registry-protocol).
+      Readable anonymously when [`providers-anonymous-read`](../configuration.md#providers-anonymous-read)
+      is set or the authority is public.
+  - name: Provider Network Mirror
+    description: >-
+      The [provider network mirror protocol](https://developer.hashicorp.com/terraform/internals/provider-network-mirror-protocol).
+      See the [Provider Network Mirror](../user-guide/network-mirror.md) guide.
+  - name: Modules
+    description: Upload, fetch and remove module versions.
+  - name: Providers
+    description: Upload, fetch and remove provider versions.
+  - name: Webhooks
+    description: >-
+      Create versions from VCS release events. See [VCS release webhooks](../user-guide/webhook-vcs-releases.md).
+  - name: Authorities
+    description: Manage authorities, their signing keys and their upstream rules.
+  - name: API Keys
+    description: Manage API keys.
+  - name: Artifacts
+    description: Browse the modules and providers visible to the caller. Used by the web UI.
+  - name: Session
+    description: The web UI session and what the signed-in user may do.
+  - name: SAML
+    description: >-
+      Registered only when SAML is the authentication provider, and served over
+      HTTPS only. See [SAML Configuration](../user-guide/saml-configuration.md).
+  - name: Files
+    description: >-
+      Serves the files kept by the `local` storage resolver. Registered only
+      when a local resolver is configured.
+  - name: Internal
+    description: Runtime settings read by the web UI.
+
+security:
+  - terraformToken: []
+  - apiKey: []
+  - apiKeyHeader: []
+  - session: []
+
+paths:
+  /check/healthz:
+    get:
+      tags: [Probes]
+      operationId: getLiveness
+      summary: Liveness probe
+      description: Responds with `200` while the process is serving requests.
+      security: []
+      responses:
+        "200":
+          description: The instance is alive.
+
+  /check/readyz:
+    get:
+      tags: [Probes]
+      operationId: getReadiness
+      summary: Readiness probe
+      description: Responds with `200` once the instance finished starting up and can serve traffic.
+      security: []
+      responses:
+        "200":
+          description: The instance is ready.
+        "503":
+          description: The instance is not ready yet.
+
+  /metrics:
+    get:
+      tags: [Metrics]
+      operationId: getMetrics
+      summary: Prometheus metrics
+      description: >-
+        Served on the main port only when [`metrics-port`](../configuration.md#metrics-port)
+        is not set; otherwise it is served on that port. See [Monitoring and Observability](../user-guide/monitoring.md).
+      security: []
+      responses:
+        "200":
+          description: Metrics in the Prometheus exposition format.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /.well-known/terraform.json:
+    get:
+      tags: [Service Discovery]
+      operationId: getServiceDiscovery
+      summary: Get the service discovery document
+      description: Tells Terraform/OpenTofu where to find the login, module and provider endpoints.
+      security: []
+      responses:
+        "200":
+          description: The service discovery document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceDiscovery"
+              example:
+                login.v1:
+                  authz: /v1/auth/authorization
+                  client: terraform-cli
+                  grant_types: [authz_code]
+                  ports: [10000, 10010]
+                  token: /v1/auth/token
+                modules.v1: /v1/modules/
+                providers.v1: /v1/providers/
+
+  /v1/auth/authorization:
+    get:
+      tags: [Login Protocol]
+      operationId: authorize
+      summary: Start an authorization
+      description: >-
+        Redirects the user to the configured identity provider. Once they sign
+        in, the identity provider sends them back to `/v1/api/auth/redirect`,
+        which redirects to `redirect_uri` with an authorization `code`.
+      security: []
+      parameters:
+        - { name: client_id, in: query, required: true, schema: { type: string }, example: terraform-cli }
+        - name: redirect_uri
+          in: query
+          required: true
+          description: Must be a loopback address or an address on Terralist's own host.
+          schema: { type: string, format: uri }
+        - { name: response_type, in: query, required: true, schema: { type: string, const: code } }
+        - { name: state, in: query, required: true, schema: { type: string } }
+        - { name: code_challenge, in: query, required: true, schema: { type: string } }
+        - { name: code_challenge_method, in: query, required: true, schema: { type: string, const: S256 } }
+      responses:
+        "302":
+          description: >-
+            Redirect to the identity provider or, on error, to `redirect_uri`
+            with the `error` and `error_description` query parameters.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/auth/token:
+    post:
+      tags: [Login Protocol]
+      operationId: exchangeToken
+      summary: Exchange a code for a token
+      description: >-
+        Exchanges an authorization code for an access token. The token is then
+        sent as `Authorization: Bearer <token>`; its lifetime is set by
+        [`auth-token-expiration`](../configuration.md#auth-token-expiration).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [client_id, code, code_verifier, grant_type, redirect_uri]
+              properties:
+                client_id: { type: string }
+                code: { type: string }
+                code_verifier: { type: string }
+                grant_type: { type: string, const: authorization_code }
+                redirect_uri: { type: string, format: uri }
+      responses:
+        "200":
+          description: The access token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "302":
+          description: >-
+            The code could not be exchanged. Redirect to `redirect_uri` with the
+            `error` and `error_description` query parameters.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+
+  /v1/api/auth/redirect:
+    get:
+      tags: [Login Protocol]
+      operationId: authorizationCallback
+      summary: Identity provider callback
+      description: >-
+        Where the identity provider sends the user back. When the flow was
+        started by the web UI, the user is saved in the session and redirected
+        back to the UI; otherwise they are redirected to the client's
+        `redirect_uri` with an authorization `code`.
+      security: []
+      parameters:
+        - { name: code, in: query, required: true, schema: { type: string } }
+        - { name: state, in: query, required: true, schema: { type: string } }
+      responses:
+        "302":
+          description: >-
+            Redirect to the web UI or the client, with the `error` and
+            `error_description` query parameters on error.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+        "400":
+          description: The code or state is missing or invalid.
+
+  /v1/api/auth/session:
+    get:
+      tags: [Session]
+      operationId: getSession
+      summary: Get the signed-in user
+      security:
+        - session: []
+      responses:
+        "200":
+          description: The user saved in the session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionUser"
+              example:
+                name: Jane Doe
+                email: jane@example.com
+                groups: [platform]
+                authority: ""
+                authority_id: ""
+        "401":
+          description: No session.
+        "403":
+          description: The session holds no user.
+        "409":
+          description: The session holds a user in an unknown format.
+    delete:
+      tags: [Session]
+      operationId: deleteSession
+      summary: Sign out
+      description: Removes the user from the session.
+      security:
+        - session: []
+      responses:
+        "202":
+          description: There was no session to clear.
+        "204":
+          description: The user was signed out.
+        "500":
+          $ref: "#/components/responses/Error"
+
+  /v1/api/auth/capabilities/settings:
+    get:
+      tags: [Session]
+      operationId: getSettingsCapability
+      summary: Check access to the settings page
+      description: Reports whether the caller may perform the `get` action on the `settings` resource.
+      responses:
+        "200":
+          description: Whether the caller may open the settings page.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [allowed]
+                properties:
+                  allowed: { type: boolean }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/api/auth/saml/metadata:
+    get:
+      tags: [SAML]
+      operationId: getSamlMetadata
+      summary: Service provider metadata
+      description: The SAML service provider metadata to register with the identity provider.
+      security: []
+      responses:
+        "200":
+          description: The metadata document.
+          content:
+            application/xml:
+              schema:
+                type: string
+        "403":
+          $ref: "#/components/responses/SamlRequiresHttps"
+        "500":
+          description: The metadata could not be generated.
+
+  /v1/api/auth/saml/acs:
+    post:
+      tags: [SAML]
+      operationId: samlAssertionConsumer
+      summary: Assertion consumer service
+      description: >-
+        Receives the identity provider's SAML response. Requests are rate
+        limited to 10 per minute per client.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [SAMLResponse, RelayState]
+              properties:
+                SAMLResponse: { type: string }
+                RelayState: { type: string }
+      responses:
+        "302":
+          description: >-
+            Redirect to the web UI or the client, with the `error` and
+            `error_description` query parameters on error.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+        "400":
+          description: The SAML response or relay state is missing or invalid.
+        "403":
+          $ref: "#/components/responses/SamlRequiresHttps"
+        "429":
+          description: Too many requests.
+
+  /v1/modules/{namespace}/{name}/{provider}/versions:
+    get:
+      tags: [Module Registry Protocol]
+      operationId: listModuleVersions
+      summary: List module versions
+      description: >-
+        Lists the versions of a module. When the authority pulls through from
+        an upstream registry, the upstream versions allowed by its rules are
+        included.
+      security: &registryRead
+        - {}
+        - terraformToken: []
+        - apiKey: []
+        - apiKeyHeader: []
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+      responses:
+        "200":
+          description: The module versions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleVersionList"
+              example:
+                modules:
+                  - versions:
+                      - version: 5.6.0
+                      - version: 5.7.0
+                      - version: 5.7.1
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundString"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailableString"
+
+  /v1/modules/{namespace}/{name}/{provider}/{version}/download:
+    get:
+      tags: [Module Registry Protocol]
+      operationId: downloadModuleVersion
+      summary: Download a module version
+      description: >-
+        Answers with the location of the module archive in the
+        `X-Terraform-Get` header. Versions not stored yet point to the
+        `archive` route, which fetches them from the upstream registry.
+      security: *registryRead
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "204":
+          description: The archive location is in the `X-Terraform-Get` header.
+          headers:
+            X-Terraform-Get: { $ref: "#/components/headers/XTerraformGet" }
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /v1/modules/{namespace}/{name}/{provider}/{version}/archive:
+    get:
+      tags: [Module Registry Protocol]
+      operationId: getModuleArchive
+      summary: Get a module archive
+      description: >-
+        Serves the archive of a version, fetching it from the upstream registry
+        first when the caller may create the module or presents the `token`
+        issued with the `download` answer. Answers with the storage location
+        in the `X-Terraform-Get` header.
+      security:
+        - {}
+        - downloadToken: []
+        - terraformToken: []
+        - apiKey: []
+        - apiKeyHeader: []
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "204":
+          description: The archive location is in the `X-Terraform-Get` header.
+          headers:
+            X-Terraform-Get: { $ref: "#/components/headers/XTerraformGet" }
+        "403":
+          description: The version is not stored and the caller may not fetch it.
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /v1/providers/{namespace}/{name}/versions:
+    get:
+      tags: [Provider Registry Protocol]
+      operationId: listProviderVersions
+      summary: List provider versions
+      description: >-
+        Lists the versions of a provider and their platforms. Versions uploaded
+        without a signed `SHA256SUMS` file are served by the network mirror
+        only and are left out.
+      security: *registryRead
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+      responses:
+        "200":
+          description: The provider versions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderVersionList"
+              example:
+                versions:
+                  - version: 5.46.0
+                    protocols: ["5.0"]
+                    platforms:
+                      - { os: linux, arch: amd64 }
+                      - { os: darwin, arch: arm64 }
+                      - { os: windows, arch: amd64 }
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFoundString"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailableString"
+
+  /v1/providers/{namespace}/{name}/{version}/download/{os}/{arch}:
+    get:
+      tags: [Provider Registry Protocol]
+      operationId: downloadProviderVersion
+      summary: Download a provider version
+      description: >-
+        Describes the package of a provider version for one platform: where to
+        download it, its checksums and the keys that sign them.
+      security: *registryRead
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Version"
+        - { name: os, in: path, required: true, schema: { type: string }, example: linux }
+        - { name: arch, in: path, required: true, schema: { type: string }, example: amd64 }
+      responses:
+        "200":
+          description: The package.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderDownload"
+              example:
+                protocols: ["5.0"]
+                os: linux
+                arch: amd64
+                filename: terraform-provider-aws_5.46.0_linux_amd64.zip
+                download_url: https://bucket.s3.amazonaws.com/providers/hashicorp/aws/5.46.0/terraform-provider-aws_5.46.0_linux_amd64.zip?X-Amz-Signature=...
+                shasums_url: https://bucket.s3.amazonaws.com/providers/hashicorp/aws/5.46.0/terraform-provider-aws_5.46.0_SHA256SUMS?X-Amz-Signature=...
+                shasums_signature_url: https://bucket.s3.amazonaws.com/providers/hashicorp/aws/5.46.0/terraform-provider-aws_5.46.0_SHA256SUMS.sig?X-Amz-Signature=...
+                shasum: 37cdf4292649a10f12858622826925e18ad4eca354c31f61d02c66895eb91274
+                signing_keys:
+                  gpg_public_keys:
+                    - key_id: 34365D9472D7468F
+                      ascii_armor: "-----BEGIN PGP PUBLIC KEY BLOCK-----\n...\n-----END PGP PUBLIC KEY BLOCK-----"
+                      trust_signature: ""
+                      string: hashicorp
+                      source_url: https://www.hashicorp.com/security.html
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/Error"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /providers/{hostname}/{namespace}/{name}/index.json:
+    get:
+      tags: [Provider Network Mirror]
+      operationId: listMirrorVersions
+      summary: List provider versions (network mirror)
+      description: >-
+        Lists the versions of a provider. Under Terralist's own hostname the
+        namespace is the authority name; under any other hostname the request
+        is served by the authority standing for that upstream hostname and
+        namespace, which may be created on the fly by
+        [`upstream-auto-create`](../configuration.md#upstream-auto-create).
+      security: *registryRead
+      parameters:
+        - $ref: "#/components/parameters/Hostname"
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+      responses:
+        "200":
+          description: The provider versions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MirrorVersionList"
+              example:
+                versions:
+                  3.2.3: {}
+                  3.2.4: {}
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /providers/{hostname}/{namespace}/{name}/{version}:
+    get:
+      tags: [Provider Network Mirror]
+      operationId: getMirrorDocument
+      summary: List installation packages, or download a package
+      description: |
+        The last path element is either:
+
+        - `<version>.json`: lists the installation packages of a version. The
+          `url` of each package may be temporary. Each package carries its
+          `zh:` hash, the sha256 of the package, preceded by its `h1:` hash when
+          the uploader provided one.
+        - a package file name, such as `terraform-provider-null_3.2.4_linux_amd64.zip`:
+          redirects to the package in storage, fetching it from the upstream
+          registry first when the caller may create the provider or presents
+          the `token` carried by the package `url`.
+      security:
+        - {}
+        - downloadToken: []
+        - terraformToken: []
+        - apiKey: []
+        - apiKeyHeader: []
+        - session: []
+      parameters:
+        - $ref: "#/components/parameters/Hostname"
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - name: version
+          in: path
+          required: true
+          description: A version document, `<version>.json`, or a package file name.
+          schema: { type: string }
+          example: 3.2.4.json
+      responses:
+        "200":
+          description: The installation packages of the version.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MirrorArchives"
+              example:
+                archives:
+                  darwin_arm64:
+                    url: https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip?...
+                    hashes: ["zh:2a3f1f4b7b0d1e2c9a6f0c3e6d5b4a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b"]
+                  linux_amd64:
+                    url: https://bucket.s3.amazonaws.com/providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip?...
+                    hashes: ["zh:9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b"]
+        "302":
+          description: Redirect to the package in storage.
+          headers:
+            Location: { $ref: "#/components/headers/Location" }
+        "403":
+          description: >-
+            The caller may not read the provider, or the package is not stored
+            and the caller may not fetch it.
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/Error"
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /v1/api/modules/{namespace}/{name}/{provider}/{version}/upload:
+    post:
+      tags: [Modules]
+      operationId: uploadModuleVersion
+      summary: Upload a module version
+      description: |
+        Creates a module version from an archive Terralist downloads. Requires
+        the `create` action on the module.
+
+        The archive is downloaded from an `http` or `https` URL, or from a git
+        repository (`git::https://...` or `git::ssh://...`, as in a Terraform
+        module source); other sources are refused. A git host resolving to a
+        private address is refused unless
+        [`fetch-allow-private-addresses`](../configuration.md#fetch-allow-private-addresses)
+        is set. `headers` are sent with `http` and `https` downloads only.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModuleUpload"
+            examples:
+              githubApi:
+                summary: GitHub release asset
+                description: >-
+                  The `archive=zip` query argument tells Terralist that the
+                  asset is a zip archive, since the API URL has no extension.
+                value:
+                  download_url: https://api.github.com/repos/OWNER/REPO/releases/assets/ASSET_ID?archive=zip
+                  headers:
+                    Accept: application/octet-stream
+                    Authorization: Bearer TOKEN
+                    X-GitHub-Api-Version: "2022-11-28"
+              githubArchive:
+                summary: GitHub tag archive
+                value:
+                  download_url: https://github.com/OWNER/REPO/archive/refs/tags/TAG.zip
+                  headers:
+                    Authorization: Basic BASE64_USERNAME_AND_TOKEN
+              git:
+                summary: Git repository
+                value:
+                  download_url: git::https://github.com/OWNER/REPO.git?ref=v1.0.0
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/modules/{namespace}/{name}/{provider}/{version}/upload-files:
+    post:
+      tags: [Modules]
+      operationId: uploadModuleVersionFiles
+      summary: Upload a module version (with local files)
+      description: Creates a module version from an uploaded archive. Requires the `create` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [module]
+              properties:
+                module:
+                  type: string
+                  format: binary
+                  description: The module archive.
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/Error" }
+
+  /v1/api/modules/{namespace}/{name}/{provider}/{version}/fetch:
+    post:
+      tags: [Modules]
+      operationId: fetchModuleVersion
+      summary: Fetch a module version from the upstream
+      description: >-
+        Downloads a module version from the upstream registry the authority
+        stands for into storage, so that later installs are served without
+        reaching the upstream. Requires the `create` action on the module. See
+        [pulling modules through](../user-guide/network-mirror.md#pulling-modules-through-from-an-upstream).
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: The version is not held by the upstream, or the upstream rules deny it.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Errors" }
+              example:
+                errors: ["version not allowed by the upstream rules"]
+        "502":
+          $ref: "#/components/responses/UpstreamUnavailable"
+
+  /v1/api/modules/{namespace}/{name}/{provider}/{version}/submodules/{submodulePath}:
+    get:
+      tags: [Modules]
+      operationId: getSubmoduleDocumentation
+      summary: Get submodule documentation
+      description: Returns the documentation of a submodule of a module version. Requires the `get` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+        - name: submodulePath
+          in: path
+          required: true
+          description: The path of the submodule inside the module, which may contain slashes.
+          schema: { type: string }
+          example: modules/vpc-endpoints
+      responses:
+        "200":
+          description: The submodule documentation.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [documentation]
+                properties:
+                  documentation:
+                    type: string
+                    description: The submodule README, in Markdown.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/modules/{namespace}/{name}/{provider}/remove:
+    delete:
+      tags: [Modules]
+      operationId: deleteModule
+      summary: Remove a module
+      description: Removes a module with all its versions. Requires the `delete` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+
+  /v1/api/modules/{namespace}/{name}/{provider}/{version}/remove:
+    delete:
+      tags: [Modules]
+      operationId: deleteModuleVersion
+      summary: Remove a module version
+      description: Requires the `delete` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+
+  /v1/api/providers/{namespace}/{name}/{version}/upload:
+    post:
+      tags: [Providers]
+      operationId: uploadProviderVersion
+      summary: Upload a provider version
+      description: |
+        Creates a provider version from files Terralist downloads. Requires the
+        `create` action on the provider.
+
+        The files are downloaded from `http` or `https` URLs; other sources are
+        refused. `headers` are sent with every download. When a storage backend
+        holds the files, the `SHA256SUMS` signature must verify with one of the
+        authority keys.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Version"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderUpload"
+            example:
+              protocols: ["5.0"]
+              headers:
+                Accept: application/octet-stream
+                Authorization: Bearer TOKEN
+                X-GitHub-Api-Version: "2022-11-28"
+              shasums:
+                url: https://api.github.com/repos/OWNER/REPO/releases/assets/SHA256SUMS_ASSET_ID
+                signature_url: https://api.github.com/repos/OWNER/REPO/releases/assets/SHA256SUMS_SIG_ASSET_ID
+              platforms:
+                - os: linux
+                  arch: amd64
+                  download_url: https://api.github.com/repos/OWNER/REPO/releases/assets/LINUX_AMD64_ASSET_ID
+                  shasum: 9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/providers/{namespace}/{name}/{version}/upload-files:
+    post:
+      tags: [Providers]
+      operationId: uploadProviderPackages
+      summary: Upload provider packages
+      description: |
+        Creates a provider version from its package files, as produced by
+        `terraform providers mirror`. Requires the `create` action on the
+        provider, and a providers storage resolver.
+
+        Every archive must be listed in the version document under its file
+        name. When a `SHA256SUMS` file is given, every archive must match its
+        entry. A version uploaded without `shasums` is served through the
+        [network mirror](../user-guide/network-mirror.md) only and does not
+        appear in the registry protocol version list.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Version"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [metadata, archives]
+              properties:
+                metadata:
+                  type: string
+                  format: binary
+                  description: The `<version>.json` document listing the packages and their `h1` hashes.
+                archives:
+                  type: array
+                  items: { type: string, format: binary }
+                  description: The package archives listed in the document.
+                shasums:
+                  type: string
+                  format: binary
+                  description: The provider's `SHA256SUMS` file. Sent together with `shasums_signature`.
+                shasums_signature:
+                  type: string
+                  format: binary
+                  description: The signature of `SHA256SUMS`, which must verify with one of the authority keys.
+                protocols:
+                  type: string
+                  description: Comma separated provider protocol versions. Required with `shasums`.
+                  example: "5.0"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400":
+          description: The form is invalid.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Errors" }
+              example:
+                errors: ["expecting exactly one version document in the \"metadata\" field"]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+        "409":
+          description: The packages could not be stored.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Errors" }
+              example:
+                errors: ["package terraform-provider-null_3.2.4_linux_amd64.zip does not match its SHA256SUMS entry"]
+
+  /v1/api/providers/{namespace}/{name}/{version}/fetch:
+    post:
+      tags: [Providers]
+      operationId: fetchProviderPackages
+      summary: Fetch provider packages from the upstream
+      description: >-
+        Downloads the given platforms of a version from the upstream registry
+        the authority stands for into storage, so that later installs are
+        served without reaching the upstream. Each platform succeeds or fails
+        on its own. Requires the `create` action on the provider. See
+        [pulling providers through](../user-guide/network-mirror.md#pulling-providers-through-from-an-upstream).
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Version"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platforms]
+              properties:
+                platforms:
+                  type: array
+                  minItems: 1
+                  items: { type: string, description: "`<os>_<arch>`" }
+            example:
+              platforms: [linux_amd64, darwin_arm64]
+      responses:
+        "200":
+          description: The outcome of each platform.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [results]
+                properties:
+                  results:
+                    type: array
+                    items: { $ref: "#/components/schemas/FetchResult" }
+              example:
+                results:
+                  - platform: linux_amd64
+                  - platform: darwin_arm64
+                    error: version not allowed by the upstream rules
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/api/providers/{namespace}/{name}/remove:
+    delete:
+      tags: [Providers]
+      operationId: deleteProvider
+      summary: Remove a provider
+      description: Removes a provider with all its versions. Requires the `delete` action on the provider.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/providers/{namespace}/{name}/{version}/remove:
+    delete:
+      tags: [Providers]
+      operationId: deleteProviderVersion
+      summary: Remove a provider version
+      description: Requires the `delete` action on the provider.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+
+  /v1/api/modules/{namespace}/{name}/{provider}/webhook/{vcs}:
+    post:
+      tags: [Webhooks]
+      operationId: moduleReleaseWebhook
+      summary: Module release webhook
+      description: >-
+        Creates a module version from a published release. The archive is taken
+        from the release `zipball_url`, falling back to `tarball_url`. Other
+        events are acknowledged and ignored.
+      security:
+        - webhookSignature: []
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Vcs"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseEvent"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/providers/{namespace}/{name}/webhook/{vcs}:
+    post:
+      tags: [Webhooks]
+      operationId: providerReleaseWebhook
+      summary: Provider release webhook
+      description: >-
+        Creates a provider version from the assets of a published release. See
+        [provider release artifacts](../user-guide/webhook-vcs-releases.md#provider-release-artifacts).
+        Other events are acknowledged and ignored.
+      security:
+        - webhookSignature: []
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Vcs"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReleaseEvent"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/AuthorityNotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/authorities/:
+    get:
+      tags: [Authorities]
+      operationId: listAuthorities
+      summary: List authorities
+      description: Lists the authorities the caller may `get`.
+      responses:
+        "200":
+          description: The authorities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Authority" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [Authorities]
+      operationId: createAuthority
+      summary: Create an authority
+      description: >-
+        Requires the `create` action on the authority. To pull artifacts through
+        from an upstream registry, set the `upstream_*` fields; see
+        [the network mirror guide](../user-guide/network-mirror.md).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorityCreate"
+            example:
+              name: my-corp
+              policy_url: https://example.com/security
+              public: false
+      responses:
+        "201":
+          description: The created authority.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Authority" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/authorities/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AuthorityId"
+    get:
+      tags: [Authorities]
+      operationId: getAuthority
+      summary: Get an authority
+      description: Requires the `get` action on the authority.
+      responses:
+        "200":
+          description: The authority, with its keys and upstream rules.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Authority" }
+              example:
+                id: 0b6f4c1e-2f55-4b8a-9d2c-5b2a0f3d9e11
+                name: hashicorp
+                policy_url: ""
+                public: false
+                upstream_hostname: registry.terraform.io
+                upstream_namespace: hashicorp
+                upstream_url: ""
+                upstream_has_token: false
+                upstream_enabled: true
+                upstream_default_policy: allow
+                rules:
+                  - id: b3f1c2d4-6a7e-4f1b-9c3d-2e5f8a9b0c1d
+                    kind: provider
+                    name: aws
+                    version: 5.*
+                    effect: deny
+                keys:
+                  - id: 7d2e9a4b-1c3f-4e5d-8a6b-0f9c2d1e3a4b
+                    key_id: 34365D9472D7468F
+                    ascii_armor: "-----BEGIN PGP PUBLIC KEY BLOCK-----\n...\n-----END PGP PUBLIC KEY BLOCK-----"
+                    trust_signature: ""
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Authorities]
+      operationId: updateAuthority
+      summary: Update an authority
+      description: |
+        Replaces the settings of an authority with the body. Requires the
+        `update` action on the authority.
+
+        - `name` cannot be changed.
+        - Keys missing from `keys` are removed; send the keys returned by the
+          `get` route to keep them.
+        - Leave `upstream_token` out to keep the stored token.
+        - Upstream rules are not changed; manage them through the `rules`
+          routes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Authority" }
+      responses:
+        "200":
+          description: The updated authority.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Authority" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [Authorities]
+      operationId: deleteAuthority
+      summary: Delete an authority
+      description: Requires the `delete` action on the authority.
+      responses:
+        "200": { $ref: "#/components/responses/True" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/authorities/{id}/keys:
+    post:
+      tags: [Authorities]
+      operationId: addAuthorityKey
+      summary: Add a signing key
+      description: >-
+        Adds a GPG public key used to verify provider `SHA256SUMS` signatures.
+        Requires the `update` action on the authority.
+      parameters:
+        - $ref: "#/components/parameters/AuthorityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuthorityKey" }
+            example:
+              key_id: 34365D9472D7468F
+              ascii_armor: "-----BEGIN PGP PUBLIC KEY BLOCK-----\n...\n-----END PGP PUBLIC KEY BLOCK-----"
+              trust_signature: ""
+      responses:
+        "200":
+          description: The added key.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthorityKey" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/authorities/{id}/keys/{keyId}:
+    delete:
+      tags: [Authorities]
+      operationId: removeAuthorityKey
+      summary: Remove a signing key
+      description: Requires the `delete` action on the authority.
+      parameters:
+        - $ref: "#/components/parameters/AuthorityId"
+        - { name: keyId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { $ref: "#/components/responses/True" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/api/authorities/{id}/rules:
+    post:
+      tags: [Authorities]
+      operationId: addUpstreamRule
+      summary: Add an upstream rule
+      description: >-
+        Adds a rule deciding which versions an authority serves from its
+        upstream registry. `name` and `version` are globs; the name is matched
+        regardless of case. Requires the `update` action on the authority.
+      parameters:
+        - $ref: "#/components/parameters/AuthorityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpstreamRule" }
+            example:
+              kind: provider
+              name: aws
+              version: 5.*
+              effect: deny
+      responses:
+        "200":
+          description: The added rule.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UpstreamRule" }
+              example:
+                id: b3f1c2d4-6a7e-4f1b-9c3d-2e5f8a9b0c1d
+                kind: provider
+                name: aws
+                version: 5.*
+                effect: deny
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The rule is invalid.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Errors" }
+              example:
+                errors: ["invalid rule kind \"bucket\", expected provider or module"]
+
+  /v1/api/authorities/{id}/rules/{ruleId}:
+    delete:
+      tags: [Authorities]
+      operationId: removeUpstreamRule
+      summary: Remove an upstream rule
+      description: Requires the `update` action on the authority.
+      parameters:
+        - $ref: "#/components/parameters/AuthorityId"
+        - { name: ruleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { $ref: "#/components/responses/True" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/api-keys/:
+    get:
+      tags: [API Keys]
+      operationId: listApiKeys
+      summary: List API keys
+      description: Lists the API keys whose scope the caller may `get`. Key values are never returned.
+      responses:
+        "200":
+          description: The API keys.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ApiKey" }
+              example:
+                - id: 550e8400-e29b-41d4-a716-446655440000
+                  name: ci-key
+                  scope: team-a
+                  created_by: admin@example.com
+                  expiration: ""
+                  policies:
+                    - id: 660e8400-e29b-41d4-a716-446655440001
+                      resource: modules
+                      action: "*"
+                      object: my-authority/*/*
+                      effect: allow
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/Error" }
+    post:
+      tags: [API Keys]
+      operationId: createApiKey
+      summary: Create an API key
+      description: >-
+        Creates an API key with its own RBAC policies. Requires the `create`
+        action on `api-keys` for the given `scope`, which decides who can
+        manage the key (see [API Key Scopes](../user-guide/rbac-configuration.md#api-key-scopes)).
+        The key value is returned only in this response; only a hash of it is
+        kept.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApiKeyCreate" }
+            example:
+              name: ci-deploy-key
+              scope: team-a
+              expire_in: 720
+              policies:
+                - { resource: modules, action: create, object: my-authority/*/*, effect: allow }
+                - { resource: modules, action: get, object: my-authority/*/*, effect: allow }
+      responses:
+        "201":
+          description: The created key, with its value.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiKeyCreated" }
+              example:
+                id: 550e8400-e29b-41d4-a716-446655440000
+                name: ci-deploy-key
+                key: tlk_9rJ0mQ3xK8vN2pL5wT7yB1cD4fG6hJ0kM3nP5qR8sU
+        "400":
+          description: The body is invalid.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Errors" }
+              example:
+                errors: ["policy 0: invalid resource \"foo\"; must be one of: modules, providers, authorities, api-keys"]
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/api/api-keys/{id}:
+    delete:
+      tags: [API Keys]
+      operationId: deleteApiKey
+      summary: Delete an API key
+      description: Requires the `delete` action on `api-keys` for the key's scope.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { $ref: "#/components/responses/True" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/artifacts/:
+    get:
+      tags: [Artifacts]
+      operationId: listArtifacts
+      summary: List artifacts
+      description: Lists the modules and providers the caller may `get`.
+      responses:
+        "200":
+          description: The artifacts.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Artifact" }
+              example:
+                - id: 3f9a1c2e-5b7d-4e8f-a0b1-c2d3e4f5a6b7
+                  full_name: my-corp/vpc/aws
+                  namespace: my-corp
+                  name: vpc
+                  provider: aws
+                  type: module
+                  versions: [1.0.0, 1.1.0]
+                  created_at: "2026-09-01T10:00:00Z"
+                  updated_at: "2026-09-12T08:30:00Z"
+                - id: 8b2c4d6e-1a3f-4b5c-9d7e-0f1a2b3c4d5e
+                  full_name: my-corp/null
+                  namespace: my-corp
+                  name: "null"
+                  provider: ""
+                  type: provider
+                  versions: [3.2.4]
+                  created_at: "2026-09-02T10:00:00Z"
+                  updated_at: "2026-09-02T10:00:00Z"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/Error" }
+
+  /v1/api/artifacts/{namespace}/{name}/{provider}/version:
+    get:
+      tags: [Artifacts]
+      operationId: listArtifactModuleVersions
+      summary: Browse module versions
+      description: >-
+        Lists the stored versions of a module, with what the caller may do with
+        them. Requires the `get` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+      responses:
+        "200":
+          description: The versions.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtifactVersions" }
+              example:
+                versions:
+                  - { version: 1.0.0, origin: manual }
+                  - { version: 1.1.0, origin: upstream }
+                can_delete: true
+                can_fetch: true
+                can_block: false
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/artifacts/{namespace}/{name}/{provider}/version/{version}:
+    get:
+      tags: [Artifacts]
+      operationId: getArtifactModuleVersion
+      summary: Get module version documentation
+      description: Returns a module version with its documentation. Requires the `get` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200":
+          description: The module version.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ModuleVersionDetails" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Artifacts]
+      operationId: deleteArtifactModuleVersion
+      summary: Delete a module version
+      description: Requires the `delete` action on the module.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ModuleName"
+        - $ref: "#/components/parameters/ModuleProvider"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200": { $ref: "#/components/responses/True" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/artifacts/{namespace}/{name}/version:
+    get:
+      tags: [Artifacts]
+      operationId: listArtifactProviderVersions
+      summary: Browse provider versions
+      description: >-
+        Lists the stored versions of a provider, with what the caller may do
+        with them. Requires the `get` action on the provider.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+      responses:
+        "200":
+          description: The versions.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtifactVersions" }
+              example:
+                versions:
+                  - { version: 3.2.3, origin: manual }
+                  - { version: 3.2.4, origin: manual, mirror_only: true }
+                can_delete: true
+                can_fetch: false
+                can_block: false
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/api/artifacts/{namespace}/{name}/version/{version}:
+    delete:
+      tags: [Artifacts]
+      operationId: deleteArtifactProviderVersion
+      summary: Delete a provider version
+      description: Requires the `delete` action on the provider.
+      parameters:
+        - $ref: "#/components/parameters/Namespace"
+        - $ref: "#/components/parameters/ProviderName"
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200": { $ref: "#/components/responses/True" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/files/{filepath}:
+    get:
+      tags: [Files]
+      operationId: getLocalFile
+      summary: Download a stored file
+      description: >-
+        Serves a file kept by the `local` storage resolver. The links are
+        issued by the registry and network mirror routes, and carry a `token`
+        bound to the file, valid for
+        [`local-presign-expire`](../configuration.md#local-presign-expire).
+      security:
+        - downloadToken: []
+      parameters:
+        - name: filepath
+          in: path
+          required: true
+          description: The key of the file, starting with `modules/` or `providers/`. It contains slashes.
+          schema: { type: string }
+          example: providers/hashicorp/null/3.2.4/terraform-provider-null_3.2.4_linux_amd64.zip
+      responses:
+        "200":
+          description: The file.
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "401":
+          description: The token is missing, invalid or bound to another file.
+        "403":
+          description: No local resolver stores this kind of file.
+        "404":
+          description: No such file.
+
+  /internal/runtime.json:
+    get:
+      tags: [Internal]
+      operationId: getRuntimeSettings
+      summary: Runtime settings
+      description: The settings the web UI needs to start. Not meant for other clients.
+      security: []
+      responses:
+        "200":
+          description: The runtime settings.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RuntimeSettings" }
+
+components:
+  securitySchemes:
+    terraformToken:
+      x-label: Terraform token
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: The token issued by `terraform login` (or `tofu login`) through the login protocol.
+    apiKey:
+      x-label: API key
+      type: http
+      scheme: bearer
+      description: >-
+        An API key, or the [`master-api-key`](../configuration.md#master-api-key),
+        prefixed with `x-api-key:`: `Authorization: Bearer x-api-key:<key>`.
+    apiKeyHeader:
+      x-label: API key
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: An API key, or the [`master-api-key`](../configuration.md#master-api-key).
+    session:
+      x-label: session cookie
+      type: apiKey
+      in: cookie
+      name: _session
+      description: >-
+        The web UI session. The cookie is `_session` with the `cookie`
+        [session store](../configuration.md#session-store), and `_session_id`
+        with the `database` one.
+    webhookSignature:
+      x-label: webhook signature
+      type: apiKey
+      in: header
+      name: X-Hub-Signature-256
+      description: >-
+        `sha256=` followed by the hex HMAC-SHA256 of the request body, keyed
+        with [`gh-webhook-secret`](../configuration.md#gh-webhook-secret).
+    downloadToken:
+      x-label: download token
+      type: apiKey
+      in: query
+      name: token
+      description: >-
+        A short-lived token bound to one artifact, carried by the download
+        links Terralist issues, since Terraform downloads without credentials.
+
+  parameters:
+    Namespace:
+      name: namespace
+      in: path
+      required: true
+      description: The authority name.
+      schema: { type: string }
+      example: hashicorp
+    ModuleName:
+      name: name
+      in: path
+      required: true
+      description: The module name.
+      schema: { type: string }
+      example: vpc
+    ModuleProvider:
+      name: provider
+      in: path
+      required: true
+      description: The main provider of the module.
+      schema: { type: string }
+      example: aws
+    ProviderName:
+      name: name
+      in: path
+      required: true
+      description: The provider name.
+      schema: { type: string }
+      example: "null"
+    Version:
+      name: version
+      in: path
+      required: true
+      description: A semantic version.
+      schema: { type: string }
+      example: 3.2.4
+    Hostname:
+      name: hostname
+      in: path
+      required: true
+      description: Terralist's own hostname, or the hostname of an upstream registry.
+      schema: { type: string }
+      example: registry.terraform.io
+    AuthorityId:
+      name: id
+      in: path
+      required: true
+      description: The authority ID.
+      schema: { type: string, format: uuid }
+    Vcs:
+      name: vcs
+      in: path
+      required: true
+      description: The VCS sending the event, matching [`vcs-provider`](../configuration.md#vcs-provider).
+      schema: { type: string, enum: [github] }
+
+  headers:
+    Location:
+      description: Where to go next.
+      schema: { type: string, format: uri }
+    XTerraformGet:
+      description: The location of the module archive, as a go-getter address.
+      schema: { type: string }
+
+  responses:
+    Ok:
+      description: The operation succeeded.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+          example:
+            errors: []
+    "True":
+      description: The operation succeeded.
+      content:
+        application/json:
+          schema: { type: boolean, const: true }
+    Error:
+      description: The operation failed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+    BadRequest:
+      description: The request is invalid.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+    Conflict:
+      description: The operation was refused.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+    NotFound:
+      description: Not found.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+    NotFoundString:
+      description: Not found. `errors` is a single string on this route.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorString" }
+          example:
+            errors: "requested provider was not found: no provider found with given arguments (provider hashicorp/aws)"
+    AuthorityNotFound:
+      description: No authority has the given name.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+          example:
+            errors: ["authority \"my-corp\" not found"]
+    UpstreamUnavailable:
+      description: The upstream registry could not be reached.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+    UpstreamUnavailableString:
+      description: The upstream registry could not be reached. `errors` is a single string on this route.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorString" }
+    Unauthorized:
+      description: The caller is not authenticated. `errors` lists why each authentication method failed.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Errors" }
+          example:
+            errors:
+              - "missing definitive scope: Authorization header not set"
+              - "missing definitive scope: neither Authorization nor X-API-Key headers are set"
+              - "missing definitive scope: no user in session"
+    Forbidden:
+      description: The caller may not perform this action. The body is empty.
+    SamlRequiresHttps:
+      description: The request did not come over HTTPS.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, const: forbidden }
+              error_description: { type: string }
+
+  schemas:
+    Errors:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: array
+          items: { type: string }
+    ErrorString:
+      type: object
+      required: [errors]
+      properties:
+        errors: { type: string }
+
+    ServiceDiscovery:
+      type: object
+      properties:
+        login.v1:
+          type: object
+          properties:
+            client: { type: string }
+            grant_types: { type: array, items: { type: string } }
+            authz: { type: string }
+            token: { type: string }
+            ports:
+              type: array
+              items: { type: integer }
+              minItems: 2
+              maxItems: 2
+        modules.v1: { type: string }
+        providers.v1: { type: string }
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        token_type: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer, description: "Lifetime in seconds." }
+
+    SessionUser:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        groups: { type: array, items: { type: string } }
+        authority: { type: string }
+        authority_id: { type: string }
+
+    RuntimeSettings:
+      type: object
+      properties:
+        host: { type: string }
+        domain: { type: string }
+        company: { type: string }
+        saml_display_name: { type: string }
+        auth:
+          type: object
+          properties:
+            providers: { type: array, items: { type: string } }
+            endpoint: { type: string }
+            session_endpoint: { type: string }
+            clear_session_endpoint: { type: string }
+
+    ModuleVersionList:
+      type: object
+      properties:
+        modules:
+          type: array
+          items:
+            type: object
+            properties:
+              versions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    version: { type: string }
+
+    ModuleUpload:
+      type: object
+      required: [download_url]
+      properties:
+        download_url:
+          type: string
+          description: An `http` or `https` URL, or a `git::` address.
+        headers:
+          type: object
+          additionalProperties: { type: string }
+          description: Headers sent with `http` and `https` downloads.
+
+    ModuleVersionDetails:
+      type: object
+      properties:
+        version: { type: string }
+        documentation:
+          type: string
+          description: The module README, in Markdown.
+        submodules:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+
+    ProviderVersionList:
+      type: object
+      properties:
+        versions:
+          type: array
+          items:
+            type: object
+            properties:
+              version: { type: string }
+              protocols: { type: array, items: { type: string } }
+              platforms:
+                type: array
+                items: { $ref: "#/components/schemas/Platform" }
+
+    Platform:
+      type: object
+      properties:
+        os: { type: string }
+        arch: { type: string }
+
+    ProviderDownload:
+      type: object
+      properties:
+        protocols: { type: array, items: { type: string } }
+        os: { type: string }
+        arch: { type: string }
+        filename: { type: string }
+        download_url: { type: string }
+        shasums_url: { type: string }
+        shasums_signature_url: { type: string }
+        shasum: { type: string }
+        signing_keys:
+          type: object
+          properties:
+            gpg_public_keys:
+              type: array
+              items:
+                type: object
+                properties:
+                  key_id: { type: string }
+                  ascii_armor: { type: string }
+                  trust_signature: { type: string }
+                  string: { type: string }
+                  source_url: { type: string }
+
+    ProviderUpload:
+      type: object
+      required: [protocols, shasums, platforms]
+      properties:
+        protocols:
+          type: array
+          items: { type: string }
+        shasums:
+          type: object
+          required: [url, signature_url]
+          properties:
+            url: { type: string, description: "The `SHA256SUMS` file." }
+            signature_url: { type: string, description: "The signature of the `SHA256SUMS` file." }
+        platforms:
+          type: array
+          items:
+            type: object
+            required: [os, arch, download_url, shasum]
+            properties:
+              os: { type: string }
+              arch: { type: string }
+              download_url: { type: string }
+              shasum: { type: string, description: "The sha256 of the package." }
+              h1: { type: string, description: "The `h1:` hash of the package, served by the network mirror." }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+          description: Headers sent with every download.
+
+    FetchResult:
+      type: object
+      required: [platform]
+      properties:
+        platform: { type: string }
+        error:
+          type: string
+          description: Why the platform could not be fetched. Absent on success.
+
+    MirrorVersionList:
+      type: object
+      properties:
+        versions:
+          type: object
+          description: The versions, as keys mapped to empty objects.
+          additionalProperties: { type: object }
+
+    MirrorArchives:
+      type: object
+      properties:
+        archives:
+          type: object
+          description: The packages, keyed by `<os>_<arch>`.
+          additionalProperties:
+            type: object
+            properties:
+              url: { type: string }
+              hashes: { type: array, items: { type: string } }
+
+    ReleaseEvent:
+      type: object
+      description: >-
+        A GitHub [release event](https://docs.github.com/en/webhooks/webhook-events-and-payloads#release).
+        Only `published` releases that are not drafts create a version; the tag
+        must be a semantic version, optionally prefixed with `v`.
+      additionalProperties: true
+
+    Authority:
+      type: object
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        name: { type: string }
+        policy_url: { type: string }
+        public:
+          type: boolean
+          description: Anyone may read the modules and providers of a public authority.
+        upstream_hostname:
+          type: string
+          description: The hostname of the upstream registry the authority stands for.
+        upstream_namespace:
+          type: string
+          description: The namespace on the upstream registry.
+        upstream_url:
+          type: string
+          description: >-
+            Where to reach the upstream registry, such as a private mirror of
+            the public registry. Defaults to `https://<upstream_hostname>`.
+        upstream_token:
+          type: string
+          writeOnly: true
+          description: The token sent to the upstream registry. Never returned.
+        upstream_has_token: { type: boolean, readOnly: true }
+        upstream_enabled:
+          type: boolean
+          description: Whether artifacts are pulled through from the upstream registry.
+        upstream_default_policy:
+          type: string
+          enum: [allow, deny]
+          description: Whether upstream versions matched by no rule are served.
+        rules:
+          type: array
+          readOnly: true
+          items: { $ref: "#/components/schemas/UpstreamRule" }
+        keys:
+          type: array
+          items: { $ref: "#/components/schemas/AuthorityKey" }
+
+    AuthorityCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        policy_url: { type: string }
+        public: { type: boolean }
+        owner: { type: string }
+        upstream_hostname: { type: string }
+        upstream_namespace: { type: string }
+        upstream_url: { type: string }
+        upstream_token: { type: string }
+        upstream_enabled: { type: boolean }
+        upstream_default_policy: { type: string, enum: [allow, deny] }
+
+    AuthorityKey:
+      type: object
+      required: [key_id, ascii_armor]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        key_id: { type: string }
+        ascii_armor: { type: string }
+        trust_signature: { type: string }
+
+    UpstreamRule:
+      type: object
+      required: [kind, name, version, effect]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        kind: { type: string, enum: [provider, module] }
+        name: { type: string, description: "A glob matched against the artifact name." }
+        version: { type: string, description: "A glob matched against the version." }
+        effect: { type: string, enum: [allow, deny] }
+
+    ApiKeyPolicy:
+      type: object
+      required: [resource, action, object, effect]
+      properties:
+        id: { type: string, format: uuid, readOnly: true }
+        resource: { type: string, enum: [modules, providers, authorities, api-keys] }
+        action: { type: string, description: "An action, such as `get`, `create`, `update`, `delete`, or `*`." }
+        object: { type: string, description: "A glob matched against the object, such as `my-authority/*/*`." }
+        effect: { type: string, enum: [allow, deny] }
+
+    ApiKey:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        scope: { type: string }
+        created_by: { type: string }
+        expiration:
+          type: string
+          description: When the key expires, empty when it does not.
+        policies:
+          type: array
+          items: { $ref: "#/components/schemas/ApiKeyPolicy" }
+
+    ApiKeyCreate:
+      type: object
+      required: [name, scope, policies]
+      properties:
+        name: { type: string }
+        scope: { type: string }
+        expire_in:
+          type: integer
+          description: Hours until the key expires. `0` or absent for a key that does not expire.
+        policies:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/ApiKeyPolicy" }
+
+    ApiKeyCreated:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        key:
+          type: string
+          description: The key value. Returned only once.
+
+    Artifact:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        full_name: { type: string }
+        namespace: { type: string }
+        name: { type: string }
+        provider:
+          type: string
+          description: The main provider of a module; empty for a provider.
+        type: { type: string, enum: [module, provider] }
+        versions: { type: array, items: { type: string } }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    ArtifactVersions:
+      type: object
+      properties:
+        versions:
+          type: array
+          items:
+            type: object
+            properties:
+              version: { type: string }
+              origin:
+                type: string
+                enum: [manual, upstream]
+                description: Whether the version was uploaded or pulled from the upstream registry.
+              mirror_only:
+                type: boolean
+                description: The provider version has no signed `SHA256SUMS` file and is served by the network mirror only.
+        can_delete:
+          type: boolean
+          description: The caller may delete versions.
+        can_fetch:
+          type: boolean
+          description: The authority pulls through and the caller may fetch versions from the upstream.
+        can_block:
+          type: boolean
+          description: The caller may delete pulled versions and deny them with an upstream rule.

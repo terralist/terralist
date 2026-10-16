@@ -1,0 +1,16 @@
+{% if get_primary_type(definition.type) == "object" %}
+{%- with props = handler.get_properties(definition) -%}
+{% if props %}
+| {{texts.name}} | {{texts.type}} | {{texts.description}} |
+| --- | --- | --- |
+{%- for name, schema in props %}
+| `{{name}}` | {% include "partial/schema-repr.html" %} | {{(schema.description or "") | replace("\n", " ") | replace("|", "\\|")}} |
+{%- endfor %}
+{%- endif %}
+{%- endwith -%}
+{%- else -%}
+{%- with schema = definition -%}
+<span>{{texts.type}}: </span>
+{%- include "partial/schema-repr.html" -%}
+{%- endwith -%}
+{%- endif %}

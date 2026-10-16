@@ -33,7 +33,7 @@ jobs:
           python-version: 3.x
 
       - name: Install dependencies
-        run: pip install mkdocs-material mike
+        run: pip install mkdocs-material mike neoteroi-mkdocs==1.2.0
 
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages --depth=1
