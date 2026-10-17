@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 
 	"terralist/internal/server/models/oauth"
 	"terralist/internal/server/repositories"
@@ -84,7 +85,11 @@ func (s *DefaultLoginService) Redirect(cc *oauth.CodeComponents, r *oauth.Reques
 		return "", oauth.WrapError(err, oauth.ServerError)
 	}
 
-	return fmt.Sprintf("%s?state=%s&code=%s", r.RedirectURI, r.State, code), nil
+	queryParams := url.Values{
+		"state": []string{r.State},
+		"code":  []string{code},
+	}
+	return fmt.Sprintf("%s?%s", r.RedirectURI, queryParams.Encode()), nil
 }
 
 func (s *DefaultLoginService) ResolveCode(code string) (*oauth.CodeComponents, oauth.Error) {

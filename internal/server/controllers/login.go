@@ -325,16 +325,13 @@ func (c *DefaultLoginController) redirectWithError(
 	state string,
 	err oauth.Error,
 ) string {
-	stateQuery := ""
+	queryParams := url.Values{
+		"error":             []string{err.Kind()},
+		"error_description": []string{err.Error()},
+	}
 	if state != "" {
-		stateQuery = fmt.Sprintf("&state=%s", state)
+		queryParams.Set("state", state)
 	}
 
-	return fmt.Sprintf(
-		"%s?error=%s&error_description=%s%s",
-		uri,
-		err.Kind(),
-		url.QueryEscape(err.Error()),
-		stateQuery,
-	)
+	return fmt.Sprintf("%s?%s", uri, queryParams.Encode())
 }

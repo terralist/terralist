@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,4 +65,16 @@ func TestNextPageURL(t *testing.T) {
 		header := `<https://api.github.com/orgs/my-org/teams?per_page=100&page=2>; rel="next"`
 		assert.Equal(t, "https://api.github.com/orgs/my-org/teams?per_page=100&page=2", nextPageURL(header))
 	})
+}
+
+func TestGetAuthorizeUrl(t *testing.T) {
+	p := &Provider{ClientID: "client-id", oauthEndpoint: "https://github.com/login/oauth", Organization: "org"}
+
+	authorizeURL, err := url.Parse(p.GetAuthorizeUrl("a+b/c=&d"))
+	require.NoError(t, err)
+
+	query := authorizeURL.Query()
+	assert.Equal(t, "a+b/c=&d", query.Get("state"))
+	assert.Equal(t, "client-id", query.Get("client_id"))
+	assert.Equal(t, "read:user user:email read:org", query.Get("scope"))
 }
