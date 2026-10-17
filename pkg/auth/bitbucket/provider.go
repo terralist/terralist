@@ -32,11 +32,15 @@ func (p *Provider) Name() string {
 }
 
 func (p *Provider) GetAuthorizeUrl(state string) string {
+	queryParams := url.Values{
+		"client_id":     []string{p.ClientID},
+		"state":         []string{state},
+		"response_type": []string{"code"},
+	}
 	return fmt.Sprintf(
-		"%s/authorize?client_id=%s&state=%s&response_type=code",
+		"%s/authorize?%s",
 		oauthEndpoint,
-		p.ClientID,
-		state,
+		queryParams.Encode(),
 	)
 }
 

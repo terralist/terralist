@@ -168,6 +168,25 @@ func TestRedirect(t *testing.T) {
 				})
 			})
 		})
+
+		Convey("Given a client state with reserved query characters", func() {
+			req := oauth.Request{
+				RedirectURI: "http://localhost",
+				State:       "a+b/c=&d#e",
+			}
+
+			Convey("When the service is queried", func() {
+				redirectURL, oauthError := loginService.Redirect(&oauth.CodeComponents{}, &req)
+				So(oauthError, ShouldBeNil)
+
+				Convey("Then the state reaches the client intact", func() {
+					parsedURL, err := url.Parse(redirectURL)
+					So(err, ShouldBeNil)
+					So(parsedURL.Query().Get("state"), ShouldEqual, req.State)
+					So(parsedURL.Query().Get("code"), ShouldNotBeEmpty)
+				})
+			})
+		})
 	})
 }
 

@@ -45,13 +45,17 @@ func (p *Provider) Name() string {
 }
 
 func (p *Provider) GetAuthorizeUrl(state string) string {
+	queryParams := url.Values{
+		"client_id":     []string{p.ClientID},
+		"state":         []string{state},
+		"response_type": []string{"code"},
+		"redirect_uri":  []string{p.RedirectURL},
+		"scope":         []string{strings.Join(scope, " ")},
+	}
 	return fmt.Sprintf(
-		"%s/authorize?client_id=%s&state=%s&response_type=code&redirect_uri=%s&scope=%s",
+		"%s/authorize?%s",
 		p.GitLabOAuthBaseURL,
-		p.ClientID,
-		state,
-		p.RedirectURL,
-		strings.Join(scope, "+"),
+		queryParams.Encode(),
 	)
 }
 
