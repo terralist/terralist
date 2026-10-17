@@ -55,14 +55,15 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 		scopes = append(scopes, "read:org")
 	}
 
-	scope := strings.Join(scopes, " ")
-
+	queryParams := url.Values{
+		"client_id": []string{p.ClientID},
+		"state":     []string{state},
+		"scope":     []string{strings.Join(scopes, " ")},
+	}
 	return fmt.Sprintf(
-		"%s/authorize?client_id=%s&state=%s&scope=%s",
+		"%s/authorize?%s",
 		p.oauthEndpoint,
-		p.ClientID,
-		state,
-		url.QueryEscape(scope),
+		queryParams.Encode(),
 	)
 }
 
