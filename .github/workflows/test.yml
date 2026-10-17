@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: task --verbose tidy
 
+      - name: Check Go modules are tidy
+        run: git diff --exit-code -- go.mod go.sum tools/go.mod tools/go.sum
+
       - name: Generate mocks
         run: task test:generate-mocks
 
