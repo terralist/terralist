@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	environmentRegEx = regexp.MustCompile(`(?m)[$][{]([a-zA-Z_]+)(?::(.*))?[}]`)
+	environmentRegEx = regexp.MustCompile(`(?m)[$][{]([a-zA-Z_][a-zA-Z0-9_]*)(?::(.*))?[}]`)
 )
 
 func environmentLookup(value string) (string, bool) {
