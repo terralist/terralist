@@ -63,6 +63,9 @@
   gomod: {
     enabled: true,
   },
+  postUpdateOptions: [
+    'gomodTidy',
+  ],
   'github-actions': {
     enabled: true,
   },
