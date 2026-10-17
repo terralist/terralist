@@ -93,16 +93,25 @@ var upstreamVersions = []UpstreamVersion{
 	{Version: "3.2.5", Protocols: []string{"5.0", "6.0"}, Platforms: []registry.Platform{{OS: "linux", Arch: "amd64"}}},
 }
 
-var upstreamMetadata = &UpstreamVersionMetadata{
-	Protocols: []string{"5.0"},
-	ShaSums: map[string]string{
-		"terraform-provider-null_3.2.4_linux_amd64.zip":  "aaaa",
-		"terraform-provider-null_3.2.4_darwin_arm64.zip": "bbbb",
-	},
-	ShaSumsDocument: []byte("sums"),
-	Signature:       []byte("sig"),
-	SigningKeys:     []registry.GPGPublicKey{{KeyID: "UPSTREAMKEY", ASCIIArmor: "upstream-armor"}},
-}
+var upstreamMetadata = func() *UpstreamVersionMetadata {
+	linux := provider.PackageFileName("null", "3.2.4", "linux", "amd64")
+	darwin := provider.PackageFileName("null", "3.2.4", "darwin", "arm64")
+
+	return &UpstreamVersionMetadata{
+		Protocols: []string{"5.0"},
+		Downloads: map[string]*registry.Download{
+			linux:  {Filename: linux, OS: "linux", Arch: "amd64"},
+			darwin: {Filename: darwin, OS: "darwin", Arch: "arm64"},
+		},
+		ShaSums: map[string]string{
+			linux:  "aaaa",
+			darwin: "bbbb",
+		},
+		ShaSumsDocument: []byte("sums"),
+		Signature:       []byte("sig"),
+		SigningKeys:     []registry.GPGPublicKey{{KeyID: "UPSTREAMKEY", ASCIIArmor: "upstream-armor"}},
+	}
+}()
 
 func TestGetProviderWithUpstream(t *testing.T) {
 	Convey("Subject: Listing registry versions merged with the upstream", t, func() {
@@ -364,8 +373,12 @@ func TestListMirrorArchivesWithUpstream(t *testing.T) {
 		Convey("Given a version that exists upstream only", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
 			f.upstream.On("ProviderVersions", f.auth, "null").Return(upstreamVersions, nil)
+			linux := provider.PackageFileName("null", "3.2.5", "linux", "amd64")
 			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.5").Return(&UpstreamVersionMetadata{
-				ShaSums: map[string]string{"terraform-provider-null_3.2.5_linux_amd64.zip": "cccc"},
+				Downloads: map[string]*registry.Download{
+					linux: {Filename: linux, OS: "linux", Arch: "amd64"},
+				},
+				ShaSums: map[string]string{linux: "cccc"},
 			}, nil)
 
 			dto, err := f.service.ListMirrorArchives("hashicorp", "null", "3.2.5", true)
@@ -381,8 +394,12 @@ func TestListMirrorArchivesWithUpstream(t *testing.T) {
 		Convey("Given an upstream-only version of a provider named in another case", func() {
 			f.repo.On("Find", "hashicorp", "Null").Return(nil, repositories.ErrNotFound)
 			f.upstream.On("ProviderVersions", f.auth, "Null").Return(upstreamVersions, nil)
+			linux := provider.PackageFileName("null", "3.2.5", "linux", "amd64")
 			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.5").Return(&UpstreamVersionMetadata{
-				ShaSums: map[string]string{"terraform-provider-null_3.2.5_linux_amd64.zip": "cccc"},
+				Downloads: map[string]*registry.Download{
+					linux: {Filename: linux, OS: "linux", Arch: "amd64"},
+				},
+				ShaSums: map[string]string{linux: "cccc"},
 			}, nil)
 
 			dto, err := f.service.ListMirrorArchives("hashicorp", "Null", "3.2.5", true)
@@ -444,9 +461,13 @@ func TestGetVersionFromUpstream(t *testing.T) {
 
 		Convey("Given a version that exists upstream only", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+			darwin := provider.PackageFileName("null", "3.2.5", "darwin", "arm64")
 			metadata := &UpstreamVersionMetadata{
-				Protocols:       []string{"6.0"},
-				ShaSums:         map[string]string{"terraform-provider-null_3.2.5_darwin_arm64.zip": "dddd"},
+				Protocols: []string{"6.0"},
+				Downloads: map[string]*registry.Download{
+					darwin: {Filename: darwin, OS: "darwin", Arch: "arm64"},
+				},
+				ShaSums:         map[string]string{darwin: "dddd"},
 				ShaSumsDocument: []byte("sums"),
 				Signature:       []byte("sig"),
 				SigningKeys:     upstreamMetadata.SigningKeys,
@@ -499,9 +520,13 @@ func TestGetVersionFromUpstream(t *testing.T) {
 				return f.localProvider(), nil
 			})
 			f.repo.On("FindVersionPlatform", "hashicorp", "null", "3.2.5", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
+			darwin := provider.PackageFileName("null", "3.2.5", "darwin", "arm64")
 			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.5").Return(&UpstreamVersionMetadata{
-				Protocols:       []string{"6.0"},
-				ShaSums:         map[string]string{"terraform-provider-null_3.2.5_darwin_arm64.zip": "dddd"},
+				Protocols: []string{"6.0"},
+				Downloads: map[string]*registry.Download{
+					darwin: {Filename: darwin, OS: "darwin", Arch: "arm64"},
+				},
+				ShaSums:         map[string]string{darwin: "dddd"},
 				ShaSumsDocument: []byte("sums"),
 				Signature:       []byte("sig"),
 			}, nil)
@@ -528,7 +553,18 @@ func TestGetVersionFromUpstream(t *testing.T) {
 			pulled.Versions[0].Origin = provider.OriginUpstream
 			f.repo.On("FindVersionPlatform", "hashicorp", "Null", "3.2.4", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
 			f.repo.On("Find", "hashicorp", "Null").Return(pulled, nil)
-			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.4").Return(upstreamMetadata, nil)
+			darwin := provider.PackageFileName("null", "3.2.4", "darwin", "arm64")
+			darwinDifferentCase := provider.PackageFileName("Null", "3.2.4", "darwin", "arm64")
+			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.4").Return(&UpstreamVersionMetadata{
+				Protocols: upstreamMetadata.Protocols,
+				Downloads: map[string]*registry.Download{
+					darwin: {Filename: darwinDifferentCase, OS: "darwin", Arch: "arm64"},
+				},
+				ShaSums:         map[string]string{darwin: "bbbb"},
+				ShaSumsDocument: upstreamMetadata.ShaSumsDocument,
+				Signature:       upstreamMetadata.Signature,
+				SigningKeys:     upstreamMetadata.SigningKeys,
+			}, nil)
 			f.resolver.On("Find", mock.Anything).Return("https://storage/resolved", nil)
 
 			dto, err := f.service.GetVersion("hashicorp", "Null", "3.2.4", "darwin", "arm64", true)
