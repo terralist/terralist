@@ -201,6 +201,26 @@ func TestLoginController_Redirect(t *testing.T) {
 			})
 		})
 
+		Convey("Given a signed state whose client state has reserved query characters and whose code cannot be unpacked", func() {
+			mockService.On("UnpackCode", "provider-code", mock.Anything).
+				Return(nil, oauth.WrapError(errAccessDenied, oauth.AccessDenied))
+
+			withReservedState := request
+			withReservedState.State = "a+b/c=&d#e"
+
+			w := callback(signedState(t, withReservedState))
+
+			Convey("Then the error reaches the client with its state intact", func() {
+				So(w.Code, ShouldEqual, http.StatusFound)
+
+				location, err := url.Parse(w.Header().Get("Location"))
+				So(err, ShouldBeNil)
+				So(location.Query().Get("error"), ShouldEqual, oauth.AccessDenied)
+				So(location.Query().Get("error_description"), ShouldEqual, errAccessDenied.Error())
+				So(location.Query().Get("state"), ShouldEqual, withReservedState.State)
+			})
+		})
+
 		Convey("Given a state forged without the server key", func() {
 			forged := request
 			forged.RedirectURI = "https://evil.example.com/steal"
