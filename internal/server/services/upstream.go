@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"terralist/internal/server/models/authority"
-	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/cache"
 	"terralist/pkg/metrics"
@@ -21,6 +21,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"golang.org/x/sync/semaphore"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -32,6 +33,12 @@ var (
 	// ErrUpstreamUnavailable is returned when the upstream registry cannot be
 	// read and nothing Terralist holds answers the request.
 	ErrUpstreamUnavailable = errors.New("the upstream registry is unavailable")
+)
+
+const (
+	// upstreamParallelDownloads is the maximum number of parallel downloads from
+	// the upstream registry.
+	upstreamParallelDownloads = 4
 )
 
 // upstreamFailure marks err as an unavailable upstream, unless it says the
@@ -66,17 +73,26 @@ type UpstreamVersion struct {
 // provider version: the SHA256SUMS document with its verified signature and
 // the digests it lists.
 type UpstreamVersionMetadata struct {
-	Protocols       []string                `json:"protocols"`
-	ShaSums         map[string]string       `json:"shasums"`
-	ShaSumsDocument []byte                  `json:"shasums_document"`
-	Signature       []byte                  `json:"signature"`
-	SigningKeys     []registry.GPGPublicKey `json:"signing_keys"`
+	Protocols       []string                          `json:"protocols"`
+	PlatformDigests map[string]UpstreamPlatformDigest `json:"platform_digests"`
+	ShaSums         map[string]string                 `json:"shasums"`
+	ShaSumsDocument []byte                            `json:"shasums_document"`
+	Signature       []byte                            `json:"signature"`
+	SigningKeys     []registry.GPGPublicKey           `json:"signing_keys"`
 }
 
 // UpstreamPackage locates one provider package on the upstream registry.
 type UpstreamPackage struct {
 	FileName string
 	URL      string
+	ShaSum   string
+}
+
+// UpstreamPlatformDigest is the digest of a platform package of an upstream version.
+type UpstreamPlatformDigest struct {
+	OS       string
+	Arch     string
+	Filename string
 	ShaSum   string
 }
 
@@ -184,9 +200,16 @@ func (s *DefaultUpstreamService) ProviderPackage(a *authority.Authority, name, v
 		return nil, err
 	}
 
-	if want := provider.PackageFileName(name, version, os, arch); !strings.EqualFold(download.Filename, want) {
+	platform := registry.Platform{OS: os, Arch: arch}
+	key := platform.String()
+	if _, ok := metadata.PlatformDigests[key]; !ok {
 		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
-		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s as %q", want, a.Name, name, version, download.Filename)
+		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s: %w", key, a.Name, name, version, repositories.ErrNotFound)
+	}
+
+	if filepath.Base(download.Filename) != download.Filename {
+		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
+		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s: advertised filename contains a path", download.Filename, a.Name, name, version)
 	}
 
 	expected, ok := metadata.ShaSums[download.Filename]
@@ -298,13 +321,81 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 		return nil, err
 	}
 
+	platformsToFetch := lo.Filter(upstream.Platforms, func(p registry.Platform, _ int) bool {
+		return p.OS != platform.OS || p.Arch != platform.Arch
+	})
+
+	downloads, err := s.fetchPlatforms(ctx, client, a, name, version, platformsToFetch)
+	if err != nil {
+		return nil, err
+	}
+
+	downloads[platform.String()] = download
+	platformDigests := s.collectPlatformDigests(a, name, version, downloads, sums)
+	if err != nil {
+		return nil, err
+	}
+
 	return &UpstreamVersionMetadata{
 		Protocols:       upstream.Protocols,
+		PlatformDigests: platformDigests,
 		ShaSums:         sums,
 		ShaSumsDocument: document,
 		Signature:       signature,
 		SigningKeys:     download.SigningKeys.GPGPublicKeys,
 	}, nil
+}
+
+func (s *DefaultUpstreamService) fetchPlatforms(ctx context.Context, client *registry.Client, a *authority.Authority, name, version string, platforms []registry.Platform) (map[string]*registry.Download, error) {
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+	sem := semaphore.NewWeighted(upstreamParallelDownloads)
+	downloads := make(map[string]*registry.Download, len(platforms))
+	for _, platform := range platforms {
+		key := platform.String()
+		wg.Go(func() {
+			if err := sem.Acquire(ctx, 1); err != nil {
+				log.Warn().Err(err).Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Could not acquire semaphore.")
+				return
+			}
+			defer sem.Release(1)
+
+			download, err := client.ProviderDownload(ctx, *a.UpstreamNamespace, name, version, platform.OS, platform.Arch)
+			if err != nil {
+				log.Warn().Err(err).Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Could not fetch download from upstream.")
+				return
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			downloads[key] = download
+		})
+	}
+	wg.Wait()
+
+	if len(downloads) == 0 {
+		return nil, fmt.Errorf("no platforms found for %s/%s %s", *a.UpstreamNamespace, name, version)
+	}
+
+	return downloads, nil
+}
+
+func (s *DefaultUpstreamService) collectPlatformDigests(a *authority.Authority, name, version string, downloads map[string]*registry.Download, sums map[string]string) map[string]UpstreamPlatformDigest {
+	platformDigests := make(map[string]UpstreamPlatformDigest, len(downloads))
+	for key, download := range downloads {
+		if _, ok := sums[download.Filename]; !ok {
+			log.Warn().Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Package is not listed in the verified SHA256SUMS. Skipping.")
+			continue
+		}
+
+		platformDigests[key] = UpstreamPlatformDigest{
+			OS:       download.OS,
+			Arch:     download.Arch,
+			Filename: download.Filename,
+			ShaSum:   download.ShaSum,
+		}
+	}
+	return platformDigests
 }
 
 // cached answers from the cache while the entry is fresh, refreshes it through

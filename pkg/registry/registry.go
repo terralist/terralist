@@ -97,6 +97,10 @@ type Platform struct {
 	Arch string `json:"arch"`
 }
 
+func (p Platform) String() string {
+	return fmt.Sprintf("%s_%s", strings.ToLower(p.OS), strings.ToLower(p.Arch))
+}
+
 // Download is the provider registry protocol package metadata.
 type Download struct {
 	Protocols           []string    `json:"protocols"`
