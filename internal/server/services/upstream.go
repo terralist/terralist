@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"terralist/internal/server/models/authority"
-	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/cache"
 	"terralist/pkg/metrics"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/samber/lo"
+	"golang.org/x/sync/semaphore"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -32,6 +32,12 @@ var (
 	// ErrUpstreamUnavailable is returned when the upstream registry cannot be
 	// read and nothing Terralist holds answers the request.
 	ErrUpstreamUnavailable = errors.New("the upstream registry is unavailable")
+)
+
+const (
+	// upstreamParallelDownloads is the maximum number of parallel downloads from
+	// the upstream registry.
+	upstreamParallelDownloads = 4
 )
 
 // upstreamFailure marks err as an unavailable upstream, unless it says the
@@ -66,17 +72,26 @@ type UpstreamVersion struct {
 // provider version: the SHA256SUMS document with its verified signature and
 // the digests it lists.
 type UpstreamVersionMetadata struct {
-	Protocols       []string                `json:"protocols"`
-	ShaSums         map[string]string       `json:"shasums"`
-	ShaSumsDocument []byte                  `json:"shasums_document"`
-	Signature       []byte                  `json:"signature"`
-	SigningKeys     []registry.GPGPublicKey `json:"signing_keys"`
+	Protocols       []string                          `json:"protocols"`
+	PlatformDigests map[string]UpstreamPlatformDigest `json:"platform_digests"`
+	ShaSums         map[string]string                 `json:"shasums"`
+	ShaSumsDocument []byte                            `json:"shasums_document"`
+	Signature       []byte                            `json:"signature"`
+	SigningKeys     []registry.GPGPublicKey           `json:"signing_keys"`
 }
 
 // UpstreamPackage locates one provider package on the upstream registry.
 type UpstreamPackage struct {
 	FileName string
 	URL      string
+	ShaSum   string
+}
+
+// UpstreamPlatformDigest is the digest of a platform package of an upstream version.
+type UpstreamPlatformDigest struct {
+	OS       string
+	Arch     string
+	Filename string
 	ShaSum   string
 }
 
@@ -184,9 +199,10 @@ func (s *DefaultUpstreamService) ProviderPackage(a *authority.Authority, name, v
 		return nil, err
 	}
 
-	if want := provider.PackageFileName(name, version, os, arch); !strings.EqualFold(download.Filename, want) {
+	key := fmt.Sprintf("%s_%s", os, arch)
+	if _, ok := metadata.PlatformDigests[key]; !ok {
 		metrics.RecordUpstreamRequest(*a.UpstreamHostname, "package", "error")
-		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s as %q", want, a.Name, name, version, download.Filename)
+		return nil, fmt.Errorf("upstream advertises package %s of %s/%s %s: %w", key, a.Name, name, version, repositories.ErrNotFound)
 	}
 
 	expected, ok := metadata.ShaSums[download.Filename]
@@ -271,6 +287,11 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 		return nil, fmt.Errorf("version %s of %s/%s: %w", version, *a.UpstreamNamespace, name, registry.ErrNotFound)
 	}
 
+	platformDigests := s.fetchPlatformDigests(ctx, client, a, name, version, upstream.Platforms)
+	if len(platformDigests) == 0 {
+		return nil, fmt.Errorf("no platform digests found for %s/%s %s", *a.UpstreamNamespace, name, version)
+	}
+
 	// Every platform shares the SHA256SUMS document, so any platform's download
 	// metadata leads to it.
 	platform := upstream.Platforms[0]
@@ -300,11 +321,46 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 
 	return &UpstreamVersionMetadata{
 		Protocols:       upstream.Protocols,
+		PlatformDigests: platformDigests,
 		ShaSums:         sums,
 		ShaSumsDocument: document,
 		Signature:       signature,
 		SigningKeys:     download.SigningKeys.GPGPublicKeys,
 	}, nil
+}
+
+func (s *DefaultUpstreamService) fetchPlatformDigests(ctx context.Context, client *registry.Client, a *authority.Authority, name, version string, platforms []registry.Platform) map[string]UpstreamPlatformDigest {
+	digests := make(map[string]UpstreamPlatformDigest, len(platforms))
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+	sem := semaphore.NewWeighted(upstreamParallelDownloads)
+	for _, platform := range platforms {
+		wg.Go(func() {
+			key := fmt.Sprintf("%s_%s", platform.OS, platform.Arch)
+			if err := sem.Acquire(ctx, 1); err != nil {
+				log.Warn().Err(err).Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Could not acquire semaphore.")
+				return
+			}
+			defer sem.Release(1)
+
+			download, err := client.ProviderDownload(ctx, *a.UpstreamNamespace, name, version, platform.OS, platform.Arch)
+			if err != nil {
+				log.Warn().Err(err).Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Could not fetch download from upstream.")
+				return
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			digests[key] = UpstreamPlatformDigest{
+				OS:       platform.OS,
+				Arch:     platform.Arch,
+				Filename: download.Filename,
+				ShaSum:   download.ShaSum,
+			}
+		})
+	}
+	wg.Wait()
+	return digests
 }
 
 // cached answers from the cache while the entry is fresh, refreshes it through
