@@ -35,6 +35,25 @@ const moduleArchiveBase = "https://terralist.example.com/v1/modules"
 func setupModuleRouter(t *testing.T, user *auth.User, policyCSV string) (*gin.Engine, *services.MockModuleService) {
 	t.Helper()
 
+	controller, mockService := newModuleController(t, policyCSV)
+
+	router := gin.New()
+	if user != nil {
+		router.Use(func(ctx *gin.Context) {
+			ctx.Set("user", user)
+			ctx.Set("userName", user.Name)
+			ctx.Set("userEmail", user.Email)
+		})
+	}
+
+	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
+
+	return router, mockService
+}
+
+func newModuleController(t *testing.T, policyCSV string) (*DefaultModuleController, *services.MockModuleService) {
+	t.Helper()
+
 	gin.SetMode(gin.TestMode)
 
 	mockService := services.NewMockModuleService(t)
@@ -73,18 +92,7 @@ func setupModuleRouter(t *testing.T, user *auth.User, policyCSV string) (*gin.En
 		ArchiveBaseURL:   moduleArchiveBase,
 	}
 
-	router := gin.New()
-	if user != nil {
-		router.Use(func(ctx *gin.Context) {
-			ctx.Set("user", user)
-			ctx.Set("userName", user.Name)
-			ctx.Set("userEmail", user.Email)
-		})
-	}
-
-	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
-
-	return router, mockService
+	return controller, mockService
 }
 
 func moduleTokens(t *testing.T) *handlers.DownloadTokens {
@@ -241,6 +249,54 @@ func TestModuleController_Archive(t *testing.T) {
 					So(w.Code, ShouldEqual, http.StatusBadGateway)
 					So(w.Body.String(), ShouldContainSubstring, "upstream down")
 				})
+			})
+		})
+	})
+}
+
+func TestModuleController_AnonymousPullThrough(t *testing.T) {
+	Convey("Subject: Pulling modules through for anonymous callers allowed by the policy", t, func() {
+		controller, mockService := newModuleController(t, "p, role:anonymous, modules, create, hashicorp/*, allow")
+		controller.AnonymousRead = true
+
+		router := gin.New()
+		api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
+
+		Convey("When an anonymous caller lists the versions", func() {
+			mockService.On("Get", "hashicorp", "dir", "template", true).Return(&module.ListResponseDTO{}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/modules/hashicorp/dir/template/versions", nil))
+
+			Convey("Then the upstream versions should be included", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+		})
+
+		Convey("When an anonymous caller requests the download location of a version offered by the upstream only", func() {
+			location := moduleArchiveBase + "/hashicorp/dir/template/1.0.2/archive"
+			mockService.On("GetVersionURL", "hashicorp", "dir", "template", "1.0.2", true).Return(&location, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/modules/hashicorp/dir/template/1.0.2/download", nil))
+
+			Convey("Then the archive location carries a token allowing the fetch", func() {
+				So(w.Code, ShouldEqual, http.StatusNoContent)
+				got := w.Header().Get("X-Terraform-Get")
+				So(got, ShouldStartWith, location+"?token=")
+
+				fetch, ok := moduleTokens(t).Verify(strings.TrimPrefix(got, location+"?token="), module.ArchiveSubject("hashicorp", "dir", "template", "1.0.2"))
+				So(ok, ShouldBeTrue)
+				So(fetch, ShouldBeTrue)
+			})
+		})
+
+		Convey("When an anonymous caller requests the archive of a version not stored yet without a token", func() {
+			mockService.On("Download", "hashicorp", "dir", "template", "1.0.2", true).Return("https://storage.example.com/1.0.2.zip", nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/modules/hashicorp/dir/template/1.0.2/archive", nil))
+
+			Convey("Then the version should be fetched and handed to go-getter", func() {
+				So(w.Code, ShouldEqual, http.StatusNoContent)
+				So(w.Header().Get("X-Terraform-Get"), ShouldEqual, "https://storage.example.com/1.0.2.zip")
 			})
 		})
 	})

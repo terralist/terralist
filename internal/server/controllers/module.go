@@ -507,11 +507,12 @@ func (c *DefaultModuleController) acceptDownloadToken() gin.HandlerFunc {
 }
 
 // mayFetch reports whether the caller may create versions of the module, which
-// is what fetching them from the upstream registry amounts to.
+// is what fetching them from the upstream registry amounts to. A caller without
+// credentials is evaluated as the anonymous role.
 func (c *DefaultModuleController) mayFetch(ctx *gin.Context, namespace, name, provider string) bool {
 	user, err := handlers.GetFromContext[auth.User](ctx, "user")
 	if err != nil {
-		return false
+		user = &auth.User{Name: rbac.SubjectAnonymous}
 	}
 
 	return c.Authorization.CanPerform(*user, rbac.ResourceModules, rbac.ActionCreate, fmt.Sprintf("%s/%s/%s", namespace, name, provider))

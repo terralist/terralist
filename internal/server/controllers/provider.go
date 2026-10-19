@@ -367,11 +367,12 @@ func (c *DefaultProviderController) signMirrorDownload(dto *provider.DownloadPla
 }
 
 // mayFetch reports whether the caller may create packages of the provider,
-// which is what fetching them from the upstream registry amounts to.
+// which is what fetching them from the upstream registry amounts to. A caller
+// without credentials is evaluated as the anonymous role.
 func (c *DefaultProviderController) mayFetch(ctx *gin.Context, namespace, name string) bool {
 	user, err := handlers.GetFromContext[auth.User](ctx, "user")
 	if err != nil {
-		return false
+		user = &auth.User{Name: rbac.SubjectAnonymous}
 	}
 
 	return c.Authorization.CanPerform(*user, rbac.ResourceProviders, rbac.ActionCreate, fmt.Sprintf("%s/%s", namespace, name))

@@ -83,6 +83,15 @@ Terraform downloads packages without credentials, so the links Terralist lists c
 
 Reading a version list or a document only needs the `get` action on the provider. Merging upstream versions and fetching packages writes to storage and to the database, so it needs the `create` action on the `<authority>/<type>` object of the `providers` resource. A caller with `get` only sees and downloads what Terralist already holds. The API key Terraform uses must therefore be allowed to `create` the providers it should pull through.
 
+A caller without credentials is evaluated as `role:anonymous`, which has no grant by default: with [`providers-anonymous-read`](../configuration.md#providers-anonymous-read) it downloads what Terralist already holds, but pulls nothing through. Allowing `role:anonymous` to `create` lets callers without credentials pull through as well, for providers as for [modules](#pulling-modules-through-from-an-upstream), within the scope of the policy:
+
+```csv
+p, role:anonymous, providers, create, hashicorp/*, allow
+p, role:anonymous, modules, create, terraform-aws-modules/*/*, allow
+```
+
+Uploading, deleting and pre-warming always require authentication, so such a policy only takes effect through pull-through. It lets anyone who reaches Terralist make it query the upstream and store the versions the rules of the authority allow, so keep it to the authorities that need it.
+
 ### Rules
 
 The authority's `upstream_default_policy`, `allow` or `deny`, decides which upstream versions may be served when no rule says otherwise. Rules refine it per artifact:
