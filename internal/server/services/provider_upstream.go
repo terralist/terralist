@@ -105,14 +105,14 @@ func mergeUpstreamArchives(dto *provider.MirrorArchivesDTO, name, version string
 		}
 
 		fileName := provider.PackageFileName(name, version, p.OS, p.Arch)
-		digest, ok := shaSumOf(metadata.ShaSums, fileName)
+		platformDigest, ok := metadata.PlatformDigests[key]
 		if !ok {
 			continue
 		}
 
 		dto.Archives[key] = provider.MirrorArchiveDTO{
 			URL:    fileName,
-			Hashes: []string{fmt.Sprintf("zh:%s", digest)},
+			Hashes: []string{fmt.Sprintf("zh:%s", platformDigest.ShaSum)},
 		}
 	}
 }
@@ -210,10 +210,10 @@ func (s *DefaultProviderService) upstreamDownloadDTO(a *authority.Authority, v *
 		return nil, upstreamFailure(err)
 	}
 
-	fileName := provider.PackageFileName(name, v.Version, system, architecture)
-	digest, ok := shaSumOf(metadata.ShaSums, fileName)
+	key := fmt.Sprintf("%s_%s", system, architecture)
+	platformDigest, ok := metadata.PlatformDigests[key]
 	if !ok {
-		return nil, fmt.Errorf("platform %s_%s of %s/%s %s: %w", system, architecture, a.Name, name, v.Version, repositories.ErrNotFound)
+		return nil, fmt.Errorf("platform %s of %s/%s %s: %w", key, a.Name, name, v.Version, repositories.ErrNotFound)
 	}
 
 	keys, ok := v.SigningKeysDTO()
@@ -221,6 +221,7 @@ func (s *DefaultProviderService) upstreamDownloadDTO(a *authority.Authority, v *
 		keys = s.authorityKeys(a)
 	}
 
+	fileName := provider.PackageFileName(name, v.Version, system, architecture)
 	dto := &provider.DownloadPlatformDTO{
 		Protocols:           strings.Split(v.Protocols, ","),
 		System:              system,
@@ -229,7 +230,7 @@ func (s *DefaultProviderService) upstreamDownloadDTO(a *authority.Authority, v *
 		DownloadUrl:         fmt.Sprintf("%s/%s/%s/%s", s.MirrorBaseURL, a.Name, name, fileName),
 		ShaSumsUrl:          v.ShaSumsUrl,
 		ShaSumsSignatureUrl: v.ShaSumsSignatureUrl,
-		ShaSum:              digest,
+		ShaSum:              platformDigest.ShaSum,
 		SigningKeys:         keys,
 	}
 
@@ -397,20 +398,4 @@ func (s *DefaultProviderService) locationURL(location string) (string, error) {
 // regardless of the case of its names.
 func packageFetchKey(namespace, name, version, system, architecture string) string {
 	return fmt.Sprintf("%s/%s/%s/%s_%s", strings.ToLower(namespace), strings.ToLower(name), version, system, architecture)
-}
-
-// shaSumOf returns the digest a SHA256SUMS document lists for a package file,
-// matching the file name regardless of case, as the provider is looked up.
-func shaSumOf(sums map[string]string, fileName string) (string, bool) {
-	if digest, ok := sums[fileName]; ok {
-		return digest, true
-	}
-
-	for listed, digest := range sums {
-		if strings.EqualFold(listed, fileName) {
-			return digest, true
-		}
-	}
-
-	return "", false
 }
