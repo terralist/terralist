@@ -19,7 +19,7 @@ Terralist has three pre-defined roles. All roles can be extended or overridden t
 
 The `role:anonymous` is a special role that is assigned to unauthenticated users. This role can be customized from the server-side configuration and through those modifications users are able to expose (publicly) resources from the registry. By default, this role has no grant attached.
 
-A `create` grant on `providers` or `modules` lets unauthenticated users [pull them through from an upstream](network-mirror.md#who-may-pull-through). It does not let them upload, delete or pre-warm anything, since those operations always require authentication.
+With a `create` grant on `providers` or `modules`, unauthenticated users who may read them, through anonymous read, a public authority or a `get` grant, can also [pull them through from an upstream](network-mirror.md#who-may-pull-through). This does not let them upload, delete or pre-warm anything, since those operations always require authentication. A grant of every action (`*`) includes `create`. Authenticated users are evaluated against their own roles and never inherit the grants of `role:anonymous`.
 
 The `role:readonly` and `role:admin` roles have baked-in default policies that are always loaded. User-provided policies are evaluated on top of these defaults.
 

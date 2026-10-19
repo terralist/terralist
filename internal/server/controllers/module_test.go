@@ -299,6 +299,18 @@ func TestModuleController_AnonymousPullThrough(t *testing.T) {
 				So(w.Header().Get("X-Terraform-Get"), ShouldEqual, "https://storage.example.com/1.0.2.zip")
 			})
 		})
+
+		Convey("When an anonymous caller uploads or fetches a version through the API", func() {
+			upload := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/modules/hashicorp/dir/template/1.0.2/upload", nil))
+			uploadFiles := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/modules/hashicorp/dir/template/1.0.2/upload-files", nil))
+			fetch := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/modules/hashicorp/dir/template/1.0.2/fetch", nil))
+
+			Convey("Then authentication should still be required", func() {
+				So(upload.Code, ShouldEqual, http.StatusUnauthorized)
+				So(uploadFiles.Code, ShouldEqual, http.StatusUnauthorized)
+				So(fetch.Code, ShouldEqual, http.StatusUnauthorized)
+			})
+		})
 	})
 }
 

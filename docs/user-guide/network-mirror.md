@@ -83,14 +83,16 @@ Terraform downloads packages without credentials, so the links Terralist lists c
 
 Reading a version list or a document only needs the `get` action on the provider. Merging upstream versions and fetching packages writes to storage and to the database, so it needs the `create` action on the `<authority>/<type>` object of the `providers` resource. A caller with `get` only sees and downloads what Terralist already holds. The API key Terraform uses must therefore be allowed to `create` the providers it should pull through.
 
-A caller without credentials is evaluated as `role:anonymous`, which has no grant by default: with [`providers-anonymous-read`](../configuration.md#providers-anonymous-read) it downloads what Terralist already holds, but pulls nothing through. Allowing `role:anonymous` to `create` lets callers without credentials pull through as well, for providers as for [modules](#pulling-modules-through-from-an-upstream), within the scope of the policy:
+A caller without valid credentials is evaluated as `role:anonymous`, which has no grant by default. When it may read, through [`providers-anonymous-read`](../configuration.md#providers-anonymous-read), a public authority or a `get` policy, it downloads what Terralist already holds, but pulls nothing through. A `create` policy for `role:anonymous` lets it pull through as well, within the scope of the policy, and does nothing without read access. The same holds for [modules](#pulling-modules-through-from-an-upstream), read through [`modules-anonymous-read`](../configuration.md#modules-anonymous-read):
 
 ```csv
 p, role:anonymous, providers, create, hashicorp/*, allow
 p, role:anonymous, modules, create, terraform-aws-modules/*/*, allow
 ```
 
-Uploading, deleting and pre-warming always require authentication, so such a policy only takes effect through pull-through. It lets anyone who reaches Terralist make it query the upstream and store the versions the rules of the authority allow, so keep it to the authorities that need it.
+Uploading, deleting and pre-warming always require authentication, so such a policy only takes effect through pull-through. It lets anyone who reaches Terralist make it query the upstream, with the token of the authority when one is stored, and store the versions the rules of the authority allow, so keep it to the authorities that need it. A policy granting `role:anonymous` every action, such as `p, role:anonymous, providers, *, acme/*, allow`, includes `create`, as does a role assigned to `role:anonymous` that may create: grant `get` alone where anonymous callers should only read.
+
+A caller with valid credentials is evaluated against its own roles, never against `role:anonymous`. Without `create`, it only gets what Terralist already holds, even where anonymous callers pull through, so grant `create` to its roles as well. Terraform sends the credentials it has for a host with its protocol requests to that host: a `credentials` block needed for modules also authenticates the version lists and documents Terraform requests for providers from the same host.
 
 ### Rules
 

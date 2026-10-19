@@ -10,7 +10,6 @@ import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
-	"terralist/pkg/auth"
 	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 
@@ -507,13 +506,7 @@ func (c *DefaultModuleController) acceptDownloadToken() gin.HandlerFunc {
 }
 
 // mayFetch reports whether the caller may create versions of the module, which
-// is what fetching them from the upstream registry amounts to. A caller without
-// credentials is evaluated as the anonymous role.
+// is what fetching them from the upstream registry amounts to.
 func (c *DefaultModuleController) mayFetch(ctx *gin.Context, namespace, name, provider string) bool {
-	user, err := handlers.GetFromContext[auth.User](ctx, "user")
-	if err != nil {
-		user = &auth.User{Name: rbac.SubjectAnonymous}
-	}
-
-	return c.Authorization.CanPerform(*user, rbac.ResourceModules, rbac.ActionCreate, fmt.Sprintf("%s/%s/%s", namespace, name, provider))
+	return c.Authorization.CallerCanPerform(ctx, rbac.ResourceModules, rbac.ActionCreate, fmt.Sprintf("%s/%s/%s", namespace, name, provider))
 }

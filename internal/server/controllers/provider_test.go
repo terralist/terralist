@@ -447,11 +447,22 @@ func TestProviderController_AnonymousPullThrough(t *testing.T) {
 				So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
 				So(body.DownloadUrl, ShouldStartWith, "https://terralist.example.com/providers/terralist.example.com/hashicorp/null/terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
 
-				tokens, _ := handlers.NewDownloadTokens("test-signing-secret")
 				token := strings.SplitN(body.DownloadUrl, "?token=", 2)[1]
-				fetch, ok := tokens.Verify(token, provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}.Subject("hashicorp"))
+				fetch, ok := controller.Tokens.Verify(token, provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}.Subject("hashicorp"))
 				So(ok, ShouldBeTrue)
 				So(fetch, ShouldBeTrue)
+			})
+		})
+
+		Convey("When an anonymous caller uploads or fetches a version through the API", func() {
+			upload := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/upload", nil))
+			uploadFiles := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/upload-files", nil))
+			fetch := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/fetch", nil))
+
+			Convey("Then authentication should still be required", func() {
+				So(upload.Code, ShouldEqual, http.StatusUnauthorized)
+				So(uploadFiles.Code, ShouldEqual, http.StatusUnauthorized)
+				So(fetch.Code, ShouldEqual, http.StatusUnauthorized)
 			})
 		})
 	})
