@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/rbac"
 
+	"github.com/gin-gonic/gin"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -370,6 +372,37 @@ p, owner@example.com, modules, create, my-authority/*/*, allow
 
 			Convey("Then access should be denied by authority isolation", func() {
 				So(result, ShouldBeFalse)
+			})
+		})
+	})
+}
+
+func TestCallerCanPerform(t *testing.T) {
+	Convey("Subject: Authorizing the caller of a request", t, func() {
+		gin.SetMode(gin.TestMode)
+
+		enforcer, err := rbac.NewEnforcerFromString("p, role:anonymous, providers, create, hashicorp/*, allow", "readonly")
+		So(err, ShouldBeNil)
+
+		authorization := &Authorization{
+			Enforcer:         enforcer,
+			AuthorityService: services.NewMockAuthorityService(t),
+		}
+
+		ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+
+		Convey("Given a request without a user", func() {
+			Convey("Then the caller should be authorized as anonymous", func() {
+				So(authorization.CallerCanPerform(ctx, rbac.ResourceProviders, rbac.ActionCreate, "hashicorp/null"), ShouldBeTrue)
+				So(authorization.CallerCanPerform(ctx, rbac.ResourceProviders, rbac.ActionCreate, "integrations/github"), ShouldBeFalse)
+			})
+		})
+
+		Convey("Given a request with a user", func() {
+			ctx.Set("user", &auth.User{Name: "test-user", Email: "test@example.com"})
+
+			Convey("Then the caller should be authorized as that user, without the anonymous grants", func() {
+				So(authorization.CallerCanPerform(ctx, rbac.ResourceProviders, rbac.ActionCreate, "hashicorp/null"), ShouldBeFalse)
 			})
 		})
 	})
