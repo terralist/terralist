@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"terralist/internal/server/models/authority"
@@ -93,16 +94,25 @@ var upstreamVersions = []UpstreamVersion{
 	{Version: "3.2.5", Protocols: []string{"5.0", "6.0"}, Platforms: []registry.Platform{{OS: "linux", Arch: "amd64"}}},
 }
 
-var upstreamMetadata = &UpstreamVersionMetadata{
-	Protocols: []string{"5.0"},
-	ShaSums: map[string]string{
-		"terraform-provider-null_3.2.4_linux_amd64.zip":  "aaaa",
-		"terraform-provider-null_3.2.4_darwin_arm64.zip": "bbbb",
-	},
-	ShaSumsDocument: []byte("sums"),
-	Signature:       []byte("sig"),
-	SigningKeys:     []registry.GPGPublicKey{{KeyID: "UPSTREAMKEY", ASCIIArmor: "upstream-armor"}},
-}
+var upstreamMetadata = func() *UpstreamVersionMetadata {
+	linux := provider.PackageFileName("null", "3.2.4", "linux", "amd64")
+	darwin := provider.PackageFileName("null", "3.2.4", "darwin", "arm64")
+
+	return &UpstreamVersionMetadata{
+		Protocols: []string{"5.0"},
+		PlatformDigests: map[string]UpstreamPlatformDigest{
+			"linux_amd64":  {OS: "linux", Arch: "amd64", Filename: linux, ShaSum: "aaaa"},
+			"darwin_arm64": {OS: "darwin", Arch: "arm64", Filename: darwin, ShaSum: "bbbb"},
+		},
+		ShaSums: map[string]string{
+			linux:  "aaaa",
+			darwin: "bbbb",
+		},
+		ShaSumsDocument: []byte("sums"),
+		Signature:       []byte("sig"),
+		SigningKeys:     []registry.GPGPublicKey{{KeyID: "UPSTREAMKEY", ASCIIArmor: "upstream-armor"}},
+	}
+}()
 
 func TestGetProviderWithUpstream(t *testing.T) {
 	Convey("Subject: Listing registry versions merged with the upstream", t, func() {
@@ -364,8 +374,12 @@ func TestListMirrorArchivesWithUpstream(t *testing.T) {
 		Convey("Given a version that exists upstream only", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
 			f.upstream.On("ProviderVersions", f.auth, "null").Return(upstreamVersions, nil)
+			linux := provider.PackageFileName("null", "3.2.5", "linux", "amd64")
 			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.5").Return(&UpstreamVersionMetadata{
-				ShaSums: map[string]string{"terraform-provider-null_3.2.5_linux_amd64.zip": "cccc"},
+				PlatformDigests: map[string]UpstreamPlatformDigest{
+					"linux_amd64": {OS: "linux", Arch: "amd64", Filename: linux, ShaSum: "cccc"},
+				},
+				ShaSums: map[string]string{linux: "cccc"},
 			}, nil)
 
 			dto, err := f.service.ListMirrorArchives("hashicorp", "null", "3.2.5", true)
@@ -381,8 +395,12 @@ func TestListMirrorArchivesWithUpstream(t *testing.T) {
 		Convey("Given an upstream-only version of a provider named in another case", func() {
 			f.repo.On("Find", "hashicorp", "Null").Return(nil, repositories.ErrNotFound)
 			f.upstream.On("ProviderVersions", f.auth, "Null").Return(upstreamVersions, nil)
+			linux := provider.PackageFileName("Null", "3.2.5", "linux", "amd64")
 			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.5").Return(&UpstreamVersionMetadata{
-				ShaSums: map[string]string{"terraform-provider-null_3.2.5_linux_amd64.zip": "cccc"},
+				PlatformDigests: map[string]UpstreamPlatformDigest{
+					"linux_amd64": {OS: "linux", Arch: "amd64", Filename: linux, ShaSum: "cccc"},
+				},
+				ShaSums: map[string]string{linux: "cccc"},
 			}, nil)
 
 			dto, err := f.service.ListMirrorArchives("hashicorp", "Null", "3.2.5", true)
@@ -444,9 +462,13 @@ func TestGetVersionFromUpstream(t *testing.T) {
 
 		Convey("Given a version that exists upstream only", func() {
 			f.repo.On("Find", "hashicorp", "null").Return(f.localProvider(), nil)
+			darwin := provider.PackageFileName("null", "3.2.5", "darwin", "arm64")
 			metadata := &UpstreamVersionMetadata{
-				Protocols:       []string{"6.0"},
-				ShaSums:         map[string]string{"terraform-provider-null_3.2.5_darwin_arm64.zip": "dddd"},
+				Protocols: []string{"6.0"},
+				PlatformDigests: map[string]UpstreamPlatformDigest{
+					"darwin_arm64": {OS: "darwin", Arch: "arm64", Filename: darwin, ShaSum: "dddd"},
+				},
+				ShaSums:         map[string]string{darwin: "dddd"},
 				ShaSumsDocument: []byte("sums"),
 				Signature:       []byte("sig"),
 				SigningKeys:     upstreamMetadata.SigningKeys,
@@ -499,9 +521,13 @@ func TestGetVersionFromUpstream(t *testing.T) {
 				return f.localProvider(), nil
 			})
 			f.repo.On("FindVersionPlatform", "hashicorp", "null", "3.2.5", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
+			darwin := provider.PackageFileName("null", "3.2.5", "darwin", "arm64")
 			f.upstream.On("ProviderVersion", f.auth, "null", "3.2.5").Return(&UpstreamVersionMetadata{
-				Protocols:       []string{"6.0"},
-				ShaSums:         map[string]string{"terraform-provider-null_3.2.5_darwin_arm64.zip": "dddd"},
+				Protocols: []string{"6.0"},
+				PlatformDigests: map[string]UpstreamPlatformDigest{
+					"darwin_arm64": {OS: "darwin", Arch: "arm64", Filename: darwin, ShaSum: "dddd"},
+				},
+				ShaSums:         map[string]string{darwin: "dddd"},
 				ShaSumsDocument: []byte("sums"),
 				Signature:       []byte("sig"),
 			}, nil)
@@ -528,7 +554,17 @@ func TestGetVersionFromUpstream(t *testing.T) {
 			pulled.Versions[0].Origin = provider.OriginUpstream
 			f.repo.On("FindVersionPlatform", "hashicorp", "Null", "3.2.4", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
 			f.repo.On("Find", "hashicorp", "Null").Return(pulled, nil)
-			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.4").Return(upstreamMetadata, nil)
+			darwinDifferentCase := provider.PackageFileName("Null", "3.2.4", "darwin", "arm64")
+			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.4").Return(&UpstreamVersionMetadata{
+				Protocols: upstreamMetadata.Protocols,
+				PlatformDigests: map[string]UpstreamPlatformDigest{
+					"darwin_arm64": {OS: "darwin", Arch: "arm64", Filename: darwinDifferentCase, ShaSum: "bbbb"},
+				},
+				ShaSums:         map[string]string{darwinDifferentCase: "bbbb"},
+				ShaSumsDocument: upstreamMetadata.ShaSumsDocument,
+				Signature:       upstreamMetadata.Signature,
+				SigningKeys:     upstreamMetadata.SigningKeys,
+			}, nil)
 			f.resolver.On("Find", mock.Anything).Return("https://storage/resolved", nil)
 
 			dto, err := f.service.GetVersion("hashicorp", "Null", "3.2.4", "darwin", "arm64", true)
@@ -712,6 +748,49 @@ func TestDownloadProviderPackage(t *testing.T) {
 					f.resolver.AssertNotCalled(t, "Store", mock.Anything)
 					f.repo.AssertNotCalled(t, "Upsert", mock.Anything)
 				})
+			})
+
+			Convey("When the upstream refuses a package missing from SHA256SUMS", func() {
+				f.repo.On("Find", "hashicorp", "null").Return(f.pulledProvider(), nil).Maybe()
+				f.upstream.On("ProviderPackage", f.auth, "null", "3.2.4", "darwin", "arm64").Return(nil, fmt.Errorf("package terraform-provider-null_3.2.4_darwin_arm64.zip is not listed in the verified SHA256SUMS of hashicorp/null 3.2.4"))
+
+				_, err := f.service.Download("hashicorp", "null", "3.2.4", "darwin", "arm64", true)
+
+				Convey("Then nothing is fetched or stored", func() {
+					So(err, ShouldNotBeNil)
+					So(err.Error(), ShouldContainSubstring, "not listed in the verified SHA256SUMS")
+					f.fetcher.AssertNotCalled(t, "FetchFileChecksum", mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+					f.resolver.AssertNotCalled(t, "Store", mock.Anything)
+					f.repo.AssertNotCalled(t, "Upsert", mock.Anything)
+				})
+			})
+		})
+
+		Convey("Given the provider is named in another case", func() {
+			f := newPullThroughFixture(t)
+			f.repo.On("FindVersionPlatform", "hashicorp", "Null", "3.2.4", "darwin", "arm64").Return(nil, repositories.ErrNotFound)
+			f.repo.On("Find", "hashicorp", "Null").Return(f.pulledProvider(), nil).Maybe()
+			f.upstream.On("ProviderPackage", f.auth, "Null", "3.2.4", "darwin", "arm64").Return(&UpstreamPackage{
+				FileName: "terraform-provider-null_3.2.4_darwin_arm64.zip",
+				URL:      "https://releases.example.com/darwin.zip",
+				ShaSum:   "bbbb",
+			}, nil)
+			f.upstream.On("ProviderVersion", f.auth, "Null", "3.2.4").Return(upstreamMetadata, nil).Maybe()
+			f.fetcher.
+				On("FetchFileChecksum", "terraform-provider-null_3.2.4_darwin_arm64.zip", "https://releases.example.com/darwin.zip", "bbbb", mock.Anything).
+				Return(file.NewInMemoryFile("terraform-provider-null_3.2.4_darwin_arm64.zip", []byte("zip")), func() {}, nil)
+			f.resolver.
+				On("Store", mock.AnythingOfType("*storage.StoreInput")).
+				Return(func(in *storage.StoreInput) (string, error) { return in.KeyPrefix + "/" + in.FileName, nil })
+			f.repo.On("Upsert", mock.AnythingOfType("provider.Provider")).Return(&provider.Provider{}, nil)
+			f.resolver.On("Find", "providers/hashicorp/Null/3.2.4/terraform-provider-null_3.2.4_darwin_arm64.zip").Return("https://storage/darwin.zip", nil)
+
+			url, err := f.service.Download("hashicorp", "Null", "3.2.4", "darwin", "arm64", true)
+
+			Convey("Then the upstream is asked with the requested name and the package is stored", func() {
+				So(err, ShouldBeNil)
+				So(url, ShouldEqual, "https://storage/darwin.zip")
+				f.upstream.AssertCalled(t, "ProviderPackage", f.auth, "Null", "3.2.4", "darwin", "arm64")
 			})
 		})
 	})
