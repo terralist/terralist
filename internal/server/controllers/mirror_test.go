@@ -447,6 +447,23 @@ func TestMirrorController_AutoCreate(t *testing.T) {
 func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string, autoCreate ...string) (*gin.Engine, *services.MockProviderService, *services.MockAuthorityService) {
 	t.Helper()
 
+	controller, mockService, mockAuthorityService := newMirrorController(t, policyCSV, autoCreate...)
+
+	router := gin.New()
+	router.Use(func(ctx *gin.Context) {
+		ctx.Set("user", user)
+		ctx.Set("userName", user.Name)
+		ctx.Set("userEmail", user.Email)
+	})
+
+	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: ""}).Register(controller)
+
+	return router, mockService, mockAuthorityService
+}
+
+func newMirrorController(t *testing.T, policyCSV string, autoCreate ...string) (*DefaultMirrorController, *services.MockProviderService, *services.MockAuthorityService) {
+	t.Helper()
+
 	gin.SetMode(gin.TestMode)
 
 	mockService := services.NewMockProviderService(t)
@@ -478,16 +495,7 @@ func setupMirrorRouterWithPolicy(t *testing.T, user *auth.User, policyCSV string
 		AutoCreate:       autoCreate,
 	}
 
-	router := gin.New()
-	router.Use(func(ctx *gin.Context) {
-		ctx.Set("user", user)
-		ctx.Set("userName", user.Name)
-		ctx.Set("userEmail", user.Email)
-	})
-
-	api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: ""}).Register(controller)
-
-	return router, mockService, mockAuthorityService
+	return controller, mockService, mockAuthorityService
 }
 
 func testPackageTokens(t *testing.T) *handlers.DownloadTokens {
@@ -606,6 +614,60 @@ func TestMirrorController_PackageTokens(t *testing.T) {
 			Convey("Then it should be forbidden and the service not called", func() {
 				So(w.Code, ShouldEqual, http.StatusForbidden)
 				mockService.AssertNotCalled(t, "Download", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
+			})
+		})
+	})
+}
+
+func TestMirrorController_AnonymousPullThrough(t *testing.T) {
+	Convey("Subject: Pulling providers through the network mirror for anonymous callers allowed by the policy", t, func() {
+		controller, mockService, _ := newMirrorController(t, "p, role:anonymous, providers, create, hashicorp/*, allow")
+		controller.AnonymousRead = true
+
+		router := gin.New()
+		api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: ""}).Register(controller)
+
+		base := "/providers/" + mirrorTestHostname + "/hashicorp/null/"
+
+		Convey("When an anonymous caller lists the versions", func() {
+			mockService.On("ListMirrorVersions", "hashicorp", "null", true).Return(&provider.MirrorVersionListDTO{Versions: map[string]struct{}{"3.2.4": {}}}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"index.json", nil))
+
+			Convey("Then the upstream versions should be included", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+		})
+
+		Convey("When an anonymous caller requests the version document", func() {
+			mockService.On("ListMirrorArchives", "hashicorp", "null", "3.2.4", true).Return(&provider.MirrorArchivesDTO{Archives: map[string]provider.MirrorArchiveDTO{
+				"darwin_arm64": {URL: "terraform-provider-null_3.2.4_darwin_arm64.zip", Hashes: []string{"zh:bbbb"}},
+			}}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"3.2.4.json", nil))
+
+			Convey("Then upstream packages get a token allowing the fetch", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+
+				var body provider.MirrorArchivesDTO
+				So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
+				So(body.Archives["darwin_arm64"].URL, ShouldStartWith, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+
+				token := strings.TrimPrefix(body.Archives["darwin_arm64"].URL, "terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+				fetch, ok := testPackageTokens(t).Verify(token, provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}.Subject("hashicorp"))
+				So(ok, ShouldBeTrue)
+				So(fetch, ShouldBeTrue)
+			})
+		})
+
+		Convey("When an anonymous caller requests a package not stored yet without a token", func() {
+			mockService.On("Download", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return("https://storage.example.com/darwin.zip", nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, base+"terraform-provider-null_3.2.4_darwin_arm64.zip", nil))
+
+			Convey("Then it should be fetched and redirected to the storage", func() {
+				So(w.Code, ShouldEqual, http.StatusFound)
+				So(w.Header().Get("Location"), ShouldEqual, "https://storage.example.com/darwin.zip")
 			})
 		})
 	})

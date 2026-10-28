@@ -404,6 +404,70 @@ func TestProviderController_AnonymousReadPullThrough(t *testing.T) {
 	})
 }
 
+func TestProviderController_AnonymousPullThrough(t *testing.T) {
+	Convey("Subject: Pulling providers through for anonymous callers allowed by the policy", t, func() {
+		controller, mockService, _ := newProviderController(t, "p, role:anonymous, providers, create, hashicorp/*, allow")
+		controller.AnonymousRead = true
+
+		router := gin.New()
+		api.NewRouterGroup(router, &api.RouterGroupOptions{Prefix: "/v1"}).Register(controller)
+
+		Convey("When an anonymous caller lists the versions of a provider the policy covers", func() {
+			mockService.On("Get", "hashicorp", "null", true).Return(&provider.VersionListProviderDTO{}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/versions", nil))
+
+			Convey("Then the upstream versions should be included", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+		})
+
+		Convey("When an anonymous caller lists the versions of a provider the policy does not cover", func() {
+			mockService.On("Get", "integrations", "github", false).Return(&provider.VersionListProviderDTO{}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/integrations/github/versions", nil))
+
+			Convey("Then only the stored versions should be served", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+			})
+		})
+
+		Convey("When an anonymous caller requests a platform not stored yet", func() {
+			mockService.On("GetVersion", "hashicorp", "null", "3.2.4", "darwin", "arm64", true).Return(&provider.DownloadPlatformDTO{
+				FileName:    "terraform-provider-null_3.2.4_darwin_arm64.zip",
+				DownloadUrl: "https://terralist.example.com/providers/terralist.example.com/hashicorp/null/terraform-provider-null_3.2.4_darwin_arm64.zip",
+			}, nil)
+
+			w := serve(router, httptest.NewRequest(http.MethodGet, "/v1/providers/hashicorp/null/3.2.4/download/darwin/arm64", nil))
+
+			Convey("Then the download URL should carry a token allowing the fetch", func() {
+				So(w.Code, ShouldEqual, http.StatusOK)
+
+				var body provider.DownloadPlatformDTO
+				So(json.Unmarshal(w.Body.Bytes(), &body), ShouldBeNil)
+				So(body.DownloadUrl, ShouldStartWith, "https://terralist.example.com/providers/terralist.example.com/hashicorp/null/terraform-provider-null_3.2.4_darwin_arm64.zip?token=")
+
+				token := strings.SplitN(body.DownloadUrl, "?token=", 2)[1]
+				fetch, ok := controller.Tokens.Verify(token, provider.Package{Name: "null", Version: "3.2.4", System: "darwin", Architecture: "arm64"}.Subject("hashicorp"))
+				So(ok, ShouldBeTrue)
+				So(fetch, ShouldBeTrue)
+			})
+		})
+
+		Convey("When an anonymous caller uploads or fetches a version through the API", func() {
+			upload := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/upload", nil))
+			uploadFiles := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/upload-files", nil))
+			fetch := serve(router, httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/fetch", nil))
+
+			Convey("Then authentication should still be required", func() {
+				So(upload.Code, ShouldEqual, http.StatusUnauthorized)
+				So(uploadFiles.Code, ShouldEqual, http.StatusUnauthorized)
+				So(fetch.Code, ShouldEqual, http.StatusUnauthorized)
+			})
+		})
+	})
+}
+
 func TestProviderController_DownloadFromUpstream(t *testing.T) {
 	Convey("Subject: Registry download metadata pointing at the mirror", t, func() {
 		user := &auth.User{Name: "test-user", Email: "test@example.com"}
