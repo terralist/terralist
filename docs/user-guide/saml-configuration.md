@@ -41,6 +41,9 @@ The minimum required configuration for SAML authentication includes:
 | `saml-max-assertion-age` | `1h` | Maximum age of SAML assertions |
 | `saml-allow-idp-initiated` | `false` | Whether to allow IdP-initiated SSO |
 
+!!! warning
+    The name is the username subject of the [RBAC policy](rbac-configuration.md). If users can edit the attribute at the IdP, as is often the case for `displayName`, any user can take the name of another user and inherit their roles. Point `saml-name-attribute` to an attribute that is unique and that only administrators can change, such as the account name.
+
 ### IdP Metadata Sources
 
 Terralist supports three ways to configure IdP information:

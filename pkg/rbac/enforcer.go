@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"terralist/pkg/auth"
 
 	"github.com/casbin/casbin/v2"
@@ -224,6 +225,51 @@ func EvaluateInline(policies []auth.Policy, resource, action, object string) boo
 	return hasAllow
 }
 
+// reservedSubjectPrefixes are prefixes of subjects that are assigned by the policy
+// or by Terralist itself and must never be claimed by an identity.
+var reservedSubjectPrefixes = []string{"role:", "group:"}
+
+func isReservedSubject(subject string) bool {
+	return lo.SomeBy(reservedSubjectPrefixes, func(prefix string) bool {
+		return strings.HasPrefix(subject, prefix)
+	})
+}
+
+// isAnonymous reports whether the user is the anonymous user built for
+// unauthenticated requests. Every login provider requires an e-mail, so an
+// authenticated user can never match it.
+func isAnonymous(user auth.User) bool {
+	return user.Name == SubjectAnonymous && user.Email == "" && len(user.Groups) == 0
+}
+
+// identitySubjects returns the subjects the user is known by. Names and e-mails
+// come from the identity provider and may be user-controlled, so those that look
+// like roles or groups are ignored.
+func identitySubjects(user auth.User) []string {
+	if isAnonymous(user) {
+		return []string{SubjectAnonymous}
+	}
+
+	identities := lo.Reject([]string{user.Name, user.Email}, func(identity string, _ int) bool {
+		if isReservedSubject(identity) {
+			log.Warn().
+				Str("user", user.String()).
+				Str("subject", identity).
+				Msg("Ignoring identity subject with a reserved prefix")
+
+			return true
+		}
+
+		return false
+	})
+
+	groups := lo.Map(user.Groups, func(group string, _ int) string {
+		return fmt.Sprintf("group:%s", group)
+	})
+
+	return lo.Uniq(append(identities, groups...))
+}
+
 // Protect checks if the user is authorized to perform the action on the resource and object,
 // considering their origin. It returns an error if the user is not authorized.
 func (e *Enforcer) Protect(subject auth.User, resource, action, object string) error {
@@ -251,14 +297,7 @@ func (e *Enforcer) Protect(subject auth.User, resource, action, object string) e
 		return nil
 	}
 
-	subjects := lo.Uniq(
-		append(
-			[]string{subject.Name, subject.Email},
-			lo.Map(subject.Groups, func(group string, _ int) string {
-				return fmt.Sprintf("group:%s", group)
-			})...,
-		),
-	)
+	subjects := identitySubjects(subject)
 
 	if ok := e.enforce(subjects, resource, object, action); !ok {
 		log.Debug().

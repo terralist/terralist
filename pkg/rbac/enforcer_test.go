@@ -366,3 +366,100 @@ p, bob@example.com, modules, delete, *, deny
 		})
 	}
 }
+
+func TestProtect_IgnoresReservedIdentitySubjects(t *testing.T) {
+	t.Parallel()
+
+	policy := `
+g, group:platform, role:admin
+p, role:anonymous, modules, get, public/*, allow
+`
+
+	enforcer, err := NewEnforcerFromString(policy, "readonly")
+	if err != nil {
+		t.Fatalf("failed to create enforcer: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		user     auth.User
+		resource string
+		action   string
+		object   string
+		allowed  bool
+	}{
+		{
+			name:     "name claiming the admin role",
+			user:     auth.User{Name: "role:admin", Email: "mallory@example.com"},
+			resource: ResourceSettings,
+			action:   ActionGet,
+			object:   "page",
+		},
+		{
+			name:     "e-mail claiming the admin role",
+			user:     auth.User{Name: "mallory", Email: "role:admin"},
+			resource: ResourceSettings,
+			action:   ActionGet,
+			object:   "page",
+		},
+		{
+			name:     "name claiming a group",
+			user:     auth.User{Name: "group:platform", Email: "mallory@example.com"},
+			resource: ResourceSettings,
+			action:   ActionGet,
+			object:   "page",
+		},
+		{
+			name:     "name claiming the anonymous role",
+			user:     auth.User{Name: "role:anonymous", Email: "mallory@example.com"},
+			resource: ResourceModules,
+			action:   ActionCreate,
+			object:   "public/vpc/aws",
+		},
+		{
+			name:     "user with a reserved name keeps the default role",
+			user:     auth.User{Name: "role:admin", Email: "mallory@example.com"},
+			resource: ResourceModules,
+			action:   ActionGet,
+			object:   "acme/vpc/aws",
+			allowed:  true,
+		},
+		{
+			name:     "actual group membership still applies",
+			user:     auth.User{Name: "alice", Email: "alice@example.com", Groups: []string{"platform"}},
+			resource: ResourceSettings,
+			action:   ActionGet,
+			object:   "page",
+			allowed:  true,
+		},
+		{
+			name:     "anonymous user keeps the anonymous role",
+			user:     auth.User{Name: SubjectAnonymous},
+			resource: ResourceModules,
+			action:   ActionGet,
+			object:   "public/vpc/aws",
+			allowed:  true,
+		},
+		{
+			name:     "anonymous user does not get the default role",
+			user:     auth.User{Name: SubjectAnonymous},
+			resource: ResourceModules,
+			action:   ActionGet,
+			object:   "acme/vpc/aws",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := enforcer.Protect(tt.user, tt.resource, tt.action, tt.object)
+			if tt.allowed && err != nil {
+				t.Fatalf("expected access to be allowed, got: %v", err)
+			}
+			if !tt.allowed && !errors.Is(err, ErrUnauthorizedSubject) {
+				t.Fatalf("expected access to be denied, got: %v", err)
+			}
+		})
+	}
+}

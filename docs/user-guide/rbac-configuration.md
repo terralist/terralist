@@ -73,7 +73,7 @@ The `providers` resource covers both the Provider Registry Protocol and the [Pro
 
 ## Policy Evaluation
 
-A request is evaluated against every subject the user is known by: their username, their e-mail, each of their `group:<group>` entries, and every role assigned to any of those (or the default role, if none is assigned). The request is then decided as follows:
+A request is evaluated against every subject the user is known by: their username, their e-mail, each of their `group:<group>` entries, and every role assigned to any of those (or the default role, if none is assigned). A username or e-mail starting with `role:` or `group:` is ignored, so an identity can never claim a role or a group. The request is then decided as follows:
 
 1. If any policy matching the request has the `deny` effect, for any of those subjects, the request is denied.
 2. Otherwise, if any policy matching the request has the `allow` effect, the request is allowed.

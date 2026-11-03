@@ -69,10 +69,11 @@ func (p *Provider) GetUserDetails(code string, user *auth.User) error {
 	if err != nil {
 		return err
 	}
-	if name, ok := userdata["name"].(string); ok {
-		user.Name = name
+	// The username is unique and restricted to a safe character set.
+	if username, ok := userdata["preferred_username"].(string); ok && username != "" {
+		user.Name = username
 	} else {
-		return fmt.Errorf("name not found in user data")
+		return fmt.Errorf("preferred_username not found in user data")
 	}
 
 	if email, ok := userdata["email"].(string); ok {
