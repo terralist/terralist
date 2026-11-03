@@ -45,6 +45,7 @@ type fakeUpstream struct {
 	held         chan struct{} // when set, version lists wait for it to close
 	tokens       []string
 	providerName string
+	platforms    []registry.Platform
 }
 
 func newFakeUpstream(t *testing.T) *fakeUpstream {
@@ -55,6 +56,16 @@ func newFakeUpstream(t *testing.T) *fakeUpstream {
 // maps the canonical package file name to the file name the upstream advertises
 // in its download metadata and SHA256SUMS document.
 func newFakeUpstreamProvider(t *testing.T, providerName string, packageNames map[string]string) *fakeUpstream {
+	t.Helper()
+
+	return newFakeUpstreamPlatforms(t, providerName, packageNames, []registry.Platform{
+		{OS: "linux", Arch: "amd64"},
+		{OS: "darwin", Arch: "arm64"},
+	})
+}
+
+// newFakeUpstreamPlatforms serves one provider for the given platforms only.
+func newFakeUpstreamPlatforms(t *testing.T, providerName string, packageNames map[string]string, platforms []registry.Platform) *fakeUpstream {
 	t.Helper()
 
 	entity, err := openpgp.NewEntity("Upstream", "", "upstream@example.com", nil)
@@ -75,12 +86,13 @@ func newFakeUpstreamProvider(t *testing.T, providerName string, packageNames map
 		names:        map[string]string{},
 		entity:       entity,
 		providerName: providerName,
+		platforms:    platforms,
 	}
 	maps.Copy(u.names, packageNames)
 
 	for _, version := range []string{"1.0.0", "1.1.0"} {
 		var sums strings.Builder
-		for _, platform := range []struct{ OS, Arch string }{{"linux", "amd64"}, {"darwin", "arm64"}} {
+		for _, platform := range u.platforms {
 			name := provider.PackageFileName(providerName, version, platform.OS, platform.Arch)
 			content := []byte("package " + name)
 			u.packages[name] = content
@@ -113,10 +125,14 @@ func newFakeUpstreamProvider(t *testing.T, providerName string, packageNames map
 		if u.held != nil {
 			<-u.held
 		}
+		platforms := make([]map[string]string, len(u.platforms))
+		for i, platform := range u.platforms {
+			platforms[i] = map[string]string{"os": platform.OS, "arch": platform.Arch}
+		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"versions": []map[string]any{
-				{"version": "1.0.0", "protocols": []string{"5.0"}, "platforms": []map[string]string{{"os": "linux", "arch": "amd64"}, {"os": "darwin", "arch": "arm64"}}},
-				{"version": "1.1.0", "protocols": []string{"5.0", "6.0"}, "platforms": []map[string]string{{"os": "linux", "arch": "amd64"}, {"os": "darwin", "arch": "arm64"}}},
+				{"version": "1.0.0", "protocols": []string{"5.0"}, "platforms": platforms},
+				{"version": "1.1.0", "protocols": []string{"5.0", "6.0"}, "platforms": platforms},
 			},
 		})
 	})
@@ -532,6 +548,34 @@ func TestUpstreamProviderVersionMatchesAdvertisedPlatforms(t *testing.T) {
 			pkg, err := service.ProviderPackage(a, providerName, "1.0.0", "linux", "amd64")
 			So(err, ShouldBeNil)
 			So(pkg.FileName, ShouldEqual, packageNames[provider.PackageFileName(providerName, "1.0.0", "linux", "amd64")])
+		})
+	})
+}
+
+func TestUpstreamSinglePlatformProvider(t *testing.T) {
+	Convey("Subject: Downloading a provider the upstream publishes for one platform", t, func() {
+		upstream := newFakeUpstreamPlatforms(t, "null", nil, []registry.Platform{{OS: "linux", Arch: "amd64"}})
+		now := time.Now()
+		service := newUpstreamService(t, &now)
+		a := upstream.authority()
+		a.ID = uuid.New()
+
+		pkg, err := service.ProviderPackage(a, "null", "1.0.0", "linux", "amd64")
+
+		Convey("Then the package for that platform should be returned", func() {
+			So(err, ShouldBeNil)
+			So(pkg.FileName, ShouldEqual, "terraform-provider-null_1.0.0_linux_amd64.zip")
+			So(pkg.URL, ShouldEqual, upstream.server.URL+"/files/"+pkg.FileName)
+			digest := sha256.Sum256(upstream.packages[pkg.FileName])
+			So(pkg.ShaSum, ShouldEqual, hex.EncodeToString(digest[:]))
+
+			metadata, err := service.ProviderVersion(a, "null", "1.0.0")
+			So(err, ShouldBeNil)
+			So(len(metadata.PlatformDigests), ShouldEqual, 1)
+			stored, ok := metadata.PlatformDigests["linux_amd64"]
+			So(ok, ShouldBeTrue)
+			So(stored.Filename, ShouldEqual, pkg.FileName)
+			So(stored.ShaSum, ShouldEqual, pkg.ShaSum)
 		})
 	})
 }

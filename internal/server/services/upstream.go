@@ -325,6 +325,26 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 		return p.OS != platform.OS || p.Arch != platform.Arch
 	})
 
+	if len(platformsToFetch) == 0 {
+		downloads := map[string]*registry.Download{
+			platform.String(): {
+				OS:       platform.OS,
+				Arch:     platform.Arch,
+				Filename: download.Filename,
+				ShaSum:   sums[download.Filename],
+			},
+		}
+		platformDigests := s.collectPlatformDigests(a, name, version, downloads, sums)
+		return &UpstreamVersionMetadata{
+			Protocols:       upstream.Protocols,
+			PlatformDigests: platformDigests,
+			ShaSums:         sums,
+			ShaSumsDocument: document,
+			Signature:       signature,
+			SigningKeys:     download.SigningKeys.GPGPublicKeys,
+		}, nil
+	}
+
 	downloads, err := s.fetchPlatforms(ctx, client, a, name, version, platformsToFetch)
 	if err != nil {
 		return nil, err
@@ -332,9 +352,6 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 
 	downloads[platform.String()] = download
 	platformDigests := s.collectPlatformDigests(a, name, version, downloads, sums)
-	if err != nil {
-		return nil, err
-	}
 
 	return &UpstreamVersionMetadata{
 		Protocols:       upstream.Protocols,
@@ -392,7 +409,7 @@ func (s *DefaultUpstreamService) collectPlatformDigests(a *authority.Authority, 
 			OS:       download.OS,
 			Arch:     download.Arch,
 			Filename: download.Filename,
-			ShaSum:   download.ShaSum,
+			ShaSum:   sums[download.Filename],
 		}
 	}
 	return platformDigests
