@@ -321,37 +321,13 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 		return nil, err
 	}
 
-	platformsToFetch := lo.Filter(upstream.Platforms, func(p registry.Platform, _ int) bool {
-		return p.OS != platform.OS || p.Arch != platform.Arch
-	})
-
-	if len(platformsToFetch) == 0 {
-		downloads := map[string]*registry.Download{
-			platform.String(): {
-				OS:       platform.OS,
-				Arch:     platform.Arch,
-				Filename: download.Filename,
-				ShaSum:   sums[download.Filename],
-			},
-		}
-		platformDigests := s.collectPlatformDigests(a, name, version, downloads, sums)
-		return &UpstreamVersionMetadata{
-			Protocols:       upstream.Protocols,
-			PlatformDigests: platformDigests,
-			ShaSums:         sums,
-			ShaSumsDocument: document,
-			Signature:       signature,
-			SigningKeys:     download.SigningKeys.GPGPublicKeys,
-		}, nil
-	}
-
-	downloads, err := s.fetchPlatforms(ctx, client, a, name, version, platformsToFetch)
-	if err != nil {
-		return nil, err
-	}
-
-	downloads[platform.String()] = download
+	prefetchedDownloads := map[string]*registry.Download{platform.String(): download}
+	downloads := s.fetchPlatforms(ctx, client, a, name, version, upstream.Platforms, prefetchedDownloads)
 	platformDigests := s.collectPlatformDigests(a, name, version, downloads, sums)
+
+	if len(platformDigests) == 0 {
+		return nil, fmt.Errorf("no platforms found for %s/%s %s: %w", *a.UpstreamNamespace, name, version, repositories.ErrNotFound)
+	}
 
 	return &UpstreamVersionMetadata{
 		Protocols:       upstream.Protocols,
@@ -363,13 +339,16 @@ func (s *DefaultUpstreamService) readVersion(ctx context.Context, client *regist
 	}, nil
 }
 
-func (s *DefaultUpstreamService) fetchPlatforms(ctx context.Context, client *registry.Client, a *authority.Authority, name, version string, platforms []registry.Platform) (map[string]*registry.Download, error) {
+func (s *DefaultUpstreamService) fetchPlatforms(ctx context.Context, client *registry.Client, a *authority.Authority, name, version string, platforms []registry.Platform, downloads map[string]*registry.Download) map[string]*registry.Download {
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
 	sem := semaphore.NewWeighted(upstreamParallelDownloads)
-	downloads := make(map[string]*registry.Download, len(platforms))
 	for _, platform := range platforms {
 		key := platform.String()
+		if _, ok := downloads[key]; ok {
+			continue
+		}
+
 		wg.Go(func() {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Warn().Err(err).Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Could not acquire semaphore.")
@@ -390,11 +369,7 @@ func (s *DefaultUpstreamService) fetchPlatforms(ctx context.Context, client *reg
 	}
 	wg.Wait()
 
-	if len(downloads) == 0 {
-		return nil, fmt.Errorf("no platforms found for %s/%s %s", *a.UpstreamNamespace, name, version)
-	}
-
-	return downloads, nil
+	return downloads
 }
 
 func (s *DefaultUpstreamService) collectPlatformDigests(a *authority.Authority, name, version string, downloads map[string]*registry.Download, sums map[string]string) map[string]UpstreamPlatformDigest {

@@ -493,6 +493,20 @@ func TestUpstreamProviderVersion(t *testing.T) {
 				So(err, ShouldNotBeNil)
 			})
 		})
+
+		Convey("When the verified SHA256SUMS lists none of the advertised packages", func() {
+			upstream.publishShaSums(t, "1.0.0", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  unrelated.zip\n")
+			_, err := service.ProviderVersion(a, "null", "1.0.0")
+
+			Convey("Then it should be reported as having no platforms", func() {
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "no platforms found for hashicorp/null 1.0.0")
+
+				upstream.failing.Store(true)
+				_, err = service.ProviderVersion(a, "null", "1.0.0")
+				So(err, ShouldNotBeNil)
+			})
+		})
 	})
 }
 
