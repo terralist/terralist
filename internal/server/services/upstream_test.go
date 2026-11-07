@@ -594,6 +594,46 @@ func TestUpstreamSinglePlatformProvider(t *testing.T) {
 	})
 }
 
+func TestUpstreamManyPlatformsProvider(t *testing.T) {
+	Convey("Subject: Reading a provider the upstream publishes for many platforms", t, func() {
+		var platforms []registry.Platform
+		for _, os := range []string{"linux", "darwin", "windows", "freebsd"} {
+			for _, arch := range []string{"amd64", "arm64", "386", "arm"} {
+				platforms = append(platforms, registry.Platform{OS: os, Arch: arch})
+			}
+		}
+
+		upstream := newFakeUpstreamPlatforms(t, "null", nil, platforms)
+		now := time.Now()
+		service := newUpstreamService(t, &now)
+		a := upstream.authority()
+		a.ID = uuid.New()
+
+		Convey("When every platform is available", func() {
+			metadata, err := service.ProviderVersion(a, "null", "1.0.0")
+
+			Convey("Then every platform should have a digest", func() {
+				So(err, ShouldBeNil)
+				So(len(metadata.PlatformDigests), ShouldEqual, len(platforms))
+			})
+		})
+
+		Convey("When some platforms fail to download", func() {
+			delete(upstream.packages, provider.PackageFileName("null", "1.0.0", "darwin", "arm64"))
+			delete(upstream.packages, provider.PackageFileName("null", "1.0.0", "windows", "386"))
+
+			metadata, err := service.ProviderVersion(a, "null", "1.0.0")
+
+			Convey("Then the remaining platforms should still have digests", func() {
+				So(err, ShouldBeNil)
+				So(len(metadata.PlatformDigests), ShouldEqual, len(platforms)-2)
+				So(metadata.PlatformDigests, ShouldNotContainKey, "darwin_arm64")
+				So(metadata.PlatformDigests, ShouldNotContainKey, "windows_386")
+			})
+		})
+	})
+}
+
 func TestUpstreamProviderPackage(t *testing.T) {
 	Convey("Subject: Locating an upstream package", t, func() {
 		upstream := newFakeUpstream(t)
