@@ -343,12 +343,15 @@ func (s *DefaultUpstreamService) fetchPlatforms(ctx context.Context, client *reg
 	wg := sync.WaitGroup{}
 	mu := sync.Mutex{}
 	sem := semaphore.NewWeighted(upstreamParallelDownloads)
-	for _, platform := range platforms {
-		key := platform.String()
-		if _, ok := downloads[key]; ok {
-			continue
-		}
 
+	// Decide what to fetch before any goroutine starts writing to downloads.
+	pending := lo.Filter(platforms, func(p registry.Platform, _ int) bool {
+		_, ok := downloads[p.String()]
+		return !ok
+	})
+
+	for _, platform := range pending {
+		key := platform.String()
 		wg.Go(func() {
 			if err := sem.Acquire(ctx, 1); err != nil {
 				log.Warn().Err(err).Str("upstream", *a.UpstreamHostname).Str("name", name).Str("version", version).Str("platform", key).Msg("Could not acquire semaphore.")
