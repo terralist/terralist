@@ -820,7 +820,7 @@ The providers storage resolver.
 
 ### `modules-anonymous-read`
 
-Allows anonymous read and download of modules.
+Allows anonymous read and download of modules. Pulling modules through from an upstream additionally needs a `create` policy for `role:anonymous`, as described in [who may pull through](user-guide/network-mirror.md#who-may-pull-through).
 
 | Name | Value |
 | --- | --- |
@@ -832,7 +832,7 @@ Allows anonymous read and download of modules.
 
 ### `providers-anonymous-read`
 
-Allows anonymous read and download of providers, through both the provider registry and the [network mirror](user-guide/network-mirror.md) protocols.
+Allows anonymous read and download of providers, through both the provider registry and the [network mirror](user-guide/network-mirror.md) protocols. Pulling providers through from an upstream additionally needs a `create` policy for `role:anonymous`, as described in [who may pull through](user-guide/network-mirror.md#who-may-pull-through).
 
 | Name | Value |
 | --- | --- |
