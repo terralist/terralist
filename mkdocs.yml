@@ -45,6 +45,7 @@ nav:
     - SAML Configuration: user-guide/saml-configuration.md
     - Monitoring and Observability: user-guide/monitoring.md
     - Provider Network Mirror: user-guide/network-mirror.md
+    - VCS Release Webhooks: user-guide/webhook-vcs-releases.md
     - Security: user-guide/security.md
     - Upgrading to v0.11: user-guide/upgrading-to-v0.11.md
   - Developer Guide: 
@@ -52,6 +53,19 @@ nav:
     - API Reference: dev-guide/api-reference.md
     - Local Development: dev-guide/local-development.md
     - E2E Testing: dev-guide/e2e-testing.md
+
+plugins:
+  - search
+  - neoteroi.mkdocsoad:
+      use_pymdownx: true
+      templates_path: docs/api/templates
+
+extra_css:
+  - assets/css/neoteroi-mkdocs.css
+  - assets/css/api-reference.css
+
+exclude_docs: |
+  api/templates/
 
 extra:
   version:
@@ -65,6 +79,7 @@ markdown_extensions:
       permalink: ¶
   - attr_list
   - admonition
+  - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span

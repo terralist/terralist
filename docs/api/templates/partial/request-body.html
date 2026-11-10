@@ -1,0 +1,20 @@
+<p class="request-body-title"><strong>{{texts.request_body}}</strong></p>
+
+{% with content = handler.simplify_content(operation.requestBody.content) %}
+{% for content_type, definition in content.items() %}
+=== "{{content_type}}"
+    {%- if "json" in content_type %}
+    {% include "partial/content-examples.html" %}
+    {% if "alt_types" in definition %}<em class="small-note alt-types">{{texts.other_accepted_types}}: {{definition.alt_types | join(", ")}}</em>{% endif %}
+
+    ??? hint "{{texts.schema_of_the_request_body}}"
+        ```json
+        {{handler.write_content_schema(definition) | indent(8) | safe}}
+        ```
+    {%- else %}
+    {% with definition = handler._resolve_opt_ref(definition.schema) %}
+    {% filter indent(4) %}{% include "partial/type.html" %}{% endfilter %}
+    {% endwith %}
+    {%- endif %}
+{% endfor %}
+{% endwith %}

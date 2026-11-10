@@ -1,0 +1,33 @@
+{%- if is_reference(schema) -%}
+{%- with type_name = schema["$ref"].replace("#/components/schemas/", "") -%}
+<a href="#schema-{{type_name.lower() | link}}" class="ref-link">{{type_name}}</a>
+{%- endwith -%}
+{%- endif -%}
+
+{%- if schema.type -%}
+{%- with type_name = get_primary_type(schema["type"]), nullable = is_nullable_schema(schema) -%}
+{%- if type_name == "object" -%}
+{%- if schema.example -%}
+<em>{{texts.example}}: </em><code>{{schema.example}}</code>
+{%- elif schema.properties -%}
+<em>{{texts.properties}}: </em><code>{{", ".join(schema.properties.keys())}}</code>
+{%- endif -%}
+{%- endif -%}
+{# Scalar types #}
+{%- if type_name in scalar_types -%}
+<span class="{{type_name}}-type">{{type_name}}</span>
+{%- if schema.format -%}
+(<span class="{{schema.format}}-format format">{{schema.format}}</span>)
+{%- endif -%}
+{%- if nullable %} &#124; <span class="null-type">null</span>{%- endif -%}
+{%- endif -%}
+{%- if type_name == "array" -%}
+{%- with schema = schema["items"] -%}
+Array&lt;{%- include "partial/schema-repr.html" -%}&gt;
+{%- endwith -%}
+{%- endif -%}
+{%- if type_name == "null" -%}
+<span class="null-type">null</span>
+{%- endif -%}
+{%- endwith -%}
+{%- endif -%}
