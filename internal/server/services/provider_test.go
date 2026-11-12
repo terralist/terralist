@@ -14,10 +14,12 @@ import (
 	"terralist/internal/server/models/provider"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
 	"terralist/pkg/storage"
 
 	"github.com/google/uuid"
 	"github.com/mazen160/go-random"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
 )
@@ -89,6 +91,49 @@ func TestGetProvider(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestProviderDownloadMetricsNames(t *testing.T) {
+	for _, protocol := range []string{"registry", "mirror"} {
+		t.Run(protocol, func(t *testing.T) {
+			namespace := t.Name()
+			repo := repositories.NewMockProviderRepository(t)
+			authorities := NewMockAuthorityService(t)
+			service := &DefaultProviderService{ProviderRepository: repo, AuthorityService: authorities}
+			for _, name := range []string{"aws", "random"} {
+				v := provider.Version{
+					Version:             "1.0.0",
+					ShaSumsUrl:          "https://example.com/SHA256SUMS",
+					ShaSumsSignatureUrl: "https://example.com/SHA256SUMS.sig",
+					Platforms:           []provider.Platform{{System: "linux", Architecture: "amd64", Location: "https://example.com/provider.zip"}},
+				}
+				var err error
+				if protocol == "registry" {
+					platform := v.Platforms[0]
+					platform.Version = v
+					repo.On("FindVersionPlatform", namespace, name, "1.0.0", "linux", "amd64").Return(&platform, nil).Once()
+					authorities.On("GetByID", uuid.Nil).Return(&authority.Authority{Name: namespace}, nil).Once()
+					_, err = service.GetVersion(namespace, name, "1.0.0", "linux", "amd64", false)
+				} else {
+					repo.On("Find", namespace, name).Return(&provider.Provider{Name: name, Versions: []provider.Version{v}}, nil).Once()
+					_, err = service.ListMirrorArchives(namespace, name, "1.0.0", false)
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, name := range []string{"aws", "random"} {
+				if count := testutil.ToFloat64(metrics.ArtifactsDownloadedTotal.WithLabelValues("provider", namespace, name)); count != 1 {
+					t.Errorf("provider %s download count = %v, want 1", name, count)
+				}
+				if count := testutil.ToFloat64(metrics.RequestsByAuthorityTotal.WithLabelValues(namespace, "download", name)); count != 1 {
+					t.Errorf("provider %s request count = %v, want 1", name, count)
+				}
+				metrics.ArtifactsDownloadedTotal.DeleteLabelValues("provider", namespace, name)
+				metrics.RequestsByAuthorityTotal.DeleteLabelValues(namespace, "download", name)
+			}
+		})
+	}
 }
 
 func TestGetProviderVersionDownloadInfo(t *testing.T) {
