@@ -11,10 +11,12 @@ import (
 	"terralist/internal/server/models/module"
 	"terralist/internal/server/repositories"
 	"terralist/pkg/file"
+	"terralist/pkg/metrics"
 	"terralist/pkg/storage"
 
 	"github.com/google/uuid"
 	"github.com/mazen160/go-random"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	. "github.com/smartystreets/goconvey/convey"
 	"github.com/stretchr/testify/mock"
 )
@@ -156,6 +158,38 @@ func TestGetModuleDownloadLocation(t *testing.T) {
 			})
 		})
 	})
+}
+
+func TestModuleDownloadMetricsNames(t *testing.T) {
+	for _, mode := range []string{"proxy", "storage"} {
+		t.Run(mode, func(t *testing.T) {
+			namespace := t.Name()
+			repo := repositories.NewMockModuleRepository(t)
+			service := &DefaultModuleService{ModuleRepository: repo}
+			if mode == "storage" {
+				resolver := storage.NewMockResolver(t)
+				resolver.On("Find", "module.zip").Return("https://example.com/module.zip", nil).Twice()
+				service.Resolver = resolver
+			}
+			for _, name := range []string{"vpc", "eks"} {
+				location := "module.zip"
+				repo.On("FindVersionLocation", namespace, name, "aws", "1.0.0").Return(&location, nil).Once()
+				if _, err := service.GetVersionURL(namespace, name, "aws", "1.0.0", false); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, name := range []string{"vpc", "eks"} {
+				if count := testutil.ToFloat64(metrics.ArtifactsDownloadedTotal.WithLabelValues("module", namespace, name)); count != 1 {
+					t.Errorf("module %s download count = %v, want 1", name, count)
+				}
+				if count := testutil.ToFloat64(metrics.RequestsByAuthorityTotal.WithLabelValues(namespace, "download", name)); count != 1 {
+					t.Errorf("module %s request count = %v, want 1", name, count)
+				}
+				metrics.ArtifactsDownloadedTotal.DeleteLabelValues("module", namespace, name)
+				metrics.RequestsByAuthorityTotal.DeleteLabelValues(namespace, "download", name)
+			}
+		})
+	}
 }
 
 func TestGetSubmoduleDocumentation_ProxyResolverWithArchiveRoot(t *testing.T) {

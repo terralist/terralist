@@ -357,7 +357,7 @@ func (s *DefaultProviderService) fetchPackage(a *authority.Authority, name, vers
 	}
 
 	metrics.RecordUpstreamFetch(lo.FromPtr(a.UpstreamHostname), time.Since(start).Seconds())
-	metrics.RecordArtifactUpload("provider", a.Name)
+	metrics.RecordArtifactUpload("provider", a.Name, name)
 
 	return stored[platformKey], nil
 }
