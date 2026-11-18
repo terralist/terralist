@@ -3,6 +3,7 @@ package module
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database"
@@ -60,8 +61,8 @@ func (m Module) ToArtifact() artifact.Artifact {
 		Versions: lo.Map(m.Versions, func(v Version, _ int) string {
 			return v.Version
 		}),
-		CreatedAt: m.CreatedAt.Format("2006-01-02T15:04:05"),
-		UpdatedAt: m.UpdatedAt.Format("2006-01-02T15:04:05"),
+		CreatedAt: m.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt: m.UpdatedAt.UTC().Format(time.RFC3339Nano),
 	}
 }
 

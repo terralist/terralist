@@ -2,6 +2,7 @@ package provider
 
 import (
 	"strings"
+	"time"
 
 	"terralist/internal/server/models/artifact"
 	"terralist/pkg/database"
@@ -66,8 +67,8 @@ func (p Provider) ToArtifact() artifact.Artifact {
 		Versions: lo.Map(p.Versions, func(v Version, _ int) string {
 			return v.Version
 		}),
-		CreatedAt: p.CreatedAt.Format("2006-01-02T15:04:05"),
-		UpdatedAt: p.UpdatedAt.Format("2006-01-02T15:04:05"),
+		CreatedAt: p.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt: p.UpdatedAt.UTC().Format(time.RFC3339Nano),
 	}
 }
 
