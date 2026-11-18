@@ -351,11 +351,19 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		Repository: apiKeyRepository,
 	}
 
+	crossOrigin := http.NewCrossOriginProtection()
+	if hostURL.Scheme != "" && hostURL.Host != "" {
+		if err := crossOrigin.AddTrustedOrigin(hostURL.Scheme + "://" + hostURL.Host); err != nil {
+			return nil, fmt.Errorf("host URL cannot be used as a trusted origin: %w", err)
+		}
+	}
+
 	authentication := &handlers.Authentication{
 		ApiKeyService: apiKeyService,
 		MasterApiKey:  userConfig.MasterApiKey,
 		JWT:           jwtManager,
 		Store:         config.Store,
+		CrossOrigin:   crossOrigin,
 	}
 
 	authorization := &handlers.Authorization{

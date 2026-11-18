@@ -41,6 +41,7 @@ func (s *Store) New(r *http.Request) (session.Session, error) {
 
 func (s *Store) Save(r *http.Request, w http.ResponseWriter, sess session.Session) error {
 	if impl, ok := sess.(*Session); ok {
+		impl.session.Options.Secure = r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
 		return s.store.Save(r, w, impl.session)
 	}
 

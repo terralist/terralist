@@ -2,6 +2,7 @@ package cookie
 
 import (
 	"fmt"
+	"net/http"
 
 	"terralist/pkg/session"
 
@@ -17,6 +18,12 @@ func (c *Creator) New(config session.Configurator) (session.Store, error) {
 	}
 
 	store := sessions.NewCookieStore([]byte(cfg.Secret))
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 30,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
 
 	return &Store{
 		name: cfg.Name,
