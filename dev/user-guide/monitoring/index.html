@@ -2105,8 +2105,17 @@
 <hr />
 <h3 id="artifacts-metrics">Artifacts Metrics<a class="headerlink" href="#artifacts-metrics" title="Permanent link">¶</a></h3>
 <p>Track module and provider operations across authorities.</p>
+<p>The <code>name</code> label is the lowercase artifact identity within the authority (namespace):
+<code>name</code> for providers and <code>name/provider</code> for modules.
+For example, provider <code>hashicorp/aws</code> has <code>authority="hashicorp"</code>, <code>name="aws"</code>,
+and <code>type="provider"</code>. Module <code>team/vpc/aws</code> has <code>authority="team"</code>, <code>name="vpc/aws"</code>,
+and <code>type="module"</code>. Module provider/system variants have separate time series.
+Names differing only in case share the same series, including uploads and deletions.</p>
+<p>Adding <code>name</code> creates a separate time series for each artifact name. Queries
+using <code>sum by (authority)</code> continue to aggregate across names. Historical samples
+collected before this label was introduced do not contain artifact names.</p>
 <h4 id="uploads">Uploads<a class="headerlink" href="#uploads" title="Permanent link">¶</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>terralist_artifacts_uploaded_total{type="module|provider", authority="..."}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>terralist_artifacts_uploaded_total{type="module|provider", authority="...", name="..."}
 </span></code></pre></div>
 <p>Total number of uploaded artifacts.</p>
 <p><strong>Example queries:</strong>
@@ -2117,19 +2126,26 @@
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">terralist_artifacts_uploaded_total</span><span class="o">)</span>
 </span></code></pre></div></p>
 <h4 id="downloads">Downloads<a class="headerlink" href="#downloads" title="Permanent link">¶</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>terralist_artifacts_downloaded_total{type="module|provider", authority="..."}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>terralist_artifacts_downloaded_total{type="module|provider", authority="...", name="..."}
 </span></code></pre></div>
 <p>Total number of downloaded artifacts.</p>
+<p>This counter records successful download metadata or location lookups, not
+completed archive transfers or unique installations. For providers, the registry
+protocol counts platform download metadata lookups, while the network mirror
+counts version archive document lookups, which can list multiple platforms.</p>
 <p><strong>Example queries:</strong>
 <div class="language-promql highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Most downloaded modules</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">terralist_artifacts_downloaded_total</span><span class="p">{</span><span class="nl">type</span><span class="o">=</span><span class="p">"</span><span class="s">module</span><span class="p">"}</span><span class="o">))</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="p">,</span><span class="w"> </span><span class="nv">name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">terralist_artifacts_downloaded_total</span><span class="p">{</span><span class="nl">type</span><span class="o">=</span><span class="p">"</span><span class="s">module</span><span class="p">"}</span><span class="o">))</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Provider downloads over the last hour</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="p">,</span><span class="w"> </span><span class="nv">name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">increase</span><span class="o">(</span><span class="nv">terralist_artifacts_downloaded_total</span><span class="p">{</span><span class="nl">type</span><span class="o">=</span><span class="p">"</span><span class="s">provider</span><span class="p">"}[</span><span class="s">1h</span><span class="p">]</span><span class="o">))</span>
 </span></code></pre></div></p>
 <h4 id="deletions">Deletions<a class="headerlink" href="#deletions" title="Permanent link">¶</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>terralist_artifacts_deleted_total{type="module|provider", authority="..."}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>terralist_artifacts_deleted_total{type="module|provider", authority="...", name="..."}
 </span></code></pre></div>
 <p>Total number of deleted artifacts.</p>
 <h4 id="current-artifact-count">Current Artifact Count<a class="headerlink" href="#current-artifact-count" title="Permanent link">¶</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>terralist_artifacts_total{type="module|provider", authority="..."}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>terralist_artifacts_total{type="module|provider", authority="...", name="..."}
 </span></code></pre></div>
 <p>Current number of artifacts (gauge that increases with uploads, decreases with deletions).</p>
 <p><strong>Example queries:</strong>
@@ -2138,19 +2154,27 @@
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Artifacts per authority</span>
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="p">,</span><span class="w"> </span><span class="nv">type</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">terralist_artifacts_total</span><span class="o">)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Artifacts per name within each authority</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="p">,</span><span class="w"> </span><span class="nv">type</span><span class="p">,</span><span class="w"> </span><span class="nv">name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">terralist_artifacts_total</span><span class="o">)</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="request-metrics">Request Metrics<a class="headerlink" href="#request-metrics" title="Permanent link">¶</a></h3>
 <h4 id="requests-by-authority">Requests by Authority<a class="headerlink" href="#requests-by-authority" title="Permanent link">¶</a></h4>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>terralist_requests_by_authority_total{authority="...", operation="upload|download|list"}
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>terralist_requests_by_authority_total{authority="...", operation="upload|download|list", name="..."}
 </span></code></pre></div>
-<p>Total requests grouped by authority and operation type.</p>
+<p>Total requests grouped by authority, operation type, and module or provider name.
+Provider names use <code>name</code>, while module names use <code>name/provider</code>, so module
+provider/system variants remain separate. Names are normalized to lowercase.</p>
 <p><strong>Example queries:</strong>
 <div class="language-promql highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Request rate per authority</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="kr">rate</span><span class="o">(</span><span class="nv">terralist_requests_by_authority_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 </span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
 </span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Most active authorities</span>
 </span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">topk</span><span class="o">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">terralist_requests_by_authority_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)))</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># Request rate per artifact name within each authority</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">authority</span><span class="p">,</span><span class="w"> </span><span class="nv">name</span><span class="p">,</span><span class="w"> </span><span class="nv">operation</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">terralist_requests_by_authority_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </span></code></pre></div></p>
 <hr />
 <h3 id="api-keys-metrics">API Keys Metrics<a class="headerlink" href="#api-keys-metrics" title="Permanent link">¶</a></h3>
