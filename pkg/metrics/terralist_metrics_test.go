@@ -263,3 +263,71 @@ func TestMetricsRegistration(t *testing.T) {
 		t.Errorf("Failed to register ApiKeysTotal: %v", err)
 	}
 }
+
+func TestMetricsNormalizeArtifactNames(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		artifactType string
+		mixed        string
+		lower        string
+	}{
+		{name: "provider", artifactType: "provider", mixed: "Null", lower: "null"},
+		{name: "module", artifactType: "module", mixed: "VPC/AWS", lower: "vpc/aws"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			ArtifactsUploadedTotal.Reset()
+			ArtifactsDownloadedTotal.Reset()
+			ArtifactsDeletedTotal.Reset()
+			ArtifactsTotal.Reset()
+			RequestsByAuthorityTotal.Reset()
+			t.Cleanup(func() {
+				ArtifactsUploadedTotal.Reset()
+				ArtifactsDownloadedTotal.Reset()
+				ArtifactsDeletedTotal.Reset()
+				ArtifactsTotal.Reset()
+				RequestsByAuthorityTotal.Reset()
+			})
+			RecordArtifactUpload(tt.artifactType, "team", tt.mixed)
+			RecordArtifactUpload(tt.artifactType, "team", tt.lower)
+			RecordArtifactDownload(tt.artifactType, "team", tt.mixed)
+			RecordArtifactDownload(tt.artifactType, "team", tt.lower)
+			RecordRequest("team", "download", tt.mixed)
+			RecordRequest("team", "download", tt.lower)
+			RecordArtifactDeletion(tt.artifactType, "team", tt.lower)
+			RecordArtifactDeletion(tt.artifactType, "team", tt.mixed)
+			for _, metric := range []struct {
+				name      string
+				collector prometheus.Collector
+				value     float64
+			}{
+				{"upload", ArtifactsUploadedTotal, 2},
+				{"download", ArtifactsDownloadedTotal, 2},
+				{"deletion", ArtifactsDeletedTotal, 2},
+				{"total", ArtifactsTotal, 0},
+				{"request", RequestsByAuthorityTotal, 2},
+			} {
+				t.Run(metric.name, func(t *testing.T) {
+					if count := testutil.CollectAndCount(metric.collector); count != 1 {
+						t.Fatalf("series count = %d, want 1", count)
+					}
+					var got float64
+					switch metric.collector {
+					case RequestsByAuthorityTotal:
+						got = testutil.ToFloat64(RequestsByAuthorityTotal.WithLabelValues("team", "download", tt.lower))
+					case ArtifactsTotal:
+						got = testutil.ToFloat64(ArtifactsTotal.WithLabelValues(tt.artifactType, "team", tt.lower))
+					default:
+						counter, ok := metric.collector.(*prometheus.CounterVec)
+						if !ok {
+							t.Fatal("expected a counter vector")
+						}
+						got = testutil.ToFloat64(counter.WithLabelValues(tt.artifactType, "team", tt.lower))
+					}
+					if got != metric.value {
+						t.Errorf("value = %v, want %v", got, metric.value)
+					}
+				})
+			}
+		})
+	}
+}

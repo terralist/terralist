@@ -171,14 +171,15 @@ func TestModuleDownloadMetricsNames(t *testing.T) {
 				resolver.On("Find", "module.zip").Return("https://example.com/module.zip", nil).Twice()
 				service.Resolver = resolver
 			}
-			for _, name := range []string{"vpc", "eks"} {
+			for _, system := range []string{"aws", "google"} {
+				name := "VPC"
 				location := "module.zip"
-				repo.On("FindVersionLocation", namespace, name, "aws", "1.0.0").Return(&location, nil).Once()
-				if _, err := service.GetVersionURL(namespace, name, "aws", "1.0.0", false); err != nil {
+				repo.On("FindVersionLocation", namespace, name, system, "1.0.0").Return(&location, nil).Once()
+				if _, err := service.GetVersionURL(namespace, name, system, "1.0.0", false); err != nil {
 					t.Fatal(err)
 				}
 			}
-			for _, name := range []string{"vpc", "eks"} {
+			for _, name := range []string{"vpc/aws", "vpc/google"} {
 				if count := testutil.ToFloat64(metrics.ArtifactsDownloadedTotal.WithLabelValues("module", namespace, name)); count != 1 {
 					t.Errorf("module %s download count = %v, want 1", name, count)
 				}

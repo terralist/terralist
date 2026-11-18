@@ -111,7 +111,7 @@ func (s *DefaultModuleService) Get(namespace, name, provider string, withUpstrea
 	}
 
 	// Record list operation
-	metrics.RecordRequest(namespace, "list", name)
+	metrics.RecordRequest(namespace, "list", name+"/"+provider)
 
 	return &dto, nil
 }
@@ -345,15 +345,15 @@ func (s *DefaultModuleService) GetVersionURL(namespace, name, provider, version 
 		}
 
 		// Record download metrics
-		metrics.RecordRequest(namespace, "download", name)
-		metrics.RecordArtifactDownload("module", namespace, name)
+		metrics.RecordRequest(namespace, "download", name+"/"+provider)
+		metrics.RecordArtifactDownload("module", namespace, name+"/"+provider)
 
 		return &url, nil
 	}
 
 	// Record download metrics for proxy mode
-	metrics.RecordRequest(namespace, "download", name)
-	metrics.RecordArtifactDownload("module", namespace, name)
+	metrics.RecordRequest(namespace, "download", name+"/"+provider)
+	metrics.RecordArtifactDownload("module", namespace, name+"/"+provider)
 
 	return location, nil
 }
@@ -548,9 +548,9 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, f file.File) error {
 	}
 
 	// Record artifact upload metric
-	metrics.RecordArtifactUpload("module", a.Name, m.Name)
+	metrics.RecordArtifactUpload("module", a.Name, m.Name+"/"+m.Provider)
 	// Record upload request
-	metrics.RecordRequest(a.Name, "upload", m.Name)
+	metrics.RecordRequest(a.Name, "upload", m.Name+"/"+m.Provider)
 
 	return nil
 }
@@ -578,7 +578,7 @@ func (s *DefaultModuleService) Delete(authorityID uuid.UUID, name string, provid
 
 	// Record artifact deletion metrics for all versions
 	for range m.Versions {
-		metrics.RecordArtifactDeletion("module", a.Name, name)
+		metrics.RecordArtifactDeletion("module", a.Name, name+"/"+provider)
 	}
 
 	return nil
@@ -608,14 +608,14 @@ func (s *DefaultModuleService) DeleteVersion(authorityID uuid.UUID, name string,
 		if err := s.ModuleRepository.Delete(m); err != nil {
 			return err
 		}
-		metrics.RecordArtifactDeletion("module", a.Name, name)
+		metrics.RecordArtifactDeletion("module", a.Name, name+"/"+provider)
 		return nil
 	}
 
 	if err := s.ModuleRepository.DeleteVersion(v); err != nil {
 		return err
 	}
-	metrics.RecordArtifactDeletion("module", a.Name, name)
+	metrics.RecordArtifactDeletion("module", a.Name, name+"/"+provider)
 	return nil
 }
 

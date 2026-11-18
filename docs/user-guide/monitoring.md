@@ -46,11 +46,12 @@ Total count of errors by type.
 
 Track module and provider operations across authorities.
 
-The `name` label is the module or provider name within the authority (namespace).
+The `name` label is the lowercase artifact identity within the authority (namespace):
+`name` for providers and `name/provider` for modules.
 For example, provider `hashicorp/aws` has `authority="hashicorp"`, `name="aws"`,
-and `type="provider"`. Module `team/vpc/aws` has `authority="team"`, `name="vpc"`,
-and `type="module"`. Module provider/system variants with the same module name
-are aggregated together.
+and `type="provider"`. Module `team/vpc/aws` has `authority="team"`, `name="vpc/aws"`,
+and `type="module"`. Module provider/system variants have separate time series.
+Names differing only in case share the same series, including uploads and deletions.
 
 Adding `name` creates a separate time series for each artifact name. Queries
 using `sum by (authority)` continue to aggregate across names. Historical samples
@@ -134,8 +135,8 @@ terralist_requests_by_authority_total{authority="...", operation="upload|downloa
 ```
 
 Total requests grouped by authority, operation type, and module or provider name.
-This metric has no artifact `type` label, so modules and providers with the same
-authority and name are aggregated together, as are module provider/system variants.
+Provider names use `name`, while module names use `name/provider`, so module
+provider/system variants remain separate. Names are normalized to lowercase.
 
 **Example queries:**
 ```promql

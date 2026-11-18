@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -62,23 +64,27 @@ var (
 
 // RecordArtifactUpload records an artifact upload.
 func RecordArtifactUpload(artifactType, authority, name string) {
+	name = strings.ToLower(name)
 	ArtifactsUploadedTotal.WithLabelValues(artifactType, authority, name).Inc()
 	ArtifactsTotal.WithLabelValues(artifactType, authority, name).Inc()
 }
 
 // RecordArtifactDownload records an artifact download.
 func RecordArtifactDownload(artifactType, authority, name string) {
+	name = strings.ToLower(name)
 	ArtifactsDownloadedTotal.WithLabelValues(artifactType, authority, name).Inc()
 }
 
 // RecordArtifactDeletion records an artifact deletion.
 func RecordArtifactDeletion(artifactType, authority, name string) {
+	name = strings.ToLower(name)
 	ArtifactsDeletedTotal.WithLabelValues(artifactType, authority, name).Inc()
 	ArtifactsTotal.WithLabelValues(artifactType, authority, name).Dec()
 }
 
 // RecordRequest records a request by authority, operation, and artifact name.
 func RecordRequest(authority, operation, name string) {
+	name = strings.ToLower(name)
 	RequestsByAuthorityTotal.WithLabelValues(authority, operation, name).Inc()
 }
 
