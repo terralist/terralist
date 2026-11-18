@@ -23,13 +23,20 @@ var (
 	ErrInvalidFormat    = errors.New("invalid format")
 	ErrInvalidValue     = errors.New("token either expired or inexistent")
 	ErrUnexpectedOrigin = errors.New("unexpected source of authentication")
+	ErrCrossOrigin      = errors.New("cross-origin request rejected")
 )
+
+var defaultCrossOrigin = http.NewCrossOriginProtection()
 
 type Authentication struct {
 	ApiKeyService services.ApiKeyService
 	MasterApiKey  string
 	JWT           jwt.JWT
 	Store         session.Store
+
+	// CrossOrigin rejects cross-origin, state-changing requests that would
+	// otherwise be authenticated by the browser's session cookie.
+	CrossOrigin *http.CrossOriginProtection
 }
 
 // parseTerraformCLI parses a request context, and, if the user is authenticated
@@ -126,6 +133,8 @@ func (a *Authentication) parseApiKey(c *gin.Context) (*auth.User, error) {
 // with an active session it returns the user.
 // If the user is authenticated, but not with an active session, it returns an
 // ErrUnexpectedOrigin error.
+// Cross-origin, state-changing requests are rejected with an ErrCrossOrigin
+// error, since the browser attaches the session cookie to them.
 func (a *Authentication) parseActiveSession(c *gin.Context) (*auth.User, error) {
 	sess, err := a.Store.Get(c.Request)
 	if err != nil {
@@ -145,6 +154,15 @@ func (a *Authentication) parseActiveSession(c *gin.Context) (*auth.User, error) 
 		}
 
 		return nil, fmt.Errorf("%w: unknown user format in session", ErrInvalidValue)
+	}
+
+	crossOrigin := a.CrossOrigin
+	if crossOrigin == nil {
+		crossOrigin = defaultCrossOrigin
+	}
+
+	if err := crossOrigin.Check(c.Request); err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrCrossOrigin, err)
 	}
 
 	return authUser, nil
