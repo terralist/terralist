@@ -289,25 +289,27 @@ func (a *Authorization) CanPerform(subject auth.User, resource, action, object s
 	return true
 }
 
+// CallerCanPerform checks if the caller of a request can perform an action on a
+// specified object from a given resource API group. If the user is not found in
+// the context, the caller is authorized as anonymous, since some resource
+// groups may expose some objects publicly.
+func (a *Authorization) CallerCanPerform(ctx *gin.Context, resource, action, object string) bool {
+	user, err := GetFromContext[auth.User](ctx, "user")
+	if err != nil {
+		user = &auth.User{
+			Name: rbac.SubjectAnonymous,
+		}
+	}
+
+	return a.CanPerform(*user, resource, action, object)
+}
+
 // RequireAuthorization is a wrapper function that returns a custom function that can
 // be used to generate middlewares to handle authorization for a specific action.
 func (a *Authorization) RequireAuthorization(resource string) func(action string, objectFn func(c *gin.Context) string) gin.HandlerFunc {
 	return func(action string, objectFn func(c *gin.Context) string) gin.HandlerFunc {
 		return func(ctx *gin.Context) {
-			user, err := GetFromContext[auth.User](ctx, "user")
-			if err != nil {
-				// If the user is not found in the context, we're going to authenticate them as
-				// anonymous. It is possible that some resource groups to expose publicly some
-				// objects.
-
-				user = &auth.User{
-					Name: rbac.SubjectAnonymous,
-				}
-			}
-
-			object := objectFn(ctx)
-
-			if !a.CanPerform(*user, resource, action, object) {
+			if !a.CallerCanPerform(ctx, resource, action, objectFn(ctx)) {
 				ctx.AbortWithStatus(http.StatusForbidden)
 				return
 			}
