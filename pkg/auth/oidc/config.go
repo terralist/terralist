@@ -34,6 +34,8 @@ type Config struct {
 	AuthorizeUrl               string
 	TokenUrl                   string
 	UserInfoUrl                string
+	Scopes                     string
+	GroupsClaim                string
 	TerralistSchemeHostAndPort string
 }
 

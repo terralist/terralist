@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"terralist/pkg/auth"
@@ -22,5 +23,11 @@ func (t *Creator) New(config auth.Configurator) (auth.Provider, error) {
 		TokenUrl:     cfg.TokenUrl,
 		UserInfoUrl:  cfg.UserInfoUrl,
 		RedirectUrl:  strings.TrimSuffix(cfg.TerralistSchemeHostAndPort, "/") + "/v1/api/auth/redirect",
+		Scopes: slices.DeleteFunc(strings.FieldsFunc(cfg.Scopes, func(r rune) bool {
+			return r == ',' || r == ' '
+		}), func(e string) bool {
+			return e == ""
+		}),
+		GroupsClaim: strings.TrimSpace(cfg.GroupsClaim),
 	}, nil
 }

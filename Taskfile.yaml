@@ -161,6 +161,7 @@ tasks:
       TERRALIST_OI_CLIENT_ID: "e2e-test-client"
       TERRALIST_OI_CLIENT_SECRET: "e2e-test-secret"
       TERRALIST_OI_HOST: "http://localhost:8080/default"
+      TERRALIST_OI_GROUPS_CLAIM: "groups"
 
       TERRALIST_TOKEN_SIGNING_SECRET: "e2e-test-secret"
       TERRALIST_OAUTH_STATE_SECRET: "e2e-state-secret"
@@ -222,7 +223,7 @@ tasks:
         --name=terralist-mock-oauth2-e2e-{{.TEST_RUN_ID}}
         --publish=8080:8080
         --env=SERVER_PORT=8080
-        --env='JSON_CONFIG={"interactiveLogin":false,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"default","tokenExpiry":3600,"requestMappings":[{"requestParam":"grant_type","match":"*","claims":{"sub":"e2e-test-user","email":"admin@terralist.io"}}]}]}'
+        --env='JSON_CONFIG={"interactiveLogin":false,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"default","tokenExpiry":3600,"requestMappings":[{"requestParam":"grant_type","match":"*","claims":{"sub":"e2e-test-user","email":"admin@terralist.io","groups":["e2e-admins"]}}]}]}'
         ghcr.io/navikt/mock-oauth2-server:2.1.10
       - >
         until [ "$(docker inspect --format '{{ "{{" }}.State.Health.Status{{ "}}" }}' terralist-rustfs-e2e-{{.TEST_RUN_ID}} 2>/dev/null)" = "healthy" ]; do

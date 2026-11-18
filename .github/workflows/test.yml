@@ -176,7 +176,8 @@ jobs:
                       "match": "*",
                       "claims": {
                         "sub": "e2e-test-user",
-                        "email": "admin@terralist.io"
+                        "email": "admin@terralist.io",
+                        "groups": ["e2e-admins"]
                       }
                     }
                   ]
@@ -194,6 +195,7 @@ jobs:
       TERRALIST_OI_CLIENT_ID: e2e-test-client
       TERRALIST_OI_CLIENT_SECRET: e2e-test-secret
       TERRALIST_OI_HOST: "http://mock-oauth2:8080/default"
+      TERRALIST_OI_GROUPS_CLAIM: "groups"
       TERRALIST_TOKEN_SIGNING_SECRET: "somerandomvalue"
       TERRALIST_OAUTH_STATE_SECRET: "yetanotherrandomvalue"
 

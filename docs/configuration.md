@@ -496,6 +496,41 @@ Fallback manual value for the [OpenID Connect userinfo endpoint](https://openid.
 | cli | `--oi-userinfo-url` |
 | env | `TERRALIST_OI_USERINFO_URL` |
 
+### `oi-scopes`
+
+Additional scopes to request from the OpenID Connect provider, besides the always-requested `openid` and `email`. Comma separated. Some providers only include the groups claim when a dedicated scope (for example `groups`) is requested.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--oi-scopes` |
+| env | `TERRALIST_OI_SCOPES` |
+
+### `oi-groups-claim`
+
+The OpenID Connect claim that contains the user's groups, used for [RBAC](user-guide/rbac-configuration.md) group mapping. When unset, groups are not read.
+
+The claim is looked up in the userinfo response first and, if missing there, in the ID token. Claim names containing dots (such as `https://example.com/groups`) are matched exactly; otherwise a dotted name is resolved as a path into nested objects (for example `realm_access.roles`). The claim value can be a list of strings, a single string, or an object whose keys are used as group names.
+
+```yaml
+oauth-provider: "oidc"
+oi-client-id: "${OIDC_CLIENT_ID}"
+oi-client-secret: "${OIDC_CLIENT_SECRET}"
+oi-host: "https://login.example.com/realms/platform"
+oi-scopes: "groups"
+oi-groups-claim: "groups"
+```
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--oi-groups-claim` |
+| env | `TERRALIST_OI_GROUPS_CLAIM` |
+
 ### `saml-display-name`
 
 The label displayed on the login button when SAML is enabled.
