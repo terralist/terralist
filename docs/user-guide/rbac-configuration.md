@@ -45,7 +45,7 @@ Below is a table that defines claims meaning for each OAuth provider.
 | BitBucket      | Username    | User E-mail    | Not supported.                                                                                               |
 | GitHub         | Username    | User E-mail    | GitHub Organization Teams slugs that the user is part of (if `gh-organization` configuration option is set). |
 | GitLab         | Username    | User E-mail    | GitLab User Group names.                                                                                     |
-| OIDC           | `sub` claim | Not supported. | Not supported.                                                                                               |
+| OIDC           | `sub` claim | `email` claim  | Values of the claim configured by `oi-groups-claim`, if set.                                                 |
 
 **Policy**: Allows to assign permissions to an entity.
 

@@ -57,6 +57,8 @@ const (
 	OidcAuthorizeUrlFlag = "oi-authorize-url"
 	OidcTokenUrlFlag     = "oi-token-url"
 	OidcUserInfoUrlFlag  = "oi-userinfo-url"
+	OidcScopesFlag       = "oi-scopes"
+	OidcGroupsClaimFlag  = "oi-groups-claim"
 
 	SamlDisplayNameFlag                  = "saml-display-name"
 	SamlIdPMetadataURLFlag               = "saml-idp-metadata-url"
@@ -290,6 +292,12 @@ var flags = map[string]cli.Flag{
 	},
 	OidcUserInfoUrlFlag: &cli.StringFlag{
 		Description: "Fallback manual OIDC userinfo endpoint URL used when discovery does not provide it.",
+	},
+	OidcScopesFlag: &cli.StringFlag{
+		Description: "Additional OIDC scopes to request, besides openid and email. Comma separated.",
+	},
+	OidcGroupsClaimFlag: &cli.StringFlag{
+		Description: "The OIDC claim that contains the user's groups. Used for RBAC group mapping.",
 	},
 	SamlDisplayNameFlag: &cli.StringFlag{
 		Description:  "The display name for SAML authentication in the UI.",

@@ -295,6 +295,8 @@ func (s *Command) run() error {
 			AuthorizeUrl:               flags[OidcAuthorizeUrlFlag].(*cli.StringFlag).Value,
 			TokenUrl:                   flags[OidcTokenUrlFlag].(*cli.StringFlag).Value,
 			UserInfoUrl:                flags[OidcUserInfoUrlFlag].(*cli.StringFlag).Value,
+			Scopes:                     flags[OidcScopesFlag].(*cli.StringFlag).Value,
+			GroupsClaim:                flags[OidcGroupsClaimFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
 		})
 	case "saml":
