@@ -25,4 +25,10 @@ type UserConfig struct {
 	UpstreamCacheRetention     string `mapstructure:"upstream-cache-retention"`
 	UpstreamAutoCreate         string `mapstructure:"upstream-auto-create"`
 	UpstreamRejectExpiredKeys  bool   `mapstructure:"upstream-reject-expired-signing-keys"`
+
+	OAuthRefreshEnabled               bool   `mapstructure:"oauth-refresh-enabled"`
+	OAuthRefreshSecret                string `mapstructure:"oauth-refresh-secret"`
+	OAuthRefreshAccessTokenExpiration string `mapstructure:"oauth-refresh-access-token-expiration"`
+	OAuthRefreshTokenExpiration       string `mapstructure:"oauth-refresh-token-expiration"`
+	OAuthRefreshMaxSessionAge         string `mapstructure:"oauth-refresh-max-session-age"`
 }

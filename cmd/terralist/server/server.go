@@ -209,6 +209,12 @@ func (s *Command) run() error {
 		UpstreamCacheRetention:     flags[UpstreamCacheRetentionFlag].(*cli.StringFlag).Value,
 		UpstreamAutoCreate:         flags[UpstreamAutoCreateFlag].(*cli.StringFlag).Value,
 		UpstreamRejectExpiredKeys:  flags[UpstreamRejectExpiredSigningKeysFlag].(*cli.BoolFlag).Value,
+
+		OAuthRefreshEnabled:               flags[OAuthRefreshEnabledFlag].(*cli.BoolFlag).Value,
+		OAuthRefreshSecret:                flags[OAuthRefreshSecretFlag].(*cli.StringFlag).Value,
+		OAuthRefreshAccessTokenExpiration: flags[OAuthRefreshAccessTokenExpirationFlag].(*cli.StringFlag).Value,
+		OAuthRefreshTokenExpiration:       flags[OAuthRefreshTokenExpirationFlag].(*cli.StringFlag).Value,
+		OAuthRefreshMaxSessionAge:         flags[OAuthRefreshMaxSessionAgeFlag].(*cli.StringFlag).Value,
 	}
 
 	if s.RunningMode == "debug" {
@@ -298,6 +304,7 @@ func (s *Command) run() error {
 			Scopes:                     flags[OidcScopesFlag].(*cli.StringFlag).Value,
 			GroupsClaim:                flags[OidcGroupsClaimFlag].(*cli.StringFlag).Value,
 			TerralistSchemeHostAndPort: userConfig.URL,
+			OfflineAccess:              userConfig.OAuthRefreshEnabled,
 		})
 	case "saml":
 		httpClientTimeoutFlag, ok := flags[SamlHTTPClientTimeoutFlag].(*cli.StringFlag)
