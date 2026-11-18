@@ -64,3 +64,7 @@ func isTerraformPort(port string) bool {
 
 	return p >= TerraformPorts[0] && p <= TerraformPorts[1]
 }
+
+// TerraformClientID is the OAuth client ID Terraform and OpenTofu use, as
+// advertised through the service discovery document.
+const TerraformClientID = "terraform-cli"
