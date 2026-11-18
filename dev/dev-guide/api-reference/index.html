@@ -1025,6 +1025,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#upload-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upload errors
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1998,6 +2009,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#upload-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upload errors
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2910,6 +2932,34 @@
 </div>
 </div>
 </div>
+<h3 id="upload-errors">Upload errors<a class="headerlink" href="#upload-errors" title="Permanent link">¶</a></h3>
+<p>A failed upload answers a status telling whether retrying it can help. This applies to every upload endpoint, including the webhooks:</p>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>409</code></td>
+<td>The upload is refused: the version already exists, the signature does not verify, or the request is invalid. Retrying it does not help.</td>
+</tr>
+<tr>
+<td><code>422</code></td>
+<td>The source or its content is refused: a source other than <code>http</code>, <code>https</code> or git, a private address, a file not matching its checksum, or an archive that cannot be decompressed.</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>The files could not be stored. Retry once the storage is available again.</td>
+</tr>
+<tr>
+<td><code>502</code></td>
+<td>The referenced files could not be downloaded, for example because the URL answers <code>404</code> or cannot be reached. Retry once the source is available again.</td>
+</tr>
+</tbody>
+</table>
 <h2 id="upload-provider-packages">Upload provider packages<a class="headerlink" href="#upload-provider-packages" title="Permanent link">¶</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>POST /v1/api/providers/:namespace/:name/:version/upload-files
 </span></code></pre></div>
@@ -2920,7 +2970,7 @@
 <li><code>shasums</code> and <code>shasums_signature</code> (optional): the provider's <code>SHA256SUMS</code> file and its signature, always together; the signature must verify with one of the authority keys;</li>
 <li><code>protocols</code> (required with <code>shasums</code>): comma separated provider protocol versions.</li>
 </ul>
-<p>Every archive must be listed in the document under its file name. When a <code>SHA256SUMS</code> file is given, every archive must match its entry. A version uploaded without <code>shasums</code> is served through the <a href="../../user-guide/network-mirror/">network mirror</a> only and does not appear in the registry protocol version list. A providers storage resolver must be configured.</p>
+<p>Every archive must be listed in the document under its file name. When a <code>SHA256SUMS</code> file is given, every archive must match its entry. A version uploaded without <code>shasums</code> is served through the <a href="../../user-guide/network-mirror/">network mirror</a> only and does not appear in the registry protocol version list. A providers storage resolver must be configured. See <a href="#upload-errors">upload errors</a> for the statuses of a failed upload.</p>
 <h3 id="example-request_6">Example Request<a class="headerlink" href="#example-request_6" title="Permanent link">¶</a></h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-25-2"><a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
@@ -3204,6 +3254,7 @@
 <p>Upload a new module version.</p>
 <p>The module is downloaded from an <code>http</code> or <code>https</code> URL, or from a git repository (<code>git::https://...</code> or <code>git::ssh://...</code>, as in a Terraform module source); other sources are refused. A git host resolving to a private address is refused unless <a href="../../configuration/#fetch-allow-private-addresses"><code>fetch-allow-private-addresses</code></a> is set.</p>
 <p>If the URL from which the module files should be downloaded is of types <code>http</code> or <code>https</code>, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.</p>
+<p>See <a href="#upload-errors">upload errors</a> for the statuses of a failed upload.</p>
 <h3 id="example-request_13">Example Request<a class="headerlink" href="#example-request_13" title="Permanent link">¶</a></h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="14:2"><input checked="checked" id="__tabbed_14_1" name="__tabbed_14" type="radio" /><input id="__tabbed_14_2" name="__tabbed_14" type="radio" /><div class="tabbed-labels"><label for="__tabbed_14_1">GitHub API</label><label for="__tabbed_14_2">GitHub HTTP</label></div>
 <div class="tabbed-content">
@@ -3273,7 +3324,7 @@
 <h2 id="upload-a-module-version-with-local-files">Upload a module version (with local files)<a class="headerlink" href="#upload-a-module-version-with-local-files" title="Permanent link">¶</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-64-1"><a id="__codelineno-64-1" name="__codelineno-64-1" href="#__codelineno-64-1"></a>POST /v1/api/modules/:namespace/:name/:provider/:version/upload-files
 </span></code></pre></div>
-<p>Upload a new module version (with local files).</p>
+<p>Upload a new module version (with local files). See <a href="#upload-errors">upload errors</a> for the statuses of a failed upload.</p>
 <h3 id="example-request_14">Example Request<a class="headerlink" href="#example-request_14" title="Permanent link">¶</a></h3>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-65-1"><a id="__codelineno-65-1" name="__codelineno-65-1" href="#__codelineno-65-1"></a>curl<span class="w"> </span>-L<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-65-2"><a id="__codelineno-65-2" name="__codelineno-65-2" href="#__codelineno-65-2"></a><span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer x-api-key:&lt;YOUR-TOKEN&gt;"</span><span class="w"> </span><span class="se">\</span>
