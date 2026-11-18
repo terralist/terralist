@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/terralist.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -33,10 +33,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -1210,7 +1210,7 @@
 </table>
 <p>The <code>providers</code> resource covers both the Provider Registry Protocol and the <a href="../network-mirror/">Provider Network Mirror</a>.</p>
 <h2 id="policy-evaluation">Policy Evaluation<a class="headerlink" href="#policy-evaluation" title="Permanent link">¶</a></h2>
-<p>A request is evaluated against every subject the user is known by: their username, their e-mail, each of their <code>group:&lt;group&gt;</code> entries, and every role assigned to any of those (or the default role, if none is assigned). The request is then decided as follows:</p>
+<p>A request is evaluated against every subject the user is known by: their username, their e-mail, each of their <code>group:&lt;group&gt;</code> entries, and every role assigned to any of those (or the default role, if none is assigned). A username or e-mail starting with <code>role:</code> or <code>group:</code> is ignored, so an identity can never claim a role or a group. The request is then decided as follows:</p>
 <ol>
 <li>If any policy matching the request has the <code>deny</code> effect, for any of those subjects, the request is denied.</li>
 <li>Otherwise, if any policy matching the request has the <code>allow</code> effect, the request is allowed.</li>
@@ -1334,10 +1334,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.code.select", "navigation.indexes"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>
