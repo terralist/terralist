@@ -121,7 +121,7 @@ func (s *DefaultProviderService) Get(namespace, name string, withUpstream bool) 
 	mergeUpstreamVersions(&dto, local, upstream)
 
 	// Record list operation
-	metrics.RecordRequest(namespace, "list")
+	metrics.RecordRequest(namespace, "list", name)
 
 	return &dto, nil
 }
@@ -178,8 +178,8 @@ func (s *DefaultProviderService) GetVersion(namespace, name, version, system, ar
 	}
 
 	// Record download metrics
-	metrics.RecordRequest(namespace, "download")
-	metrics.RecordArtifactDownload("provider", namespace)
+	metrics.RecordRequest(namespace, "download", name)
+	metrics.RecordArtifactDownload("provider", namespace, name)
 
 	return &dto, nil
 }
@@ -205,7 +205,7 @@ func (s *DefaultProviderService) ListMirrorVersions(namespace, name string, with
 		dto.Versions[v.Version] = struct{}{}
 	}
 
-	metrics.RecordRequest(namespace, "list")
+	metrics.RecordRequest(namespace, "list", name)
 
 	return &dto, nil
 }
@@ -261,8 +261,8 @@ func (s *DefaultProviderService) ListMirrorArchives(namespace, name, version str
 		return nil, fmt.Errorf("provider %s/%s does not contain version %s", namespace, name, version)
 	}
 
-	metrics.RecordRequest(namespace, "download")
-	metrics.RecordArtifactDownload("provider", namespace)
+	metrics.RecordRequest(namespace, "download", name)
+	metrics.RecordArtifactDownload("provider", namespace, name)
 
 	return &dto, nil
 }
@@ -280,8 +280,8 @@ func (s *DefaultProviderService) upstreamVersionDownload(a *authority.Authority,
 		return nil, err
 	}
 
-	metrics.RecordRequest(a.Name, "download")
-	metrics.RecordArtifactDownload("provider", a.Name)
+	metrics.RecordRequest(a.Name, "download", name)
+	metrics.RecordArtifactDownload("provider", a.Name, name)
 
 	return dto, nil
 }
@@ -351,9 +351,9 @@ func (s *DefaultProviderService) Upload(d *provider.CreateProviderDTO) error {
 	}
 
 	// Record artifact upload metric
-	metrics.RecordArtifactUpload("provider", a.Name)
+	metrics.RecordArtifactUpload("provider", a.Name, p.Name)
 	// Record upload request
-	metrics.RecordRequest(a.Name, "upload")
+	metrics.RecordRequest(a.Name, "upload", p.Name)
 
 	return nil
 }
@@ -436,8 +436,8 @@ func (s *DefaultProviderService) UploadPackages(d *provider.PackagesUploadDTO) e
 		return err
 	}
 
-	metrics.RecordArtifactUpload("provider", a.Name)
-	metrics.RecordRequest(a.Name, "upload")
+	metrics.RecordArtifactUpload("provider", a.Name, d.Name)
+	metrics.RecordRequest(a.Name, "upload", d.Name)
 
 	return nil
 }
@@ -592,7 +592,7 @@ func (s *DefaultProviderService) Delete(authorityID uuid.UUID, name string) erro
 
 	// Record artifact deletion metrics for all versions
 	for range p.Versions {
-		metrics.RecordArtifactDeletion("provider", a.Name)
+		metrics.RecordArtifactDeletion("provider", a.Name, name)
 	}
 
 	return nil
@@ -627,7 +627,7 @@ func (s *DefaultProviderService) DeleteVersion(authorityID uuid.UUID, name strin
 	}
 
 	// Record artifact deletion metric
-	metrics.RecordArtifactDeletion("provider", a.Name)
+	metrics.RecordArtifactDeletion("provider", a.Name, name)
 
 	return nil
 }

@@ -63,8 +63,8 @@ func (s *DefaultModuleService) upstreamArchiveURL(a *authority.Authority, name, 
 
 	url := fmt.Sprintf("%s/%s/%s/%s/%s/archive", s.ArchiveBaseURL, a.Name, name, system, version)
 
-	metrics.RecordRequest(a.Name, "download")
-	metrics.RecordArtifactDownload("module", a.Name)
+	metrics.RecordRequest(a.Name, "download", name+"/"+system)
+	metrics.RecordArtifactDownload("module", a.Name, name+"/"+system)
 
 	return &url, nil
 }

@@ -46,10 +46,21 @@ Total count of errors by type.
 
 Track module and provider operations across authorities.
 
+The `name` label is the lowercase artifact identity within the authority (namespace):
+`name` for providers and `name/provider` for modules.
+For example, provider `hashicorp/aws` has `authority="hashicorp"`, `name="aws"`,
+and `type="provider"`. Module `team/vpc/aws` has `authority="team"`, `name="vpc/aws"`,
+and `type="module"`. Module provider/system variants have separate time series.
+Names differing only in case share the same series, including uploads and deletions.
+
+Adding `name` creates a separate time series for each artifact name. Queries
+using `sum by (authority)` continue to aggregate across names. Historical samples
+collected before this label was introduced do not contain artifact names.
+
 #### Uploads
 
 ```
-terralist_artifacts_uploaded_total{type="module|provider", authority="..."}
+terralist_artifacts_uploaded_total{type="module|provider", authority="...", name="..."}
 ```
 
 Total number of uploaded artifacts.
@@ -66,21 +77,29 @@ sum by (authority) (terralist_artifacts_uploaded_total)
 #### Downloads
 
 ```
-terralist_artifacts_downloaded_total{type="module|provider", authority="..."}
+terralist_artifacts_downloaded_total{type="module|provider", authority="...", name="..."}
 ```
 
 Total number of downloaded artifacts.
 
+This counter records successful download metadata or location lookups, not
+completed archive transfers or unique installations. For providers, the registry
+protocol counts platform download metadata lookups, while the network mirror
+counts version archive document lookups, which can list multiple platforms.
+
 **Example queries:**
 ```promql
 # Most downloaded modules
-topk(10, sum by (authority) (terralist_artifacts_downloaded_total{type="module"}))
+topk(10, sum by (authority, name) (terralist_artifacts_downloaded_total{type="module"}))
+
+# Provider downloads over the last hour
+sum by (authority, name) (increase(terralist_artifacts_downloaded_total{type="provider"}[1h]))
 ```
 
 #### Deletions
 
 ```
-terralist_artifacts_deleted_total{type="module|provider", authority="..."}
+terralist_artifacts_deleted_total{type="module|provider", authority="...", name="..."}
 ```
 
 Total number of deleted artifacts.
@@ -88,7 +107,7 @@ Total number of deleted artifacts.
 #### Current Artifact Count
 
 ```
-terralist_artifacts_total{type="module|provider", authority="..."}
+terralist_artifacts_total{type="module|provider", authority="...", name="..."}
 ```
 
 Current number of artifacts (gauge that increases with uploads, decreases with deletions).
@@ -100,6 +119,9 @@ sum(terralist_artifacts_total)
 
 # Artifacts per authority
 sum by (authority, type) (terralist_artifacts_total)
+
+# Artifacts per name within each authority
+sum by (authority, type, name) (terralist_artifacts_total)
 ```
 
 ---
@@ -109,10 +131,12 @@ sum by (authority, type) (terralist_artifacts_total)
 #### Requests by Authority
 
 ```
-terralist_requests_by_authority_total{authority="...", operation="upload|download|list"}
+terralist_requests_by_authority_total{authority="...", operation="upload|download|list", name="..."}
 ```
 
-Total requests grouped by authority and operation type.
+Total requests grouped by authority, operation type, and module or provider name.
+Provider names use `name`, while module names use `name/provider`, so module
+provider/system variants remain separate. Names are normalized to lowercase.
 
 **Example queries:**
 ```promql
@@ -121,6 +145,9 @@ rate(terralist_requests_by_authority_total[5m])
 
 # Most active authorities
 topk(5, sum by (authority) (rate(terralist_requests_by_authority_total[5m])))
+
+# Request rate per artifact name within each authority
+sum by (authority, name, operation) (rate(terralist_requests_by_authority_total[5m]))
 ```
 
 ---

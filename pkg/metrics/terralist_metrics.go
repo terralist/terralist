@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -11,7 +13,7 @@ var (
 			Name: "terralist_artifacts_uploaded_total",
 			Help: "Total number of artifacts uploaded",
 		},
-		[]string{"type", "authority"},
+		[]string{"type", "authority", "name"},
 	)
 
 	// ArtifactsDownloadedTotal counts the total number of downloaded artifacts.
@@ -20,7 +22,7 @@ var (
 			Name: "terralist_artifacts_downloaded_total",
 			Help: "Total number of artifacts downloaded",
 		},
-		[]string{"type", "authority"},
+		[]string{"type", "authority", "name"},
 	)
 
 	// ArtifactsDeletedTotal counts the total number of deleted artifacts.
@@ -29,7 +31,7 @@ var (
 			Name: "terralist_artifacts_deleted_total",
 			Help: "Total number of artifacts deleted",
 		},
-		[]string{"type", "authority"},
+		[]string{"type", "authority", "name"},
 	)
 
 	// ArtifactsTotal tracks the current number of artifacts.
@@ -38,16 +40,16 @@ var (
 			Name: "terralist_artifacts_total",
 			Help: "Current total number of artifacts",
 		},
-		[]string{"type", "authority"},
+		[]string{"type", "authority", "name"},
 	)
 
-	// RequestsByAuthorityTotal counts requests by authority and operation.
+	// RequestsByAuthorityTotal counts requests by authority, operation, and artifact name.
 	RequestsByAuthorityTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "terralist_requests_by_authority_total",
-			Help: "Total number of requests by authority and operation type",
+			Help: "Total number of requests by authority, operation type, and artifact name",
 		},
-		[]string{"authority", "operation"},
+		[]string{"authority", "operation", "name"},
 	)
 
 	// ApiKeysTotal tracks the number of API keys by scope and status.
@@ -61,25 +63,29 @@ var (
 )
 
 // RecordArtifactUpload records an artifact upload.
-func RecordArtifactUpload(artifactType, authority string) {
-	ArtifactsUploadedTotal.WithLabelValues(artifactType, authority).Inc()
-	ArtifactsTotal.WithLabelValues(artifactType, authority).Inc()
+func RecordArtifactUpload(artifactType, authority, name string) {
+	name = strings.ToLower(name)
+	ArtifactsUploadedTotal.WithLabelValues(artifactType, authority, name).Inc()
+	ArtifactsTotal.WithLabelValues(artifactType, authority, name).Inc()
 }
 
 // RecordArtifactDownload records an artifact download.
-func RecordArtifactDownload(artifactType, authority string) {
-	ArtifactsDownloadedTotal.WithLabelValues(artifactType, authority).Inc()
+func RecordArtifactDownload(artifactType, authority, name string) {
+	name = strings.ToLower(name)
+	ArtifactsDownloadedTotal.WithLabelValues(artifactType, authority, name).Inc()
 }
 
 // RecordArtifactDeletion records an artifact deletion.
-func RecordArtifactDeletion(artifactType, authority string) {
-	ArtifactsDeletedTotal.WithLabelValues(artifactType, authority).Inc()
-	ArtifactsTotal.WithLabelValues(artifactType, authority).Dec()
+func RecordArtifactDeletion(artifactType, authority, name string) {
+	name = strings.ToLower(name)
+	ArtifactsDeletedTotal.WithLabelValues(artifactType, authority, name).Inc()
+	ArtifactsTotal.WithLabelValues(artifactType, authority, name).Dec()
 }
 
-// RecordRequest records a request by authority and operation.
-func RecordRequest(authority, operation string) {
-	RequestsByAuthorityTotal.WithLabelValues(authority, operation).Inc()
+// RecordRequest records a request by authority, operation, and artifact name.
+func RecordRequest(authority, operation, name string) {
+	name = strings.ToLower(name)
+	RequestsByAuthorityTotal.WithLabelValues(authority, operation, name).Inc()
 }
 
 // SetApiKeysCount sets the number of API keys for a scope with a specific status.
