@@ -25,7 +25,8 @@ type Provider struct {
 }
 
 type tokenResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type Team struct {
@@ -68,11 +69,59 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 }
 
 func (p *Provider) GetUserDetails(code string, user *auth.User) error {
+	_, err := p.ExchangeCode(code, user)
+	return err
+}
+
+// ExchangeCode keeps the access token as the grant. OAuth App tokens do not
+// expire, so it is enough to check the user again; GitHub Apps with expiring
+// user tokens also return a refresh token, which is kept as well.
+func (p *Provider) ExchangeCode(code string, user *auth.User) (*auth.Grant, error) {
 	var t tokenResponse
 	if err := p.PerformAccessTokenRequest(code, &t); err != nil {
-		return err
+		return nil, err
 	}
 
+	if err := p.fillUserDetails(t, user); err != nil {
+		return nil, err
+	}
+
+	return &auth.Grant{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken}, nil
+}
+
+func (p *Provider) Refresh(grant auth.Grant, user *auth.User) (*auth.Grant, error) {
+	next := &grant
+
+	if grant.RefreshToken != "" {
+		reqBody := url.Values{
+			"client_id":     []string{p.ClientID},
+			"client_secret": []string{p.ClientSecret},
+			"grant_type":    []string{"refresh_token"},
+			"refresh_token": []string{grant.RefreshToken},
+		}
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/access_token", p.oauthEndpoint), strings.NewReader(reqBody.Encode()))
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		t, err := auth.RequestRefresh(httpClient, req)
+		if err != nil {
+			return nil, err
+		}
+
+		next = auth.NextGrant(grant, t)
+	}
+
+	if err := p.fillUserDetails(tokenResponse{AccessToken: next.AccessToken}, user); err != nil {
+		return nil, err
+	}
+
+	return next, nil
+}
+
+func (p *Provider) fillUserDetails(t tokenResponse, user *auth.User) error {
 	name, err := p.PerformUserNameRequest(t)
 	if err != nil {
 		return err
@@ -158,6 +207,10 @@ func (p *Provider) PerformUserNameRequest(t tokenResponse) (string, error) {
 		return "", err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode >= http.StatusInternalServerError {
+		return "", fmt.Errorf("%w: GitHub responded with status %d", auth.ErrUpstreamUnavailable, res.StatusCode)
+	}
 
 	if res.StatusCode != 200 {
 		return "", fmt.Errorf("GitHub responded with status %d", res.StatusCode)

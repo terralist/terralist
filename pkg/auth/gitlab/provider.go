@@ -32,7 +32,8 @@ type Provider struct {
 }
 
 type tokenResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 var (
@@ -60,11 +61,56 @@ func (p *Provider) GetAuthorizeUrl(state string) string {
 }
 
 func (p *Provider) GetUserDetails(code string, user *auth.User) error {
+	_, err := p.ExchangeCode(code, user)
+	return err
+}
+
+func (p *Provider) ExchangeCode(code string, user *auth.User) (*auth.Grant, error) {
 	// https://docs.gitlab.com/ee/integration/openid_connect_provider.html
 	var t tokenResponse
 	if err := p.PerformAccessTokenRequest(code, &t); err != nil {
-		return err
+		return nil, err
 	}
+
+	if err := p.fillUserDetails(t, user); err != nil {
+		return nil, err
+	}
+
+	if t.RefreshToken == "" {
+		return nil, nil
+	}
+
+	return &auth.Grant{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken}, nil
+}
+
+func (p *Provider) Refresh(grant auth.Grant, user *auth.User) (*auth.Grant, error) {
+	// GitLab refresh tokens are single-use: each refresh returns a new one.
+	reqBody := url.Values{
+		"grant_type":    []string{"refresh_token"},
+		"refresh_token": []string{grant.RefreshToken},
+		"redirect_uri":  []string{p.RedirectURL},
+	}
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/token", p.GitLabOAuthBaseURL), strings.NewReader(reqBody.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(p.ClientID, p.ClientSecret)
+
+	t, err := auth.RequestRefresh(httpClient, req)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := p.fillUserDetails(tokenResponse{AccessToken: t.AccessToken}, user); err != nil {
+		return nil, err
+	}
+
+	return auth.NextGrant(grant, t), nil
+}
+
+func (p *Provider) fillUserDetails(t tokenResponse, user *auth.User) error {
 	userdata, err := p.PerformUserProfileRequest(t)
 	if err != nil {
 		return err
@@ -166,6 +212,10 @@ func (p *Provider) PerformUserProfileRequest(t tokenResponse) (map[string]interf
 		return nil, err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode >= http.StatusInternalServerError {
+		return nil, fmt.Errorf("%w: gitlab responded with status %d", auth.ErrUpstreamUnavailable, res.StatusCode)
+	}
 
 	if res.StatusCode != 200 {
 		return nil, fmt.Errorf("gitlab responded with status %d", res.StatusCode)

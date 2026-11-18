@@ -16,6 +16,7 @@ const wellKnownConfigurationPath = "/.well-known/openid-configuration"
 var (
 	discoveryHTTPClient = &http.Client{}
 	requiredScopes      = []string{"openid", "email"}
+	offlineAccessScope  = "offline_access"
 )
 
 type discoveryDocument struct {
@@ -37,6 +38,10 @@ type Config struct {
 	Scopes                     string
 	GroupsClaim                string
 	TerralistSchemeHostAndPort string
+
+	// OfflineAccess requests the offline_access scope, so the identity
+	// provider issues a refresh token.
+	OfflineAccess bool
 }
 
 func (c *Config) SetDefaults() {}
