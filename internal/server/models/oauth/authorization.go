@@ -78,4 +78,11 @@ type CodeComponents struct {
 	UserGroups          []string `json:"user_groups,omitempty"`
 	UserAuthority       string   `json:"user_authority,omitempty"`
 	UserAuthorityID     string   `json:"user_authority_id,omitempty"`
+
+	// ClientID is the OAuth client that started the login.
+	ClientID string `json:"client_id,omitempty"`
+
+	// UpstreamGrant is the upstream grant kept for issuing a refresh token,
+	// sealed with the refresh secret.
+	UpstreamGrant string `json:"upstream_grant,omitempty"`
 }

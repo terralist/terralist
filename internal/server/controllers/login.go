@@ -21,6 +21,7 @@ const (
 
 	authorizeRoute = "/authorization"
 	tokenRoute     = "/token"
+	revokeRoute    = "/revoke"
 	redirectRoute  = "/redirect"
 
 	sessionRoute = "/session"
@@ -129,6 +130,17 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 			return
 		}
 
+		if r.GrantType == "refresh_token" {
+			resp, erro := c.LoginService.RefreshToken(r.RefreshToken, r.ClientID)
+			if erro != nil {
+				tokenError(ctx, erro)
+				return
+			}
+
+			ctx.JSON(http.StatusOK, resp)
+			return
+		}
+
 		if r.GrantType != "authorization_code" {
 			ctx.Redirect(
 				http.StatusFound,
@@ -158,6 +170,24 @@ func (c *DefaultLoginController) Subscribe(apis ...*gin.RouterGroup) {
 
 		ctx.JSON(http.StatusOK, resp)
 	})
+
+	if c.LoginService.RefreshEnabled() {
+		// Docs: https://datatracker.ietf.org/doc/html/rfc7009
+		tfApi.POST(revokeRoute, func(ctx *gin.Context) {
+			var r oauth.RevocationRequest
+			if err := ctx.ShouldBind(&r); err != nil || r.Token == "" {
+				tokenError(ctx, oauth.WrapError(fmt.Errorf("token is required"), oauth.InvalidRequest))
+				return
+			}
+
+			if erro := c.LoginService.RevokeToken(r.Token, r.ClientID); erro != nil {
+				tokenError(ctx, erro)
+				return
+			}
+
+			ctx.Status(http.StatusOK)
+		})
+	}
 
 	// api holds the routes that are not described by the Terraform protocol
 	api := apis[1]
@@ -334,4 +364,29 @@ func (c *DefaultLoginController) redirectWithError(
 	}
 
 	return fmt.Sprintf("%s?%s", uri, queryParams.Encode())
+}
+
+// tokenError answers a token or revocation request with an OAuth 2.0 error
+// response.
+// Docs: https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
+func tokenError(ctx *gin.Context, err oauth.Error) {
+	status := http.StatusBadRequest
+	switch err.Kind() {
+	case oauth.ServerError:
+		status = http.StatusInternalServerError
+	case oauth.TemporarilyUnavailable:
+		status = http.StatusServiceUnavailable
+	}
+
+	description := err.Error()
+	if status != http.StatusBadRequest {
+		log.Error().Err(err).Str("error", err.Kind()).Msg("Could not answer an OAuth token request")
+		description = http.StatusText(status)
+	}
+
+	ctx.Header("Cache-Control", "no-store")
+	ctx.JSON(status, gin.H{
+		"error":             err.Kind(),
+		"error_description": description,
+	})
 }

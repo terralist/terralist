@@ -30,6 +30,16 @@ type LoginService interface {
 	// ValidateToken is the method called on the third step from the OAUTH 2.0 protocol.
 	// It verifies the code components and generates the authorization token.
 	ValidateToken(components *oauth.CodeComponents, verifier string) (*oauth.TokenResponse, oauth.Error)
+
+	// RefreshEnabled reports whether refresh tokens are issued.
+	RefreshEnabled() bool
+
+	// RefreshToken exchanges a refresh token for a new access token and a new
+	// refresh token, after the upstream provider has confirmed the user.
+	RefreshToken(token string, clientID string) (*oauth.TokenResponse, oauth.Error)
+
+	// RevokeToken ends the refresh session behind a refresh token.
+	RevokeToken(token string, clientID string) oauth.Error
 }
 
 type DefaultLoginService struct {
@@ -38,6 +48,9 @@ type DefaultLoginService struct {
 	CodeRepository repositories.OAuthCodeRepository
 
 	TokenExpirationSecs int
+
+	// Refresh enables refresh tokens when set.
+	Refresh *RefreshOptions
 }
 
 // ParseTokenExpiration converts duration string to seconds.
@@ -63,6 +76,10 @@ func (s *DefaultLoginService) Authorize(state oauth.Payload) (string, oauth.Erro
 }
 
 func (s *DefaultLoginService) UnpackCode(code string, r *oauth.Request) (*oauth.CodeComponents, oauth.Error) {
+	if s.refreshesClient(r.ClientID) {
+		return s.unpackCodeWithGrant(code, r)
+	}
+
 	var userDetails auth.User
 	if err := s.Provider.GetUserDetails(code, &userDetails); err != nil {
 		return nil, oauth.WrapError(err, oauth.AccessDenied)
@@ -112,21 +129,26 @@ func (s *DefaultLoginService) ValidateToken(components *oauth.CodeComponents, ve
 		return nil, oauth.WrapError(fmt.Errorf("code verification failed"), oauth.InvalidRequest)
 	}
 
-	t, err := s.JWT.Build(auth.User{
+	user := auth.User{
 		Name:        components.UserName,
 		Email:       components.UserEmail,
 		Authority:   components.UserAuthority,
 		AuthorityID: components.UserAuthorityID,
 		Groups:      components.UserGroups,
-	}, s.TokenExpirationSecs)
+	}
+
+	if components.UpstreamGrant != "" && s.Refresh != nil {
+		return s.issueRefreshToken(components, user)
+	}
+
+	t, err := s.JWT.Build(user, s.TokenExpirationSecs)
 	if err != nil {
 		return nil, oauth.WrapError(err, oauth.InvalidRequest)
 	}
 
 	return &oauth.TokenResponse{
-		AccessToken:  t,
-		TokenType:    "bearer",
-		RefreshToken: "",
-		ExpiresIn:    s.TokenExpirationSecs,
+		AccessToken: t,
+		TokenType:   "bearer",
+		ExpiresIn:   s.TokenExpirationSecs,
 	}, nil
 }

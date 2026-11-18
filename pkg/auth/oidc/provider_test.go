@@ -243,3 +243,66 @@ func TestCreator_ParsesScopesAndGroupsClaim(t *testing.T) {
 	assert.Equal(t, "groups", oidcProvider.GroupsClaim)
 	assert.Equal(t, "https://terralist.example.com/v1/api/auth/redirect", oidcProvider.RedirectUrl)
 }
+
+func TestProviderGetAuthorizeURL_OfflineAccess(t *testing.T) {
+	scope := func(p *Provider) string {
+		parsed, err := url.Parse(p.GetAuthorizeUrl("state"))
+		require.NoError(t, err)
+		return parsed.Query().Get("scope")
+	}
+
+	assert.Equal(t, "openid email", scope(&Provider{AuthorizeUrl: "https://issuer.example.com/auth"}))
+	assert.Equal(t, "openid email groups offline_access", scope(&Provider{
+		AuthorizeUrl:  "https://issuer.example.com/auth",
+		Scopes:        []string{"groups"},
+		OfflineAccess: true,
+	}))
+	assert.Equal(t, "openid email offline_access", scope(&Provider{
+		AuthorizeUrl:  "https://issuer.example.com/auth",
+		Scopes:        []string{"offline_access"},
+		OfflineAccess: true,
+	}), "offline_access must not be requested twice")
+	assert.Equal(t, []string{"openid", "email"}, requiredScopes, "the required scopes must not be changed")
+}
+
+func TestProviderRefresh(t *testing.T) {
+	var received url.Values
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		received = r.PostForm
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"access_token":  "new-access",
+			"refresh_token": "new-refresh",
+			"id_token":      fakeIDToken(t, map[string]any{"groups": []string{"platform"}}),
+		})
+	})
+	mux.HandleFunc("/userinfo", func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "Bearer new-access", r.Header.Get("Authorization"))
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"sub": "user-1", "email": "user@example.com"})
+	})
+
+	server := httptest.NewServer(mux)
+	t.Cleanup(server.Close)
+
+	provider := &Provider{
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		TokenUrl:     server.URL + "/token",
+		UserInfoUrl:  server.URL + "/userinfo",
+		GroupsClaim:  "groups",
+	}
+
+	var user auth.User
+	grant, err := provider.Refresh(auth.Grant{RefreshToken: "old-refresh"}, &user)
+	require.NoError(t, err)
+
+	assert.Equal(t, "refresh_token", received.Get("grant_type"))
+	assert.Equal(t, "old-refresh", received.Get("refresh_token"))
+	assert.Equal(t, "new-refresh", grant.RefreshToken)
+	assert.Equal(t, "user-1", user.Name)
+	assert.Equal(t, []string{"platform"}, user.Groups, "groups must be read from the refreshed ID token")
+}
