@@ -20,6 +20,7 @@ import (
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
 	"terralist/pkg/database/entity"
+	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 	"terralist/pkg/session/cookie"
 
@@ -484,6 +485,53 @@ func TestProviderController_UpstreamUnavailable(t *testing.T) {
 
 			Convey("Then it should still be not found", func() {
 				So(w.Code, ShouldEqual, http.StatusNotFound)
+			})
+		})
+	})
+}
+
+func TestProviderController_UploadFailures(t *testing.T) {
+	Convey("Subject: Uploading a provider version that fails", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		router, mockService, mockAuthorityService := setupProviderRouter(t, user, "p, test-user, providers, create, hashicorp/*, allow")
+		mockAuthorityService.On("GetByName", "hashicorp").Return(&authority.Authority{Name: "hashicorp"}, nil).Maybe()
+
+		upload := func() *httptest.ResponseRecorder {
+			body := `{"protocols":["5.0"],"shasums":{"url":"https://example.com/SHA256SUMS","signature_url":"https://example.com/SHA256SUMS.sig"},` +
+				`"platforms":[{"os":"linux","arch":"amd64","download_url":"https://example.com/null.zip","shasum":"abc"}]}`
+			req := httptest.NewRequest(http.MethodPost, "/v1/api/providers/hashicorp/null/3.2.4/upload", strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			return serve(router, req)
+		}
+
+		Convey("When the referenced files cannot be downloaded", func() {
+			mockService.On("Upload", mock.Anything).
+				Return(fmt.Errorf("could not fetch shaSums file: %w", fmt.Errorf("%w: bad response code: 404", file.ErrDownloadFailure)))
+			w := upload()
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+				So(w.Body.String(), ShouldContainSubstring, "bad response code: 404")
+			})
+		})
+
+		Convey("When the files cannot be stored", func() {
+			mockService.On("Upload", mock.Anything).
+				Return(fmt.Errorf("%w: could not upload SHA256SUMS: disk full", services.ErrStorageFailure))
+			w := upload()
+
+			Convey("Then it should be an internal server error", func() {
+				So(w.Code, ShouldEqual, http.StatusInternalServerError)
+			})
+		})
+
+		Convey("When the version already exists", func() {
+			mockService.On("Upload", mock.Anything).Return(errors.New("version 3.2.4 already exists"))
+			w := upload()
+
+			Convey("Then it should still be a conflict", func() {
+				So(w.Code, ShouldEqual, http.StatusConflict)
 			})
 		})
 	})

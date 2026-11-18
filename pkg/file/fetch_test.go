@@ -86,8 +86,8 @@ func TestFetch_RejectsFileScheme(t *testing.T) {
 		t.Fatal("Expected fetch to reject the file:// scheme, but it succeeded")
 	}
 
-	if !errors.Is(err, ErrDownloadFailure) {
-		t.Errorf("Expected ErrDownloadFailure, got: %v", err)
+	if !errors.Is(err, ErrSourceRefused) {
+		t.Errorf("Expected ErrSourceRefused, got: %v", err)
 	}
 }
 
@@ -107,8 +107,26 @@ func TestFetch_BlocksPrivateAddressByDefault(t *testing.T) {
 		t.Fatal("Expected fetch to reject the private address, but it succeeded")
 	}
 
+	if !errors.Is(err, ErrSourceRefused) {
+		t.Errorf("Expected ErrSourceRefused, got: %v", err)
+	}
+}
+
+func TestFetch_UnreachableFileIsADownloadFailure(t *testing.T) {
+	server := httptest.NewServer(http.NotFoundHandler())
+	defer server.Close()
+
+	_, cleanup, err := fetch("test.txt", server.URL+"/test.txt", "", file, nil, true)
+	if cleanup != nil {
+		cleanup()
+	}
+
 	if !errors.Is(err, ErrDownloadFailure) {
-		t.Errorf("Expected ErrDownloadFailure, got: %v", err)
+		t.Fatalf("Expected ErrDownloadFailure, got: %v", err)
+	}
+
+	if errors.Is(err, ErrSourceRefused) || errors.Is(err, ErrChecksumMismatch) {
+		t.Errorf("Expected only ErrDownloadFailure, got: %v", err)
 	}
 }
 
@@ -145,6 +163,10 @@ func TestFetch_ChecksumOverridesTheURLChecksum(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("Expected fetch to fail the checksum check, but it succeeded")
+	}
+
+	if !errors.Is(err, ErrChecksumMismatch) {
+		t.Errorf("Expected ErrChecksumMismatch, got: %v", err)
 	}
 }
 
@@ -199,6 +221,10 @@ func TestFetch_RefusesSourcesOtherThanHTTPAndGit(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), "only HTTP(S) and git sources") {
 			t.Errorf("expected %q to be refused as a source, got %v", src, err)
 		}
+
+		if !errors.Is(err, ErrSourceRefused) {
+			t.Errorf("expected ErrSourceRefused for %q, got %v", src, err)
+		}
 	}
 }
 
@@ -210,6 +236,21 @@ func TestFetch_RefusesPrivateGitHosts(t *testing.T) {
 
 	if err == nil || !strings.Contains(err.Error(), "non-public address") {
 		t.Fatalf("expected the private git host to be refused before cloning, got %v", err)
+	}
+
+	if !errors.Is(err, ErrSourceRefused) {
+		t.Errorf("Expected ErrSourceRefused, got: %v", err)
+	}
+}
+
+func TestFetchArchive_CorruptArchiveIsInvalid(t *testing.T) {
+	_, cleanup, err := fetchArchive("module", NewInMemoryFile("module.zip", []byte("not a zip archive")))
+	if cleanup != nil {
+		cleanup()
+	}
+
+	if !errors.Is(err, ErrInvalidArchive) {
+		t.Fatalf("Expected ErrInvalidArchive, got: %v", err)
 	}
 }
 

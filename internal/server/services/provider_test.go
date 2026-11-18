@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -457,13 +458,13 @@ func TestUploadProvider(t *testing.T) {
 											mock.AnythingOfType("string"),
 											mock.AnythingOfType("http.Header"),
 										).
-										Return(nil, nil, errors.New(""))
+										Return(nil, nil, fmt.Errorf("%w: bad response code: 404", file.ErrDownloadFailure))
 
 									Convey("When the service is queried", func() {
 										err := providerService.Upload(&dto)
 
-										Convey("An error should be returned", func() {
-											So(err, ShouldNotBeNil)
+										Convey("A download failure should be returned", func() {
+											So(errors.Is(err, file.ErrDownloadFailure), ShouldBeTrue)
 										})
 									})
 								})
@@ -527,13 +528,13 @@ func TestUploadProvider(t *testing.T) {
 									Convey("If the resolver cannot store the provider files", func() {
 										mockResolver.
 											On("Store", mock.AnythingOfType("*storage.StoreInput")).
-											Return("", errors.New(""))
+											Return("", errors.New("disk full"))
 
 										Convey("When the service is queried", func() {
 											err := providerService.Upload(&dto)
 
-											Convey("An error should be returned", func() {
-												So(err, ShouldNotBeNil)
+											Convey("A storage failure should be returned", func() {
+												So(errors.Is(err, ErrStorageFailure), ShouldBeTrue)
 											})
 										})
 									})

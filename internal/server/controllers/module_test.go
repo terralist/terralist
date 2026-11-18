@@ -18,6 +18,7 @@ import (
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
 	"terralist/pkg/auth/jwt"
+	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 	"terralist/pkg/registry"
 	"terralist/pkg/session/cookie"
@@ -341,6 +342,50 @@ func TestModuleController_UpstreamUnavailable(t *testing.T) {
 
 			Convey("Then it should be a bad gateway", func() {
 				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+	})
+}
+
+func TestModuleController_UploadFailures(t *testing.T) {
+	Convey("Subject: Uploading a module version that fails", t, func() {
+		user := &auth.User{Name: "test-user", Email: "test@example.com"}
+		router, mockService := setupModuleRouter(t, user, "p, test-user, modules, create, hashicorp/*, allow")
+
+		upload := func() *httptest.ResponseRecorder {
+			body := `{"download_url":"https://example.com/module.zip"}`
+			req := httptest.NewRequest(http.MethodPost, "/v1/api/modules/hashicorp/dir/template/1.0.2/upload", strings.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			return serve(router, req)
+		}
+
+		Convey("When the archive cannot be downloaded", func() {
+			mockService.On("Upload", mock.Anything, mock.Anything).
+				Return(fmt.Errorf("%w: bad response code: 404", file.ErrDownloadFailure))
+			w := upload()
+
+			Convey("Then it should be a bad gateway", func() {
+				So(w.Code, ShouldEqual, http.StatusBadGateway)
+			})
+		})
+
+		Convey("When the source is refused", func() {
+			mockService.On("Upload", mock.Anything, mock.Anything).
+				Return(fmt.Errorf("%w: refusing to connect to non-public address ::1", file.ErrSourceRefused))
+			w := upload()
+
+			Convey("Then it should be unprocessable", func() {
+				So(w.Code, ShouldEqual, http.StatusUnprocessableEntity)
+			})
+		})
+
+		Convey("When the version already exists", func() {
+			mockService.On("Upload", mock.Anything, mock.Anything).Return(errors.New("version 1.0.2 already exists"))
+			w := upload()
+
+			Convey("Then it should still be a conflict", func() {
+				So(w.Code, ShouldEqual, http.StatusConflict)
 			})
 		})
 	})

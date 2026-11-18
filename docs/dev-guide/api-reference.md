@@ -283,6 +283,17 @@ curl -L -X POST \
     }
     ```
 
+### Upload errors
+
+A failed upload answers a status telling whether retrying it can help. This applies to every upload endpoint, including the webhooks:
+
+| Status | Meaning |
+|---|---|
+| `409` | The upload is refused: the version already exists, the signature does not verify, or the request is invalid. Retrying it does not help. |
+| `422` | The source or its content is refused: a source other than `http`, `https` or git, a private address, a file not matching its checksum, or an archive that cannot be decompressed. |
+| `500` | The files could not be stored. Retry once the storage is available again. |
+| `502` | The referenced files could not be downloaded, for example because the URL answers `404` or cannot be reached. Retry once the source is available again. |
+
 ## Upload provider packages
 
 ```
@@ -296,7 +307,7 @@ Upload a new provider version from its package files, as produced by `terraform 
 - `shasums` and `shasums_signature` (optional): the provider's `SHA256SUMS` file and its signature, always together; the signature must verify with one of the authority keys;
 - `protocols` (required with `shasums`): comma separated provider protocol versions.
 
-Every archive must be listed in the document under its file name. When a `SHA256SUMS` file is given, every archive must match its entry. A version uploaded without `shasums` is served through the [network mirror](../user-guide/network-mirror.md) only and does not appear in the registry protocol version list. A providers storage resolver must be configured.
+Every archive must be listed in the document under its file name. When a `SHA256SUMS` file is given, every archive must match its entry. A version uploaded without `shasums` is served through the [network mirror](../user-guide/network-mirror.md) only and does not appear in the registry protocol version list. A providers storage resolver must be configured. See [upload errors](#upload-errors) for the statuses of a failed upload.
 
 ### Example Request
 
@@ -650,6 +661,8 @@ The module is downloaded from an `http` or `https` URL, or from a git repository
 
 If the URL from which the module files should be downloaded is of types `http` or `https`, a dictionary of headers can be additionally passed, depending on your needs. If those headers are passed-in for other URL types, they will be ignored.
 
+See [upload errors](#upload-errors) for the statuses of a failed upload.
+
 ### Example Request
 
 === "GitHub API"
@@ -724,7 +737,7 @@ If the URL from which the module files should be downloaded is of types `http` o
 POST /v1/api/modules/:namespace/:name/:provider/:version/upload-files
 ```
 
-Upload a new module version (with local files).
+Upload a new module version (with local files). See [upload errors](#upload-errors) for the statuses of a failed upload.
 
 ### Example Request
 

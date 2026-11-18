@@ -672,14 +672,14 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 	shaSums, shaSumsCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS", prefix), d.ShaSums.URL, headers)
 	if err != nil {
 		cleanupAll()
-		return nil, nil, fmt.Errorf("could not fetch shaSums file: %v", err)
+		return nil, nil, fmt.Errorf("could not fetch shaSums file: %w", err)
 	}
 	cleanups = append(cleanups, shaSumsCleanup)
 
 	shaSumsSig, shaSumsSigCleanup, err := s.Fetcher.FetchFile(fmt.Sprintf("%s_SHA256SUMS.sig", prefix), d.ShaSums.SignatureURL, headers)
 	if err != nil {
 		cleanupAll()
-		return nil, nil, fmt.Errorf("could not fetch shaSums sig file: %v", err)
+		return nil, nil, fmt.Errorf("could not fetch shaSums sig file: %w", err)
 	}
 	cleanups = append(cleanups, shaSumsSigCleanup)
 
@@ -695,7 +695,7 @@ func (s *DefaultProviderService) downloadFiles(d *provider.CreateProviderDTO) (m
 		binary, binaryCleanup, err := s.Fetcher.FetchFileChecksum(fmt.Sprintf("%s_%s.zip", prefix, osArch), p.Location, p.ShaSum, headers)
 		if err != nil {
 			cleanupAll()
-			return nil, nil, fmt.Errorf("could not fetch %s file: %v", osArch, err)
+			return nil, nil, fmt.Errorf("could not fetch %s file: %w", osArch, err)
 		}
 		cleanups = append(cleanups, binaryCleanup)
 
@@ -723,7 +723,7 @@ func (s *DefaultProviderService) uploadFiles(
 			FileName:    v.Name(),
 		})
 		if err != nil {
-			return nil, fmt.Errorf("could not upload %s: %v", v.Name(), err)
+			return nil, fmt.Errorf("%w: could not upload %s: %v", ErrStorageFailure, v.Name(), err)
 		}
 
 		keys[k] = key
