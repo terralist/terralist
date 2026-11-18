@@ -384,13 +384,13 @@ func TestUploadModule(t *testing.T) {
 									Convey("If the resolver fails to store the module files", func() {
 										mockResolver.
 											On("Store", mock.AnythingOfType("*storage.StoreInput")).
-											Return("", errors.New(""))
+											Return("", errors.New("disk full"))
 
 										Convey("When the service is queried", func() {
 											err := moduleService.Upload(&dto, file.NewRemoteFile(url, nil))
 
-											Convey("An error should be returned", func() {
-												So(err, ShouldNotBeNil)
+											Convey("A storage failure should be returned", func() {
+												So(errors.Is(err, ErrStorageFailure), ShouldBeTrue)
 											})
 										})
 									})

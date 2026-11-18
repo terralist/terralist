@@ -13,6 +13,7 @@ import (
 	"terralist/internal/server/services"
 	"terralist/pkg/api"
 	"terralist/pkg/auth"
+	"terralist/pkg/file"
 	"terralist/pkg/rbac"
 	"terralist/pkg/registry"
 
@@ -244,6 +245,25 @@ func lookupStatus(err error) int {
 	}
 
 	return http.StatusNotFound
+}
+
+// uploadStatus is the status answering a failed upload: a bad gateway when the
+// referenced files cannot be downloaded, unprocessable when the source or its
+// content is refused, an internal error when the files cannot be stored, and a
+// conflict when the upload is refused by the business logic.
+func uploadStatus(err error) int {
+	switch {
+	case errors.Is(err, file.ErrDownloadFailure), errors.Is(err, file.ErrDownloadInterrupt):
+		return http.StatusBadGateway
+	case errors.Is(err, file.ErrSourceRefused),
+		errors.Is(err, file.ErrChecksumMismatch),
+		errors.Is(err, file.ErrInvalidArchive):
+		return http.StatusUnprocessableEntity
+	case errors.Is(err, services.ErrStorageFailure), errors.Is(err, file.ErrSystemFailure):
+		return http.StatusInternalServerError
+	default:
+		return http.StatusConflict
+	}
 }
 
 // isNotFound reports whether err means the artifact is held neither by

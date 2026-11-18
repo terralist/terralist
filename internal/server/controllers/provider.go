@@ -164,7 +164,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 				return
 			}
 			if err := c.ProviderService.Upload(dto); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{"errors": []string{err.Error()}})
+				ctx.JSON(uploadStatus(err), gin.H{"errors": []string{err.Error()}})
 				return
 			}
 			ctx.JSON(http.StatusOK, gin.H{
@@ -204,7 +204,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			body.Version = version
 
 			if err := c.ProviderService.Upload(&body); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{
+				ctx.JSON(uploadStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
@@ -250,7 +250,7 @@ func (c *DefaultProviderController) Subscribe(apis ...*gin.RouterGroup) {
 			defer closeFiles(dto)
 
 			if err := c.ProviderService.UploadPackages(&dto); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{
+				ctx.JSON(uploadStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return

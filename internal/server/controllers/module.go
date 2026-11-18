@@ -228,7 +228,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			headers := c.VcsService.GetHeaders([]string{ev.ModuleArchiveURL})
 			header := file.CreateHeader(headers)
 			if err := c.ModuleService.Upload(&dto, file.NewRemoteFile(ev.ModuleArchiveURL, header)); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{"errors": []string{err.Error()}})
+				ctx.JSON(uploadStatus(err), gin.H{"errors": []string{err.Error()}})
 				return
 			}
 
@@ -301,7 +301,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			header := file.CreateHeader(body.Headers)
 
 			if err := c.ModuleService.Upload(&dto, file.NewRemoteFile(body.DownloadUrl, header)); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{
+				ctx.JSON(uploadStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return
@@ -366,7 +366,7 @@ func (c *DefaultModuleController) Subscribe(apis ...*gin.RouterGroup) {
 			archive := file.NewStreamingFile(moduleFiles[0].Filename, uploaded, moduleFiles[0].Size)
 
 			if err := c.ModuleService.Upload(&dto, archive); err != nil {
-				ctx.JSON(http.StatusConflict, gin.H{
+				ctx.JSON(uploadStatus(err), gin.H{
 					"errors": []string{err.Error()},
 				})
 				return

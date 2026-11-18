@@ -2,6 +2,7 @@ package file
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -63,7 +64,7 @@ func privateAddressGuard(network, address string, _ syscall.RawConn) error {
 	}
 
 	if isPrivateAddress(ip) {
-		return fmt.Errorf("refusing to connect to non-public address %s", ip)
+		return fmt.Errorf("%w %s", errNonPublicAddress, ip)
 	}
 
 	return nil
@@ -98,7 +99,7 @@ func generateGetters(header http.Header, allowPrivateAddresses bool) map[string]
 // when the file is no longer needed.
 func fetch(name string, url string, checksum string, kind int, header http.Header, allowPrivateAddresses bool) (File, func(), error) {
 	if err := checkSource(url, allowPrivateAddresses); err != nil {
-		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+		return nil, nil, err
 	}
 
 	tempDir, err := os.MkdirTemp("", tempDirPattern)
@@ -178,7 +179,7 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		wg.Wait()
 
 		cleanup()
-		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+		return nil, nil, downloadError(err)
 	case <-ctx.Done():
 		wg.Wait()
 
@@ -188,7 +189,7 @@ func fetch(name string, url string, checksum string, kind int, header http.Heade
 		select {
 		case err := <-ech:
 			cleanup()
-			return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+			return nil, nil, downloadError(err)
 		default:
 		}
 
@@ -258,7 +259,7 @@ func fetchArchive(name string, f File) (File, func(), error) {
 	dst := path.Join(tempDir, "extracted")
 	if err := decompressor.Decompress(dst, src.Path(), true, 0); err != nil {
 		cleanup()
-		return nil, nil, fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidArchive, err)
 	}
 
 	result, err := archiveDir(name, dst)
@@ -384,6 +385,21 @@ func archiveDir(name, src string) (File, error) {
 	return archive, nil
 }
 
+// downloadError classifies an error of the getter: a refused connection or a
+// checksum mismatch is the source's fault, anything else a download failure.
+func downloadError(err error) error {
+	var checksumErr *getter.ChecksumError
+
+	switch {
+	case errors.Is(err, errNonPublicAddress):
+		return fmt.Errorf("%w: %v", ErrSourceRefused, err)
+	case errors.As(err, &checksumErr):
+		return fmt.Errorf("%w: %v", ErrChecksumMismatch, err)
+	default:
+		return fmt.Errorf("%w: %v", ErrDownloadFailure, err)
+	}
+}
+
 // checkSource reports whether a source may be fetched: only over HTTP(S) or
 // git, and, unless private addresses are allowed, from a git host resolving to
 // public addresses only. The HTTP getter refuses private addresses itself,
@@ -391,7 +407,7 @@ func archiveDir(name, src string) (File, error) {
 func checkSource(src string, allowPrivateAddresses bool) error {
 	detected, err := getter.Detect(src, "", getter.Detectors)
 	if err != nil {
-		return fmt.Errorf("invalid source %q: %w", src, err)
+		return fmt.Errorf("%w: invalid source %q: %v", ErrSourceRefused, src, err)
 	}
 
 	forced := ""
@@ -403,7 +419,7 @@ func checkSource(src string, allowPrivateAddresses bool) error {
 
 	u, err := url.Parse(detected)
 	if err != nil {
-		return fmt.Errorf("invalid source %q: %w", src, err)
+		return fmt.Errorf("%w: invalid source %q: %v", ErrSourceRefused, src, err)
 	}
 
 	switch {
@@ -416,7 +432,7 @@ func checkSource(src string, allowPrivateAddresses bool) error {
 
 		return checkPublicHost(u.Hostname())
 	default:
-		return fmt.Errorf("refusing to fetch %q: only HTTP(S) and git sources are fetched", src)
+		return fmt.Errorf("%w: refusing to fetch %q: only HTTP(S) and git sources are fetched", ErrSourceRefused, src)
 	}
 }
 
@@ -424,12 +440,12 @@ func checkSource(src string, allowPrivateAddresses bool) error {
 func checkPublicHost(host string) error {
 	addresses, err := net.DefaultResolver.LookupNetIP(context.Background(), "ip", host)
 	if err != nil {
-		return fmt.Errorf("could not resolve %s: %w", host, err)
+		return fmt.Errorf("%w: could not resolve %s: %v", ErrDownloadFailure, host, err)
 	}
 
 	for _, address := range addresses {
 		if isPrivateAddress(address.Unmap()) {
-			return fmt.Errorf("refusing to fetch from non-public address %s of %s", address, host)
+			return fmt.Errorf("%w: refusing to fetch from non-public address %s of %s", ErrSourceRefused, address, host)
 		}
 	}
 

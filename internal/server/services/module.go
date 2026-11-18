@@ -446,7 +446,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, f file.File) error {
 			FileName: archive.Name(),
 		})
 		if err != nil {
-			return fmt.Errorf("could store the new version: %v", err)
+			return fmt.Errorf("%w: could not store the new version: %v", ErrStorageFailure, err)
 		}
 
 		// Update the module location
@@ -471,7 +471,7 @@ func (s *DefaultModuleService) Upload(d *module.CreateDTO, f file.File) error {
 			FileName: docsFile.Name(),
 		})
 		if err != nil {
-			return fmt.Errorf("could store the new version's documentation: %v", err)
+			return fmt.Errorf("%w: could not store the new version's documentation: %v", ErrStorageFailure, err)
 		}
 
 		// Update the module documentation location
