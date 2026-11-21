@@ -795,7 +795,7 @@ The path to the SQLite database.
 | Name | Value |
 | --- | --- |
 | type | string |
-| required | no |
+| required | yes when `database-backend` is `sqlite` |
 | default | `n/a` |
 | cli | `--sqlite-path` |
 | env | `TERRALIST_SQLITE_PATH` |
