@@ -34,7 +34,17 @@
       formRef[provider]?.submit();
     }
   };
+
+  // Re-enable the login buttons when the page is restored from the bfcache
+  // (e.g. the user navigates back from the identity provider).
+  const onPageShow = (event: PageTransitionEvent) => {
+    if (event.persisted) {
+      loginDisabled = false;
+    }
+  };
 </script>
+
+<svelte:window on:pageshow={onPageShow} />
 
 <svelte:head>
   <style lang="css">
