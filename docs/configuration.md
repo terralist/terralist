@@ -126,6 +126,66 @@ The secret to use when signing the OAuth state passed to the identity provider.
 | cli | `--oauth-state-secret` |
 | env | `TERRALIST_OAUTH_STATE_SECRET` |
 
+### `oauth-refresh-enabled`
+
+Issue [refresh tokens](user-guide/oauth-refresh-tokens.md) to OAuth clients other than Terraform and OpenTofu. Before each refresh, Terralist checks the user with the identity provider, so a user removed there can no longer refresh. Not supported with SAML; Terralist refuses to start if both are set. Turning it off revokes every refresh token on the next start.
+
+| Name | Value |
+| --- | --- |
+| type | boolean |
+| required | no |
+| default | `false` |
+| cli | `--oauth-refresh-enabled` |
+| env | `TERRALIST_OAUTH_REFRESH_ENABLED` |
+
+### `oauth-refresh-secret`
+
+The secret used to seal the identity provider grants that Terralist keeps for refreshing. Required when [`oauth-refresh-enabled`](#oauth-refresh-enabled) is set. Must be at least 32 characters long and differ from the other secrets; Terralist refuses to start otherwise. Changing it makes the existing refresh tokens unusable.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `n/a` |
+| cli | `--oauth-refresh-secret` |
+| env | `TERRALIST_OAUTH_REFRESH_SECRET` |
+
+### `oauth-refresh-access-token-expiration`
+
+How long the access tokens issued together with a refresh token stay valid, as a duration such as `15m` or `1h`. Access tokens cannot be revoked, so this is how long a user removed from the identity provider can keep using Terralist. Logins without a refresh token keep using [`auth-token-expiration`](#auth-token-expiration).
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `1h` |
+| cli | `--oauth-refresh-access-token-expiration` |
+| env | `TERRALIST_OAUTH_REFRESH_ACCESS_TOKEN_EXPIRATION` |
+
+### `oauth-refresh-token-expiration`
+
+How long a refresh token stays valid without being used. Each refresh starts it again. Must be longer than [`oauth-refresh-access-token-expiration`](#oauth-refresh-access-token-expiration).
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `720h` |
+| cli | `--oauth-refresh-token-expiration` |
+| env | `TERRALIST_OAUTH_REFRESH_TOKEN_EXPIRATION` |
+
+### `oauth-refresh-max-session-age`
+
+How long a refresh session lasts from the login, however often it is refreshed. After that, the user logs in again. `0` leaves it unbounded.
+
+| Name | Value |
+| --- | --- |
+| type | string |
+| required | no |
+| default | `2160h` |
+| cli | `--oauth-refresh-max-session-age` |
+| env | `TERRALIST_OAUTH_REFRESH_MAX_SESSION_AGE` |
+
 ### `upstream-secret`
 
 The secret used to seal the tokens of upstream registries at rest, when an authority [pulls providers through](user-guide/network-mirror.md) from a private upstream. Required only to store an upstream token, and to use a stored one: without it, authorities holding a token cannot reach their upstream. Must be at least 32 characters long; Terralist refuses to start otherwise. Each token is sealed for its authority and cannot be moved to another one.

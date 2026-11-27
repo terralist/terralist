@@ -85,6 +85,12 @@ const (
 	TokenSigningSecretFlag = "token-signing-secret"
 	OAuthStateSecretFlag   = "oauth-state-secret"
 
+	OAuthRefreshEnabledFlag               = "oauth-refresh-enabled"
+	OAuthRefreshSecretFlag                = "oauth-refresh-secret"
+	OAuthRefreshAccessTokenExpirationFlag = "oauth-refresh-access-token-expiration"
+	OAuthRefreshTokenExpirationFlag       = "oauth-refresh-token-expiration"
+	OAuthRefreshMaxSessionAgeFlag         = "oauth-refresh-max-session-age"
+
 	PreferredEmailDomainFlag = "oauth-preferred-email-domain"
 
 	ModulesStorageResolverFlag   = "modules-storage-resolver"
@@ -382,6 +388,26 @@ var flags = map[string]cli.Flag{
 	OAuthStateSecretFlag: &cli.StringFlag{
 		Description: "The secret to use when signing the OAuth state.",
 		Required:    true,
+	},
+
+	OAuthRefreshEnabledFlag: &cli.BoolFlag{
+		Description:  "Issue refresh tokens to OAuth clients other than Terraform and OpenTofu. Each refresh is checked with the identity provider first.",
+		DefaultValue: false,
+	},
+	OAuthRefreshSecretFlag: &cli.StringFlag{
+		Description: "Secret used to seal the identity provider grants kept for refreshing. Required when oauth-refresh-enabled is set.",
+	},
+	OAuthRefreshAccessTokenExpirationFlag: &cli.StringFlag{
+		Description:  "How long the access tokens issued together with a refresh token stay valid.",
+		DefaultValue: "1h",
+	},
+	OAuthRefreshTokenExpirationFlag: &cli.StringFlag{
+		Description:  "How long a refresh token stays valid without being used.",
+		DefaultValue: "720h",
+	},
+	OAuthRefreshMaxSessionAgeFlag: &cli.StringFlag{
+		Description:  "How long a refresh session lasts from the login, however often it is refreshed. 0 leaves it unbounded.",
+		DefaultValue: "2160h",
 	},
 
 	PreferredEmailDomainFlag: &cli.StringFlag{

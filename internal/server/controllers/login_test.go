@@ -27,9 +27,16 @@ var (
 func setupLoginRouter(t *testing.T) (*gin.Engine, *services.MockLoginService) {
 	t.Helper()
 
+	return setupLoginRouterWithRefresh(t, false)
+}
+
+func setupLoginRouterWithRefresh(t *testing.T, refreshEnabled bool) (*gin.Engine, *services.MockLoginService) {
+	t.Helper()
+
 	gin.SetMode(gin.TestMode)
 
 	mockService := services.NewMockLoginService(t)
+	mockService.On("RefreshEnabled").Return(refreshEnabled)
 
 	hostURL, err := url.Parse("https://registry.example.com")
 	if err != nil {

@@ -41,6 +41,7 @@ func (*InitialMigration) Migrate(db *database.DB) error {
 		&module.Provider{},
 		&module.Dependency{},
 		&oauth.Code{},
+		&oauth.RefreshToken{},
 	); err != nil {
 		return err
 	}

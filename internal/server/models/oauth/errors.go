@@ -10,6 +10,8 @@ var (
 	InvalidScope            = "invalid_scope"
 	ServerError             = "server_error"
 	TemporarilyUnavailable  = "temporarily_unavailable"
+	InvalidGrant            = "invalid_grant"
+	UnsupportedGrantType    = "unsupported_grant_type"
 )
 
 type Error interface {

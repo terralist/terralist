@@ -38,7 +38,7 @@ func (c *DefaultServiceDiscoveryController) Subscribe(apis ...*gin.RouterGroup) 
 		func(ctx *gin.Context) {
 			ctx.JSON(http.StatusOK, gin.H{
 				"login.v1": gin.H{
-					"client":      "terraform-cli",
+					"client":      oauth.TerraformClientID,
 					"grant_types": []string{"authz_code"},
 					"authz":       c.AuthorizationEndpoint,
 					"token":       c.TokenEndpoint,

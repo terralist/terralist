@@ -45,6 +45,7 @@ nav:
     - SAML Configuration: user-guide/saml-configuration.md
     - Monitoring and Observability: user-guide/monitoring.md
     - Provider Network Mirror: user-guide/network-mirror.md
+    - OAuth Refresh Tokens: user-guide/oauth-refresh-tokens.md
     - Security: user-guide/security.md
     - Upgrading to v0.11: user-guide/upgrading-to-v0.11.md
   - Developer Guide: 

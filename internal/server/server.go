@@ -143,6 +143,11 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	// Parse token expiration duration
 	tokenExpirationSeconds := services.ParseTokenExpiration(userConfig.AuthTokenExpiration)
 
+	refreshOptions, err := newRefreshOptions(userConfig, config)
+	if err != nil {
+		return nil, err
+	}
+
 	loginService := &services.DefaultLoginService{
 		Provider: config.Provider,
 		JWT:      jwtManager,
@@ -152,6 +157,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		},
 
 		TokenExpirationSecs: tokenExpirationSeconds,
+		Refresh:             refreshOptions,
 	}
 
 	loginController := &controllers.DefaultLoginController{
@@ -674,6 +680,65 @@ const upstreamRequestTimeout = 30 * time.Second
 
 // newUpstreamService builds the service reading upstream registries from the
 // user configuration.
+// newRefreshOptions configures refresh tokens when oauth-refresh-enabled is
+// set. Otherwise it removes the refresh sessions left from when it was, so
+// turning the option off revokes them.
+func newRefreshOptions(userConfig UserConfig, config Config) (*services.RefreshOptions, error) {
+	repository := &repositories.DefaultOAuthRefreshTokenRepository{
+		Database: config.Database,
+	}
+
+	if !userConfig.OAuthRefreshEnabled {
+		if err := repository.DeleteAll(); err != nil {
+			return nil, fmt.Errorf("could not remove the refresh sessions: %w", err)
+		}
+
+		return nil, nil
+	}
+
+	if _, ok := config.Provider.(auth.Refresher); !ok {
+		return nil, fmt.Errorf("oauth-refresh-enabled is set, but the %s provider cannot refresh sessions", config.Provider.Name())
+	}
+
+	if userConfig.OAuthRefreshSecret == "" {
+		return nil, fmt.Errorf("oauth-refresh-secret is required when oauth-refresh-enabled is set")
+	}
+
+	if userConfig.OAuthRefreshSecret == userConfig.TokenSigningSecret ||
+		userConfig.OAuthRefreshSecret == userConfig.OAuthStateSecret ||
+		userConfig.OAuthRefreshSecret == userConfig.UpstreamSecret {
+		return nil, fmt.Errorf("oauth-refresh-secret must differ from the other secrets")
+	}
+
+	sealer, err := secret.NewSealer(userConfig.OAuthRefreshSecret)
+	if err != nil {
+		return nil, fmt.Errorf("invalid oauth-refresh-secret: %w", err)
+	}
+
+	accessTokenExpiration, err := time.ParseDuration(userConfig.OAuthRefreshAccessTokenExpiration)
+	if err != nil || accessTokenExpiration < time.Second {
+		return nil, fmt.Errorf("invalid oauth-refresh-access-token-expiration %q", userConfig.OAuthRefreshAccessTokenExpiration)
+	}
+
+	tokenExpiration, err := time.ParseDuration(userConfig.OAuthRefreshTokenExpiration)
+	if err != nil || tokenExpiration <= accessTokenExpiration {
+		return nil, fmt.Errorf("invalid oauth-refresh-token-expiration %q, expected a duration longer than the access token expiration", userConfig.OAuthRefreshTokenExpiration)
+	}
+
+	maxSessionAge, err := time.ParseDuration(userConfig.OAuthRefreshMaxSessionAge)
+	if err != nil || maxSessionAge < 0 {
+		return nil, fmt.Errorf("invalid oauth-refresh-max-session-age %q", userConfig.OAuthRefreshMaxSessionAge)
+	}
+
+	return &services.RefreshOptions{
+		Repository:                repository,
+		Sealer:                    sealer,
+		AccessTokenExpirationSecs: int(accessTokenExpiration.Seconds()),
+		TokenExpiration:           tokenExpiration,
+		MaxSessionAge:             maxSessionAge,
+	}, nil
+}
+
 func newUpstreamService(userConfig UserConfig, c cache.Cache, sealer *secret.Sealer) (*services.DefaultUpstreamService, error) {
 	ttl, err := time.ParseDuration(userConfig.UpstreamCacheTTL)
 	if err != nil || ttl <= 0 {

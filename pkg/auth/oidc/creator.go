@@ -29,5 +29,7 @@ func (t *Creator) New(config auth.Configurator) (auth.Provider, error) {
 			return e == ""
 		}),
 		GroupsClaim: strings.TrimSpace(cfg.GroupsClaim),
+
+		OfflineAccess: cfg.OfflineAccess,
 	}, nil
 }
